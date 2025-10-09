@@ -1,0 +1,53 @@
+[
+    
+    {
+        "asset_class": "RATES",
+        "location": "SP",
+        "short_name": "SP1Y",
+        "full_name": "Spanish Government Bond 1 Year",
+        "maturity": 1,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D_DTES00U7",
+        "source": "BOS"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "SP",
+        "short_name": "SP3Y",
+        "full_name": "Spanish Government Bond 3 Year",
+        "maturity": 3,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D_G0B1F0ZE",
+        "source": "BOS"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "SP",
+        "short_name": "SP5Y",
+        "full_name": "Spanish Government Bond 5 Year",
+        "maturity": 5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D_G0B1F0ZI",
+        "source": "BOS"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "SP",
+        "short_name": "SP10Y",
+        "full_name": "Spanish Government Bond 10 Year",
+        "maturity": 10,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D_G0B1F0ZO",
+        "source": "BOS"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "SP",
+        "short_name": "SP15Y",
+        "full_name": "Spanish Government Bond 15 Year",
+        "maturity": 15,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D_G0B1F0ZP",
+        "source": "BOS"
+    }
+]

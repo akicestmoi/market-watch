@@ -1,0 +1,63 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Market Data for {{ reference_date|default:default_reference_date }}</title>
+    <link href="{% static 'market_table/css/market_recap_styling.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-title">
+            <h1>Market Data — As of {{ reference_date|default:default_reference_date }}</h1>
+        </div>
+        <div class="header-form">
+            <form method="get">
+                <label for="reference_date">Target Date:</label>
+                <input type="date" id="reference_date" name="reference_date" value="{{ reference_date|default:default_reference_date }}">
+                <label for="previous_date">Previous Date:</label>
+                <input type="date" id="previous_date" name="previous_date" value="{{ previous_date|default:default_previous_date }}">
+                <button type="submit" class="btn-primary">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Columns -->
+    <div class="columns">
+        <!-- LEFT COLUMN -->
+        <div class="w-1/2 space-y-6">
+            {% for asset_class_data in data_to_display %}
+                {% if asset_class_data.asset_class in left_asset_classes %}
+                    {% include "market_table/_asset_class_card.html" with asset_classes=data_to_display %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="w-1/2 space-y-6">
+            {% for asset_class_data in data_to_display %}
+                {% if asset_class_data.asset_class in right_asset_classes %}
+                    {% include "market_table/_asset_class_card.html" with asset_classes=data_to_display %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    {% if error_message %}
+    <div id="errorModal">
+        <div class="modal-content">
+            <h2>Error</h2>
+            <p>{{ error_message }}</p>
+            <div class="text-right mt-4">
+                <button onclick="document.getElementById('errorModal').style.display='none'" class="btn-primary">Close</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</body>
+</html>

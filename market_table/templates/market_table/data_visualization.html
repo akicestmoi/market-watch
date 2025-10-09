@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Market Charts — {{ reference_date|default:default_reference_date }}</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS -->
+    <link href="{% static 'market_table/css/data_visualization.css' %}" rel="stylesheet">
+</head>
+
+<body>
+<div class="header">
+    <div class="header-title">
+        <h1>Market Charts — {{ reference_date|default:default_reference_date }}</h1>
+    </div>
+    <div class="header-form">
+        <form method="get">
+            <label for="reference_date">Target Date:</label>
+            <input type="date" id="reference_date" name="reference_date" value="{{ reference_date|default:default_reference_date }}">
+            <label for="previous_date">Previous Date:</label>
+            <input type="date" id="previous_date" name="previous_date" value="{{ previous_date|default:default_previous_date }}">
+            <button type="submit" class="btn-primary">Update</button>
+        </form>
+    </div>
+</div>
+
+<!-- Chart Grid -->
+<div class="chart-grid">
+    <!-- STOCKS -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2 id="stockHeader">Stocks</h2>
+            <select id="stockSelect" class="chart-select"></select>
+        </div>
+        <div class="chart-wrapper"><canvas id="stockChart"></canvas></div>
+    </div>
+
+    <!-- FX -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2 id="fxHeader">FX</h2>
+            <select id="fxSelect" class="chart-select"></select>
+        </div>
+        <div class="chart-wrapper"><canvas id="fxChart"></canvas></div>
+    </div>
+
+    <!-- YIELD CURVE -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2 id="yieldHeader">Yield Curve</h2>
+            <select id="yieldCurveLocationSelect" class="chart-select"></select>
+        </div>
+        <div class="chart-wrapper"><canvas id="yieldCurveChart"></canvas></div>
+    </div>
+
+    <!-- COMMODITIES -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2 id="commodityHeader">Commodities</h2>
+            <select id="commoditySelect" class="chart-select"></select>
+        </div>
+        <div class="chart-wrapper"><canvas id="commodityChart"></canvas></div>
+    </div>
+
+    <!-- CRYPTO -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2 id="cryptoHeader">Crypto</h2>
+            <select id="cryptoSelect" class="chart-select"></select>
+        </div>
+        <div class="chart-wrapper"><canvas id="cryptoChart"></canvas></div>
+    </div>
+
+    <!-- YIELD SPREAD -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2 id="spreadHeader">Yield Spread</h2>
+            <div style="display: flex; gap: 8px;">
+                <select id="mainRateSelect" class="chart-select"></select>
+                <select id="spreadRateSelect" class="chart-select"></select>
+            </div>
+        </div>
+        <div class="chart-wrapper"><canvas id="yieldSpreadChart"></canvas></div>
+    </div>
+</div>
+
+<script>
+    window.dropdownValuesJSON = {{ dropdown_values|safe }};
+    window.marketDataJSON = {{ market_data|safe }};
+    window.selectedValuesJSON = {{ selected_values|safe }};
+    window.labelsJSON = {{ labels|safe }};
+</script>
+<script src="{% static 'market_table/js/data_visualization.js' %}"></script>
+
+</body>
+</html>

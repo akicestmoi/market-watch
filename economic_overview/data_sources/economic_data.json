@@ -1,0 +1,12 @@
+[
+    {
+        "category": "GROWTH",
+        "location": "US",
+        "name": "Growth domestic product",
+        "code": "GDP",
+        "ticker": "^DJI",
+        "source": "YAHOO",
+        "date_source": "",
+        "frequency": ""
+    }
+]

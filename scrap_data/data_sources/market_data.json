@@ -1,0 +1,662 @@
+[
+    {
+        "asset_class": "STOCKS",
+        "location": "US",
+        "short_name": "DJIA",
+        "full_name": "Dow Jones Industrial Average",
+        "maturity": null,
+        "asset_type": "EQUITY_INDEX",
+        "ticker": "^DJI",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "STOCKS",
+        "location": "US",
+        "short_name": "SP500",
+        "full_name": "S&P 500",
+        "maturity": null,
+        "asset_type": "EQUITY_INDEX",
+        "ticker": "^GSPC",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "STOCKS",
+        "location": "EU",
+        "short_name": "EUROSTOX50",
+        "full_name": "Euro Stoxx 50",
+        "maturity": null,
+        "asset_type": "EQUITY_INDEX",
+        "ticker": "^STOXX50E",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "STOCKS",
+        "location": "DE",
+        "short_name": "DAX",
+        "full_name": "DAX",
+        "maturity": null,
+        "asset_type": "EQUITY_INDEX",
+        "ticker": "^GDAXI",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "STOCKS",
+        "location": "FR",
+        "short_name": "CAC40",
+        "full_name": "CAC 40",
+        "maturity": null,
+        "asset_type": "EQUITY_INDEX",
+        "ticker": "^FCHI",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "STOCKS",
+        "location": "JP",
+        "short_name": "NIKKEI225",
+        "full_name": "Nikkei 225",
+        "maturity": null,
+        "asset_type": "EQUITY_INDEX",
+        "ticker": "^N225",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "CB_RATES",
+        "location": "US",
+        "short_name": "FedFunds",
+        "full_name": "Fed Funds Rate",
+        "maturity": null,
+        "asset_type": "CB_TARGET_RATE",
+        "ticker": "FEDFUNDS",
+        "source": "FRED"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "SOFR",
+        "full_name": "Secured Overnight Financing Rate",
+        "maturity": 0,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "SOFR",
+        "source": "NYFED"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST1M",
+        "full_name": "US TBills 1 Month",
+        "maturity": 0.0833,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST1M",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST2M",
+        "full_name": "US TBills 2 Month",
+        "maturity": 0.166,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST2M",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST3M",
+        "full_name": "US TBills 3 Month",
+        "maturity": 0.25,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST3M",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST6M",
+        "full_name": "US TBills 6 Month",
+        "maturity": 0.5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST6M",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST1Y",
+        "full_name": "US Treasuries 1 Year",
+        "maturity": 1,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST1Y",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST2Y",
+        "full_name": "US Treasuries 2 Year",
+        "maturity": 2,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST2Y",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST5Y",
+        "full_name": "US Treasuries 5 Year",
+        "maturity": 5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST5Y",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST7Y",
+        "full_name": "US Treasuries 7 Year",
+        "maturity": 7,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST7Y",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST10Y",
+        "full_name": "US Treasuries 10 Year",
+        "maturity": 10,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST10Y",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "US",
+        "short_name": "UST20Y",
+        "full_name": "US Treasuries 20 Year",
+        "maturity": 20,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "UST20Y",
+        "source": "GOV_TREASURY_DEPT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "EU",
+        "short_name": "ESTR",
+        "full_name": "Euro Short-Term Rate",
+        "maturity": 0,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "ESTR/ESTR.B.EU000A2X2A25.WT",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "CB_RATES",
+        "location": "EU",
+        "short_name": "ECB_Deposit",
+        "full_name": "ECB Deposit Facility Rate",
+        "maturity": null,
+        "asset_type": "CB_TARGET_RATE",
+        "ticker": "FM/FM.D.U2.EUR.4F.KR.DFR.LEV",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "CB_RATES",
+        "location": "EU",
+        "short_name": "ECB_Refinancing",
+        "full_name": "ECB Main Refinancing Operation Rate",
+        "maturity": null,
+        "asset_type": "CB_TARGET_RATE",
+        "ticker": "FM/FM.D.U2.EUR.4F.KR.MRR_FR.LEV",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "CB_RATES",
+        "location": "EU",
+        "short_name": "ECB_Marginal_Lending",
+        "full_name": "ECB Marginal Lending Facility Rate",
+        "maturity": null,
+        "asset_type": "CB_TARGET_RATE",
+        "ticker": "FM/FM.D.U2.EUR.4F.KR.MLFR.LEV",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "EU",
+        "short_name": "EURIBOR1W",
+        "full_name": "Euribor 1 Week",
+        "maturity": 0.019,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "5/euribor-interest-1-week/",
+        "source": "GLOBAL_RATES"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "EU",
+        "short_name": "EURIBOR1M",
+        "full_name": "Euribor 1 Month",
+        "maturity": 0.0833,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "1/euribor-interest-1-month/",
+        "source": "GLOBAL_RATES"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "EU",
+        "short_name": "EURIBOR3M",
+        "full_name": "Euribor 3 Month",
+        "maturity": 0.25,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "2/euribor-interest-3-months/",
+        "source": "GLOBAL_RATES"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "EU",
+        "short_name": "EURIBOR6M",
+        "full_name": "Euribor 6 Month",
+        "maturity": 0.5,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "3/euribor-interest-6-months/",
+        "source": "GLOBAL_RATES"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "EU",
+        "short_name": "EURIBOR12M",
+        "full_name": "Euribor 12 Month",
+        "maturity": 1,
+        "asset_type": "INTERBANK_RATE",
+        "ticker": "4/euribor-interest-12-months/",
+        "source": "GLOBAL_RATES"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "FR",
+        "short_name": "OAT1Y",
+        "full_name": "French Government Bond 1 Year",
+        "maturity": 1,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "FM/FM.D.FR.EUR.FR2.BB.FRMOYTEC1.HSTA",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "FR",
+        "short_name": "OAT2Y",
+        "full_name": "French Government Bond 2 Year",
+        "maturity": 2,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "FM/FM.D.FR.EUR.FR2.BB.FRMOYTEC2.HSTA",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "FR",
+        "short_name": "OAT5Y",
+        "full_name": "French Government Bond 5 Year",
+        "maturity": 5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "FM/FM.D.FR.EUR.FR2.BB.FRMOYTEC5.HSTA",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "FR",
+        "short_name": "OAT7Y",
+        "full_name": "French Government Bond 7 Year",
+        "maturity": 7,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "FM/FM.D.FR.EUR.FR2.BB.FRMOYTEC7.HSTA",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "FR",
+        "short_name": "OAT10Y",
+        "full_name": "French Government Bond 10 Year",
+        "maturity": 10,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "FM/FM.D.FR.EUR.FR2.BB.FRMOYTEC10.HSTA",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "FR",
+        "short_name": "OAT20Y",
+        "full_name": "French Government Bond 20 Year",
+        "maturity": 20,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "FM/FM.D.FR.EUR.FR2.BB.FRMOYTEC20.HSTA",
+        "source": "WEBSTAT"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "DE",
+        "short_name": "BUND2Y",
+        "full_name": "German Government Bond 2 Year",
+        "maturity": 2,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D.REN.EUR.A610.000000WT0202.A",
+        "source": "BUNDESBANK"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "DE",
+        "short_name": "BUND5Y",
+        "full_name": "German Government Bond 5 Year",
+        "maturity": 5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D.REN.EUR.A620.000000WT0505.A",
+        "source": "BUNDESBANK"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "DE",
+        "short_name": "BUND7Y",
+        "full_name": "German Government Bond 7 Year",
+        "maturity": 7,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D.REN.EUR.A607.000000WT7070.A",
+        "source": "BUNDESBANK"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "DE",
+        "short_name": "BUND10Y",
+        "full_name": "German Government Bond 10 Year",
+        "maturity": 10,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D.REN.EUR.A630.000000WT1010.A",
+        "source": "BUNDESBANK"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "DE",
+        "short_name": "BUND15Y",
+        "full_name": "German Government Bond 15 Year",
+        "maturity": 15,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D.REN.EUR.A615.000000WT1515.A",
+        "source": "BUNDESBANK"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "DE",
+        "short_name": "BUND30Y",
+        "full_name": "German Government Bond 30 Year",
+        "maturity": 30,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "D.REN.EUR.A640.000000WT3030.A",
+        "source": "BUNDESBANK"
+    },
+    {
+        "asset_class": "CB_RATES",
+        "location": "JP",
+        "short_name": "MUTAN",
+        "full_name": "Japanese Uncollateralized Overnight Rate",
+        "maturity": null,
+        "asset_type": "CB_TARGET_RATE",
+        "ticker": "MUTAN",
+        "source": "BOJ"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "TDB3M",
+        "full_name": "Japanese Tbill 3 Month",
+        "maturity": 0.25,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "TDB3M",
+        "source": "BB"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "TDB6M",
+        "full_name": "Japanese Tbill 6 Month",
+        "maturity": 0.5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "TDB6M",
+        "source": "BB"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "TDB1Y",
+        "full_name": "Japanese Tbill 12 Month",
+        "maturity": 1,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "TDB1Y",
+        "source": "BB"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "JGB2Y",
+        "full_name": "Japanese Government Bond 2 Year",
+        "maturity": 2,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "JGB2Y",
+        "source": "BB"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "JGB5Y",
+        "full_name": "Japanese Government Bond 5 Year",
+        "maturity": 5,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "JGB5Y",
+        "source": "BB"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "JGB10Y",
+        "full_name": "Japanese Government Bond 10 Year",
+        "maturity": 10,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "JGB10Y",
+        "source": "BB"
+    },
+    {
+        "asset_class": "RATES",
+        "location": "JP",
+        "short_name": "JGB20Y",
+        "full_name": "Japanese Government Bond 20 Year",
+        "maturity": 20,
+        "asset_type": "GOVERNMENT_BOND_RATE",
+        "ticker": "JGB20Y",
+        "source": "BB"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "EURUSD",
+        "full_name": "EUR-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "EURUSD=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "GBPUSD",
+        "full_name": "GBP-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "GBPUSD=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "USDJPY",
+        "full_name": "USD-JPY Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "JPY=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "EURJPY",
+        "full_name": "EUR-JPY Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "EURJPY=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "AUDUSD",
+        "full_name": "AUD-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "AUDUSD=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "USDCNY",
+        "full_name": "USD-CNY Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "CNY=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "FX",
+        "location": null,
+        "short_name": "USDRUB",
+        "full_name": "USD-RUB Exchange Rate",
+        "maturity": null,
+        "asset_type": "FX_SPOT_RATE",
+        "ticker": "RUB=X",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "CRYPTO",
+        "location": null,
+        "short_name": "BTC",
+        "full_name": "BTC-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "CRYPTO_SPOT_RATE",
+        "ticker": "BTC-USD",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "CRYPTO",
+        "location": null,
+        "short_name": "ETH",
+        "full_name": "ETH-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "CRYPTO_SPOT_RATE",
+        "ticker": "ETH-USD",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "CRYPTO",
+        "location": null,
+        "short_name": "XRP",
+        "full_name": "XRP-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "CRYPTO_SPOT_RATE",
+        "ticker": "XRP-USD",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "CRYPTO",
+        "location": null,
+        "short_name": "USDT",
+        "full_name": "USDT-USD Exchange Rate",
+        "maturity": null,
+        "asset_type": "CRYPTO_SPOT_RATE",
+        "ticker": "USDT-USD",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "Gold",
+        "full_name": "COMEX Gold Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "GC=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "WTI Oil",
+        "full_name": "NYM Crude Oil Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "CL=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "Brent Oil",
+        "full_name": "NYM Brent Oil Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "BZ=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "Natural Gas",
+        "full_name": "NYM Natural Gas Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "NG=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "Corn",
+        "full_name": "CBOT Corn Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "ZC=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "Wheat",
+        "full_name": "CBOT Wheat Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "KE=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "COMMODITIES",
+        "location": null,
+        "short_name": "Rice",
+        "full_name": "CBOT Rice Future",
+        "maturity": null,
+        "asset_type": "COMMODITIY_FUTURE_SPOT_PRICE",
+        "ticker": "ZR=F",
+        "source": "YAHOO"
+    },
+    {
+        "asset_class": "OTHERS",
+        "location": null,
+        "short_name": "Volatility",
+        "full_name": "CBOE Volatility Index",
+        "maturity": null,
+        "asset_type": "VOLATILITY_INDEX",
+        "ticker": "^VIX",
+        "source": "YAHOO"
+    }
+]
