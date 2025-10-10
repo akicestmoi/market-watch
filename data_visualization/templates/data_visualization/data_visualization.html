@@ -21,8 +21,6 @@
         <form method="get">
             <label for="reference_date">Target Date:</label>
             <input type="date" id="reference_date" name="reference_date" value="{{ reference_date|default:default_reference_date }}">
-            <label for="previous_date">Previous Date:</label>
-            <input type="date" id="previous_date" name="previous_date" value="{{ previous_date|default:default_previous_date }}">
             <button type="submit" class="btn-primary">Update</button>
         </form>
     </div>
@@ -52,7 +50,13 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="yieldHeader">Yield Curve</h2>
-            <select id="yieldCurveLocationSelect" class="chart-select"></select>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="yieldCurveLocationSelect" class="chart-select"></select>
+                <div class="date-selector-container">
+                    <label for="previousCurveDate" class="date-selector-label">Previous curve:</label>
+                    <input type="date" id="previousCurveDate" class="chart-select">
+                </div>
+            </div>
         </div>
         <div class="chart-wrapper"><canvas id="yieldCurveChart"></canvas></div>
     </div>

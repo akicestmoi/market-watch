@@ -106,7 +106,7 @@ function createYieldCurveChart(assetId, data, previous_data = null, locationLabe
 
     const labelsX = data.map((pt) => `${pt.maturity}Y`);
     const datasets = [{
-        label: `${locationLabel} (Current)`,
+        label: "Current curve",
         data: data.map((pt) => pt.price),
         borderColor: color,
         fill: false,
@@ -116,7 +116,7 @@ function createYieldCurveChart(assetId, data, previous_data = null, locationLabe
 
     if (Array.isArray(previous_data) && previous_data.length > 0) {
         datasets.push({
-            label: `${locationLabel} (Previous)`,
+            label: "Previous curve",
             data: previous_data.map((pt) => pt.price),
             borderColor: color,
             borderDash: [5, 5],
@@ -176,7 +176,31 @@ function createYieldSpreadChart(assetId, data, mainRate, spreadRate, headerId, c
 // ===== Create charts =====
 createLineChart("stockChart", marketData.stock_prices, `Stocks: ${labels.stocks}`, "stockHeader");
 createLineChart("fxChart", marketData.fx_prices, `FX: ${labels.fx}`, "fxHeader", "rgb(255,99,132)");
-createYieldCurveChart("yieldCurveChart", marketData.reference_yield_curve, marketData.previous_yield_curve, `Yield Curve: ${labels.yield_curve_location}`);
+let yieldCurveChartInstance = createYieldCurveChart("yieldCurveChart", marketData.reference_yield_curve, marketData.previous_yield_curve, `Yield Curve: ${labels.yield_curve_location}`);
 createLineChart("commodityChart", marketData.commodity_prices, `Commodity: ${labels.commodity}`, "commodityHeader", "rgb(54,162,235)");
 createLineChart("cryptoChart", marketData.crypto_prices, `Crypto: ${labels.crypto}`, "cryptoHeader", "rgb(255,206,86)");
 createYieldSpreadChart("yieldSpreadChart", marketData.spread_rates, labels.main_rate, labels.spread_rate, "spreadHeader");
+
+// ===== Set initial value and handle yield curve previous date change =====
+const previousCurveDateInput = document.getElementById("previousCurveDate");
+if (previousCurveDateInput) {
+    // Set initial value from backend
+    if (selectedValues.previous_curve_date) {
+        previousCurveDateInput.value = selectedValues.previous_curve_date;
+    }
+    
+    // Handle date change
+    previousCurveDateInput.addEventListener("change", function(e) {
+        const previousCurveDate = e.target.value;
+        if (!previousCurveDate) return;
+        
+        // Get current parameters from URL
+        const params = new URLSearchParams(window.location.search);
+        
+        // Update the previous_curve_date parameter
+        params.set('previous_curve_date', previousCurveDate);
+        
+        // Reload the page with new parameters
+        window.location.search = params.toString();
+    });
+}

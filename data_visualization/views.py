@@ -101,7 +101,7 @@ def data_visualization_view(request):
     # Default Values
     default_values = {
         "reference_date": (date.today() - BDay(1)).date().isoformat(),
-        "previous_date": (date.today() - BDay(2)).date().isoformat(),
+        "previous_curve_date": (date.today() - BDay(2)).date().isoformat(),
         "yield_curve_location": str(LocationChoices.US.label),  # Used for Yield Curve
         "stock_name": "DJIA",
         "fx_name": "EURUSD",
@@ -113,7 +113,9 @@ def data_visualization_view(request):
 
     # Get Data from Front
     reference_date = request.GET.get("reference_date", default_values["reference_date"])
-    previous_date = request.GET.get("previous_date", default_values["previous_date"])
+    previous_curve_date = request.GET.get(
+        "previous_curve_date", default_values["previous_curve_date"]
+    )
     yield_curve_location = request.GET.get(
         "yield_curve_location", default_values["yield_curve_location"]
     )
@@ -126,26 +128,25 @@ def data_visualization_view(request):
 
     # Return Selected Values for Front Interaction
     # Automatically takes default values at first
-    selected_values = (
-        {
-            "yield_curve_location": yield_curve_location,
-            "stock_name": stock_name,
-            "fx_name": fx_name,
-            "crypto_name": crypto_name,
-            "commodity_name": commodity_name,
-            "main_rate": main_rate,
-            "spread_rate": spread_rate,
-        },
-    )
+    selected_values = {
+        "yield_curve_location": yield_curve_location,
+        "stock_name": stock_name,
+        "fx_name": fx_name,
+        "crypto_name": crypto_name,
+        "commodity_name": commodity_name,
+        "main_rate": main_rate,
+        "spread_rate": spread_rate,
+        "previous_curve_date": previous_curve_date,
+    }
 
     # Data Validation
     reference_date = datetime.fromisoformat(reference_date).date()
-    previous_date = datetime.fromisoformat(previous_date).date()
-    if reference_date <= previous_date:
+    previous_curve_date = datetime.fromisoformat(previous_curve_date).date()
+    if reference_date <= previous_curve_date:
         context = {
-            "error_message": "reference_date must be greater than previous_date.",
+            "error_message": "reference_date must be greater than previous_curve_date.",
             "reference_date": reference_date,
-            "previous_date": previous_date,
+            "previous_curve_date": previous_curve_date,
         }
         return render(request, "data_visualization/market_recap.html", context)
 
@@ -193,7 +194,7 @@ def data_visualization_view(request):
         reference_date, LocationChoices.from_label(yield_curve_location)
     )
     previous_yield_curve = market_overview_services.get_yield_curve(
-        previous_date, LocationChoices.from_label(yield_curve_location)
+        previous_curve_date, LocationChoices.from_label(yield_curve_location)
     )
     fx_prices = market_overview_services.get_historical_prices(
         fx_name, end_date=reference_date
@@ -236,9 +237,9 @@ def data_visualization_view(request):
     # Return all to Front
     context = {
         "reference_date": reference_date.isoformat(),
-        "previous_date": previous_date.isoformat(),
+        "previous_curve_date": previous_curve_date.isoformat(),
         "default_reference_date": default_values["reference_date"],
-        "default_previous_date": default_values["previous_date"],
+        "default_previous_curve_date": default_values["previous_curve_date"],
         "dropdown_values": json.dumps(dropdown_values),
         "selected_values": json.dumps(selected_values),
         "labels": json.dumps(labels),
