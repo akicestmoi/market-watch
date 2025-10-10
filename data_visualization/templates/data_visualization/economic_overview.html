@@ -57,21 +57,13 @@
                                 <td>{{ name_group.grouper }}</td>
 
                                 {% for loc in locations %}
-                                    {% with record=None %}
-                                        {% for rec in name_group.list %}
-                                            {% if rec.location == loc %}
-                                                {% with record=rec %}{% endwith %}
-                                            {% endif %}
-                                        {% endfor %}
-
-                                        {% if record %}
-                                            <td>{{ record.last|default:"—" }}</td>
-                                            <td>{{ record.previous|default:"—" }}</td>
-                                            <td>{{ record.change|default:"—" }}%</td>
-                                        {% else %}
-                                            <td>—</td><td>—</td><td>—</td>
+                                    {% for rec in name_group.list %}
+                                        {% if rec.location == loc %}
+                                            <td>{{ rec.last|default:"—" }}</td>
+                                            <td>{{ rec.previous|default:"—" }}</td>
+                                            <td>{% if rec.change %}{{ rec.change }}%{% else %}—{% endif %}</td>
                                         {% endif %}
-                                    {% endwith %}
+                                    {% endfor %}
                                 {% endfor %}
                             </tr>
                         {% endfor %}

@@ -254,48 +254,94 @@ def economic_overview_view(request):
         "reference_date", default_reference_date.isoformat()
     )
     reference_date = datetime.fromisoformat(reference_date).date()
+
+    locations = ["US", "EU", "JP"]
+
+    # Raw economic data with entries for all locations (including empty ones)
+    economic_data = {
+        "GROWTH": [
+            {
+                "category": "GROWTH",
+                "location": "US",
+                "name": "Gross Domestic Product",
+                "last": 2.1,
+                "previous": 2.0,
+                "change": 0.1,
+            },
+            {
+                "category": "GROWTH",
+                "location": "EU",
+                "name": "Gross Domestic Product",
+                "last": None,
+                "previous": None,
+                "change": None,
+            },
+            {
+                "category": "GROWTH",
+                "location": "JP",
+                "name": "Gross Domestic Product",
+                "last": None,
+                "previous": None,
+                "change": None,
+            },
+            {
+                "category": "GROWTH",
+                "location": "US",
+                "name": "Eurozone GDP",
+                "last": None,
+                "previous": None,
+                "change": None,
+            },
+            {
+                "category": "GROWTH",
+                "location": "EU",
+                "name": "Eurozone GDP",
+                "last": 1.5,
+                "previous": 1.8,
+                "change": -0.3,
+            },
+            {
+                "category": "GROWTH",
+                "location": "JP",
+                "name": "Eurozone GDP",
+                "last": None,
+                "previous": None,
+                "change": None,
+            },
+        ],
+        "INFLATION": [
+            {
+                "category": "INFLATION",
+                "location": "US",
+                "name": "CPI Inflation",
+                "last": 3.7,
+                "previous": 3.5,
+                "change": 0.2,
+            },
+            {
+                "category": "INFLATION",
+                "location": "EU",
+                "name": "CPI Inflation",
+                "last": None,
+                "previous": None,
+                "change": None,
+            },
+            {
+                "category": "INFLATION",
+                "location": "JP",
+                "name": "CPI Inflation",
+                "last": 2.6,
+                "previous": 2.4,
+                "change": 0.2,
+            },
+        ],
+    }
+
     context = {
         "reference_date": reference_date,
         "default_reference_date": default_reference_date,
-        "locations": ["US", "EU", "JP"],
-        "economic_data": {
-            "GROWTH": [
-                {
-                    "category": "GROWTH",
-                    "location": "US",
-                    "name": "Gross Domestic Product",
-                    "last": 2.1,
-                    "previous": 2.0,
-                    "change": 0.1,
-                },
-                {
-                    "category": "GROWTH",
-                    "location": "EU",
-                    "name": "Eurozone GDP",
-                    "last": 1.5,
-                    "previous": 1.8,
-                    "change": -0.3,
-                },
-            ],
-            "INFLATION": [
-                {
-                    "category": "INFLATION",
-                    "location": "US",
-                    "name": "CPI Inflation",
-                    "last": 3.7,
-                    "previous": 3.5,
-                    "change": 0.2,
-                },
-                {
-                    "category": "INFLATION",
-                    "location": "JP",
-                    "name": "CPI Inflation",
-                    "last": 2.6,
-                    "previous": 2.4,
-                    "change": 0.2,
-                },
-            ],
-        },
+        "locations": locations,
+        "economic_data": economic_data,
         "upcoming_events": [
             {
                 "name": "US CPI Inflation",
