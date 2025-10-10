@@ -1,11 +1,7 @@
 from rest_framework import serializers
 
-from scrap_data.models import (
-    AssetClassChoices,
-    AssetTypeChoices,
-    LocationChoices,
-    SourceChoices,
-)
+from scrap_data.models import (AssetClassChoices, AssetTypeChoices,
+                               LocationChoices, SourceChoices)
 
 
 class MarketPriceIngestionSerializer(serializers.Serializer):

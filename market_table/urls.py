@@ -1,10 +1,7 @@
 from django.urls import path
 
-from market_table.views import (
-    data_visualization_view,
-    market_recap_view,
-    economic_overview_view,
-)
+from market_table.views import (data_visualization_view,
+                                economic_overview_view, market_recap_view)
 
 urlpatterns = [
     path("market-recap/", market_recap_view, name="market-recap"),

@@ -2,20 +2,20 @@ from datetime import date
 from enum import Enum
 from typing import Optional
 
+from pandas.tseries.offsets import BDay
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from pandas.tseries.offsets import BDay
+
 import scrap_data.services as scrap_data_services
 import shared.services as shared_services
-from scrap_data.models import AssetTypeChoices, MarketPriceModel, PriceUpdateLogModel
-from scrap_data.serializers import (
-    CalculatePriceDiffSerializer,
-    DataCorrectionSerializer,
-    MarketPriceIngestionSerializer,
-    TargetedMarketPriceIngestionSerializer,
-)
+from scrap_data.models import (AssetTypeChoices, MarketPriceModel,
+                               PriceUpdateLogModel)
+from scrap_data.serializers import (CalculatePriceDiffSerializer,
+                                    DataCorrectionSerializer,
+                                    MarketPriceIngestionSerializer,
+                                    TargetedMarketPriceIngestionSerializer)
 
 
 class GetActionEnum(str, Enum):
@@ -39,6 +39,7 @@ class ScrapDataView(APIView):
 
         target_date: date = serializer.validated_data.get("date")
         market_data = scrap_data_services.get_market_data(target_date)
+        print(market_data)
         for data in market_data:
             shared_services.upsert_with_logs(
                 model=MarketPriceModel,

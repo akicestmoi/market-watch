@@ -1,9 +1,10 @@
 import json
 import xml.etree.ElementTree as ET
-from datetime import date, datetime, timedelta
-from io import BytesIO, StringIO
-from typing import Dict, List, Optional, TypedDict
 from copy import deepcopy
+from datetime import date, datetime, timedelta
+from io import StringIO
+from typing import Dict, List, Optional, TypedDict
+
 import environ
 import pandas as pd
 import requests
@@ -13,15 +14,10 @@ from cachetools.func import ttl_cache
 from dateutil.relativedelta import relativedelta
 from django.http import Http404
 
-
 import shared.services as shared_services
-from scrap_data.models import (
-    AssetClassChoices,
-    AssetTypeChoices,
-    LocationChoices,
-    MarketPriceModel,
-    SourceChoices,
-)
+from scrap_data.models import (AssetClassChoices, AssetTypeChoices,
+                               LocationChoices, MarketPriceModel,
+                               SourceChoices)
 
 env = environ.Env()
 
@@ -414,6 +410,7 @@ def get_market_data(target_date: date) -> List[MarketData]:
             if scrapping_function
             else None
         )
+        market_data.append(data)
 
     return market_data
 

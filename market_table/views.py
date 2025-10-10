@@ -8,7 +8,8 @@ from pandas.tseries.offsets import BDay
 
 import scrap_data.services as scrap_data_services
 from market_table.services import format_data_for_display
-from scrap_data.models import AssetClassChoices, AssetTypeChoices, LocationChoices
+from scrap_data.models import (AssetClassChoices, AssetTypeChoices,
+                               LocationChoices)
 from scrap_data.services import AssetNames
 
 
@@ -256,6 +257,7 @@ def economic_overview_view(request):
     context = {
         "reference_date": reference_date,
         "default_reference_date": default_reference_date,
+        "locations": ["US", "EU", "JP"],
         "economic_data": {
             "GROWTH": [
                 {

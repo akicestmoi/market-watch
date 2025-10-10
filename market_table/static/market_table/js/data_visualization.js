@@ -68,20 +68,20 @@ handleDropdownChange("mainRateSelect", "main_rate");
 handleDropdownChange("spreadRateSelect", "spread_rate");
 
 // ===== Chart builders =====
-function createLineChart(assetId, data, label, headerId, color = 'rgb(75, 192, 192)') {
-    const ctx = document.getElementById(assetId).getContext('2d');
+function createLineChart(assetId, data, label, headerId, color = "rgb(75, 192, 192)") {
+    const ctx = document.getElementById(assetId).getContext("2d");
     const header = document.getElementById(headerId);
     header.innerText = label;
 
     return new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: {
             labels: data.map(d => d.price_date),
             datasets: [{
                 label: label,
                 data: data.map(d => d.price),
                 borderColor: color,
-                backgroundColor: 'rgba(75,192,192,0.1)',
+                backgroundColor: "rgba(75,192,192,0.1)",
                 tension: 0.3,
                 fill: true,
                 pointRadius: 3
@@ -92,23 +92,22 @@ function createLineChart(assetId, data, label, headerId, color = 'rgb(75, 192, 1
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { title: { display: true, text: 'Date' } },
-                y: { title: { display: true, text: 'Price' } }
+                x: { title: { display: true, text: "Date" } },
+                y: { title: { display: true, text: "Price" } }
             }
         }
     });
 }
 
-function createYieldCurveChart(assetId, data, previous_data = null, locationLabel, headerId = "yieldHeader", color = '#0ea5e9') {
-    const ctx = document.getElementById(assetId).getContext('2d');
+function createYieldCurveChart(assetId, data, previous_data = null, locationLabel, headerId = "yieldHeader", color = "#0ea5e9") {
+    const ctx = document.getElementById(assetId).getContext("2d");
     const header = document.getElementById(headerId);
-    const fullLabel = `${locationLabel} Yield Curve`;
-    header.innerText = fullLabel;
+    header.innerText = locationLabel;
 
-    const labelsX = data.map(pt => `${pt.maturity}Y`);
+    const labelsX = data.map((pt) => `${pt.maturity}Y`);
     const datasets = [{
         label: `${locationLabel} (Current)`,
-        data: data.map(pt => pt.price),
+        data: data.map((pt) => pt.price),
         borderColor: color,
         fill: false,
         tension: 0.3,
@@ -118,7 +117,7 @@ function createYieldCurveChart(assetId, data, previous_data = null, locationLabe
     if (Array.isArray(previous_data) && previous_data.length > 0) {
         datasets.push({
             label: `${locationLabel} (Previous)`,
-            data: previous_data.map(pt => pt.price),
+            data: previous_data.map((pt) => pt.price),
             borderColor: color,
             borderDash: [5, 5],
             fill: false,
@@ -128,35 +127,35 @@ function createYieldCurveChart(assetId, data, previous_data = null, locationLabe
     }
 
     return new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: { labels: labelsX, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: true } },
             scales: {
-                x: { title: { display: true, text: 'Maturity (Years)' } },
-                y: { title: { display: true, text: 'Yield (%)' } }
+                x: { title: { display: true, text: "Maturity (Years)" } },
+                y: { title: { display: true, text: "Yield (%)" } }
             }
         }
     });
 }
 
-function createYieldSpreadChart(assetId, data, mainRate, spreadRate, headerId, color = 'rgb(153,102,255)') {
-    const ctx = document.getElementById(assetId).getContext('2d');
+function createYieldSpreadChart(assetId, data, mainRate, spreadRate, headerId, color = "rgb(153,102,255)") {
+    const ctx = document.getElementById(assetId).getContext("2d");
     const header = document.getElementById(headerId);
-    const label = `${mainRate} - ${spreadRate} Yield Spread (bps)`;
+    const label = `Yield Spread: ${mainRate} - ${spreadRate}`;
     header.innerText = label;
 
     return new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: {
-            labels: data.map(d => d.price_date),
+            labels: data.map((d) => d.price_date),
             datasets: [{
                 label: label,
-                data: data.map(d => d.price),
+                data: data.map((d) => d.price),
                 borderColor: color,
-                backgroundColor: 'rgba(153,102,255,0.1)',
+                backgroundColor: "rgba(153,102,255,0.1)",
                 tension: 0.3,
                 fill: true,
                 pointRadius: 3
@@ -167,17 +166,17 @@ function createYieldSpreadChart(assetId, data, mainRate, spreadRate, headerId, c
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { title: { display: true, text: 'Date' } },
-                y: { title: { display: true, text: 'Spread (bps)' } }
+                x: { title: { display: true, text: "Date" } },
+                y: { title: { display: true, text: "Spread (bps)" } }
             }
         }
     });
 }
 
 // ===== Create charts =====
-createLineChart('stockChart', marketData.stock_prices, labels.stocks, 'stockHeader');
-createLineChart('fxChart', marketData.fx_prices, labels.fx, 'fxHeader', 'rgb(255,99,132)');
-createYieldCurveChart('yieldCurveChart', marketData.reference_yield_curve, marketData.previous_yield_curve, labels.yield_curve_location);
-createLineChart('commodityChart', marketData.commodity_prices, labels.commodity, 'commodityHeader', 'rgb(54,162,235)');
-createLineChart('cryptoChart', marketData.crypto_prices, labels.crypto, 'cryptoHeader', 'rgb(255,206,86)');
-createYieldSpreadChart('yieldSpreadChart', marketData.spread_rates, labels.main_rate, labels.spread_rate, 'spreadHeader');
+createLineChart("stockChart", marketData.stock_prices, `Stocks: ${labels.stocks}`, "stockHeader");
+createLineChart("fxChart", marketData.fx_prices, `FX: ${labels.fx}`, "fxHeader", "rgb(255,99,132)");
+createYieldCurveChart("yieldCurveChart", marketData.reference_yield_curve, marketData.previous_yield_curve, `Yield Curve: ${labels.yield_curve_location}`);
+createLineChart("commodityChart", marketData.commodity_prices, `Commodity: ${labels.commodity}`, "commodityHeader", "rgb(54,162,235)");
+createLineChart("cryptoChart", marketData.crypto_prices, `Crypto: ${labels.crypto}`, "cryptoHeader", "rgb(255,206,86)");
+createYieldSpreadChart("yieldSpreadChart", marketData.spread_rates, labels.main_rate, labels.spread_rate, "spreadHeader");
