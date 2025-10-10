@@ -1,0 +1,25 @@
+{
+  "name": "market-watch",
+  "version": "1.0.0",
+  "description": "Market Watch Django Application",
+  "private": true,
+  "scripts": {
+    "lint:js": "eslint data_visualization/static/**/*.js",
+    "lint:css": "stylelint \"data_visualization/static/**/*.css\"",
+    "lint:html": "htmlhint \"data_visualization/templates/**/*.html\"",
+    "lint:json": "prettier --check \"**/*.json\" --ignore-path .prettierignore",
+    "lint:all": "npm run lint:js && npm run lint:css && npm run lint:html && npm run lint:json",
+    "format:js": "eslint --fix data_visualization/static/**/*.js",
+    "format:css": "stylelint --fix \"data_visualization/static/**/*.css\"",
+    "format:json": "prettier --write \"**/*.json\" --ignore-path .prettierignore",
+    "format:all": "npm run format:js && npm run format:css && npm run format:json"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "htmlhint": "^1.1.4",
+    "prettier": "^3.2.5",
+    "stylelint": "^16.2.1",
+    "stylelint-config-standard": "^36.0.0"
+  }
+}
+

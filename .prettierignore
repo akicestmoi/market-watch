@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Django
+*.py
+*.pyc
+__pycache__/
+migrations/
+staticfiles/
+
+# Build
+dist/
+build/
+
+# Other
+.git/
+.venv/
+.tox/
+*.min.js
+*.min.css
+

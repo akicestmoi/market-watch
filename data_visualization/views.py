@@ -310,7 +310,7 @@ def economic_overview_view(request):
     )
     reference_date = datetime.fromisoformat(reference_date).date()
 
-    locations = ["US", "EU", "JP"]
+    locations = ["US", "EU", "FR", "JP"]
 
     # Raw economic data with entries for all locations (including empty ones)
     economic_data = {

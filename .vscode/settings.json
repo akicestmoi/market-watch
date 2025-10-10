@@ -1,0 +1,112 @@
+{
+  // ===========================
+  // Python Linting & Formatting
+  // ===========================
+  "python.linting.enabled": true,
+  "python.linting.lintOnSave": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": ["--config=.flake8"],
+  "python.linting.pylintEnabled": false,
+  "python.linting.mypyEnabled": false,
+  "python.formatting.provider": "black",
+  "isort.args": ["--settings-path=pyproject.toml"],
+  "isort.check": true,
+
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // ===========================
+  // JavaScript Linting & Formatting
+  // ===========================
+  "eslint.enable": true,
+  "eslint.run": "onSave",
+  "eslint.validate": ["javascript"],
+  "eslint.options": {
+    "configFile": ".eslintrc.json"
+  },
+  "eslint.lintTask.enable": true,
+  "eslint.codeActionsOnSave.mode": "all",
+
+  "[javascript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+
+  // ===========================
+  // CSS Linting & Formatting
+  // ===========================
+  "stylelint.enable": true,
+  "stylelint.validate": ["css"],
+  "stylelint.snippet": ["css"],
+  "css.validate": false,
+
+  "[css]": {
+    "editor.defaultFormatter": "stylelint.vscode-stylelint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+
+  // ===========================
+  // HTML Validation
+  // ===========================
+  "htmlhint.enable": true,
+  "htmlhint.options": {
+    "configFile": ".htmlhintrc"
+  },
+
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  // ===========================
+  // JSON Formatting
+  // ===========================
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  // ===========================
+  // Django Templates
+  // ===========================
+  "[django-html]": {
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2
+  },
+
+  // ===========================
+  // General Editor Settings
+  // ===========================
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": null,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "files.eol": "\r\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // ===========================
+  // Problems Panel
+  // ===========================
+  "problems.showCurrentInStatus": true
+}

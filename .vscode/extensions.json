@@ -1,0 +1,24 @@
+{
+  "recommendations": [
+    // Python
+    "ms-python.python",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+
+    // JavaScript
+    "dbaeumer.vscode-eslint",
+
+    // CSS
+    "stylelint.vscode-stylelint",
+
+    // HTML
+    "htmlhint.vscode-htmlhint",
+
+    // JSON & Formatting
+    "esbenp.prettier-vscode",
+
+    // Django
+    "batisteo.vscode-django"
+  ]
+}
+
