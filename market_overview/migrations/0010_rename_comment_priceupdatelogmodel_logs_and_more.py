@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("scrap_data", "0009_marketpricemodel_asset_type"),
+        ("market_overview", "0009_marketpricemodel_asset_type"),
     ]
 
     operations = [
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
                 related_name="price_update_logs",
-                to="scrap_data.marketpricemodel",
+                to="market_overview.marketpricemodel",
             ),
         ),
     ]

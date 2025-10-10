@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class MarketTableConfig(AppConfig):
+class MarketOverviewConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "market_table"
+    name = "market_overview"

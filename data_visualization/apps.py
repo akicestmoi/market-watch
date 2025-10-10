@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class ScrapDataConfig(AppConfig):
+class DataVisualizationConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "scrap_data"
+    name = "data_visualization"

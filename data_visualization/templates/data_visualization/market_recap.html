@@ -32,7 +32,7 @@
         <div class="w-1/2 space-y-6">
             {% for asset_class_data in data_to_display %}
                 {% if asset_class_data.asset_class in left_asset_classes %}
-                    {% include "market_table/_asset_class_card.html" with asset_classes=data_to_display %}
+                    {% include "data_visualization/_asset_class_card.html" with asset_classes=data_to_display %}
                 {% endif %}
             {% endfor %}
         </div>
@@ -41,7 +41,7 @@
         <div class="w-1/2 space-y-6">
             {% for asset_class_data in data_to_display %}
                 {% if asset_class_data.asset_class in right_asset_classes %}
-                    {% include "market_table/_asset_class_card.html" with asset_classes=data_to_display %}
+                    {% include "data_visualization/_asset_class_card.html" with asset_classes=data_to_display %}
                 {% endif %}
             {% endfor %}
         </div>

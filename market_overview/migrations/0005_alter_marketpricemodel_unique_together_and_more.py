@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("scrap_data", "0004_marketpricemodel_update_comments_and_more"),
+        ("market_overview", "0004_marketpricemodel_update_comments_and_more"),
     ]
 
     operations = [
@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="update_logs",
-                        to="scrap_data.marketpricemodel",
+                        to="market_overview.marketpricemodel",
                     ),
                 ),
             ],

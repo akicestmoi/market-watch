@@ -15,11 +15,12 @@ from pathlib import Path
 
 import environ
 
-env = environ.Env()
-environ.Env.read_env()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Initialize environ and read .env file
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,8 +45,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
-    "scrap_data.apps.ScrapDataConfig",
-    "market_table.apps.MarketTableConfig",
+    "market_overview.apps.MarketOverviewConfig",
+    "data_visualization.apps.DataVisualizationConfig",
     "economic_overview.apps.EconomicOverviewConfig",
     "shared.apps.SharedConfig",
 ]

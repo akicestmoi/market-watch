@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("scrap_data", "0008_remove_marketpricemodel_comment"),
+        ("market_overview", "0008_remove_marketpricemodel_comment"),
     ]
 
     operations = [

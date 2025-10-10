@@ -86,7 +86,7 @@ class AssetNames(TypedDict):
     full_name: str
 
 
-with open("scrap_data/data_sources/market_data.json") as f:
+with open("market_overview/data_sources/market_data.json") as f:
     ASSETS_BASE_INFO = json.load(f)
 
 SOURCE_SCRAP_MAP = {
