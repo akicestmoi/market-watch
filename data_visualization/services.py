@@ -4,8 +4,7 @@ from typing import List, Optional, TypedDict
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
-from market_overview.models import (AssetClassChoices, LocationChoices,
-                                    MarketPriceModel)
+from market_overview.models import AssetClassChoices, LocationChoices, MarketPriceModel
 from market_overview.services import calculate_price_change
 
 

@@ -15,9 +15,14 @@ from dateutil.relativedelta import relativedelta
 from django.http import Http404
 
 import shared.services as shared_services
-from market_overview.models import (AssetClassChoices, AssetTypeChoices,
-                                    LocationChoices, MarketPriceModel,
-                                    PriceUpdateLogModel, SourceChoices)
+from market_overview.models import (
+    AssetClassChoices,
+    AssetTypeChoices,
+    LocationChoices,
+    MarketPriceModel,
+    PriceUpdateLogModel,
+    SourceChoices,
+)
 
 env = environ.Env()
 
@@ -430,10 +435,10 @@ def get_specific_asset_market_data(
 
     scrapping_function = SOURCE_SCRAP_MAP.get(targeted_market_data["source"])
     market_data = []
-    for date in date_range:
+    for target_date in date_range:
         data = deepcopy(targeted_market_data)
-        data["date"] = date
-        data["price"] = scrapping_function(date, data["ticker"])
+        data["date"] = target_date
+        data["price"] = scrapping_function(target_date, data["ticker"])
         market_data.append(data)
 
     return market_data

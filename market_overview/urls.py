@@ -1,9 +1,15 @@
 from django.urls import path
 
-from .views import (CalculatePriceChangeView, DatabaseInteractionView,
-                    GetAssetNamesView, GetHistoricalPricesView,
-                    GetPriceUpdateLogsView, GetYieldCurveView,
-                    ScrapAssetDataView, ScrapDataView)
+from .views import (
+    CalculatePriceChangeView,
+    DatabaseInteractionView,
+    GetAssetNamesView,
+    GetHistoricalPricesView,
+    GetPriceUpdateLogsView,
+    GetYieldCurveView,
+    ScrapAssetDataView,
+    ScrapDataView,
+)
 
 urlpatterns = [
     path("", DatabaseInteractionView.as_view()),

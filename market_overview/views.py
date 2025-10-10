@@ -10,11 +10,17 @@ from rest_framework.views import APIView
 
 import market_overview.services as market_overview_services
 import shared.services as shared_services
-from market_overview.models import (AssetTypeChoices, MarketPriceModel,
-                                    PriceUpdateLogModel)
+from market_overview.models import (
+    AssetTypeChoices,
+    MarketPriceModel,
+    PriceUpdateLogModel,
+)
 from market_overview.serializers import (
-    CalculatePriceDiffSerializer, DataCorrectionSerializer,
-    MarketPriceIngestionSerializer, TargetedMarketPriceIngestionSerializer)
+    CalculatePriceDiffSerializer,
+    DataCorrectionSerializer,
+    MarketPriceIngestionSerializer,
+    TargetedMarketPriceIngestionSerializer,
+)
 
 
 class GetActionEnum(str, Enum):

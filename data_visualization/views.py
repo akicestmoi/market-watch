@@ -8,8 +8,7 @@ from pandas.tseries.offsets import BDay
 
 import market_overview.services as market_overview_services
 from data_visualization.services import format_data_for_display
-from market_overview.models import (AssetClassChoices, AssetTypeChoices,
-                                    LocationChoices)
+from market_overview.models import AssetClassChoices, AssetTypeChoices, LocationChoices
 from market_overview.services import AssetNames
 
 

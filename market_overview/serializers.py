@@ -1,7 +1,11 @@
 from rest_framework import serializers
 
-from market_overview.models import (AssetClassChoices, AssetTypeChoices,
-                                    LocationChoices, SourceChoices)
+from market_overview.models import (
+    AssetClassChoices,
+    AssetTypeChoices,
+    LocationChoices,
+    SourceChoices,
+)
 
 
 class MarketPriceIngestionSerializer(serializers.Serializer):
