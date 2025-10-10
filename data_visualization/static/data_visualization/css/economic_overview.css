@@ -1,6 +1,6 @@
 /* Page background gradient */
 body {
-    background: linear-gradient(to right, #323ff5, #7accf8, #e0f2fe);
+    background: linear-gradient(to right, #1e40af, #3b82f6, #93c5fd);
     color: #1e293b;
     min-height: 100vh;
     padding: 2rem;
@@ -22,30 +22,54 @@ body {
     font-weight: bold;
     text-align: center;
     margin-bottom: 1rem;
+    color: white;
 }
 
 .header-form {
     width: 100%;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 1rem;
 }
 
 .header-form label {
-    color: #334155;
+    color: white;
+    font-weight: 500;
+}
+
+.header-form input[type="date"] {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #0f172a;
+    background-color: #e0f2fe;
+    color: #1e293b;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.header-form input[type="date"]:hover {
+    background-color: #dbeafe;
 }
 
 /* Buttons */
 .btn-primary {
     background-color: #0284c7;
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
-    transition: background-color 0.3s;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
     background-color: #0369a1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Grid */
@@ -78,7 +102,6 @@ table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
-    text-align: center;
 }
 
 table th, table td {
@@ -88,7 +111,6 @@ table th, table td {
 
 table thead {
     background-color: #bfdbfe;
-    font-weight: bold;
 }
 
 .category-cell {
@@ -97,6 +119,27 @@ table thead {
     text-align: left;
     vertical-align: middle;
     padding-left: 0.75rem;
+}
+
+/* Change color classes */
+.table-change-slightly-positive {
+    background-color: #dcfce7;
+    color: #00521e;
+}
+
+.table-change-positive {
+    background-color: #0b722f;
+    color: #c9f5da;
+}
+
+.table-change-slightly-negative {
+    background-color: #fee2e2;
+    color: #8b0000;
+}
+
+.table-change-negative {
+    background-color: #9c1414;
+    color: #fcdddd;
 }
 
 .event-list {
