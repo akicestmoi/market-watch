@@ -17,7 +17,7 @@ from django.http import Http404
 import shared.services as shared_services
 from market_overview.models import (AssetClassChoices, AssetTypeChoices,
                                     LocationChoices, MarketPriceModel,
-                                    SourceChoices)
+                                    PriceUpdateLogModel, SourceChoices)
 
 env = environ.Env()
 
@@ -568,3 +568,17 @@ def get_yield_curve(
         if asset["asset_class"] == AssetClassChoices.RATES
     ]
     return sorted(yield_curve, key=lambda x: (x["maturity"] is None, x["maturity"]))
+
+
+def get_price_update_logs(
+    price_date: Optional[date] = None, short_name: Optional[str] = None
+) -> List[dict]:
+    """Get price update logs with optional filtering."""
+    logs_queryset = PriceUpdateLogModel.objects.select_related("asset").all()
+
+    if price_date:
+        logs_queryset = logs_queryset.filter(date_added__date=price_date)
+    if short_name:
+        logs_queryset = logs_queryset.filter(asset__short_name=short_name)
+
+    return shared_services.convert_query_to_dictionary_list(queryset=logs_queryset)

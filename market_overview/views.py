@@ -300,3 +300,18 @@ class DatabaseInteractionView(APIView):
             asset, PriceUpdateLogModel, serializer.validated_data
         )
         return Response(data=updated_asset.convert_to_dict(), status=status.HTTP_200_OK)
+
+
+class GetPriceUpdateLogsView(APIView):
+    """Get Price Update Logs APIView."""
+
+    def get(self, request: Request) -> Response:
+        """Get price update logs with optional filtering."""
+        price_date: date = request.query_params.get("date")
+        short_name: str = request.query_params.get("short_name")
+
+        logs = market_overview_services.get_price_update_logs(
+            price_date=price_date, short_name=short_name
+        )
+
+        return Response(data=logs, status=status.HTTP_200_OK)
