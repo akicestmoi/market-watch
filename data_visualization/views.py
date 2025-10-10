@@ -125,6 +125,10 @@ def data_visualization_view(request):
     commodity_name = request.GET.get("commodity_name", default_values["commodity_name"])
     main_rate = request.GET.get("main_rate", default_values["main_rate"])
     spread_rate = request.GET.get("spread_rate", default_values["spread_rate"])
+    stock_name_compare = request.GET.get("stock_name_compare", "")
+    fx_name_compare = request.GET.get("fx_name_compare", "")
+    crypto_name_compare = request.GET.get("crypto_name_compare", "")
+    commodity_name_compare = request.GET.get("commodity_name_compare", "")
 
     # Return Selected Values for Front Interaction
     # Automatically takes default values at first
@@ -137,6 +141,10 @@ def data_visualization_view(request):
         "main_rate": main_rate,
         "spread_rate": spread_rate,
         "previous_curve_date": previous_curve_date,
+        "stock_name_compare": stock_name_compare,
+        "fx_name_compare": fx_name_compare,
+        "crypto_name_compare": crypto_name_compare,
+        "commodity_name_compare": commodity_name_compare,
     }
 
     # Data Validation
@@ -184,6 +192,26 @@ def data_visualization_view(request):
         "yield_curve_location": yield_curve_location,
         "main_rate": main_rate,
         "spread_rate": spread_rate,
+        "stock_name_compare": (
+            _get_asset_full_name(stock_assets, stock_name_compare)
+            if stock_name_compare
+            else None
+        ),
+        "fx_name_compare": (
+            _get_asset_full_name(fx_assets, fx_name_compare)
+            if fx_name_compare
+            else None
+        ),
+        "crypto_name_compare": (
+            _get_asset_full_name(crypto_assets, crypto_name_compare)
+            if crypto_name_compare
+            else None
+        ),
+        "commodity_name_compare": (
+            _get_asset_full_name(commodity_assets, commodity_name_compare)
+            if commodity_name_compare
+            else None
+        ),
     }
 
     # Get Market Data
@@ -222,13 +250,40 @@ def data_visualization_view(request):
         spread_rate_df["price_current"] - spread_rate_df["price_prev"]
     )
 
+    # Get comparison data if comparison assets are selected
+    stock_prices_compare = None
+    fx_prices_compare = None
+    crypto_prices_compare = None
+    commodity_prices_compare = None
+
+    if stock_name_compare:
+        stock_prices_compare = market_overview_services.get_historical_prices(
+            stock_name_compare, end_date=reference_date
+        )
+    if fx_name_compare:
+        fx_prices_compare = market_overview_services.get_historical_prices(
+            fx_name_compare, end_date=reference_date
+        )
+    if crypto_name_compare:
+        crypto_prices_compare = market_overview_services.get_historical_prices(
+            crypto_name_compare, end_date=reference_date
+        )
+    if commodity_name_compare:
+        commodity_prices_compare = market_overview_services.get_historical_prices(
+            commodity_name_compare, end_date=reference_date
+        )
+
     market_data = {
         "stock_prices": stock_prices,
+        "stock_prices_compare": stock_prices_compare,
         "reference_yield_curve": reference_yield_curve,
         "previous_yield_curve": previous_yield_curve,
         "fx_prices": fx_prices,
+        "fx_prices_compare": fx_prices_compare,
         "crypto_prices": crypto_prices,
+        "crypto_prices_compare": crypto_prices_compare,
         "commodity_prices": commodity_prices,
+        "commodity_prices_compare": commodity_prices_compare,
         "spread_rates": spread_rate_df[["price_date", "price"]].to_dict(
             orient="records"
         ),

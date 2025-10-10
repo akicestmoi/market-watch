@@ -32,7 +32,13 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="stockHeader">Stocks</h2>
-            <select id="stockSelect" class="chart-select"></select>
+            <div class="dropdown-row">
+                <select id="stockSelect" class="chart-select"></select>
+                <select id="stockCompareSelect" class="chart-select comparison-select">
+                    <option value="">-- Compare Prices --</option>
+                </select>
+                <button id="stockRemoveBtn" class="remove-btn hidden">×</button>
+            </div>
         </div>
         <div class="chart-wrapper"><canvas id="stockChart"></canvas></div>
     </div>
@@ -41,7 +47,13 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="fxHeader">FX</h2>
-            <select id="fxSelect" class="chart-select"></select>
+            <div class="dropdown-row">
+                <select id="fxSelect" class="chart-select"></select>
+                <select id="fxCompareSelect" class="chart-select comparison-select">
+                    <option value="">-- Compare Prices --</option>
+                </select>
+                <button id="fxRemoveBtn" class="remove-btn hidden">×</button>
+            </div>
         </div>
         <div class="chart-wrapper"><canvas id="fxChart"></canvas></div>
     </div>
@@ -50,7 +62,7 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="yieldHeader">Yield Curve</h2>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="yield-curve-controls">
                 <select id="yieldCurveLocationSelect" class="chart-select"></select>
                 <div class="date-selector-container">
                     <label for="previousCurveDate" class="date-selector-label">Previous curve:</label>
@@ -65,7 +77,13 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="commodityHeader">Commodities</h2>
-            <select id="commoditySelect" class="chart-select"></select>
+            <div class="dropdown-row">
+                <select id="commoditySelect" class="chart-select"></select>
+                <select id="commodityCompareSelect" class="chart-select comparison-select">
+                    <option value="">-- Compare Prices --</option>
+                </select>
+                <button id="commodityRemoveBtn" class="remove-btn hidden">×</button>
+            </div>
         </div>
         <div class="chart-wrapper"><canvas id="commodityChart"></canvas></div>
     </div>
@@ -74,7 +92,13 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="cryptoHeader">Crypto</h2>
-            <select id="cryptoSelect" class="chart-select"></select>
+            <div class="dropdown-row">
+                <select id="cryptoSelect" class="chart-select"></select>
+                <select id="cryptoCompareSelect" class="chart-select comparison-select">
+                    <option value="">-- Compare Prices --</option>
+                </select>
+                <button id="cryptoRemoveBtn" class="remove-btn hidden">×</button>
+            </div>
         </div>
         <div class="chart-wrapper"><canvas id="cryptoChart"></canvas></div>
     </div>
@@ -83,7 +107,7 @@
     <div class="chart-card">
         <div class="chart-header">
             <h2 id="spreadHeader">Yield Spread</h2>
-            <div style="display: flex; gap: 8px;">
+            <div class="spread-controls">
                 <select id="mainRateSelect" class="chart-select"></select>
                 <select id="spreadRateSelect" class="chart-select"></select>
             </div>
