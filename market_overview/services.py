@@ -134,11 +134,13 @@ def _scrap_euribor_from_global_rates(target_date: date, ticker: str) -> Optional
 
     Source: https://www.global-rates.com/en/
     """
-    res = requests.get(
+    response = requests.get(
         f"https://www.global-rates.com/en/interest-rates/euribor/{ticker}"
     )
-    res.raise_for_status()
-    soup = BeautifulSoup(res.content, "html.parser")
+    if response.status_code == 404:
+        return
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, "html.parser")
 
     table = soup.find("table")
     if not table:
@@ -172,8 +174,11 @@ def _get_fed_funds_rate_from_fred(target_date: date, ticker: str) -> Optional[fl
     BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
     obs_start = target_date - relativedelta(months=2)
     query_params = f"series_id={ticker}&api_key={env('FRED_API_KEY')}&file_type=json&observation_start={obs_start}&sort_order=desc"
-    r = requests.get(f"{BASE_URL}?{query_params}")
-    result = json.loads(r.content)
+    response = requests.get(f"{BASE_URL}?{query_params}")
+    if response.status_code == 404:
+        return
+    response.raise_for_status()
+    result = json.loads(response.content)
     observations = result.get("observations", [])
     if observations and (value := observations[0].get("value")):
         return float(value)
@@ -189,6 +194,8 @@ def _get_sofr_from_nyfed(target_date: date) -> Optional[float]:
     response = requests.get(
         "https://markets.newyorkfed.org/read?productCode=50&eventCodes=520&limit=25&startPosition=0&sort=postDt:-1&format=xml"
     )
+    if response.status_code == 404:
+        return
     response.raise_for_status()
 
     root = ET.fromstring(response.content)
@@ -209,6 +216,8 @@ def _get_treasury_yield_curve_from_dep_treasury(target_date: date) -> dict:
     response = requests.get(
         f"https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xmlview?data=daily_treasury_yield_curve&field_tdr_date_value={target_date.year}"
     )
+    if response.status_code == 404:
+        return
     response.raise_for_status()
 
     yield_curve = {}
@@ -269,6 +278,8 @@ def _get_webstat_rates(target_date: date, ticker: str) -> Optional[float]:
     response = requests.get(
         f"https://webstat.banque-france.fr/export/csv/fr/catalog/{ticker}"
     )
+    if response.status_code == 404:
+        return
     response.raise_for_status()
 
     csv_data = StringIO(response.text)
@@ -290,6 +301,8 @@ def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> Optional[
     response = requests.get(
         f"https://api.statistiken.bundesbank.de/rest/download/BBSSY/{ticker}?format=sdmx&lang=en"
     )
+    if response.status_code == 404:
+        return
     response.raise_for_status()
     root = ET.fromstring(response.content)
 
@@ -326,6 +339,8 @@ def _get_mutan_rate_from_boj(target_date: date) -> Optional[float]:
             response = requests.get(
                 f"https://www.boj.or.jp/statistics/market/short/mutan/d_release/{DATA_TYPE['prevision']}/{file_name}"
             )
+            if response.status_code == 404:
+                return
             response.raise_for_status()
 
     df = pd.read_excel(response.content)
@@ -348,6 +363,8 @@ def _scrap_jgb_yield_curve_from_bb(target_date: date) -> dict:
     Source: https://www.bb.jbts.co.jp/en/historical/main_rate.html
     """
     response = requests.get("https://www.bb.jbts.co.jp/en/historical/main_rate.html")
+    if response.status_code == 404:
+        return
     response.raise_for_status()
     soup = BeautifulSoup(response.content, "html.parser")
 
