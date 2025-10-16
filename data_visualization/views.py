@@ -302,7 +302,7 @@ def data_visualization_view(request):
     return render(request, "data_visualization/data_visualization.html", context)
 
 
-def economic_overview_view(request):
+def economic_recap_view(request):
     """Economic Overview View."""
     default_reference_date = (date.today() - BDay(1)).date()
     reference_date = request.GET.get(

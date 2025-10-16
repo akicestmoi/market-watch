@@ -424,6 +424,7 @@ def get_market_data(target_date: date) -> List[MarketData]:
     """Get market data."""
     market_data = []
     for asset_info in ASSETS_BASE_INFO:
+        print(f"Scrapping asset: {asset_info['short_name']}")
         data = deepcopy(asset_info)
         scrapping_function = SOURCE_SCRAP_MAP.get(data["source"])
         data["date"] = target_date
@@ -432,6 +433,8 @@ def get_market_data(target_date: date) -> List[MarketData]:
             if scrapping_function
             else None
         )
+        if data["price"] is None:
+            print("_____WARNING: No price found._____")
         market_data.append(data)
 
     return market_data
@@ -453,9 +456,14 @@ def get_specific_asset_market_data(
     scrapping_function = SOURCE_SCRAP_MAP.get(targeted_market_data["source"])
     market_data = []
     for target_date in date_range:
+        print(
+            f"Scrapping asset: {targeted_market_data['short_name']} for date: {target_date}"
+        )
         data = deepcopy(targeted_market_data)
         data["date"] = target_date
         data["price"] = scrapping_function(target_date, data["ticker"])
+        if data["price"] is None:
+            print("_____WARNING: No price found._____")
         market_data.append(data)
 
     return market_data
