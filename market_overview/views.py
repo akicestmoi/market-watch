@@ -6,7 +6,6 @@ from pandas.tseries.offsets import BDay
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 import market_overview.services as market_overview_services
 import shared.services as shared_services
@@ -15,12 +14,26 @@ from market_overview.models import (
     MarketPriceModel,
     PriceUpdateLogModel,
 )
+from market_overview.open_api import (
+    CALCULATE_PRICE_CHANGE_SCHEMA,
+    GET_ASSET_NAMES_SCHEMA,
+    GET_HISTORICAL_PRICES_SCHEMA,
+    GET_MARKET_PRICE_DATA_SCHEMA,
+    GET_PRICE_UPDATE_LOGS_SCHEMA,
+    GET_YIELD_CURVE_SCHEMA,
+    INGEST_ASSET_DATA_SCHEMA,
+    INGEST_DATA_SCHEMA,
+    UPDATE_MARKET_PRICE_DATA_SCHEMA,
+)
 from market_overview.serializers import (
     CalculatePriceDiffSerializer,
     DataCorrectionSerializer,
     MarketPriceIngestionSerializer,
     TargetedMarketPriceIngestionSerializer,
 )
+from shared.open_api import open_api
+from shared.utils import logger
+from shared.views import BaseAPIView
 
 
 class GetActionEnum(str, Enum):
@@ -30,9 +43,10 @@ class GetActionEnum(str, Enum):
     LIST = "LIST"
 
 
-class ScrapDataView(APIView):
-    """Scrap Data APIView."""
+class IngestDataView(BaseAPIView):
+    """Ingest Data APIView."""
 
+    @open_api(INGEST_DATA_SCHEMA)
     def post(self, request: Request) -> Response:
         """Ingest market prices gathered from various sources."""
         serializer = MarketPriceIngestionSerializer(data=request.data)
@@ -43,8 +57,12 @@ class ScrapDataView(APIView):
             )
 
         target_date: date = serializer.validated_data.get("date")
+        logger.info(f"Ingesting market data for date: {target_date}")
         market_data = market_overview_services.get_market_data(target_date)
+        asset_not_updated = []
         for data in market_data:
+            if not data["price"]:
+                asset_not_updated.append(data["short_name"])
             shared_services.upsert_with_logs(
                 model=MarketPriceModel,
                 log_model=PriceUpdateLogModel,
@@ -61,12 +79,20 @@ class ScrapDataView(APIView):
                 },
             )
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(
+            data={
+                "message": "Market prices successfully ingested",
+                "asset_not_updated": asset_not_updated,
+                "date": target_date,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
-class ScrapAssetDataView(APIView):
-    """Scrap Specific Asset Data APIView."""
+class IngestAssetDataView(BaseAPIView):
+    """Ingest Specific Asset Data APIView."""
 
+    @open_api(INGEST_ASSET_DATA_SCHEMA)
     def post(self, request: Request) -> Response:
         """Ingest market prices gathered from a specific source for a target period."""
         serializer = TargetedMarketPriceIngestionSerializer(data=request.data)
@@ -97,7 +123,10 @@ class ScrapAssetDataView(APIView):
             short_name, start_date, end_date
         )
 
+        no_update_dates = []
         for data in market_data:
+            if not data["price"]:
+                no_update_dates.append(data["date"])
             shared_services.upsert_with_logs(
                 model=MarketPriceModel,
                 log_model=PriceUpdateLogModel,
@@ -114,12 +143,20 @@ class ScrapAssetDataView(APIView):
                 },
             )
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(
+            data={
+                "message": "Asset prices successfully ingested",
+                "ingested_count": len(market_data),
+                "no_update_dates": no_update_dates,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
-class CalculatePriceChangeView(APIView):
+class CalculatePriceChangeView(BaseAPIView):
     """Calculate Price Change APIView."""
 
+    @open_api(CALCULATE_PRICE_CHANGE_SCHEMA)
     def post(self, request: Request) -> Response:
         """Calculate price change for all assets between two dates."""
         serializer = CalculatePriceDiffSerializer(data=request.data)
@@ -160,9 +197,10 @@ class CalculatePriceChangeView(APIView):
         return Response(data=price_diffs, status=status.HTTP_200_OK)
 
 
-class GetAssetNamesView(APIView):
+class GetAssetNamesView(BaseAPIView):
     """Get Asset Names APIView."""
 
+    @open_api(GET_ASSET_NAMES_SCHEMA)
     def get(self, request: Request) -> Response:
         """List all asset names in the database."""
         filters = {key: value for key, value in request.query_params.items()}
@@ -181,9 +219,10 @@ class GetAssetNamesView(APIView):
         return Response(data=unique_short_name, status=status.HTTP_200_OK)
 
 
-class GetHistoricalPricesView(APIView):
+class GetHistoricalPricesView(BaseAPIView):
     """Get Historical Prices APIView."""
 
+    @open_api(GET_HISTORICAL_PRICES_SCHEMA)
     def get(self, request: Request) -> Response:
         """Get historical prices of an asset."""
         short_name: Optional[str] = request.query_params.get("short_name")
@@ -205,9 +244,10 @@ class GetHistoricalPricesView(APIView):
         return Response(data=historical_prices, status=status.HTTP_200_OK)
 
 
-class GetYieldCurveView(APIView):
+class GetYieldCurveView(BaseAPIView):
     """Get Yield Curve APIView."""
 
+    @open_api(GET_YIELD_CURVE_SCHEMA)
     def get(self, request: Request) -> Response:
         """Get yield curve for a specific date and location."""
         target_date: Optional[date] = request.query_params.get("date")
@@ -236,9 +276,10 @@ class GetYieldCurveView(APIView):
         return Response(data=yield_curve, status=status.HTTP_200_OK)
 
 
-class DatabaseInteractionView(APIView):
+class DatabaseInteractionView(BaseAPIView):
     """Database Interaction APIView."""
 
+    @open_api(GET_MARKET_PRICE_DATA_SCHEMA)
     def get(self, request: Request) -> Response:
         """List all market prices for a specific date."""
         action: GetActionEnum = request.query_params.get("action")
@@ -281,8 +322,9 @@ class DatabaseInteractionView(APIView):
             )
             return Response(data=market_data, status=status.HTTP_200_OK)
 
+    @open_api(UPDATE_MARKET_PRICE_DATA_SCHEMA)
     def patch(self, request: Request) -> Response:
-        """Get yield curve for a specific date and location."""
+        """Update market price data for a specific asset and date."""
         serializer = DataCorrectionSerializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(
@@ -308,9 +350,10 @@ class DatabaseInteractionView(APIView):
         return Response(data=updated_asset.convert_to_dict(), status=status.HTTP_200_OK)
 
 
-class GetPriceUpdateLogsView(APIView):
+class GetPriceUpdateLogsView(BaseAPIView):
     """Get Price Update Logs APIView."""
 
+    @open_api(GET_PRICE_UPDATE_LOGS_SCHEMA)
     def get(self, request: Request) -> Response:
         """Get price update logs with optional filtering."""
         price_date: date = request.query_params.get("date")

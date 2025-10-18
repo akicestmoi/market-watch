@@ -7,14 +7,14 @@ from .views import (
     GetHistoricalPricesView,
     GetPriceUpdateLogsView,
     GetYieldCurveView,
-    ScrapAssetDataView,
-    ScrapDataView,
+    IngestAssetDataView,
+    IngestDataView,
 )
 
 urlpatterns = [
     path("", DatabaseInteractionView.as_view()),
-    path("ingest-market-prices", ScrapDataView.as_view()),
-    path("ingest-asset-market-prices", ScrapAssetDataView.as_view()),
+    path("ingest-market-prices", IngestDataView.as_view()),
+    path("ingest-asset-market-prices", IngestAssetDataView.as_view()),
     path("calculate-price-change", CalculatePriceChangeView.as_view()),
     path("get-yield-curve", GetYieldCurveView.as_view()),
     path("get-historical-prices", GetHistoricalPricesView.as_view()),

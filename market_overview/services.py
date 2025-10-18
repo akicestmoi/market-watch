@@ -23,6 +23,7 @@ from market_overview.models import (
     PriceUpdateLogModel,
     SourceChoices,
 )
+from shared.utils import logger
 
 env = environ.Env()
 
@@ -122,7 +123,9 @@ def _get_yahoo_finance_closing_prices(
 
     Using publicly available yahoo scrapper module yfiance.
     """
-    prices = yf.Ticker(ticker).history(period="5d").reset_index()
+    prices = yf.Ticker(str(ticker)).history(period="5d").reset_index()
+    if prices.empty:
+        return
     closing_price = prices[prices["Date"].dt.date == target_date].reset_index()
     if not closing_price.empty:
         return closing_price.loc[0, "Close"]
@@ -424,7 +427,7 @@ def get_market_data(target_date: date) -> List[MarketData]:
     """Get market data."""
     market_data = []
     for asset_info in ASSETS_BASE_INFO:
-        print(f"Scrapping asset: {asset_info['short_name']}")
+        logger.info(f"Scrapping asset: {asset_info['short_name']}")
         data = deepcopy(asset_info)
         scrapping_function = SOURCE_SCRAP_MAP.get(data["source"])
         data["date"] = target_date
@@ -434,7 +437,7 @@ def get_market_data(target_date: date) -> List[MarketData]:
             else None
         )
         if data["price"] is None:
-            print("_____WARNING: No price found._____")
+            logger.warning("No price found.")
         market_data.append(data)
 
     return market_data
@@ -456,14 +459,14 @@ def get_specific_asset_market_data(
     scrapping_function = SOURCE_SCRAP_MAP.get(targeted_market_data["source"])
     market_data = []
     for target_date in date_range:
-        print(
+        logger.info(
             f"Scrapping asset: {targeted_market_data['short_name']} for date: {target_date}"
         )
         data = deepcopy(targeted_market_data)
         data["date"] = target_date
         data["price"] = scrapping_function(target_date, data["ticker"])
         if data["price"] is None:
-            print("_____WARNING: No price found._____")
+            logger.warning("No price found.")
         market_data.append(data)
 
     return market_data
