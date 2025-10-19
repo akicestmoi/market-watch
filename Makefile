@@ -10,6 +10,9 @@ help:
 	@echo "  makemigrations  - Prepare database migrations"
 	@echo "  migrate         - Run database migrations"
 	@echo "  collectstatic   - Collect static files"
+	@echo "  celery-beat     - View Celery beat scheduler logs"
+	@echo "  celery-worker   - View Celery worker logs"
+	@echo "  celery-flower   - Start Celery monitoring (Flower)"
 	@echo "  test            - Run tests"
 	@echo "  clean           - Clean up Docker resources"
 
@@ -67,4 +70,16 @@ clean:
 reset: stop clean start
 	@echo "Application reset complete. Access the application at http://localhost:8000"
 
-.PHONY: help build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset
+# Starts a Celery beat scheduler process inside container and schedules periodic tasks
+celery-beat:
+	docker compose logs -f celery-beat
+
+# Starts a Celery worker process inside container and processes tasks from the Redis queue
+celery-worker:
+	docker compose logs -f celery-worker
+
+# Starts a Celery monitoring interface (Flower) inside container for monitoring and managing tasks
+celery-flower:
+	docker compose exec webapp celery -A core flower --port=5555
+
+.PHONY: help build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker celery-flower

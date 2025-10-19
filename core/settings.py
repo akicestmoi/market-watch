@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 from shared.open_api import ApiTags
 
@@ -125,7 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Paris"
 
 USE_I18N = True
 
@@ -138,6 +139,31 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+
+
+# Celery Configuration
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Schedule (Periodic Tasks)
+CELERY_BEAT_SCHEDULE = {
+    "scheduled-market-data-ingestion-morning": {
+        "task": "market_overview.tasks.scheduled_market_data_ingestion",
+        "schedule": crontab(hour=9, minute=0),
+    },
+    "scheduled-market-data-ingestion-afternoon": {
+        "task": "market_overview.tasks.scheduled_market_data_ingestion",
+        "schedule": crontab(hour=14, minute=0),
+    },
+    "scheduled-market-data-ingestion-evening": {
+        "task": "market_overview.tasks.scheduled_market_data_ingestion",
+        "schedule": crontab(hour=20, minute=0),
+    },
+}
 
 
 # Default primary key field type

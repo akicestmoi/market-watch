@@ -472,6 +472,32 @@ def get_specific_asset_market_data(
     return market_data
 
 
+def ingest_market_data(
+    market_data: List[MarketData],
+) -> List[MarketData]:
+    """Ingest market data."""
+    asset_not_updated = []
+    for data in market_data:
+        if not data["price"]:
+            asset_not_updated.append(data)
+        shared_services.upsert_with_logs(
+            model=MarketPriceModel,
+            log_model=PriceUpdateLogModel,
+            lookup_kwargs={"date": data["date"], "short_name": data["short_name"]},
+            updates={
+                "logs": f"Automated price update on {data['short_name']} to price: {data['price']}.",
+                "asset_class": data["asset_class"],
+                "asset_type": data["asset_type"],
+                "location": data["location"],
+                "full_name": data["full_name"],
+                "maturity": data["maturity"],
+                "source": data["source"],
+                "price": data["price"],
+            },
+        )
+    return asset_not_updated
+
+
 def get_all_asset_prices_for_date(price_date: date) -> List[MarketPriceModel]:
     """Get market prices for a specific date."""
     market_data_queryset = MarketPriceModel.objects.filter(date=price_date)

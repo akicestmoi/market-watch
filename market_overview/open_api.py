@@ -67,7 +67,6 @@ INGEST_ASSET_DATA_SCHEMA = OpenApiBaseRequest(
                     value={
                         "message": "Asset prices successfully ingested",
                         "no_update_dates": ["2025-01-01", "2025-01-02"],
-                        "ingested_count": 10,
                     },
                     response_only=True,
                     status_codes=["201"],

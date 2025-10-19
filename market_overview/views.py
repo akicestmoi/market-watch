@@ -56,34 +56,15 @@ class IngestDataView(BaseAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        target_date: date = serializer.validated_data.get("date")
-        logger.info(f"Ingesting market data for date: {target_date}")
-        market_data = market_overview_services.get_market_data(target_date)
-        asset_not_updated = []
-        for data in market_data:
-            if not data["price"]:
-                asset_not_updated.append(data["short_name"])
-            shared_services.upsert_with_logs(
-                model=MarketPriceModel,
-                log_model=PriceUpdateLogModel,
-                lookup_kwargs={"date": data["date"], "short_name": data["short_name"]},
-                updates={
-                    "logs": f"Automated price update on {data['short_name']} to price: {data['price']}.",
-                    "asset_class": data["asset_class"],
-                    "asset_type": data["asset_type"],
-                    "location": data["location"],
-                    "full_name": data["full_name"],
-                    "maturity": data["maturity"],
-                    "source": data["source"],
-                    "price": data["price"],
-                },
-            )
-
+        price_date: date = serializer.validated_data.get("date")
+        logger.info(f"Ingesting market data for date: {price_date}")
+        market_data = market_overview_services.get_market_data(price_date)
+        asset_not_updated = market_overview_services.ingest_market_data(market_data)
         return Response(
             data={
                 "message": "Market prices successfully ingested",
-                "asset_not_updated": asset_not_updated,
-                "date": target_date,
+                "asset_not_updated": [data["short_name"] for data in asset_not_updated],
+                "date": price_date,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -122,32 +103,11 @@ class IngestAssetDataView(BaseAPIView):
         market_data = market_overview_services.get_specific_asset_market_data(
             short_name, start_date, end_date
         )
-
-        no_update_dates = []
-        for data in market_data:
-            if not data["price"]:
-                no_update_dates.append(data["date"])
-            shared_services.upsert_with_logs(
-                model=MarketPriceModel,
-                log_model=PriceUpdateLogModel,
-                lookup_kwargs={"date": data["date"], "short_name": data["short_name"]},
-                updates={
-                    "logs": f"Automated price update on {data['short_name']} to price: {data['price']}.",
-                    "asset_class": data["asset_class"],
-                    "asset_type": data["asset_type"],
-                    "location": data["location"],
-                    "full_name": data["full_name"],
-                    "maturity": data["maturity"],
-                    "source": data["source"],
-                    "price": data["price"],
-                },
-            )
-
+        asset_not_updated = market_overview_services.ingest_market_data(market_data)
         return Response(
             data={
                 "message": "Asset prices successfully ingested",
-                "ingested_count": len(market_data),
-                "no_update_dates": no_update_dates,
+                "asset_not_updated": [data["date"] for data in asset_not_updated],
             },
             status=status.HTTP_201_CREATED,
         )

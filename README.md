@@ -31,6 +31,8 @@ A Django-based market monitoring application with comprehensive API documentatio
    DB_HOST
    DB_PORT
    FRED_API_KEY
+   CELERY_BROKER_URL
+   CELERY_RESULT_BACKEND
    ```
 
 4. **Set up database and start server**:
@@ -91,6 +93,9 @@ A Django-based market monitoring application with comprehensive API documentatio
    make makemigrations  # Prepare database migrations
    make migrate         # Run database migrations
    make collectstatic   # Collect static files
+   make celery-beat     # Start periodic tasks
+   make celery-worker   # Execute worker
+   make celery-flower   # Monitor scheduler
    make test            # Run tests
    make clean           # Clean up Docker resources
    ```
@@ -142,3 +147,49 @@ market-watch/
 ├── entrypoint.sh           # Docker startup script
 └── README.md               # This file
 ```
+
+## 🔄 Celery Task Scheduling
+
+The application includes automated market data ingestion using Celery and Redis:
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Django    │    │   Celery    │    │    Redis    │    │   Worker    │
+│   Web App   │───►│    Beat     │───►│   (Broker)  │───►│   Process   │
+│             │    │ (Scheduler) │    │             │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+
+### **Scheduled Tasks**
+Market data is automatically ingested **3 times daily**:
+- **9:00 AM** - Morning market data
+- **2:00 PM** - Afternoon market data
+- **8:00 PM** - Evening market data
+
+### **Celery Commands**
+```bash
+# Start Celery beat (scheduler)
+make celery-beat
+
+# Start Celery worker (processes tasks)
+make celery-worker
+
+# Start Flower (task monitoring)
+make celery-flower
+```
+
+### **Manual Task Execution**
+```bash
+# Run scheduled task synchronously
+python manage.py run_celery_task --task=scheduled
+
+# Run scheduled task asynchronously
+python manage.py run_celery_task --task=scheduled --async
+
+# Run manual task for specific date
+python manage.py run_celery_task --task=manual --date=2024-01-15
+
+# Run manual task asynchronously
+python manage.py run_celery_task --task=manual --date=2024-01-15 --async
+```
+
+### **Task Monitoring**
+- **Flower UI**: http://localhost:5555 (when running `make celery-flower`)
+- **Redis**: http://localhost:6379 (Redis database for task queue)
