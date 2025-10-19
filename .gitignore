@@ -24,6 +24,14 @@ ENV/
 env.bak/
 venv.bak/
 
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celerybeat-schedule.db
+
+# Docker
+.dockerignore
+
 # IDE
 .idea/
 *.swp
