@@ -4,7 +4,7 @@ A Django-based market monitoring application with comprehensive API documentatio
 
 ## 🚀 Quick Start
 
-### Option 1: Local Development
+### For Local Development
 
 1. **Create and activate a virtual environment**:
    ```bash
@@ -24,13 +24,13 @@ A Django-based market monitoring application with comprehensive API documentatio
 3. **Set up environment variables**:
    Create a `.env` file in the project root:
    ```env
-   SECRET_KEY=your-secret-key-here
-   POSTGRES_DB=market_watch
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=your-password
-   DB_HOST=localhost
-   DB_PORT=5432
-   FRED_API_KEY=your-api-key
+   SECRET_KEY
+   POSTGRES_DB
+   POSTGRES_USER
+   POSTGRES_PASSWORD
+   DB_HOST
+   DB_PORT
+   FRED_API_KEY
    ```
 
 4. **Set up database and start server**:
@@ -45,14 +45,12 @@ A Django-based market monitoring application with comprehensive API documentatio
    - API Documentation: http://127.0.0.1:8000/api/docs/
    - Admin Panel: http://127.0.0.1:8000/admin/
 
-### Option 2: Docker Development
+### For Docker Development
 
 1. **Start with Docker**:
    ```bash
    make start
-   ```
-   or
-   ```bash
+   # or
    docker-compose up --build
    ```
 
@@ -61,27 +59,41 @@ A Django-based market monitoring application with comprehensive API documentatio
    - API Documentation: http://localhost:8000/api/docs/
    - Admin Panel: http://localhost:8000/admin/ (admin/admin123)
 
-## 🐳 Docker Commands
+3. **Port conflicts:**
+   ```bash
+   make stop
+   # or
+   docker-compose down
+   ```
 
-Use the Makefile for convenient commands:
+4. **Database issues:**
+   ```bash
+   make reset  # Reset database and restart
+   ```
 
-```bash
-make help          # Show all available commands
-make build         # Build the Docker image
-make start         # Start the application
-make stop          # Stop all containers
-make restart       # Restart all containers
-make logs          # Show logs from all containers
-make logs-webapp   # Show logs from webapp container
-make logs-db       # Show logs from database container
-make shell         # Open a shell in the webapp container
-make makemigrations # Prepare database migrations
-make migrate       # Run database migrations
-make collectstatic # Collect static files
-make test          # Run tests
-make clean         # Clean up Docker resources
-make reset         # Reset the database and restart
-```
+5. **View logs:**
+   ```bash
+   make logs-webapp  # Webapp container logs
+   ```
+
+6. 🐳 Docker Commands
+   Use the Makefile for convenient commands:
+
+   ```bash
+   make help            # Show all available commands
+   make build           # Build the Docker image
+   make start           # Start the application
+   make stop            # Stop all containers
+   make restart         # Restart all containers
+   make logs            # Show logs from all containers
+   make logs-webapp     # Show logs from webapp container
+   make shell           # Open a shell in the webapp container
+   make makemigrations  # Prepare database migrations
+   make migrate         # Run database migrations
+   make collectstatic   # Collect static files
+   make test            # Run tests
+   make clean           # Clean up Docker resources
+   ```
 
 ## 📊 API Documentation
 
@@ -129,47 +141,4 @@ market-watch/
 ├── Makefile                # Convenient Docker commands
 ├── entrypoint.sh           # Docker startup script
 └── README.md               # This file
-```
-
-## 🚨 Troubleshooting
-
-### Local Development
-
-**Port already in use:**
-```bash
-# Kill processes using port 8000
-lsof -ti:8000 | xargs kill -9
-```
-
-**Database connection issues:**
-```bash
-# Check if PostgreSQL is running
-brew services start postgresql  # macOS
-sudo service postgresql start   # Linux
-```
-
-**Linter not working:**
-```bash
-# Reload VS Code window
-Ctrl+Shift+P → "Reload Window"
-```
-
-### Docker Development
-
-**Port conflicts:**
-```bash
-make stop
-# or
-docker-compose down
-```
-
-**Database issues:**
-```bash
-make reset  # Reset database and restart
-```
-
-**View logs:**
-```bash
-make logs-webapp  # Webapp container logs
-make logs-db      # Database logs
 ```
