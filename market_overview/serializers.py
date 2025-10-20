@@ -29,6 +29,33 @@ class CalculatePriceDiffSerializer(serializers.Serializer):
     previous_date = serializers.DateField()
 
 
+class BulkUpdateAssetsPricesItemSerializer(serializers.Serializer):
+    """Bulk Update Assets Prices Item Serializer."""
+
+    short_name = serializers.CharField()
+    date = serializers.DateField()
+    price = serializers.FloatField()
+
+    def validate(self, data: dict):
+        """Validate Serializer."""
+        error_messages = {}
+        if not data.get("short_name"):
+            error_messages["short_name"] = "This field is required."
+        if not data.get("date"):
+            error_messages["date"] = "This field is required."
+        if not data.get("price"):
+            error_messages["price"] = "This field is required."
+        if error_messages:
+            raise serializers.ValidationError(error_messages)
+        return data
+
+
+class BulkUpdateAssetsPricesSerializer(serializers.ListSerializer):
+    """Bulk Update list-level validation (cross-item checks)."""
+
+    child = BulkUpdateAssetsPricesItemSerializer()
+
+
 class DataCorrectionSerializer(serializers.Serializer):
     """Data Correction Serializer."""
 

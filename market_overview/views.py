@@ -15,8 +15,10 @@ from market_overview.models import (
     PriceUpdateLogModel,
 )
 from market_overview.open_api import (
+    BULK_UPDATE_ASSETS_PRICES_SCHEMA,
     CALCULATE_PRICE_CHANGE_SCHEMA,
     GET_ASSET_NAMES_SCHEMA,
+    GET_ASSETS_WITHOUT_PRICES_SCHEMA,
     GET_HISTORICAL_PRICES_SCHEMA,
     GET_MARKET_PRICE_DATA_SCHEMA,
     GET_PRICE_UPDATE_LOGS_SCHEMA,
@@ -26,6 +28,7 @@ from market_overview.open_api import (
     UPDATE_MARKET_PRICE_DATA_SCHEMA,
 )
 from market_overview.serializers import (
+    BulkUpdateAssetsPricesSerializer,
     CalculatePriceDiffSerializer,
     DataCorrectionSerializer,
     MarketPriceIngestionSerializer,
@@ -324,3 +327,31 @@ class GetPriceUpdateLogsView(BaseAPIView):
         )
 
         return Response(data=logs, status=status.HTTP_200_OK)
+
+
+class GetAssetsWithoutPricesView(BaseAPIView):
+    """Get Assets Without Prices APIView."""
+
+    @open_api(GET_ASSETS_WITHOUT_PRICES_SCHEMA)
+    def get(self, request: Request) -> Response:
+        """Get assets without prices."""
+        price_date: date = request.query_params.get("date")
+        assets = market_overview_services.get_assets_without_prices(price_date)
+        return Response(data=assets, status=status.HTTP_200_OK)
+
+
+class BulkUpdateAssetsPricesView(BaseAPIView):
+    """Bulk Update Assets Prices APIView."""
+
+    @open_api(BULK_UPDATE_ASSETS_PRICES_SCHEMA)
+    def post(self, request: Request) -> Response:
+        """Bulk update assets prices."""
+        serializer = BulkUpdateAssetsPricesSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                data={"error_message": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        updates = serializer.validated_data
+        assets = market_overview_services.bulk_update_assets_prices(updates)
+        return Response(data=assets, status=status.HTTP_200_OK)

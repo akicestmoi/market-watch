@@ -3,6 +3,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiRespo
 from rest_framework import status
 
 from market_overview.serializers import (
+    BulkUpdateAssetsPricesSerializer,
     CalculatePriceDiffSerializer,
     DataCorrectionSerializer,
     MarketPriceIngestionSerializer,
@@ -543,6 +544,82 @@ GET_PRICE_UPDATE_LOGS_SCHEMA = OpenApiBaseRequest(
                     response_only=True,
                     status_codes=["400"],
                 )
+            ],
+        ),
+    ],
+)
+
+GET_ASSETS_WITHOUT_PRICES_SCHEMA = OpenApiBaseRequest(
+    tags=[ApiTags.MARKET_DATA],
+    summary="Get Assets Without Prices",
+    description="Retrieve a list of all assets that do not have prices in the database.",
+    parameters=[
+        OpenApiParameter(
+            name="price_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            description="Filter assets by date (YYYY-MM-DD format)",
+            required=False,
+        ),
+    ],
+    responses=[
+        OpenApiResponse(
+            response=status.HTTP_200_OK,
+            description="Assets without prices retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    name="Assets Without Prices",
+                    value=[
+                        {
+                            "id": 634,
+                            "date_added": "2025-10-14T19:11:06.239927Z",
+                            "last_modified": "2025-10-14T19:11:06.239927Z",
+                            "date": "2025-10-13",
+                            "asset_class": "RATES",
+                            "location": "US",
+                            "short_name": "UST2M",
+                            "full_name": "US TBills 2 Month",
+                            "price": None,
+                            "maturity": 0.166,
+                            "asset_type": "GOVERNMENT_BOND_RATE",
+                            "source": "GOV_TREASURY_DEPT",
+                        },
+                    ],
+                ),
+            ],
+        ),
+    ],
+)
+
+BULK_UPDATE_ASSETS_PRICES_SCHEMA = OpenApiBaseRequest(
+    tags=[ApiTags.MARKET_DATA],
+    summary="Bulk Update Assets Prices",
+    description="Bulk update assets prices.",
+    request=BulkUpdateAssetsPricesSerializer,
+    responses=[
+        OpenApiResponse(
+            response=status.HTTP_200_OK,
+            description="Assets prices updated successfully",
+            examples=[
+                OpenApiExample(
+                    name="Updated Assets",
+                    value=[
+                        {
+                            "id": 634,
+                            "date_added": "2025-10-14T19:11:06.239927Z",
+                            "last_modified": "2025-10-14T19:11:06.239927Z",
+                            "date": "2025-10-13",
+                            "asset_class": "RATES",
+                            "location": "US",
+                            "short_name": "UST2M",
+                            "full_name": "US TBills 2 Month",
+                            "price": 4.1,
+                            "maturity": 0.166,
+                            "asset_type": "GOVERNMENT_BOND_RATE",
+                            "source": "GOV_TREASURY_DEPT",
+                        },
+                    ],
+                ),
             ],
         ),
     ],

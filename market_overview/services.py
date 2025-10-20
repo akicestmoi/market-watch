@@ -92,6 +92,14 @@ class AssetNames(TypedDict):
     full_name: str
 
 
+class BulkUpdateAssetsPricesItem(TypedDict):
+    """Bulk update assets prices dictionnary."""
+
+    date: date
+    short_name: str
+    price: float
+
+
 with open("market_overview/data_sources/market_data.json") as f:
     ASSETS_BASE_INFO = json.load(f)
 
@@ -641,3 +649,31 @@ def get_price_update_logs(
         logs_queryset = logs_queryset.filter(asset__short_name=short_name)
 
     return shared_services.convert_query_to_dictionary_list(queryset=logs_queryset)
+
+
+def get_assets_without_prices(price_date: Optional[date] = None) -> List[dict]:
+    """Get assets without prices."""
+    assets_queryset = MarketPriceModel.objects.filter(price__isnull=True)
+    if price_date:
+        assets_queryset = assets_queryset.filter(date=price_date)
+    return shared_services.convert_query_to_dictionary_list(queryset=assets_queryset)
+
+
+def bulk_update_assets_prices(updates: List[BulkUpdateAssetsPricesItem]) -> List[str]:
+    """Bulk update assets prices."""
+    updated_assets = []
+    for update in updates:
+        asset = shared_services.get(
+            MarketPriceModel, date=update["date"], short_name=update["short_name"]
+        )
+        updated_assets.append(
+            shared_services.update_with_logs(
+                asset,
+                PriceUpdateLogModel,
+                {
+                    "logs": f"Bulk update of {update['short_name']} to price: {update['price']}.",
+                    "price": update["price"],
+                },
+            )
+        )
+    return updated_assets
