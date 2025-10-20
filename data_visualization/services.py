@@ -5,7 +5,7 @@ import pandas as pd
 from pandas.api.types import CategoricalDtype
 
 from market_overview.models import AssetClassChoices, LocationChoices, MarketPriceModel
-from market_overview.services import calculate_price_change
+from market_overview.services import AssetNames, calculate_price_change
 
 
 class LocationEnum(str, Enum):
@@ -53,6 +53,18 @@ LOCATION_MAPPING = {
     ],
     LocationEnum.ASIA: [LocationChoices.JP],
 }
+
+
+def get_asset_full_name(asset_names: List[AssetNames], asset_short_name) -> str:
+    """Get asset full_name."""
+    return next(
+        (
+            asset["full_name"]
+            for asset in asset_names
+            if asset["short_name"] == asset_short_name
+        ),
+        None,
+    )
 
 
 def format_data_for_display(

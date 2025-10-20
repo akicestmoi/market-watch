@@ -1,27 +1,13 @@
 import json
 from datetime import date, datetime
-from typing import List
 
 import pandas as pd
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
+import data_visualization.services as data_visualization_services
 import market_overview.services as market_overview_services
-from data_visualization.services import format_data_for_display
 from market_overview.models import AssetClassChoices, AssetTypeChoices, LocationChoices
-from market_overview.services import AssetNames
-
-
-def _get_asset_full_name(asset_names: List[AssetNames], asset_short_name) -> str:
-    """Get asset full_name."""
-    return next(
-        (
-            asset["full_name"]
-            for asset in asset_names
-            if asset["short_name"] == asset_short_name
-        ),
-        None,
-    )
 
 
 def market_recap_view(request):
@@ -40,9 +26,11 @@ def market_recap_view(request):
     previous_date = datetime.fromisoformat(previous_date).date()
     if reference_date <= previous_date:
         context = {
-            "error_message": "reference_date must be greater than previous_date.",
+            "error_message": f"Reference date: {reference_date} must be greater than the previous date: {previous_date}.",
             "reference_date": reference_date,
             "previous_date": previous_date,
+            "default_reference_date": default_reference_date.isoformat(),
+            "default_previous_date": default_previous_date.isoformat(),
         }
         return render(request, "data_visualization/market_recap.html", context)
 
@@ -54,6 +42,8 @@ def market_recap_view(request):
             "error_message": f"No data found for reference date: {reference_date}.",
             "reference_date": reference_date,
             "previous_date": previous_date,
+            "default_reference_date": default_reference_date.isoformat(),
+            "default_previous_date": default_previous_date.isoformat(),
         }
         return render(request, "data_visualization/market_recap.html", context)
 
@@ -65,10 +55,12 @@ def market_recap_view(request):
             "error_message": f"No data found for reference date: {previous_date}.",
             "reference_date": reference_date,
             "previous_date": previous_date,
+            "default_reference_date": default_reference_date.isoformat(),
+            "default_previous_date": default_previous_date.isoformat(),
         }
         return render(request, "data_visualization/market_recap.html", context)
 
-    data_to_display = format_data_for_display(
+    data_to_display = data_visualization_services.format_data_for_display(
         reference_market_prices, previous_market_prices
     )
 
@@ -151,11 +143,27 @@ def data_visualization_view(request):
     previous_curve_date = datetime.fromisoformat(previous_curve_date).date()
     if reference_date <= previous_curve_date:
         context = {
-            "error_message": "reference_date must be greater than previous_curve_date.",
-            "reference_date": reference_date,
-            "previous_curve_date": previous_curve_date,
+            "error_message": f"Reference date: {reference_date} must be greater than the previous curve date: {previous_curve_date}.",
+            "reference_date": reference_date.isoformat(),
+            "previous_curve_date": previous_curve_date.isoformat(),
+            "default_reference_date": default_values["reference_date"],
+            "default_previous_curve_date": default_values["previous_curve_date"],
+            # Provide empty structures expected by the template JS
+            "dropdown_values": json.dumps(
+                {
+                    "stocks": [],
+                    "fx": [],
+                    "crypto": [],
+                    "commodity": [],
+                    "rates": [],
+                    "locations": [],
+                }
+            ),
+            "selected_values": json.dumps({}),
+            "labels": json.dumps({}),
+            "market_data": json.dumps({}, default=str),
         }
-        return render(request, "data_visualization/market_recap.html", context)
+        return render(request, "data_visualization/market_charts.html", context)
 
     # Get Dropdown values
     stock_assets = market_overview_services.get_asset_names(
@@ -184,30 +192,42 @@ def data_visualization_view(request):
 
     # Get Label
     labels = {
-        "stocks": _get_asset_full_name(stock_assets, stock_name),
-        "fx": _get_asset_full_name(fx_assets, fx_name),
-        "crypto": _get_asset_full_name(crypto_assets, crypto_name),
-        "commodity": _get_asset_full_name(commodity_assets, commodity_name),
+        "stocks": data_visualization_services.get_asset_full_name(
+            stock_assets, stock_name
+        ),
+        "fx": data_visualization_services.get_asset_full_name(fx_assets, fx_name),
+        "crypto": data_visualization_services.get_asset_full_name(
+            crypto_assets, crypto_name
+        ),
+        "commodity": data_visualization_services.get_asset_full_name(
+            commodity_assets, commodity_name
+        ),
         "yield_curve_location": yield_curve_location,
         "main_rate": main_rate,
         "spread_rate": spread_rate,
         "stock_name_compare": (
-            _get_asset_full_name(stock_assets, stock_name_compare)
+            data_visualization_services.get_asset_full_name(
+                stock_assets, stock_name_compare
+            )
             if stock_name_compare
             else None
         ),
         "fx_name_compare": (
-            _get_asset_full_name(fx_assets, fx_name_compare)
+            data_visualization_services.get_asset_full_name(fx_assets, fx_name_compare)
             if fx_name_compare
             else None
         ),
         "crypto_name_compare": (
-            _get_asset_full_name(crypto_assets, crypto_name_compare)
+            data_visualization_services.get_asset_full_name(
+                crypto_assets, crypto_name_compare
+            )
             if crypto_name_compare
             else None
         ),
         "commodity_name_compare": (
-            _get_asset_full_name(commodity_assets, commodity_name_compare)
+            data_visualization_services.get_asset_full_name(
+                commodity_assets, commodity_name_compare
+            )
             if commodity_name_compare
             else None
         ),
@@ -299,7 +319,7 @@ def data_visualization_view(request):
         "labels": json.dumps(labels),
         "market_data": json.dumps(market_data, default=str),
     }
-    return render(request, "data_visualization/data_visualization.html", context)
+    return render(request, "data_visualization/market_charts.html", context)
 
 
 def economic_recap_view(request):

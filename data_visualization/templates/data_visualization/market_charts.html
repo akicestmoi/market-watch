@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Market Charts — {{ reference_date|default:default_reference_date }}</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS -->
+    <link href="{% static 'data_visualization/css/market_charts.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>Market Charts — {{ reference_date|default:default_reference_date }}</h1>
+        </div>
+        <div class="header-form">
+            <form method="get">
+                <label for="reference_date">Target Date:</label>
+                <input type="date" id="reference_date" name="reference_date"
+                    value="{{ reference_date|default:default_reference_date }}">
+                <button type="submit" class="btn-primary">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chart Grid -->
+    <div class="chart-grid">
+        <!-- STOCKS -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2 id="stockHeader">Stocks</h2>
+                <div class="dropdown-row">
+                    <select id="stockSelect" class="chart-select"></select>
+                    <select id="stockCompareSelect" class="chart-select comparison-select">
+                        <option value="">-- Compare Prices --</option>
+                    </select>
+                    <button id="stockRemoveBtn" class="remove-btn hidden">×</button>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="stockChart"></canvas></div>
+        </div>
+
+        <!-- FX -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2 id="fxHeader">FX</h2>
+                <div class="dropdown-row">
+                    <select id="fxSelect" class="chart-select"></select>
+                    <select id="fxCompareSelect" class="chart-select comparison-select">
+                        <option value="">-- Compare Prices --</option>
+                    </select>
+                    <button id="fxRemoveBtn" class="remove-btn hidden">×</button>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="fxChart"></canvas></div>
+        </div>
+
+        <!-- YIELD CURVE -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2 id="yieldHeader">Yield Curve</h2>
+                <div class="yield-curve-controls">
+                    <select id="yieldCurveLocationSelect" class="chart-select"></select>
+                    <div class="date-selector-container">
+                        <label for="previousCurveDate" class="date-selector-label">Previous curve:</label>
+                        <input type="date" id="previousCurveDate" class="chart-select">
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="yieldCurveChart"></canvas></div>
+        </div>
+
+        <!-- COMMODITIES -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2 id="commodityHeader">Commodities</h2>
+                <div class="dropdown-row">
+                    <select id="commoditySelect" class="chart-select"></select>
+                    <select id="commodityCompareSelect" class="chart-select comparison-select">
+                        <option value="">-- Compare Prices --</option>
+                    </select>
+                    <button id="commodityRemoveBtn" class="remove-btn hidden">×</button>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="commodityChart"></canvas></div>
+        </div>
+
+        <!-- CRYPTO -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2 id="cryptoHeader">Crypto</h2>
+                <div class="dropdown-row">
+                    <select id="cryptoSelect" class="chart-select"></select>
+                    <select id="cryptoCompareSelect" class="chart-select comparison-select">
+                        <option value="">-- Compare Prices --</option>
+                    </select>
+                    <button id="cryptoRemoveBtn" class="remove-btn hidden">×</button>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="cryptoChart"></canvas></div>
+        </div>
+
+        <!-- YIELD SPREAD -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2 id="spreadHeader">Yield Spread</h2>
+                <div class="spread-controls">
+                    <select id="mainRateSelect" class="chart-select"></select>
+                    <select id="spreadRateSelect" class="chart-select"></select>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="yieldSpreadChart"></canvas></div>
+        </div>
+    </div>
+
+    <script>
+        window.dropdownValuesJSON = {{ dropdown_values | safe }};
+        window.marketDataJSON = {{ market_data | safe }};
+        window.selectedValuesJSON = {{ selected_values | safe }};
+        window.labelsJSON = {{ labels | safe }};
+    </script>
+    <script src="{% static 'data_visualization/js/errors.js' %}"></script>
+    {% if error_message %}
+    <script>
+        window.errorMessage = "{{ error_message|escapejs }}";
+    </script>
+    {% endif %}
+    <script src="{% static 'data_visualization/js/market_charts.js' %}"></script>
+
+</body>
+
+</html>
