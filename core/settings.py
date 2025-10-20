@@ -212,10 +212,6 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            "style": "{",
-        },
         "clean": {
             "format": "{levelname} {asctime}: {message}",
             "style": "{",
@@ -227,12 +223,6 @@ LOGGING = {
             "formatter": "clean",
             "level": "INFO",
         },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "django.log",
-            "formatter": "verbose",
-            "level": "DEBUG",
-        },
     },
     "root": {
         "handlers": ["console"],
@@ -240,17 +230,17 @@ LOGGING = {
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
         "django.server": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
         "django.request": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },

@@ -95,7 +95,6 @@ A Django-based market monitoring application with comprehensive API documentatio
    make collectstatic   # Collect static files
    make celery-beat     # Start periodic tasks
    make celery-worker   # Execute worker
-   make celery-flower   # Monitor scheduler
    make test            # Run tests
    make clean           # Clean up Docker resources
    ```
@@ -170,9 +169,6 @@ make celery-beat
 
 # Start Celery worker (processes tasks)
 make celery-worker
-
-# Start Flower (task monitoring)
-make celery-flower
 ```
 
 ### **Manual Task Execution**
@@ -191,5 +187,4 @@ python manage.py run_celery_task --task=manual --date=2024-01-15 --async
 ```
 
 ### **Task Monitoring**
-- **Flower UI**: http://localhost:5555 (when running `make celery-flower`)
 - **Redis**: http://localhost:6379 (Redis database for task queue)

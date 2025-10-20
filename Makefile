@@ -12,7 +12,6 @@ help:
 	@echo "  collectstatic   - Collect static files"
 	@echo "  celery-beat     - View Celery beat scheduler logs"
 	@echo "  celery-worker   - View Celery worker logs"
-	@echo "  celery-flower   - Start Celery monitoring (Flower)"
 	@echo "  test            - Run tests"
 	@echo "  clean           - Clean up Docker resources"
 
@@ -77,9 +76,5 @@ celery-beat:
 # Starts a Celery worker process inside container and processes tasks from the Redis queue
 celery-worker:
 	docker compose logs -f celery-worker
-
-# Starts a Celery monitoring interface (Flower) inside container for monitoring and managing tasks
-celery-flower:
-	docker compose exec webapp celery -A core flower --port=5555
 
 .PHONY: help build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker celery-flower
