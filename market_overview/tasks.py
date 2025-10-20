@@ -14,7 +14,7 @@ def scheduled_market_data_ingestion():
     This task will be scheduled to run 3 times a day.
     """
     try:
-        price_date = date.today() - BDay(1)
+        price_date = (date.today() - BDay(1)).date()
         logger.info(f"Ingesting market data for {price_date}")
         market_data = market_overview_services.get_market_data(price_date)
         asset_not_updated = market_overview_services.ingest_market_data(market_data)

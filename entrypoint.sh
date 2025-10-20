@@ -26,9 +26,11 @@ python manage.py makemigrations
 echo "Running database migrations..."
 python manage.py migrate
 
-# Collect static files (if needed)
-echo "Collecting static files..."
-python manage.py collectstatic --noinput
+# Collect static files only when explicitly enabled
+if [ "${RUN_COLLECTSTATIC}" = "1" ]; then
+    echo "Collecting static files..."
+    python manage.py collectstatic --noinput
+fi
 
 # Execute the main command
 echo "Starting server..."

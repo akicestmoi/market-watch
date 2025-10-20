@@ -2,7 +2,7 @@ import json
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 from datetime import date, datetime, timedelta
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import Dict, List, Optional, TypedDict
 
 import environ
@@ -184,7 +184,8 @@ def _get_fed_funds_rate_from_fred(target_date: date, ticker: str) -> Optional[fl
     """
     BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
     obs_start = target_date - relativedelta(months=2)
-    query_params = f"series_id={ticker}&api_key={env('FRED_API_KEY')}&file_type=json&observation_start={obs_start}&sort_order=desc"
+    FRED_API_KEY = env("FRED_API_KEY")
+    query_params = f"series_id={ticker}&api_key={FRED_API_KEY}&file_type=json&observation_start={obs_start}&sort_order=desc"
     response = requests.get(f"{BASE_URL}?{query_params}")
     if response.status_code == 404:
         return
@@ -354,7 +355,7 @@ def _get_mutan_rate_from_boj(target_date: date) -> Optional[float]:
                 return
             response.raise_for_status()
 
-    df = pd.read_excel(response.content)
+    df = pd.read_excel(BytesIO(response.content))
     matches = df.applymap(lambda x: "Average" in str(x))
     match_locations = [(i, j) for i, j in zip(*matches.to_numpy().nonzero())]
     if len(match_locations) > 1:
