@@ -70,7 +70,6 @@ def market_recap_view(request):
         AssetClassChoices.FX.label,
         AssetClassChoices.CRYPTO.label,
         AssetClassChoices.OTHERS.label,
-        AssetClassChoices.CB_RATES.label,
     ]
     right_asset_classes = [
         AssetClassChoices.RATES.label,

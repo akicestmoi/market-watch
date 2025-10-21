@@ -13,14 +13,12 @@ class AssetClassChoices(models.TextChoices):
     CRYPTO = "CRYPTO", _("Crypto Exchange Rates")
     COMMODITIES = "COMMODITIES", _("Commodities")
     OTHERS = "OTHERS", _("Others")
-    CB_RATES = "CB_RATES", _("Central Bank Policy Rate")
 
 
 class AssetTypeChoices(models.TextChoices):
     """Asset Type Choices."""
 
     EQUITY_INDEX = "EQUITY_INDEX", _("Equity Index")
-    CB_TARGET_RATE = "CB_TARGET_RATE", _("Central Bank Policy Rate")
     INTERBANK_RATE = "INTERBANK_RATE", _("Interbank Rate")
     GOVERNMENT_BOND_RATE = "GOVERNMENT_BOND_RATE", _("Government Bond Rate")
     FX_SPOT_RATE = "FX_SPOT_RATE", _("FX Spot Rate")

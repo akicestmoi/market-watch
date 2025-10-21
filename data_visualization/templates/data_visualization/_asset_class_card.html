@@ -3,99 +3,99 @@
 <div class="asset-class-card">
     <h2>{{ asset_class_data.asset_class }}</h2>
 
-        {% for location_data in asset_class_data.locations %}
-            {% if location_data.assets %}
-            <div class="location-card">
-                {% if location_data.location != "No Location" %}
-                    <h3>{{ location_data.location }}</h3>
-                {% endif %}
+    {% for location_data in asset_class_data.locations %}
+    {% if location_data.assets %}
+    <div class="location-card">
+        {% if location_data.location != "No Location" %}
+        <h3>{{ location_data.location }}</h3>
+        {% endif %}
 
-                {% if asset_class_data.asset_class == "Interest Rates" or asset_class_data.asset_class == "Central Bank Policy Rate" %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Country</th>
-                            <th>Asset</th>
-                            <th>Name</th>
-                            <th>Maturity</th>
-                            <th>Yield (%)</th>
-                            <th>Previous Yield (%)</th>
-                            <th>Yield Change (bps)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for asset in location_data.assets %}
-                        <tr>
-                            <td>{{ asset.country }}</td>
-                            <td>{{ asset.asset }}</td>
-                            <td>{{ asset.name }}</td>
-                            <td>{{ asset.maturity|default:"-" }}</td>
-                            <td>{{ asset.price|floatformat:4 }}</td>
-                            <td>{{ asset.previous_price|floatformat:4 }}</td>
-                            <td class="{% if asset.price_change > 5 %}table-change-positive
+        {% if asset_class_data.asset_class == "Interest Rates" %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Asset</th>
+                    <th>Name</th>
+                    <th>Maturity</th>
+                    <th>Yield (%)</th>
+                    <th>Previous Yield (%)</th>
+                    <th>Yield Change (bps)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in location_data.assets %}
+                <tr>
+                    <td>{{ asset.country }}</td>
+                    <td>{{ asset.asset }}</td>
+                    <td>{{ asset.name }}</td>
+                    <td>{{ asset.maturity|default:"-" }}</td>
+                    <td>{{ asset.price|floatformat:4 }}</td>
+                    <td>{{ asset.previous_price|floatformat:4 }}</td>
+                    <td class="{% if asset.price_change > 5 %}table-change-positive
                                         {% elif asset.price_change > 0 %}table-change-slightly-positive
                                         {% elif asset.price_change < -5 %}table-change-negative
                                         {% elif asset.price_change < 0 %}table-change-slightly-negative
                                         {% endif %}">
-                                {{ asset.price_change|floatformat:2 }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Country</th>
-                            <th>Asset</th>
-                            <th>Name</th>
-                            <th>Price</th>
-                            <th>Previous</th>
-                            <th>Change</th>
-                            <th>Change (%)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for asset in location_data.assets %}
-                        <tr>
-                            <td>{{ asset.country }}</td>
-                            <td>{{ asset.asset }}</td>
-                            <td>{{ asset.name }}</td>
-                            <td>
-                                {% if asset_class_data.asset_class == "Exchange Rates" %}
-                                    {{ asset.price|floatformat:4|intcomma }}
-                                {% else %}
-                                    {{ asset.price|floatformat:2|intcomma }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if asset_class_data.asset_class == "Exchange Rates" %}
-                                    {{ asset.previous_price|floatformat:4|intcomma }}
-                                {% else %}
-                                    {{ asset.previous_price|floatformat:2|intcomma }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if asset_class_data.asset_class == "Exchange Rates" %}
-                                    {{ asset.price_change|floatformat:4|intcomma }}
-                                {% else %}
-                                    {{ asset.price_change|floatformat:2|intcomma }}
-                                {% endif %}
-                            </td>
-                            <td class="{% if asset.price_change_pct > 2.5 %}table-change-positive
+                        {{ asset.price_change|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Asset</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Previous</th>
+                    <th>Change</th>
+                    <th>Change (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in location_data.assets %}
+                <tr>
+                    <td>{{ asset.country }}</td>
+                    <td>{{ asset.asset }}</td>
+                    <td>{{ asset.name }}</td>
+                    <td>
+                        {% if asset_class_data.asset_class == "Exchange Rates" %}
+                        {{ asset.price|floatformat:4|intcomma }}
+                        {% else %}
+                        {{ asset.price|floatformat:2|intcomma }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if asset_class_data.asset_class == "Exchange Rates" %}
+                        {{ asset.previous_price|floatformat:4|intcomma }}
+                        {% else %}
+                        {{ asset.previous_price|floatformat:2|intcomma }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if asset_class_data.asset_class == "Exchange Rates" %}
+                        {{ asset.price_change|floatformat:4|intcomma }}
+                        {% else %}
+                        {{ asset.price_change|floatformat:2|intcomma }}
+                        {% endif %}
+                    </td>
+                    <td class="{% if asset.price_change_pct > 2.5 %}table-change-positive
                                         {% elif asset.price_change_pct > 0 %}table-change-slightly-positive
                                         {% elif asset.price_change_pct < -2.5 %}table-change-negative
                                         {% elif asset.price_change_pct < 0 %}table-change-slightly-negative
                                         {% endif %}">
-                                {{ asset.price_change_pct|floatformat:2 }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-            </div>
-            {% endif %}
-        {% endfor %}
+                        {{ asset.price_change_pct|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
 </div>

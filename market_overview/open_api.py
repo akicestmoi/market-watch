@@ -3,6 +3,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiRespo
 from rest_framework import status
 
 from market_overview.serializers import (
+    BulkUpdateAssetsFieldsSerializer,
     BulkUpdateAssetsPricesSerializer,
     CalculatePriceDiffSerializer,
     DataCorrectionSerializer,
@@ -618,6 +619,72 @@ BULK_UPDATE_ASSETS_PRICES_SCHEMA = OpenApiBaseRequest(
                             "asset_type": "GOVERNMENT_BOND_RATE",
                             "source": "GOV_TREASURY_DEPT",
                         },
+                    ],
+                ),
+                OpenApiResponse(
+                    response=status.HTTP_400_BAD_REQUEST,
+                    description="Invalid input data",
+                    examples=[
+                        OpenApiExample(
+                            name="Validation Error",
+                            value={
+                                "error_message": {
+                                    "date": ["This field is required."],
+                                }
+                            },
+                            response_only=True,
+                            status_codes=["400"],
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ],
+)
+
+BULK_UPDATE_ASSETS_FIELDS_SCHEMA = OpenApiBaseRequest(
+    tags=[ApiTags.MARKET_DATA],
+    summary="Bulk Update Assets Fields",
+    description="Bulk update assets fields.",
+    request=BulkUpdateAssetsFieldsSerializer,
+    responses=[
+        OpenApiResponse(
+            response=status.HTTP_200_OK,
+            description="Assets fields updated successfully",
+            examples=[
+                OpenApiExample(
+                    name="Updated Assets",
+                    value=[
+                        {
+                            "id": 634,
+                            "date_added": "2025-10-14T19:11:06.239927Z",
+                            "last_modified": "2025-10-14T19:11:06.239927Z",
+                            "date": "2025-10-13",
+                            "asset_class": "RATES",
+                            "location": "US",
+                            "short_name": "UST2M",
+                            "full_name": "US TBills 2 Month",
+                            "price": 4.1,
+                            "maturity": 0.166,
+                            "asset_type": "GOVERNMENT_BOND_RATE",
+                            "source": "GOV_TREASURY_DEPT",
+                        },
+                    ],
+                ),
+                OpenApiResponse(
+                    response=status.HTTP_400_BAD_REQUEST,
+                    description="Invalid input data",
+                    examples=[
+                        OpenApiExample(
+                            name="Validation Error",
+                            value={
+                                "error_message": {
+                                    "short_name": ["This field is required."],
+                                }
+                            },
+                            response_only=True,
+                            status_codes=["400"],
+                        )
                     ],
                 ),
             ],

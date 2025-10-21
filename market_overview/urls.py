@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    BulkUpdateAssetsFieldsView,
     BulkUpdateAssetsPricesView,
     CalculatePriceChangeView,
     DatabaseInteractionView,
@@ -24,4 +25,5 @@ urlpatterns = [
     path("get-price-update-logs", GetPriceUpdateLogsView.as_view()),
     path("get-assets-without-prices", GetAssetsWithoutPricesView.as_view()),
     path("bulk-update-prices", BulkUpdateAssetsPricesView.as_view()),
+    path("bulk-update-fields", BulkUpdateAssetsFieldsView.as_view()),
 ]

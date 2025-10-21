@@ -60,16 +60,6 @@
     "source": "YAHOO"
   },
   {
-    "asset_class": "CB_RATES",
-    "location": "US",
-    "short_name": "FedFunds",
-    "full_name": "Fed Funds Rate",
-    "maturity": null,
-    "asset_type": "CB_TARGET_RATE",
-    "ticker": "FEDFUNDS",
-    "source": "FRED"
-  },
-  {
     "asset_class": "RATES",
     "location": "US",
     "short_name": "SOFR",
@@ -187,36 +177,6 @@
     "maturity": 0,
     "asset_type": "INTERBANK_RATE",
     "ticker": "ESTR/ESTR.B.EU000A2X2A25.WT",
-    "source": "WEBSTAT"
-  },
-  {
-    "asset_class": "CB_RATES",
-    "location": "EU",
-    "short_name": "ECB_Deposit",
-    "full_name": "ECB Deposit Facility Rate",
-    "maturity": null,
-    "asset_type": "CB_TARGET_RATE",
-    "ticker": "FM/FM.D.U2.EUR.4F.KR.DFR.LEV",
-    "source": "WEBSTAT"
-  },
-  {
-    "asset_class": "CB_RATES",
-    "location": "EU",
-    "short_name": "ECB_Refinancing",
-    "full_name": "ECB Main Refinancing Operation Rate",
-    "maturity": null,
-    "asset_type": "CB_TARGET_RATE",
-    "ticker": "FM/FM.D.U2.EUR.4F.KR.MRR_FR.LEV",
-    "source": "WEBSTAT"
-  },
-  {
-    "asset_class": "CB_RATES",
-    "location": "EU",
-    "short_name": "ECB_Marginal_Lending",
-    "full_name": "ECB Marginal Lending Facility Rate",
-    "maturity": null,
-    "asset_type": "CB_TARGET_RATE",
-    "ticker": "FM/FM.D.U2.EUR.4F.KR.MLFR.LEV",
     "source": "WEBSTAT"
   },
   {
@@ -390,12 +350,12 @@
     "source": "BUNDESBANK"
   },
   {
-    "asset_class": "CB_RATES",
+    "asset_class": "RATES",
     "location": "JP",
     "short_name": "MUTAN",
     "full_name": "Japanese Uncollateralized Overnight Rate",
-    "maturity": null,
-    "asset_type": "CB_TARGET_RATE",
+    "maturity": 0,
+    "asset_type": "INTERBANK_RATE",
     "ticker": "MUTAN",
     "source": "BOJ"
   },

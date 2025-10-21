@@ -12,7 +12,6 @@ import yfinance as yf
 from bs4 import BeautifulSoup
 from cachetools.func import ttl_cache
 from dateutil.relativedelta import relativedelta
-from django.http import Http404
 
 import shared.services as shared_services
 from market_overview.models import (
@@ -105,6 +104,18 @@ class BulkUpdateAssetsPricesItem(TypedDict):
     date: date
     short_name: str
     price: float
+
+
+class BulkUpdateAssetsFields(TypedDict):
+    """Bulk update assets fields dictionnary."""
+
+    short_name: str
+    asset_class: Optional[AssetClassChoices]
+    location: Optional[LocationChoices]
+    full_name: Optional[str]
+    maturity: Optional[float]
+    asset_type: Optional[AssetTypeChoices]
+    source: Optional[SourceChoices]
 
 
 with open("market_overview/data_sources/market_data.json") as f:
@@ -566,9 +577,7 @@ def calculate_price_change(
     ) * 100
 
     # Adjusting price changes for Interest Rate classes
-    rates_row = price_diff["asset_class"].isin(
-        [AssetClassChoices.RATES, AssetClassChoices.CB_RATES]
-    )
+    rates_row = price_diff["asset_class"].isin([AssetClassChoices.RATES])
     price_diff.loc[rates_row, "price_change"] *= 100
     price_diff.loc[rates_row, "price_change_pct"] = None
 
@@ -669,7 +678,7 @@ def get_yield_curve(
 
 def get_price_update_logs(
     price_date: Optional[date] = None, short_name: Optional[str] = None
-) -> List[dict]:
+) -> List[MarketData]:
     """Get price update logs with optional filtering."""
     logs_queryset = PriceUpdateLogModel.objects.select_related("asset").all()
 
@@ -689,7 +698,9 @@ def get_assets_without_prices(price_date: Optional[date] = None) -> List[dict]:
     return shared_services.convert_query_to_dictionary_list(queryset=assets_queryset)
 
 
-def bulk_update_assets_prices(updates: List[BulkUpdateAssetsPricesItem]) -> List[str]:
+def bulk_update_assets_prices(
+    updates: List[BulkUpdateAssetsPricesItem],
+) -> List[MarketData]:
     """Bulk update assets prices."""
     updated_assets = []
     for update in updates:
@@ -706,4 +717,24 @@ def bulk_update_assets_prices(updates: List[BulkUpdateAssetsPricesItem]) -> List
                 },
             )
         )
+    return updated_assets
+
+
+def bulk_update_assets_fields(updates: BulkUpdateAssetsFields) -> List[MarketData]:
+    """Bulk update assets fields."""
+    asset_to_update = updates.pop("short_name")
+    assets_queryset = MarketPriceModel.objects.filter(short_name=asset_to_update)
+    updated_assets = []
+    for asset in shared_services.convert_query_to_dictionary_list(
+        queryset=assets_queryset
+    ):
+        updated_asset = shared_services.update_with_logs(
+            MarketPriceModel(**asset),
+            PriceUpdateLogModel,
+            {
+                "logs": f"Bulk update of {asset_to_update} to fields: {updates}.",
+                **updates,
+            },
+        )
+        updated_assets.append(updated_asset.convert_to_dict())
     return updated_assets
