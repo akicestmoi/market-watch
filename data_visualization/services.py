@@ -5,7 +5,7 @@ import pandas as pd
 from pandas.api.types import CategoricalDtype
 
 from market_overview.models import AssetClassChoices, LocationChoices, MarketPriceModel
-from market_overview.services import AssetNames, calculate_price_change
+from market_overview.services import ASSETS_ORDER, AssetNames, calculate_price_change
 
 
 class LocationEnum(str, Enum):
@@ -79,24 +79,13 @@ def format_data_for_display(
         for loc, countries in LOCATION_MAPPING.items()
         for country in countries
     }
-    location_group_categories = CategoricalDtype(
-        categories=[loc.value for loc in LocationEnum], ordered=True
-    )
-    location_categories = CategoricalDtype(
-        categories=[loc for loc in LocationChoices], ordered=True
-    )
-    asset_class_categories = CategoricalDtype(
-        categories=[loc for loc in AssetClassChoices], ordered=True
-    )
     df["location_group"] = (
-        df["location"].map(country_to_location).fillna(LocationEnum.NO_LOCATION)
+        df["location"].map(country_to_location).fillna(LocationEnum.NO_LOCATION.value)
     )
-    df = df.astype(
-        {
-            "location": location_categories,
-            "asset_class": asset_class_categories,
-            "location_group": location_group_categories,
-        }
+    df = df.sort_values(
+        by="short_name",
+        key=lambda s: s.map(ASSETS_ORDER).fillna(999),
+        na_position="last",
     )
 
     data_to_display = []
@@ -107,9 +96,7 @@ def format_data_for_display(
         ):
             assets = [
                 DisplayAsset(
-                    country=(
-                        row["location"].label if not pd.isna(row["location"]) else "-"
-                    ),
+                    country=(row["location"] if not pd.isna(row["location"]) else "-"),
                     asset=row["short_name"],
                     name=row["full_name"],
                     maturity=row["maturity"],
@@ -132,8 +119,9 @@ def format_data_for_display(
         if locations:
             data_to_display.append(
                 DisplayData(
-                    asset_class=asset_class.label,
+                    asset_class=AssetClassChoices(asset_class).label,
                     locations=locations,
                 )
             )
+    print(data_to_display)
     return data_to_display

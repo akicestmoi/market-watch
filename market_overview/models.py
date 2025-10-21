@@ -84,6 +84,7 @@ class MarketPriceModel(BaseModel):
         default=None,
     )
     source = models.CharField(max_length=100, choices=SourceChoices.choices)
+    comment = models.TextField(null=True, blank=True, default="")
 
     class Meta:
         unique_together = ("short_name", "date")
