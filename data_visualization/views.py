@@ -81,7 +81,6 @@ def market_recap_view(request):
         "right_asset_classes": right_asset_classes,
         **base_context,
     }
-    print(context)
     return render(request, "data_visualization/market_recap.html", context)
 
 

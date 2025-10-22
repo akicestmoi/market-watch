@@ -235,10 +235,10 @@ class MarketChartsLabels(TypedDict):
     yield_curve_location: str
     main_rate: str
     spread_rate: str
-    stock_compare: Optional[str]
-    fx_compare: Optional[str]
-    crypto_compare: Optional[str]
-    commodity_compare: Optional[str]
+    stock_name_compare: Optional[str]
+    fx_name_compare: Optional[str]
+    crypto_name_compare: Optional[str]
+    commodity_name_compare: Optional[str]
 
 
 def get_market_charts_labels(
@@ -265,14 +265,16 @@ def get_market_charts_labels(
         "yield_curve_location": front_data["yield_curve_location"],
         "main_rate": front_data["main_rate"],
         "spread_rate": front_data["spread_rate"],
-        "stock_compare": _generic_asset_label_getter(
+        "stock_name_compare": _generic_asset_label_getter(
             "stocks", front_data["stock_name_compare"]
         ),
-        "fx_compare": _generic_asset_label_getter("fx", front_data["fx_name_compare"]),
-        "crypto_compare": _generic_asset_label_getter(
+        "fx_name_compare": _generic_asset_label_getter(
+            "fx", front_data["fx_name_compare"]
+        ),
+        "crypto_name_compare": _generic_asset_label_getter(
             "crypto", front_data["crypto_name_compare"]
         ),
-        "commodity_compare": _generic_asset_label_getter(
+        "commodity_name_compare": _generic_asset_label_getter(
             "commodity", front_data["commodity_name_compare"]
         ),
     }

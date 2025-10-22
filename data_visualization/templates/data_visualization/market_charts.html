@@ -20,6 +20,14 @@
             <h1>Market Charts — {{ reference_date|default:default_reference_date }}</h1>
         </div>
         <div class="header-form">
+            <div class="zone-section">
+                <label for="zone-buttons" class="zone-label">Zone:</label>
+                <div class="zone-buttons" id="zone-buttons">
+                    <button class="zone-btn" data-zone="US">US</button>
+                    <button class="zone-btn" data-zone="FR">FR</button>
+                    <button class="zone-btn" data-zone="JP">JP</button>
+                </div>
+            </div>
             <form method="get">
                 <label for="reference_date">Target Date:</label>
                 <input type="date" id="reference_date" name="reference_date"

@@ -174,7 +174,7 @@ function createLineChart(
       position: "left",
       title: {
         display: true,
-        text: `${assetName} (prices)`,
+        text: `${assetName}`,
       },
     },
   };
@@ -187,7 +187,7 @@ function createLineChart(
       position: "right",
       title: {
         display: true,
-        text: `${compareAssetName} (prices)`,
+        text: `${compareAssetName}`,
       },
       grid: {
         drawOnChartArea: false,
@@ -551,3 +551,148 @@ function updateChartDuration(chartType, duration) {
 
 // Initialize duration buttons when the page loads
 initializeDurationButtons();
+
+// ==========================================
+// Zone Button Functionality
+// ==========================================
+
+/**
+ * Update zone button highlighting based on current zone
+ */
+function updateZoneButtonHighlighting() {
+  const zoneButtons = document.querySelectorAll('.zone-btn');
+  const params = new URLSearchParams(window.location.search);
+  const currentZone = params.get('zone');
+
+  // Remove active class from all zone buttons
+  zoneButtons.forEach(btn => btn.classList.remove('active'));
+
+  // Add active class to current zone button (if not CUSTOM)
+  if (currentZone && currentZone !== 'CUSTOM') {
+    const activeButton = document.querySelector(`[data-zone="${currentZone}"]`);
+    if (activeButton) {
+      activeButton.classList.add('active');
+    }
+  }
+}
+
+/**
+ * Initialize zone buttons
+ */
+function initializeZoneButtons() {
+  const zoneButtons = document.querySelectorAll('.zone-btn');
+
+  zoneButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const zone = this.getAttribute('data-zone');
+
+      // Update zone and reload page
+      updateZone(zone);
+    });
+  });
+
+  // Set initial highlighting
+  updateZoneButtonHighlighting();
+}
+
+// ==========================================
+// Zone Configuration
+// ==========================================
+
+// Zone values mapping - defines default values for each zone
+const ZONE_VALUES = {
+  'US': {
+    'stock_name': 'DJIA',
+    'fx_name': 'EURUSD',
+    'crypto_name': 'BTC',
+    'commodity_name': 'Gold',
+    'main_rate': 'UST10Y',
+    'spread_rate': 'UST2Y',
+    'yield_curve_location': 'United States'
+  },
+  'FR': {
+    'stock_name': 'CAC40',
+    'fx_name': 'EURUSD',
+    'crypto_name': 'BTC',
+    'commodity_name': 'Gold',
+    'main_rate': 'OAT10Y',
+    'spread_rate': 'OAT2Y',
+    'yield_curve_location': 'France'
+  },
+  'JP': {
+    'stock_name': 'NIKKEI225',
+    'fx_name': 'USDJPY',
+    'crypto_name': 'BTC',
+    'commodity_name': 'Gold',
+    'main_rate': 'JGB10Y',
+    'spread_rate': 'JGB2Y',
+    'yield_curve_location': 'Japan'
+  }
+};
+
+/**
+ * Update zone and reload page with zone values
+ */
+function updateZone(zone) {
+  // Get current parameters from URL
+  const params = new URLSearchParams(window.location.search);
+
+  // Set the zone parameter
+  params.set('zone', zone);
+
+  // Apply zone values to URL parameters
+  const zoneValues = ZONE_VALUES[zone];
+  if (zoneValues) {
+    Object.keys(zoneValues).forEach(field => {
+      params.set(field, zoneValues[field]);
+    });
+  }
+
+  // Reload the page with zone values
+  window.location.search = params.toString();
+}
+
+/**
+ * Initialize custom field change handlers
+ */
+function initializeCustomFieldHandlers() {
+  // Map of dropdown IDs to their corresponding URL parameter names
+  const dropdownMappings = {
+    'stockSelect': 'stock_name',
+    'fxSelect': 'fx_name',
+    'cryptoSelect': 'crypto_name',
+    'commoditySelect': 'commodity_name',
+    'mainRateSelect': 'main_rate',
+    'spreadRateSelect': 'spread_rate',
+    'yieldCurveLocationSelect': 'yield_curve_location'
+  };
+
+  // Add change listeners to each dropdown
+  Object.keys(dropdownMappings).forEach(dropdownId => {
+    const element = document.getElementById(dropdownId);
+    if (element) {
+      element.addEventListener('change', function() {
+        // Get current parameters from URL
+        const params = new URLSearchParams(window.location.search);
+
+        // Set zone to CUSTOM when any field is changed
+        params.set('zone', 'CUSTOM');
+
+        // Add the selected value to the URL parameters
+        const paramName = dropdownMappings[dropdownId];
+        if (this.value) {
+          params.set(paramName, this.value);
+        }
+
+        // Reload the page with CUSTOM zone and the selected value
+        window.location.search = params.toString();
+      });
+    }
+  });
+}
+
+// Initialize zone buttons when the page loads
+initializeZoneButtons();
+
+// Initialize custom field handlers when the page loads
+initializeCustomFieldHandlers();
