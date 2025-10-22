@@ -488,3 +488,66 @@ if (previousCurveDateInput) {
     window.location.search = params.toString();
   });
 }
+
+// ==========================================
+// Duration Button Functionality
+// ==========================================
+
+/**
+ * Initialize duration buttons for all charts (except yield curve)
+ */
+function initializeDurationButtons() {
+  // Get all duration button containers
+  const durationContainers = document.querySelectorAll('.duration-buttons');
+
+  durationContainers.forEach(container => {
+    const chartType = container.getAttribute('data-chart-type');
+    const buttons = container.querySelectorAll('.duration-btn');
+
+    // Set active button based on current chart duration from selectedValues
+    const currentDuration = selectedValues[`${chartType}_chart_duration`];
+    buttons.forEach(button => {
+      if (button.getAttribute('data-duration') === currentDuration) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
+
+    buttons.forEach(button => {
+      button.addEventListener('click', function() {
+        const duration = this.getAttribute('data-duration');
+
+        // Remove active class from all buttons in this container
+        buttons.forEach(btn => btn.classList.remove('active'));
+
+        // Add active class to clicked button
+        this.classList.add('active');
+
+        // Update specific chart duration
+        updateChartDuration(chartType, duration);
+      });
+    });
+  });
+}
+
+/**
+ * Update specific chart duration and reload data
+ */
+function updateChartDuration(chartType, duration) {
+  // Get current parameters from URL
+  const params = new URLSearchParams(window.location.search);
+
+  // Update the specific chart duration parameter
+  params.set(`${chartType}_chart_duration`, duration);
+
+  // Reload the page with new parameters
+  window.location.search = params.toString();
+}
+
+// ==========================================
+// Initialize Duration Buttons
+// ==========================================
+
+// Initialize duration buttons when the page loads
+initializeDurationButtons();
