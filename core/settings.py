@@ -196,8 +196,16 @@ SPECTACULAR_SETTINGS = {
     },
     "TAGS": [
         {
-            "name": ApiTags.MARKET_DATA.value,
+            "name": ApiTags.ASSETS.value,
+            "description": "Asset data ingestion and retrieval endpoints",
+        },
+        {
+            "name": ApiTags.ASSET_PRICES.value,
             "description": "Market data ingestion and retrieval endpoints",
+        },
+        {
+            "name": ApiTags.PRICE_LOGS.value,
+            "description": "Price update logs endpoints",
         },
         {
             "name": ApiTags.ECONOMIC_DATA.value,

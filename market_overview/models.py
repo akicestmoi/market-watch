@@ -62,17 +62,16 @@ class SourceChoices(models.TextChoices):
     YAHOO = "YAHOO", _("Yahoo Finance")
 
 
-class MarketPriceModel(BaseModel):
-    """Market Price Model."""
+class AssetModel(BaseModel):
+    """Asset Model."""
 
-    date = models.DateField()
+    id = models.IntegerField(primary_key=True)
     asset_class = models.CharField(max_length=50, choices=AssetClassChoices.choices)
     location = models.CharField(
         max_length=2, choices=LocationChoices.choices, null=True, blank=True
     )
-    short_name = models.CharField(max_length=100, default="")
-    full_name = models.CharField(max_length=100, default="")
-    price = models.FloatField(null=True, blank=True)
+    short_name = models.CharField(max_length=100, unique=True)
+    full_name = models.CharField(max_length=100)
     maturity = models.FloatField(null=True, blank=True)
     asset_type = models.CharField(
         max_length=100,
@@ -81,20 +80,28 @@ class MarketPriceModel(BaseModel):
         blank=True,
         default=None,
     )
+    ticker = models.CharField(max_length=100)
     source = models.CharField(max_length=100, choices=SourceChoices.choices)
-    comment = models.TextField(null=True, blank=True, default="")
-
-    class Meta:
-        unique_together = ("short_name", "date")
 
     def __str__(self):
-        return f"{self.short_name}_({self.date})"
+        return f"{self.short_name}"
+
+
+class MarketPriceModel(BaseModel):
+    """Market Price Model."""
+
+    asset = models.ForeignKey(
+        AssetModel, on_delete=models.CASCADE, related_name="market_prices"
+    )
+    date = models.DateField()
+    price = models.FloatField(null=True, blank=True)
+    comment = models.TextField(null=True, blank=True, default="")
 
 
 class PriceUpdateLogModel(BaseLogModel):
     """Price Update Log Model."""
 
-    fk_name = "asset"
-    asset = models.ForeignKey(
+    fk_name = "market_price"
+    market_price = models.ForeignKey(
         "MarketPriceModel", on_delete=models.CASCADE, related_name="price_update_logs"
     )

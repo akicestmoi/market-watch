@@ -1,6 +1,5 @@
 import json
 import xml.etree.ElementTree as ET
-from copy import deepcopy
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
 from typing import Dict, List, Optional, TypedDict
@@ -12,10 +11,12 @@ import yfinance as yf
 from bs4 import BeautifulSoup
 from cachetools.func import ttl_cache
 from dateutil.relativedelta import relativedelta
+from django.db.models import QuerySet
 
 import shared.services as shared_services
 from market_overview.models import (
     AssetClassChoices,
+    AssetModel,
     AssetTypeChoices,
     LocationChoices,
     MarketPriceModel,
@@ -34,44 +35,31 @@ class ScrappingResult(TypedDict):
     comment: Optional[str]
 
 
-class TickerInfo(TypedDict):
-    """Ticker information dictionnary."""
-
-    asset_class: AssetClassChoices
-    location: LocationChoices
-    asset: str
-    name: str
-    maturity: Optional[float]
-    asset_type: AssetTypeChoices
-    ticker: str
-    source: SourceChoices
-
-
 class MarketData(TypedDict):
-    """Ticker information dictionnary."""
+    """Market data dictionnary."""
 
-    asset_class: AssetClassChoices
-    location: LocationChoices
-    asset: str
-    name: str
-    maturity: Optional[float]
-    asset_type: AssetTypeChoices
-    ticker: str
+    asset: AssetModel
     price: Optional[float]
     date: date
-    source: SourceChoices
     comment: Optional[str]
 
 
 class PriceChange(TypedDict):
     """Price change dictionnary."""
 
+    id: int
+    asset_id: int
     asset_class: AssetClassChoices
-    asset_type: AssetTypeChoices
-    location: LocationChoices
-    asset: str
-    name: str
+    short_name: str
+    full_name: str
     maturity: Optional[float]
+    asset_type: AssetTypeChoices
+    source: SourceChoices
+    location: Optional[LocationChoices]
+    price: Optional[float]
+    comment: Optional[str]
+    price_previous: Optional[float]
+    comment_previous: Optional[str]
     price_change: Optional[float]
     price_change_pct: Optional[float]
 
@@ -105,23 +93,6 @@ class BulkUpdateAssetsPricesItem(TypedDict):
     short_name: str
     price: float
 
-
-class BulkUpdateAssetsFields(TypedDict):
-    """Bulk update assets fields dictionnary."""
-
-    short_name: str
-    asset_class: Optional[AssetClassChoices]
-    location: Optional[LocationChoices]
-    full_name: Optional[str]
-    maturity: Optional[float]
-    asset_type: Optional[AssetTypeChoices]
-    source: Optional[SourceChoices]
-
-
-with open("market_overview/data_sources/market_data.json") as f:
-    ASSETS_BASE_INFO = json.load(f)
-
-ASSETS_ORDER = {asset["short_name"]: i for i, asset in enumerate(ASSETS_BASE_INFO)}
 
 SOURCE_SCRAP_MAP = {
     SourceChoices.GOV_TREASURY_DEPT: lambda d, t: _get_treasury_yield_from_dep_treasury(
@@ -471,32 +442,32 @@ def _get_jgb_yield_from_bb(target_date: date, ticker: str) -> ScrappingResult:
 
 
 def _get_market_data(
-    ticker_info: TickerInfo,
+    asset: AssetModel,
     target_date: date,
 ) -> MarketData:
     """Get price from scrapping function."""
-    data = deepcopy(ticker_info)
-    scrapping_function = SOURCE_SCRAP_MAP.get(data["source"])
-    scrapping_result = (
-        scrapping_function(target_date, data["ticker"])
+    scrapping_function = SOURCE_SCRAP_MAP.get(asset.source)
+    scrapping_result: ScrappingResult = (
+        scrapping_function(target_date, asset.ticker)
         if scrapping_function
         else ScrappingResult(price=None, comment="No scrapping function found.")
     )
-    data["date"] = target_date
-    data["price"] = scrapping_result["price"]
-    data["comment"] = scrapping_result["comment"]
-    if data["price"] is None:
+    if not scrapping_result.get("price"):
         logger.warning("No price found.")
-    return MarketData(**data)
+    return MarketData(
+        asset=asset,
+        price=scrapping_result.get("price"),
+        date=target_date,
+        comment=scrapping_result.get("comment"),
+    )
 
 
 def get_market_data(target_date: date) -> List[MarketData]:
     """Get market data."""
     market_data = []
-    for asset_info in ASSETS_BASE_INFO:
-        logger.info(f"Scrapping asset: {asset_info['short_name']}")
-        market_data.append(_get_market_data(asset_info, target_date))
-
+    for asset in AssetModel.objects.all():
+        logger.info(f"Scrapping asset: {asset.short_name}")
+        market_data.append(_get_market_data(asset, target_date))
     return market_data
 
 
@@ -506,18 +477,13 @@ def get_specific_asset_market_data(
     end_date: date,
 ) -> List[MarketData]:
     """Get specific asset market data."""
-    targeted_market_data = next(
-        d for d in ASSETS_BASE_INFO if d["short_name"] == short_name
-    )
+    asset = AssetModel.objects.get(short_name=short_name)
     delta_days = (end_date - start_date).days
     date_range = [start_date + timedelta(days=i) for i in range(delta_days + 1)]
     market_data = []
     for target_date in date_range:
-        logger.info(
-            f"Scrapping asset: {targeted_market_data['short_name']} for date: {target_date}"
-        )
-        market_data.append(_get_market_data(targeted_market_data, target_date))
-
+        logger.info(f"Scrapping asset: {asset.short_name} for date: {target_date}")
+        market_data.append(_get_market_data(asset, target_date))
     return market_data
 
 
@@ -532,16 +498,11 @@ def ingest_market_data(
         shared_services.upsert_with_logs(
             model=MarketPriceModel,
             log_model=PriceUpdateLogModel,
-            lookup_kwargs={"date": data["date"], "short_name": data["short_name"]},
+            lookup_kwargs={"date": data["date"], "asset": data["asset"]},
             updates={
-                "logs": f"Automated price update on {data['short_name']} to price: {data['price']}.",
-                "asset_class": data["asset_class"],
-                "asset_type": data["asset_type"],
-                "location": data["location"],
-                "full_name": data["full_name"],
-                "maturity": data["maturity"],
-                "source": data["source"],
+                "logs": f"Automated price update on {data['asset'].short_name} to price: {data['price']}.",
                 "price": data["price"],
+                "comment": data["comment"],
             },
         )
     return asset_not_updated
@@ -549,19 +510,33 @@ def ingest_market_data(
 
 def get_all_asset_prices_for_date(price_date: date) -> List[MarketPriceModel]:
     """Get market prices for a specific date."""
-    market_data_queryset = MarketPriceModel.objects.filter(date=price_date)
-    return shared_services.convert_query_to_dictionary_list(
-        queryset=market_data_queryset
+    return list(
+        MarketPriceModel.objects.filter(date=price_date).select_related("asset")
     )
 
 
 def calculate_price_change(
-    reference_market_prices: List[MarketData],
-    comparison_market_prices: List[MarketData],
-) -> pd.DataFrame:
+    reference_market_prices: List[MarketPriceModel],
+    comparison_market_prices: List[MarketPriceModel],
+) -> List[PriceChange]:
     """Calculate price change between two dates."""
-    reference_df = pd.DataFrame(reference_market_prices)
-    comparison_df = pd.DataFrame(comparison_market_prices)
+    reference_data = []
+    for market_price in reference_market_prices:
+        asset = market_price.asset.convert_to_dict()
+        data = market_price.convert_to_dict()
+        data.update(asset)
+        reference_data.append(data)
+
+    comparison_data = []
+    for market_price in comparison_market_prices:
+        asset = market_price.asset.convert_to_dict()
+        data = market_price.convert_to_dict()
+        data.update(asset)
+        comparison_data.append(data)
+
+    reference_df = pd.DataFrame(reference_data)
+    comparison_df = pd.DataFrame(comparison_data)
+
     price_diff = pd.merge(
         reference_df,
         comparison_df,
@@ -581,72 +556,45 @@ def calculate_price_change(
     price_diff.loc[rates_row, "price_change"] *= 100
     price_diff.loc[rates_row, "price_change_pct"] = None
 
-    return price_diff.replace({float("nan"): None})
-
-
-def get_price_change(
-    reference_market_prices: List[MarketData],
-    comparison_market_prices: List[MarketData],
-) -> List[PriceChange]:
-    """Select only required information from price change Dataframe."""
-    price_diff = calculate_price_change(
-        reference_market_prices, comparison_market_prices
+    records = (
+        price_diff[list(PriceChange.__annotations__.keys())]
+        .replace({float("nan"): None})
+        .to_dict(orient="records")
     )
-    return [PriceChange(**row) for row in price_diff.to_dict("records")]
+    return [PriceChange(**record) for record in records]
 
 
 def get_asset_names(filters: Dict[str, str]) -> List[AssetNames]:
     """Get all assets based on unique short_name and full_name pair."""
-    market_data = (
-        MarketPriceModel.objects.filter(**filters)
-        .values("short_name", "full_name")
-        .distinct()
-    )
-
-    market_data_map = {
-        d["short_name"]: AssetNames(
-            short_name=d["short_name"], full_name=d["full_name"]
+    asset_names = []
+    for asset in AssetModel.objects.filter(**filters).order_by("id"):
+        asset_names.append(
+            AssetNames(short_name=asset.short_name, full_name=asset.full_name)
         )
-        for d in market_data
-    }
-
-    # Preserve order from reference JSON
-    return [
-        market_data_map[a["short_name"]]
-        for a in ASSETS_BASE_INFO
-        if a["short_name"] in market_data_map
-    ]
+    return asset_names
 
 
 def check_asset_existence(asset_name: str) -> bool:
     """Check asset existence in database."""
-    return (
-        asset_name
-        in MarketPriceModel.objects.values_list("short_name", flat=True).distinct()
-    )
+    return AssetModel.objects.filter(short_name=asset_name).exists()
 
 
 def get_historical_prices(
     short_name: str, start_date: Optional[date] = None, end_date: Optional[date] = None
 ) -> List[HistoricalPrice]:
     """Get historical prices of an asset."""
-    market_data_queryset = MarketPriceModel.objects.filter(short_name=short_name)
-
+    market_data_queryset = MarketPriceModel.objects.filter(asset__short_name=short_name)
     if start_date:
         market_data_queryset = market_data_queryset.filter(date__gte=start_date)
     if end_date:
         market_data_queryset = market_data_queryset.filter(date__lte=end_date)
 
-    query_result = shared_services.convert_query_to_dictionary_list(
-        queryset=market_data_queryset
-    )
-
     historical_prices = [
         HistoricalPrice(
-            price_date=asset["date"],
-            price=asset["price"],
+            price_date=data.date,
+            price=data.price,
         )
-        for asset in query_result
+        for data in market_data_queryset
     ]
 
     return sorted(historical_prices, key=lambda x: x["price_date"])
@@ -659,19 +607,16 @@ def get_yield_curve(
 ) -> List[YieldCurvePoint]:
     """Get yield curve for a specific date and location."""
     market_data_queryset = MarketPriceModel.objects.filter(
-        date=target_date, location=location, asset_type=asset_type
-    )
-    query_result = shared_services.convert_query_to_dictionary_list(
-        queryset=market_data_queryset
+        date=target_date, asset__location=location, asset__asset_type=asset_type
     )
     yield_curve = [
         YieldCurvePoint(
-            short_name=asset["short_name"],
-            maturity=asset["maturity"],
-            price=asset["price"],
+            short_name=data.asset.short_name,
+            maturity=data.asset.maturity,
+            price=data.price,
         )
-        for asset in query_result
-        if asset["asset_class"] == AssetClassChoices.RATES
+        for data in market_data_queryset
+        if data.asset.asset_class == AssetClassChoices.RATES
     ]
     return sorted(yield_curve, key=lambda x: (x["maturity"] is None, x["maturity"]))
 
@@ -680,36 +625,43 @@ def get_price_update_logs(
     price_date: Optional[date] = None, short_name: Optional[str] = None
 ) -> List[MarketData]:
     """Get price update logs with optional filtering."""
-    logs_queryset = PriceUpdateLogModel.objects.select_related("asset").all()
-
+    logs_queryset = PriceUpdateLogModel.objects.select_related(
+        "market_price__asset"
+    ).all()
     if price_date:
         logs_queryset = logs_queryset.filter(date_added__date=price_date)
     if short_name:
-        logs_queryset = logs_queryset.filter(asset__short_name=short_name)
+        logs_queryset = logs_queryset.filter(market_price__asset__short_name=short_name)
 
     return shared_services.convert_query_to_dictionary_list(queryset=logs_queryset)
 
 
-def get_assets_without_prices(price_date: Optional[date] = None) -> List[dict]:
+def get_assets_without_prices(
+    price_date: Optional[date] = None,
+) -> QuerySet[MarketPriceModel]:
     """Get assets without prices."""
-    assets_queryset = MarketPriceModel.objects.filter(price__isnull=True)
+    assets_queryset = MarketPriceModel.objects.filter(
+        price__isnull=True
+    ).select_related("asset")
     if price_date:
         assets_queryset = assets_queryset.filter(date=price_date)
-    return shared_services.convert_query_to_dictionary_list(queryset=assets_queryset)
+    return assets_queryset
 
 
 def bulk_update_assets_prices(
     updates: List[BulkUpdateAssetsPricesItem],
-) -> List[MarketData]:
+) -> List[MarketPriceModel]:
     """Bulk update assets prices."""
     updated_assets = []
     for update in updates:
-        asset = shared_services.get(
-            MarketPriceModel, date=update["date"], short_name=update["short_name"]
+        market_price = shared_services.get(
+            MarketPriceModel,
+            date=update["date"],
+            asset__short_name=update["short_name"],
         )
         updated_assets.append(
             shared_services.update_with_logs(
-                asset,
+                market_price,
                 PriceUpdateLogModel,
                 {
                     "logs": f"Bulk update of {update['short_name']} to price: {update['price']}.",
@@ -717,24 +669,4 @@ def bulk_update_assets_prices(
                 },
             )
         )
-    return updated_assets
-
-
-def bulk_update_assets_fields(updates: BulkUpdateAssetsFields) -> List[MarketData]:
-    """Bulk update assets fields."""
-    asset_to_update = updates.pop("short_name")
-    assets_queryset = MarketPriceModel.objects.filter(short_name=asset_to_update)
-    updated_assets = []
-    for asset in shared_services.convert_query_to_dictionary_list(
-        queryset=assets_queryset
-    ):
-        updated_asset = shared_services.update_with_logs(
-            MarketPriceModel(**asset),
-            PriceUpdateLogModel,
-            {
-                "logs": f"Bulk update of {asset_to_update} to fields: {updates}.",
-                **updates,
-            },
-        )
-        updated_assets.append(updated_asset.convert_to_dict())
     return updated_assets

@@ -12,7 +12,7 @@ from market_overview.models import (
     LocationChoices,
     MarketPriceModel,
 )
-from market_overview.services import ASSETS_ORDER, AssetNames, calculate_price_change
+from market_overview.services import AssetNames, calculate_price_change
 
 
 class LocationEnum(str, Enum):
@@ -109,7 +109,8 @@ def format_data_for_market_recap_display(
     previous_market_prices: List[MarketPriceModel],
 ) -> List[DisplayData]:
     """Format market price data for structured display."""
-    df = calculate_price_change(reference_market_prices, previous_market_prices)
+    price_diff = calculate_price_change(reference_market_prices, previous_market_prices)
+    df = pd.DataFrame(price_diff)
 
     # Map countries to location groups
     country_to_location = {
@@ -120,13 +121,7 @@ def format_data_for_market_recap_display(
     df["location_group"] = (
         df["location"].map(country_to_location).fillna(LocationEnum.NO_LOCATION.value)
     )
-
-    # Sort by asset display order
-    df = df.sort_values(
-        by="short_name",
-        key=lambda s: s.map(ASSETS_ORDER).fillna(999),
-        na_position="last",
-    )
+    df = df.sort_values(by="asset_id")
 
     data_to_display: List[DisplayData] = []
     for asset_class, asset_group in df.groupby("asset_class", sort=False):
