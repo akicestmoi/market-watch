@@ -153,15 +153,15 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
     "scheduled-market-data-ingestion-morning": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
-        "schedule": crontab(hour=9, minute=0),
+        "schedule": crontab(day_of_week="1-5", hour=9, minute=0),
     },
     "scheduled-market-data-ingestion-afternoon": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
-        "schedule": crontab(hour=14, minute=0),
+        "schedule": crontab(day_of_week="1-5", hour=14, minute=0),
     },
     "scheduled-market-data-ingestion-evening": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
-        "schedule": crontab(hour=20, minute=0),
+        "schedule": crontab(day_of_week="1-5", hour=20, minute=0),
     },
 }
 
