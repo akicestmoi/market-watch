@@ -158,6 +158,14 @@ input[type="date"].chart-select::-webkit-calendar-picker-indicator {
   justify-content: center;
 }
 
+.dropdown-row .chart-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 45%;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+}
+
 .yield-curve-controls {
   display: flex;
   gap: 0.5rem;
@@ -197,6 +205,17 @@ input[type="date"].chart-select::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.25rem;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.comparison-controls .chart-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 45%;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
 }
 
 /* ==========================================

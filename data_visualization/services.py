@@ -110,7 +110,7 @@ def format_data_for_market_recap_display(
 ) -> List[DisplayData]:
     """Format market price data for structured display."""
     price_diff = calculate_price_change(reference_market_prices, previous_market_prices)
-    df = pd.DataFrame(price_diff)
+    df = pd.DataFrame(price_diff).replace({float("nan"): None})
 
     # Map countries to location groups
     country_to_location = {
