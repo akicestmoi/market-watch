@@ -1,11 +1,17 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import market_overview.services as market_overview_services
+from economic_overview.models import (
+    EconomicDataLocationChoices,
+    EconomicDataModel,
+    EconomicIndicatorInformationModel,
+    PublicationScheduleModel,
+)
 from market_overview.models import (
     AssetClassChoices,
     AssetTypeChoices,
@@ -402,3 +408,124 @@ def get_market_charts_market_data(
             orient="records"
         ),
     }
+
+
+class EconomicRecapItem(TypedDict):
+    """Economic recap item."""
+
+    category: str
+    location: str
+    name: str
+    last: Optional[float]
+    previous: Optional[float]
+    change: Optional[float]
+    period: Optional[str]
+
+
+def get_economic_recap_data(locations: List[str]) -> Dict[str, List[EconomicRecapItem]]:
+    """Get economic recap data."""
+    indicators = EconomicIndicatorInformationModel.objects.all()
+    economic_data: Dict[str, List[EconomicRecapItem]] = {}
+
+    for indicator in indicators:
+        category = indicator.category
+        if category not in economic_data:
+            economic_data[category] = []
+
+        for location in locations:
+            # Fetch the 2 most recent records
+            records = list(
+                EconomicDataModel.objects.filter(
+                    indicator=indicator,
+                    indicator__location=location,
+                ).order_by("-period")[:2]
+            )
+
+            last, prev = (records + [None, None])[:2]
+            last_value = getattr(last, "data_value", None)
+            prev_value = getattr(prev, "data_value", None)
+            period = last.get_period_display() if last else None
+            change = (
+                last_value - prev_value
+                if last_value is not None and prev_value is not None
+                else None
+            )
+
+            economic_data[category].append(
+                EconomicRecapItem(
+                    category=category,
+                    location=location,
+                    name=indicator.type,
+                    last=last_value,
+                    previous=prev_value,
+                    change=change,
+                    period=period,
+                )
+            )
+
+    return economic_data
+
+
+class EconomicEvent(TypedDict):
+    """Economic event."""
+
+    name: str
+    location: str
+    publish_datetime: datetime
+    time_str: str
+
+
+class UpcomingEventGroup(TypedDict):
+    """Upcoming event group."""
+
+    date: str
+    date_display: str
+    events: List[EconomicEvent]
+
+
+def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
+    """Get economic recap upcoming events from publication schedules."""
+    upcoming_schedules = (
+        PublicationScheduleModel.objects.filter(next_publication_date__gte=date.today())
+        .select_related("indicator")
+        .order_by("next_publication_date")[:100]
+    )
+
+    events_by_date: Dict[str, List[EconomicEvent]] = {}
+
+    for schedule in upcoming_schedules:
+        publication_date = schedule.current_publication_date
+        if not publication_date:
+            continue
+
+        # Default to 9:00 AM if no time provided
+        publish_datetime = datetime.combine(
+            publication_date, datetime.min.time().replace(hour=9)
+        )
+
+        event = EconomicEvent(
+            name=schedule.indicator.type,
+            location=EconomicDataLocationChoices(schedule.indicator.location).label,
+            publish_datetime=publish_datetime,
+            time_str=publish_datetime.strftime("%H:%M"),
+        )
+
+        date_key = publication_date.strftime("%Y-%m-%d")
+        if date_key not in events_by_date:
+            events_by_date[date_key] = []
+        events_by_date[date_key].append(event)
+
+    upcoming_events: List[UpcomingEventGroup] = []
+    for date_key in sorted(events_by_date.keys()):
+        events_for_date = sorted(
+            events_by_date[date_key], key=lambda event: event["publish_datetime"]
+        )
+
+        date_group: UpcomingEventGroup = {
+            "date": date_key,
+            "date_display": events_for_date[0]["publish_datetime"].strftime("%Y-%m-%d"),
+            "events": events_for_date,
+        }
+        upcoming_events.append(date_group)
+
+    return upcoming_events

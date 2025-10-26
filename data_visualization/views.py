@@ -7,6 +7,7 @@ from pandas.tseries.offsets import BDay
 import data_visualization.services as data_visualization_services
 import market_overview.services as market_overview_services
 from data_visualization.services import ChartDuration
+from economic_overview.models import EconomicDataLocationChoices
 from market_overview.models import AssetClassChoices, LocationChoices
 
 
@@ -167,108 +168,12 @@ def market_charts_view(request):
 
 def economic_recap_view(request):
     """Economic Overview View."""
-    default_reference_date = (date.today() - BDay(1)).date()
-    reference_date = request.GET.get(
-        "reference_date", default_reference_date.isoformat()
-    )
-    reference_date = datetime.fromisoformat(reference_date).date()
-
-    locations = ["US", "EU", "FR", "JP"]
-
-    # Raw economic data with entries for all locations (including empty ones)
-    economic_data = {
-        "GROWTH": [
-            {
-                "category": "GROWTH",
-                "location": "US",
-                "name": "Gross Domestic Product",
-                "last": 2.1,
-                "previous": 2.0,
-                "change": 0.1,
-            },
-            {
-                "category": "GROWTH",
-                "location": "EU",
-                "name": "Gross Domestic Product",
-                "last": None,
-                "previous": None,
-                "change": None,
-            },
-            {
-                "category": "GROWTH",
-                "location": "JP",
-                "name": "Gross Domestic Product",
-                "last": None,
-                "previous": None,
-                "change": None,
-            },
-            {
-                "category": "GROWTH",
-                "location": "US",
-                "name": "Eurozone GDP",
-                "last": None,
-                "previous": None,
-                "change": None,
-            },
-            {
-                "category": "GROWTH",
-                "location": "EU",
-                "name": "Eurozone GDP",
-                "last": 1.5,
-                "previous": 1.8,
-                "change": -0.3,
-            },
-            {
-                "category": "GROWTH",
-                "location": "JP",
-                "name": "Eurozone GDP",
-                "last": None,
-                "previous": None,
-                "change": None,
-            },
-        ],
-        "INFLATION": [
-            {
-                "category": "INFLATION",
-                "location": "US",
-                "name": "CPI Inflation",
-                "last": 3.7,
-                "previous": 3.5,
-                "change": 0.2,
-            },
-            {
-                "category": "INFLATION",
-                "location": "EU",
-                "name": "CPI Inflation",
-                "last": None,
-                "previous": None,
-                "change": None,
-            },
-            {
-                "category": "INFLATION",
-                "location": "JP",
-                "name": "CPI Inflation",
-                "last": 2.6,
-                "previous": 2.4,
-                "change": 0.2,
-            },
-        ],
-    }
-
+    locations = [loc for loc in EconomicDataLocationChoices.ordered() if loc != "EU"]
+    economic_data = data_visualization_services.get_economic_recap_data(locations)
+    upcoming_events = data_visualization_services.get_economic_recap_upcoming_events()
     context = {
-        "reference_date": reference_date,
-        "default_reference_date": default_reference_date,
         "locations": locations,
         "economic_data": economic_data,
-        "upcoming_events": [
-            {
-                "name": "US CPI Inflation",
-                "publish_date": datetime(2025, 10, 10, 14, 30),
-            },
-            {
-                "name": "ECB Rate Decision",
-                "publish_date": datetime(2025, 10, 12, 13, 0),
-            },
-        ],
+        "upcoming_events": upcoming_events,
     }
-    return render(request, "data_visualization/economic_overview.html", context)
+    return render(request, "data_visualization/economic_recap.html", context)

@@ -1,3 +1,5 @@
+from typing import List
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -11,6 +13,12 @@ class EconomicDataLocationChoices(models.TextChoices):
     EU = "EU", _("Europe")
     FR = "FR", _("France")
     JP = "JP", _("Japan")
+
+    @classmethod
+    def ordered(cls) -> List[str]:
+        """Ordered list of economic data location choices."""
+        order = ["US", "EU", "FR", "JP"]
+        return [cls[value] for value in order]
 
 
 class EconomicDataSourceChoices(models.TextChoices):
@@ -31,6 +39,22 @@ class EconomicDataCategoryChoices(models.TextChoices):
     CONFIDENCE = "CONFIDENCE", _("Confidence")
     SALES = "SALES", _("Sales")
     CENTRAL_BANKS = "CENTRAL_BANKS", _("Central Banks")
+
+    @classmethod
+    def ordered(cls) -> List[str]:
+        """Ordered list of economic data category choices."""
+        order = [
+            "GROWTH",
+            "INFLATION",
+            "GOVERNMENT",
+            "LABOUR",
+            "HOUSING",
+            "PRODUCTION",
+            "CONFIDENCE",
+            "SALES",
+            "CENTRAL_BANKS",
+        ]
+        return [cls[value] for value in order]
 
 
 class EconomicPublicationFrequencyChoices(models.TextChoices):

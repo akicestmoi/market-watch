@@ -145,7 +145,6 @@ table thead {
     background-color: rgba(0,0,0,0.5);
     z-index: 50;
 }
-
 #errorModal .modal-content {
     background-color: white;
     border-radius: 0.5rem;
@@ -158,3 +157,4 @@ table thead {
     font-weight: bold;
     margin-bottom: 1rem;
 }
+

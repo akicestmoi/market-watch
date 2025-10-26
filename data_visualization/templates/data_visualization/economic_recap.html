@@ -1,0 +1,121 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Economic Overview</title>
+    <link href="{% static 'data_visualization/css/economic_recap.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>Economic Overview</h1>
+        </div>
+    </div>
+
+    <div class="columns">
+        <!-- LEFT: Economic Table -->
+        <div class="asset-class-card" style="flex: 3;">
+            <h2>Economic Data</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Category</th>
+                        <th rowspan="2">Name</th>
+                        {% for loc in locations %}
+                        <th colspan="4" class="{% if not forloop.first %}location-separator{% endif %}">{{ loc }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for loc in locations %}
+                        <th>Current</th>
+                        <th>Last</th>
+                        <th>Change</th>
+                        <th class="{% if not forloop.last %}period-separator{% endif %}">Period</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for category, group in economic_data.items %}
+                    {% regroup group by name as name_groups %}
+
+                    {% for name_group in name_groups %}
+                    <tr>
+                        {% if forloop.first %}
+                        <td rowspan="{{ name_groups|length }}" class="category-cell">{{ category }}</td>
+                        {% endif %}
+
+                        <td class="name-cell">{{ name_group.grouper }}</td>
+
+                        {% for location in locations %}
+                        {% for rec in name_group.list %}
+                        {% if rec.location == location %}
+                        <td class="{% if location != locations.0 %}location-separator{% endif %}">
+                            <span class="{% if rec.last is None %}empty-data{% endif %}">
+                                {{ rec.last|default:"—" }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="{% if rec.previous is None %}empty-data{% endif %}">
+                                {{ rec.previous|default:"—" }}
+                            </span>
+                        </td>
+                        <td class="{% if rec.change > 0 %}table-change-positive
+                                        {% elif rec.change < 0 %}table-change-negative
+                                        {% endif %}">
+                            <span class="{% if rec.change is None %}empty-data{% endif %}">
+                                {% if rec.change is not None %}{{ rec.change }}%{% else %}—{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="{% if rec.period is None %}empty-data{% endif %}">
+                                {{ rec.period|default:"—" }}
+                            </span>
+                        </td>
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- RIGHT: Upcoming Events -->
+        <div class="event-card" style="flex: 1;">
+            <h2>Upcoming Releases</h2>
+            <div class="event-list">
+                {% for date_group in upcoming_events %}
+                <div class="date-group-card">
+                    <div class="date-header">{{ date_group.date_display }}</div>
+                    <div class="events-for-date">
+                        {% for event in date_group.events %}
+                        <div class="event-item">
+                            <span class="event-time">{{ event.time_str }}</span>:
+                            <span class="event-location">{{ event.location }}</span>
+                            <span class="event-name">{{ event.name }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-events">No upcoming events.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'data_visualization/js/errors.js' %}"></script>
+    {% if error_message %}
+    <script>
+        window.errorMessage = "{{ error_message|escapejs }}";
+    </script>
+    {% endif %}
+</body>
+
+</html>
