@@ -7,6 +7,7 @@ from typing import List, Optional, TypedDict
 import pandas as pd
 import requests
 from cachetools.func import ttl_cache
+from django.utils import timezone
 
 import shared.services as shared_services
 from economic_overview.models import (
@@ -77,13 +78,13 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
         records.append(record)
 
     df = pd.DataFrame(records)
-    df["publication_date"] = pd.to_datetime(df["publication_date"]).dt.date
+    df["publication_date"] = pd.to_datetime(df["publication_date"], utc=True)
     df = df.sort_values("publication_date").reset_index(drop=True)
     return df
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_publication_dates_from_insee(name: str) -> List[date]:
+def _get_publication_dates_from_insee(name: str) -> List[datetime]:
     """Get publication dates from INSEE."""
     publication_schedule = _get_insee_publication_schedule()
     publication_dates = publication_schedule[publication_schedule["name"] == name][
@@ -139,7 +140,7 @@ def _update_publication_schedule(
     )
     if (
         publication_schedule.current_publication_date
-        and publication_schedule.current_publication_date > date.today()
+        and publication_schedule.current_publication_date > timezone.now()
     ):
         logger.info(
             f"Current publication date for indicator: {indicator.name} is not reached. Skipping update."
@@ -165,7 +166,7 @@ def update_publication_schedules(
     schedule_not_updated = []
     for indicator in indicators:
         schedule = _update_publication_schedule(indicator)
-        if not schedule:
+        if schedule:
             schedule_not_updated.append(schedule)
     return schedule_not_updated
 

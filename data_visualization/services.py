@@ -471,7 +471,7 @@ class EconomicEvent(TypedDict):
 
     name: str
     location: str
-    publish_datetime: datetime
+    publication_date: datetime
     time_str: str
 
 
@@ -498,16 +498,11 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
         if not publication_date:
             continue
 
-        # Default to 9:00 AM if no time provided
-        publish_datetime = datetime.combine(
-            publication_date, datetime.min.time().replace(hour=9)
-        )
-
         event = EconomicEvent(
             name=schedule.indicator.type,
             location=EconomicDataLocationChoices(schedule.indicator.location).label,
-            publish_datetime=publish_datetime,
-            time_str=publish_datetime.strftime("%H:%M"),
+            publication_date=publication_date,
+            time_str=publication_date.strftime("%H:%M"),
         )
 
         date_key = publication_date.strftime("%Y-%m-%d")
@@ -518,12 +513,12 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
     upcoming_events: List[UpcomingEventGroup] = []
     for date_key in sorted(events_by_date.keys()):
         events_for_date = sorted(
-            events_by_date[date_key], key=lambda event: event["publish_datetime"]
+            events_by_date[date_key], key=lambda event: event["publication_date"]
         )
 
         date_group: UpcomingEventGroup = {
             "date": date_key,
-            "date_display": events_for_date[0]["publish_datetime"].strftime("%Y-%m-%d"),
+            "date_display": events_for_date[0]["publication_date"].strftime("%Y-%m-%d"),
             "events": events_for_date,
         }
         upcoming_events.append(date_group)

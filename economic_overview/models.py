@@ -97,9 +97,9 @@ class PublicationScheduleModel(BaseModel):
         on_delete=models.CASCADE,
         related_name="publication_schedule",
     )
-    previous_publication_date = models.DateField(null=True, blank=True)
-    current_publication_date = models.DateField(null=True, blank=True)
-    next_publication_date = models.DateField(null=True, blank=True)
+    previous_publication_date = models.DateTimeField(null=True, blank=True)
+    current_publication_date = models.DateTimeField(null=True, blank=True)
+    next_publication_date = models.DateTimeField(null=True, blank=True)
 
 
 class EconomicDataModel(BaseModel):

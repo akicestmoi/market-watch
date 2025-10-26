@@ -113,9 +113,11 @@ class UpdatePublicationScheduleView(EconomicOverviewBaseView):
             data=UpdatePublicationScheduleResponseSerializer(
                 {
                     "message": "Publication schedule successfully updated.",
-                    "schedule_not_updated": [
-                        schedule.indicator.name for schedule in schedule_not_updated
-                    ],
+                    "schedule_not_updated": (
+                        [schedule.indicator.name for schedule in schedule_not_updated]
+                        if schedule_not_updated
+                        else []
+                    ),
                 }
             ).data,
             status=status.HTTP_200_OK,
