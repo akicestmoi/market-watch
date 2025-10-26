@@ -35,32 +35,11 @@ class BaseErrorResponseModel(BaseModel):
 class BaseAPIView(APIView):
     """Base API View."""
 
-    def handle_exception(self, exc):
+    def handle_exception(self, exc: Exception) -> Response:
         """
         Handle any exception that occurs in the view.
         Always returns a JSON response instead of HTML.
         """
-        return self._handle_exception(exc)
-
-    def dispatch(self, request, *args, **kwargs):
-        """Override dispatch to add request logging and error handling."""
-        try:
-            response = super().dispatch(request, *args, **kwargs)
-            return response
-        except Exception as exc:
-            logger.error(
-                f"Exception in {self.__class__.__name__}: {str(exc)}",
-                exc_info=True,
-                extra={
-                    "request_path": request.path,
-                    "request_method": request.method,
-                    "user_agent": request.META.get("HTTP_USER_AGENT", ""),
-                },
-            )
-            return self.handle_exception(exc)
-
-    def _handle_exception(self, exc: Exception) -> Response:
-        """Handle all exceptions."""
         if isinstance(exc, Http404):
             error_type = "Not Found"
             message = str(exc) if str(exc) else "The requested resource was not found."
@@ -84,7 +63,12 @@ class BaseAPIView(APIView):
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             detail = {"exception": str(exc)} if hasattr(exc, "__dict__") else None
 
-        # Create and return standardized error response
+        logger.error(
+            f"{error_type}: {exc}",
+            exc_info=True,
+            extra={"path": self.request.path, "method": self.request.method},
+        )
+
         error_data = BaseErrorResponseModel.create_error_response(
             error_type=error_type,
             message=message,
@@ -96,8 +80,6 @@ class BaseAPIView(APIView):
     def finalize_response(self, request, response, *args, **kwargs):
         """Ensure all responses are JSON format."""
         response = super().finalize_response(request, response, *args, **kwargs)
-
-        # Force JSON content type for API responses
         if hasattr(response, "data") and not response.get(
             "Content-Type", ""
         ).startswith("application/json"):

@@ -33,7 +33,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "webapp"]
 
@@ -197,19 +197,27 @@ SPECTACULAR_SETTINGS = {
     "TAGS": [
         {
             "name": ApiTags.ASSETS.value,
-            "description": "Asset data ingestion and retrieval endpoints",
+            "description": "Asset data related endpoints",
         },
         {
             "name": ApiTags.ASSET_PRICES.value,
-            "description": "Market data ingestion and retrieval endpoints",
+            "description": "Market data related endpoints",
         },
         {
             "name": ApiTags.PRICE_LOGS.value,
             "description": "Price update logs endpoints",
         },
         {
+            "name": ApiTags.ECONOMIC_INDICATOR_INFORMATION.value,
+            "description": "Economic indicator information related endpoints",
+        },
+        {
             "name": ApiTags.ECONOMIC_DATA.value,
-            "description": "Economic data ingestion and retrieval endpoints",
+            "description": "Economic data related endpoints",
+        },
+        {
+            "name": ApiTags.PUBLICATION_SCHEDULE.value,
+            "description": "Economic publication schedule related endpoints",
         },
     ],
 }

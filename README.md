@@ -83,6 +83,7 @@ A Django-based market monitoring application with comprehensive API documentatio
 
    ```bash
    make help            # Show all available commands
+   make install         # Install dependencies
    make build           # Build the Docker image
    make start           # Start the application
    make stop            # Stop all containers

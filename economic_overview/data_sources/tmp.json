@@ -1,0 +1,38 @@
+[
+  {
+    "asset_class": "CB_RATES",
+    "location": "US",
+    "short_name": "FedFunds",
+    "full_name": "Fed Funds Rate",
+    "asset_type": "CB_TARGET_RATE",
+    "ticker": "FEDFUNDS",
+    "source": "FRED"
+  },
+  {
+    "asset_class": "CB_RATES",
+    "location": "EU",
+    "short_name": "ECB_Deposit",
+    "full_name": "ECB Deposit Facility Rate",
+    "asset_type": "CB_TARGET_RATE",
+    "ticker": "FM/FM.D.U2.EUR.4F.KR.DFR.LEV",
+    "source": "WEBSTAT"
+  },
+  {
+    "asset_class": "CB_RATES",
+    "location": "EU",
+    "short_name": "ECB_Refinancing",
+    "full_name": "ECB Main Refinancing Operation Rate",
+    "asset_type": "CB_TARGET_RATE",
+    "ticker": "FM/FM.D.U2.EUR.4F.KR.MRR_FR.LEV",
+    "source": "WEBSTAT"
+  },
+  {
+    "asset_class": "CB_RATES",
+    "location": "EU",
+    "short_name": "ECB_Marginal_Lending",
+    "full_name": "ECB Marginal Lending Facility Rate",
+    "asset_type": "CB_TARGET_RATE",
+    "ticker": "FM/FM.D.U2.EUR.4F.KR.MLFR.LEV",
+    "source": "WEBSTAT"
+  }
+]

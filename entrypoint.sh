@@ -18,10 +18,6 @@ export DB_PORT=${DB_PORT}
 # Wait for database to be ready
 wait_for_db
 
-# Prepare database migrations
-echo "Preparing database migrations..."
-python manage.py makemigrations
-
 # Run database migrations
 echo "Running database migrations..."
 python manage.py migrate

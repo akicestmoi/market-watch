@@ -1,6 +1,10 @@
 help:
 	@echo "Available commands:"
 	@echo "  build           - Build the Docker image"
+	@echo "  install         - Install dependencies"
+	@echo "  lint            - Lint the code"
+	@echo "  flake8          - Run Flake8"
+	@echo "  pyright         - Run Pyright"
 	@echo "  start           - Start the application"
 	@echo "  stop            - Stop all containers"
 	@echo "  restart         - Restart all containers"
@@ -14,6 +18,24 @@ help:
 	@echo "  celery-worker   - View Celery worker logs"
 	@echo "  test            - Run tests"
 	@echo "  clean           - Clean up Docker resources"
+
+# Install dependencies
+install:
+	docker compose exec webapp npm install
+	docker compose exec webapp pip install -r requirements.txt
+
+# Lint
+lint:
+	docker compose exec webapp npm run lint:all
+	docker compose exec webapp black . & isort .
+
+# Flake8
+flake8:
+	docker compose exec webapp flake8
+
+# Pyright
+pyright:
+	docker compose exec webapp pyright
 
 # Build the Docker image
 build:
@@ -77,4 +99,4 @@ celery-beat:
 celery-worker:
 	docker compose logs -f celery-worker
 
-.PHONY: help build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker celery-flower
+.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker celery-flower

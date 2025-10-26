@@ -50,14 +50,14 @@ class GenerateBaseAssetsDataView(BaseAPIView):
     @open_api(
         tags=[ApiTags.ASSETS],
         summary="Generate Base Assets Data",
-        description="Generate base assets data from market_overview/data_sources/market_data.json.",
+        description="Generate base assets data from JSON file.",
     )
     def post(self, validated_data: dict) -> Response:
         """Generate asset data from market_overview/data_sources/market_data.json."""
         with open("market_overview/data_sources/market_data.json") as f:
             assets_base_info = json.load(f)
         for asset in assets_base_info:
-            AssetModel.objects.update_or_create(**asset)
+            AssetModel.objects.update_or_create(id=asset["id"], defaults=asset)
         return Response(
             data={"message": "Asset data successfully generated."},
             status=status.HTTP_200_OK,

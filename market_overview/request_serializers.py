@@ -47,13 +47,13 @@ class SpecificAssetMarketPriceIngestionSerializer(serializers.Serializer):
     start_date = serializers.DateField()
     end_date = serializers.DateField(required=False)
 
-    def validate(self, data):
+    def validate(self, attrs):
         """Validate end_date is greater than start_date."""
-        if data.get("end_date") <= data.get("start_date"):
+        if attrs.get("end_date") <= attrs.get("start_date"):
             raise serializers.ValidationError(
                 "end_date must be greater than start_date."
             )
-        return data
+        return attrs
 
 
 class CalculatePriceDiffSerializer(serializers.Serializer):
@@ -62,13 +62,13 @@ class CalculatePriceDiffSerializer(serializers.Serializer):
     reference_date = serializers.DateField()
     previous_date = serializers.DateField()
 
-    def validate(self, data):
+    def validate(self, attrs):
         """Validate that reference_date is greater than previous_date."""
-        if data.get("reference_date") <= data.get("previous_date"):
+        if attrs.get("reference_date") <= attrs.get("previous_date"):
             raise serializers.ValidationError(
                 "reference_date must be greater than previous_date."
             )
-        return data
+        return attrs
 
 
 class GetMarketPriceSerializer(serializers.Serializer):
@@ -91,16 +91,16 @@ class GetHistoricalPricesSerializer(serializers.Serializer):
     start_date = serializers.DateField(required=False)
     end_date = serializers.DateField(required=False)
 
-    def validate(self, data):
+    def validate(self, attrs):
         """Validate that end_date is greater than start_date."""
-        start_date = data.get("start_date")
-        end_date = data.get("end_date")
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
 
         if start_date and end_date and start_date > end_date:
             raise serializers.ValidationError(
                 "end_date must be greater than start_date"
             )
-        return data
+        return attrs
 
 
 class GetYieldCurveSerializer(serializers.Serializer):

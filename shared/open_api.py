@@ -19,7 +19,9 @@ class ApiTags(str, Enum):
     ASSETS = "Assets"
     ASSET_PRICES = "Asset Prices"
     PRICE_LOGS = "Price Logs"
+    ECONOMIC_INDICATOR_INFORMATION = "Economic Indicator Information"
     ECONOMIC_DATA = "Economic Data"
+    PUBLICATION_SCHEDULE = "Publication Schedule"
 
 
 DEFAULT_ERROR_MESSAGES = {
