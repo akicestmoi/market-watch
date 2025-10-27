@@ -84,6 +84,9 @@ A Django-based market monitoring application with comprehensive API documentatio
    ```bash
    make help            # Show all available commands
    make install         # Install dependencies
+	make lint            # Lint the code
+	make flake8          # Run Flake8
+	make pyright         # Run Pyright
    make build           # Build the Docker image
    make start           # Start the application
    make stop            # Stop all containers
@@ -107,29 +110,6 @@ The application includes comprehensive OpenAPI documentation:
 - **Swagger UI**: http://localhost:8000/api/docs/
 - **Schema**: http://localhost:8000/api/schema/
 
-### API Features
-
-#### Market Data Management
-- **Ingest Market Prices**: Scrap and ingest market prices from various sources (Yahoo Finance, Global Rates, Bloomberg)
-- **Ingest Asset-Specific Data**: Scrap historical data for specific assets over target periods
-- **Get Market Price Data**: Retrieve market price data with support for single asset or date-based queries
-- **Update Market Price Data**: Update existing price data with audit logging
-
-#### Price Analysis & Calculations
-- **Calculate Price Changes**: Calculate percentage and absolute price changes between two dates for all assets
-- **Get Yield Curves**: Retrieve bond yield data across different maturities for specific dates and locations
-- **Get Historical Prices**: Access historical price data for specific assets within date ranges
-
-#### Asset & Data Management
-- **Get Asset Names**: Retrieve lists of all assets with filtering by asset class, type, location, or source
-- **Get Price Update Logs**: Track data changes and corrections with filtering by date and/or asset
-- **Database Operations**: Full CRUD operations with comprehensive audit logging
-
-#### Documentation Features
-- **Request/Response Examples**: All endpoints include detailed examples
-- **Parameter Documentation**: Comprehensive parameter descriptions and validation rules
-- **Error Handling**: Detailed error responses with examples
-- **Interactive Testing**: Test endpoints directly from the Swagger UI
 
 ## 📂 Project Structure
 
@@ -158,7 +138,7 @@ The application includes automated market data ingestion using Celery and Redis:
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 
 ### **Scheduled Tasks**
-Market data is automatically ingested **3 times daily**:
+Market data is automatically ingested **3 times daily (Europe/Paris Time)**:
 - **9:00 AM** - Morning market data
 - **2:00 PM** - Afternoon market data
 - **8:00 PM** - Evening market data
@@ -170,21 +150,6 @@ make celery-beat
 
 # Start Celery worker (processes tasks)
 make celery-worker
-```
-
-### **Manual Task Execution**
-```bash
-# Run scheduled task synchronously
-python manage.py run_celery_task --task=scheduled
-
-# Run scheduled task asynchronously
-python manage.py run_celery_task --task=scheduled --async
-
-# Run manual task for specific date
-python manage.py run_celery_task --task=manual --date=2024-01-15
-
-# Run manual task asynchronously
-python manage.py run_celery_task --task=manual --date=2024-01-15 --async
 ```
 
 ### **Task Monitoring**
