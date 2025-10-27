@@ -15,3 +15,19 @@ class EconomicDataIngestionResponseSerializer(serializers.Serializer):
     updated_indicators = serializers.ListField(child=serializers.CharField())
     indicator_not_updated = serializers.ListField(child=serializers.CharField())
     schedule_not_updated = serializers.ListField(child=serializers.CharField())
+
+
+class SpecificEconomicDataIngestionResponseSerializerItem(serializers.Serializer):
+    """Specific Economic Data Ingestion Response Serializer Item."""
+
+    indicator = serializers.CharField()
+    period = serializers.CharField()
+
+
+class SpecificEconomicDataIngestionResponseSerializer(serializers.Serializer):
+    """Specific Economic Data Ingestion Response Serializer."""
+
+    message = serializers.CharField()
+    indicator_not_updated = serializers.ListField(
+        child=SpecificEconomicDataIngestionResponseSerializerItem()
+    )

@@ -5,6 +5,7 @@ body {
     min-height: 100vh;
     padding: 2rem;
     font-family: 'Inter', sans-serif;
+    overflow-x: auto; /* Allow horizontal scrolling for wider content */
 }
 
 /* Header */
@@ -30,10 +31,11 @@ body {
     display: flex;
     gap: 1.5rem;
     align-items: flex-start;
+    min-width: 1300px; /* Reduced from 1400px */
 }
 
 /* Card titles */
-.asset-class-card h2,
+.economic-table-card h2,
 .event-card h2 {
     margin: 0 0 1rem 0;
     font-size: 1.25rem;
@@ -44,15 +46,16 @@ body {
 }
 
 /* Cards */
-.asset-class-card {
+.economic-table-card {
     background-color: #e0f2fe;
     border: 1px solid #2b6dd1;
     border-radius: 1rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     padding: 1.25rem;
     height: fit-content;
-    max-height: 80vh;
+    max-height: 90vh;
     overflow-y: auto;
+    min-width: 1200px; /* Reduced from 1300px */
 }
 
 .event-card {
@@ -72,6 +75,8 @@ table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    table-layout: fixed;
+    min-width: 1200px; /* Reduced to fit better in card */
 }
 
 table th, table td {
@@ -79,6 +84,34 @@ table th, table td {
     padding: 0.5rem;
     background-color: white;
     text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Column widths */
+table th:nth-child(1), table td:nth-child(1) { /* Category */
+    width: 2%;
+}
+
+table th:nth-child(2), table td:nth-child(2) { /* Name */
+    width: 6%;
+}
+
+/* Data columns (Current, Last, Change, Period) - equal width for each location */
+table th:nth-child(3), table td:nth-child(3), /* US Current */
+table th:nth-child(4), table td:nth-child(4), /* US Last */
+table th:nth-child(5), table td:nth-child(5), /* US Change */
+table th:nth-child(6), table td:nth-child(6), /* US Period */
+table th:nth-child(7), table td:nth-child(7), /* FR Current */
+table th:nth-child(8), table td:nth-child(8), /* FR Last */
+table th:nth-child(9), table td:nth-child(9), /* FR Change */
+table th:nth-child(10), table td:nth-child(10), /* FR Period */
+table th:nth-child(11), table td:nth-child(11), /* JP Current */
+table th:nth-child(12), table td:nth-child(12), /* JP Last */
+table th:nth-child(13), table td:nth-child(13), /* JP Change */
+table th:nth-child(14), table td:nth-child(14) { /* JP Period */
+    width: 7.2%; /* 86.4% / 12 columns = 7.2% each */
 }
 
 table tbody tr {
@@ -100,15 +133,19 @@ table thead th {
 .category-cell {
     font-weight: bold;
     background-color: #dbeafe;
-    text-align: left;
+    text-align: center;
     vertical-align: middle;
     padding-left: 0.75rem;
+    white-space: normal; /* Allow text wrapping for category */
+    overflow: visible;
 }
 
 .name-cell {
     text-align: left;
     background-color: #f1f5f9;
     font-weight: 500;
+    white-space: normal; /* Allow text wrapping for name */
+    overflow: visible;
 }
 
 /* Separators */
@@ -175,12 +212,16 @@ table thead th {
     margin-bottom: 0.25rem;
     background-color: #f8fafc;
     border-radius: 0.25rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
     line-height: 1.4;
 }
 
 .event-item:last-child {
     margin-bottom: 0;
+}
+
+.event-time-location {
+    margin-bottom: 0.125rem;
 }
 
 .event-time {
@@ -196,7 +237,8 @@ table thead th {
 
 .event-name {
     color: #6b7280;
-    margin-left: 0.25rem;
+    font-size: 0.9rem;
+    line-height: 1.3;
 }
 
 .no-events {

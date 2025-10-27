@@ -4,9 +4,6 @@ from rest_framework import serializers
 class EconomicDataIngestionSerializer(serializers.Serializer):
     """Economic Data Ingestion Serializer."""
 
-    indicator_names = serializers.ListField(
-        child=serializers.CharField(), required=False, default=[]
-    )
     start_date = serializers.DateField(required=True)
     end_date = serializers.DateField(required=True)
     update_schedule = serializers.BooleanField(required=False, default=True)
@@ -29,3 +26,16 @@ class UpdatePublicationScheduleSerializer(serializers.Serializer):
     indicator_names = serializers.ListField(
         child=serializers.CharField(), required=False, default=[]
     )
+
+
+class SpecificEconomicDataIngestionSerializerItem(serializers.Serializer):
+    """Specific Economic Data Ingestion Serializer Item."""
+
+    indicator_name = serializers.CharField(required=True)
+    periods = serializers.ListField(child=serializers.CharField(), required=True)
+
+
+class SpecificEconomicDataIngestionSerializer(serializers.ListSerializer):
+    """Specific Economic Data Ingestion Serializer."""
+
+    child = SpecificEconomicDataIngestionSerializerItem()

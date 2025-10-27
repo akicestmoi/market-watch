@@ -19,7 +19,7 @@
 
     <div class="columns">
         <!-- LEFT: Economic Table -->
-        <div class="asset-class-card" style="flex: 3;">
+        <div class="economic-table-card" style="flex: 3;">
             <h2>Economic Data</h2>
             <table>
                 <thead>
@@ -32,9 +32,9 @@
                     </tr>
                     <tr>
                         {% for loc in locations %}
-                        <th>Current</th>
-                        <th>Last</th>
-                        <th>Change</th>
+                        <th>Curr</th>
+                        <th>Prev</th>
+                        <th>Chg</th>
                         <th class="{% if not forloop.last %}period-separator{% endif %}">Period</th>
                         {% endfor %}
                     </tr>
@@ -53,28 +53,28 @@
                         <td class="name-cell">{{ name_group.grouper }}</td>
 
                         {% for location in locations %}
-                        {% for rec in name_group.list %}
-                        {% if rec.location == location %}
+                        {% for record in name_group.list %}
+                        {% if record.location == location %}
                         <td class="{% if location != locations.0 %}location-separator{% endif %}">
-                            <span class="{% if rec.last is None %}empty-data{% endif %}">
-                                {{ rec.last|default:"—" }}
+                            <span class="{% if record.last is None %}empty-data{% endif %}">
+                                {{ record.last|default:"—" }}
                             </span>
                         </td>
                         <td>
-                            <span class="{% if rec.previous is None %}empty-data{% endif %}">
-                                {{ rec.previous|default:"—" }}
+                            <span class="{% if record.previous is None %}empty-data{% endif %}">
+                                {{ record.previous|default:"—" }}
                             </span>
                         </td>
-                        <td class="{% if rec.change > 0 %}table-change-positive
-                                        {% elif rec.change < 0 %}table-change-negative
+                        <td class="{% if record.change > 0 %}table-change-positive
+                                        {% elif record.change < 0 %}table-change-negative
                                         {% endif %}">
-                            <span class="{% if rec.change is None %}empty-data{% endif %}">
-                                {% if rec.change is not None %}{{ rec.change }}%{% else %}—{% endif %}
+                            <span class="{% if record.change is None %}empty-data{% endif %}">
+                                {% if record.change is not None %}{{ record.change|floatformat:1 }}{% else %}—{% endif%}
                             </span>
                         </td>
                         <td>
-                            <span class="{% if rec.period is None %}empty-data{% endif %}">
-                                {{ rec.period|default:"—" }}
+                            <span class="{% if record.period is None %}empty-data{% endif %}">
+                                {{ record.period|default:"—" }}
                             </span>
                         </td>
                         {% endif %}
@@ -97,9 +97,11 @@
                     <div class="events-for-date">
                         {% for event in date_group.events %}
                         <div class="event-item">
-                            <span class="event-time">{{ event.time_str }}</span>:
-                            <span class="event-location">{{ event.location }}</span>
-                            <span class="event-name">{{ event.name }}</span>
+                            <div class="event-time-location">
+                                <span class="event-time">{{ event.time_str }}</span>:
+                                <span class="event-location">{{ event.location }}</span>
+                            </div>
+                            <div class="event-name">{{ event.name }}</div>
                         </div>
                         {% endfor %}
                     </div>

@@ -122,7 +122,9 @@ class EconomicDataModel(BaseModel):
             case EconomicPublicationFrequencyChoices.DAILY:
                 return self.period.strftime("%Y-%m-%d")
             case EconomicPublicationFrequencyChoices.MONTHLY:
-                return self.period.strftime("%Y-%m")
+                month_str = self.period.strftime("%b")
+                year_short = self.period.strftime("%y")
+                return f"{month_str}.{year_short}"
             case EconomicPublicationFrequencyChoices.QUARTERLY:
                 quarter = (self.period.month - 1) // 3 + 1
                 year_short = self.period.year % 100

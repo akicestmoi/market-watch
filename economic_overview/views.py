@@ -1,6 +1,6 @@
 import json
 from datetime import date, timedelta
-from typing import List
+from typing import List, TypedDict
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -12,10 +12,12 @@ from economic_overview.models import (
 )
 from economic_overview.request_serializers import (
     EconomicDataIngestionSerializer,
+    SpecificEconomicDataIngestionSerializer,
     UpdatePublicationScheduleSerializer,
 )
 from economic_overview.response_serializers import (
     EconomicDataIngestionResponseSerializer,
+    SpecificEconomicDataIngestionResponseSerializer,
     UpdatePublicationScheduleResponseSerializer,
 )
 from shared.open_api import (
@@ -137,35 +139,15 @@ class IngestEconomicDataView(EconomicOverviewBaseView):
     )
     def post(self, validated_data: dict) -> Response:
         """Ingest economic data from various sources."""
-        indicator_names: List[str] = validated_data.get("indicator_names", [])
         start_date: date = validated_data.get(
             "start_date", date.today() - timedelta(days=30)
         )
         end_date: date = validated_data.get("end_date", date.today())
         update_schedule: bool = validated_data.get("update_schedule", True)
 
-        validation_error = self._validate_indicators_exist(indicator_names)
-        if validation_error:
-            return validation_error
-
         indicators = economic_overview_services.get_economic_indicators_to_update(
             start_date=start_date,
             end_date=end_date,
-            indicator_names=indicator_names,
-        )
-        if not indicators:
-            return Response(
-                {
-                    "message": "No indicators found for the specified criteria.",
-                    "updated_indicators": [],
-                    "indicator_not_updated": [],
-                    "schedule_not_updated": [],
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        logger.info(
-            f"Ingesting economic data for {len(indicators)} indicators: {[indicator.name for indicator in indicators]} and for dates between: {start_date} and {end_date}"
         )
         indicator_not_updated = economic_overview_services.ingest_economic_data(
             indicators
@@ -175,21 +157,60 @@ class IngestEconomicDataView(EconomicOverviewBaseView):
             schedule_not_updated = (
                 economic_overview_services.update_publication_schedules(indicators)
             )
-
         return Response(
             data=EconomicDataIngestionResponseSerializer(
                 {
                     "message": "Economic data successfully ingested",
                     "updated_indicators": [indicator.name for indicator in indicators],
-                    "indicator_not_updated": [
-                        indicator["indicator"].name
-                        for indicator in indicator_not_updated
-                    ],
-                    "schedule_not_updated": (
-                        [schedule.indicator.name for schedule in schedule_not_updated]
-                        if schedule_not_updated
-                        else []
-                    ),
+                    "indicator_not_updated": indicator_not_updated,
+                    "schedule_not_updated": schedule_not_updated,
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SpecificEconomicDataIngestionItem(TypedDict):
+    """Specific Economic Data Ingestion Item."""
+
+    indicator_name: str
+    periods: List[str]
+
+
+class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
+    """Ingest Specific Economic Data APIView."""
+
+    @open_api(
+        tags=[ApiTags.ECONOMIC_DATA],
+        summary="Ingest Specific Economic Data",
+        description="Ingest specific economic data for a specific indicator and period.",
+        request_serializer=SpecificEconomicDataIngestionSerializer,
+        response=CreatedOpenApiResponse(
+            SpecificEconomicDataIngestionResponseSerializer
+        ),
+        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
+    )
+    def post(self, validated_data: List[SpecificEconomicDataIngestionItem]) -> Response:
+        """Ingest specific economic data for a specific indicator and period."""
+        indicator_names: List[str] = [item["indicator_name"] for item in validated_data]
+        periods: List[List[str]] = [item["periods"] for item in validated_data]
+        validation_error = self._validate_indicators_exist(indicator_names)
+        if validation_error:
+            return validation_error
+
+        indicators = economic_overview_services.get_economic_indicators_by_names(
+            indicator_names=indicator_names
+        )
+        indicator_not_updated = (
+            economic_overview_services.ingest_specific_economic_data(
+                indicators, periods=periods
+            )
+        )
+        return Response(
+            data=SpecificEconomicDataIngestionResponseSerializer(
+                {
+                    "message": "Economic data successfully ingested",
+                    "indicator_not_updated": indicator_not_updated,
                 }
             ).data,
             status=status.HTTP_201_CREATED,
