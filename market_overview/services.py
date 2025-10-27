@@ -2,7 +2,7 @@ import json
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict, cast
 
 import environ
 import pandas as pd
@@ -127,7 +127,9 @@ def _get_yahoo_finance_closing_prices(
         return ScrappingResult(price=None, comment="Yahoo Finance: No prices found.")
     closing_price = prices[prices["Date"].dt.date == target_date].reset_index()
     if not closing_price.empty:
-        return ScrappingResult(price=closing_price.loc[0, "Close"], comment="")
+        return ScrappingResult(
+            price=float(str(closing_price.loc[0, "Close"])), comment=""
+        )
     return ScrappingResult(price=None, comment="Yahoo Finance: No prices found.")
 
 
@@ -143,7 +145,7 @@ def _scrap_euribor_from_global_rates(target_date: date, ticker: str) -> Scrappin
     if response.status_code >= 400:
         logger.warning(f"Error scraping Euribor rates: {response.text}")
         return ScrappingResult(price=None, comment=response.text)
-    soup = BeautifulSoup(response.content, "html.parser")
+    soup = BeautifulSoup(response.content, "html.parser")  # type: ignore[reportArgumentType]
 
     table = soup.find("table")
     if not table:
@@ -151,7 +153,7 @@ def _scrap_euribor_from_global_rates(target_date: date, ticker: str) -> Scrappin
             price=None, comment="Could not find Euribor rates table on page"
         )
 
-    for tr in table.find_all("tr"):
+    for tr in table.find_all("tr"):  # type: ignore[reportAttributeAccessIssue]
         cells = tr.find_all("td")
         if len(cells) == 2:
             raw_date = cells[0].get_text(strip=True)
@@ -210,10 +212,11 @@ def _get_sofr_from_nyfed(target_date: date) -> ScrappingResult:
 
     root = ET.fromstring(response.content)
     for rate in root.findall(".//rate"):
-        effective_date = rate.find("effectiveDate").text
+        effective_date = rate.find("effectiveDate").text  # type: ignore[reportOptionalMemberAccess]
         if effective_date == target_date.isoformat():
-            percent_rate = rate.find("percentRate").text
-            return ScrappingResult(price=float(percent_rate), comment="")
+            percent_rate = rate.find("percentRate").text  # type: ignore[reportOptionalMemberAccess]
+            if percent_rate:
+                return ScrappingResult(price=float(percent_rate), comment="")
     return ScrappingResult(price=None, comment="SOFR rate not found.")
 
 
@@ -240,14 +243,14 @@ def _get_treasury_yield_curve_from_dep_treasury(target_date: date) -> dict:
     }
     for entry in root.findall("atom:entry", sdmx_namespaces):
         obs_date = entry.find("atom:content/m:properties/d:NEW_DATE", sdmx_namespaces)
-        if obs_date is not None and obs_date.text.startswith(target_date.isoformat()):
+        if obs_date is not None and obs_date.text.startswith(target_date.isoformat()):  # type: ignore[reportOptionalMemberAccess]
             props = entry.find("atom:content/m:properties", sdmx_namespaces)
-            for child in props:
+            for child in props:  # type: ignore[reportOptionalIterable]
                 tag = child.tag.split("}")[1]  # Remove namespace
                 if tag.startswith("BC_"):
                     term = tag.replace("BC_", "")
                     try:
-                        yield_curve[term] = float(child.text)
+                        yield_curve[term] = float(child.text)  # type: ignore[ArgumentType]
                     except (TypeError, ValueError):
                         continue
             break
@@ -303,7 +306,7 @@ def _get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
     if not closing_price_series.empty:
         closing_price_str = closing_price_series.loc[0, "obs_value"]
         return ScrappingResult(
-            price=_parse_str_decimals_to_float(closing_price_str), comment=""
+            price=_parse_str_decimals_to_float(str(closing_price_str)), comment=""
         )
     return ScrappingResult(price=None, comment="Webstat rate not found.")
 
@@ -360,7 +363,7 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
             return ScrappingResult(price=None, comment=response.text)
 
     df = pd.read_excel(BytesIO(response.content))
-    matches = df.applymap(lambda x: "Average" in str(x))
+    matches = df.applymap(lambda x: "Average" in str(x))  # type: ignore[CallIssue]
     match_locations = [(i, j) for i, j in zip(*matches.to_numpy().nonzero())]
     if len(match_locations) > 1:
         return ScrappingResult(
@@ -371,7 +374,7 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
     mutan_location_column = match_locations[0][1] + 1
     mutan_rate = df.iloc[mutan_location_row, mutan_location_column]
     if not pd.isna(df.iloc[mutan_location_row, mutan_location_column]):
-        return ScrappingResult(price=float(mutan_rate), comment="")
+        return ScrappingResult(price=float(str(mutan_rate)), comment="")
     return ScrappingResult(price=None, comment="Mutan rate not found.")
 
 
@@ -385,7 +388,7 @@ def _scrap_jgb_yield_curve_from_bb(target_date: date) -> dict:
     if response.status_code >= 400:
         logger.warning(f"Error scraping JGB yield curve: {response.text}")
         return {"error": response.text}
-    soup = BeautifulSoup(response.content, "html.parser")
+    soup = BeautifulSoup(response.content, "html.parser")  # type: ignore[reportArgumentType]
 
     rows = []
     for tr in soup.select("table.tbCore tr"):
@@ -556,10 +559,11 @@ def calculate_price_change(
     price_diff.loc[rates_row, "price_change"] *= 100
     price_diff.loc[rates_row, "price_change_pct"] = None
 
-    records = (
+    records = cast(
+        List[PriceChange],
         price_diff[list(PriceChange.__annotations__.keys())]
         .replace({float("nan"): None})
-        .to_dict(orient="records")
+        .to_dict(orient="records"),
     )
     return [PriceChange(**record) for record in records]
 
@@ -633,7 +637,12 @@ def get_price_update_logs(
     if short_name:
         logs_queryset = logs_queryset.filter(market_price__asset__short_name=short_name)
 
-    return shared_services.convert_query_to_dictionary_list(queryset=logs_queryset)
+    return [
+        MarketData(**log)
+        for log in shared_services.convert_query_to_dictionary_list(
+            queryset=logs_queryset
+        )
+    ]
 
 
 def get_assets_without_prices(

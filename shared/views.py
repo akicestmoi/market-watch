@@ -73,7 +73,7 @@ class BaseAPIView(APIView):
             error_type=error_type,
             message=message,
             status_code=status_code,
-            detail=detail,
+            detail=detail,  # type: ignore[reportArgumentType]
         )
         return Response(error_data, status=status_code)
 

@@ -56,8 +56,8 @@
                         {% for record in name_group.list %}
                         {% if record.location == location %}
                         <td class="{% if location != locations.0 %}location-separator{% endif %}">
-                            <span class="{% if record.last is None %}empty-data{% endif %}">
-                                {{ record.last|default:"—" }}
+                            <span class="{% if record.current is None %}empty-data{% endif %}">
+                                {{ record.current|default:"—" }}
                             </span>
                         </td>
                         <td>

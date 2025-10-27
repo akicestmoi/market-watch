@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, Literal, Optional, TypedDict, Union, cast
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -18,7 +18,12 @@ from market_overview.models import (
     LocationChoices,
     MarketPriceModel,
 )
-from market_overview.services import AssetNames, calculate_price_change
+from market_overview.services import (
+    AssetNames,
+    HistoricalPrice,
+    YieldCurvePoint,
+    calculate_price_change,
+)
 
 
 class LocationEnum(str, Enum):
@@ -33,7 +38,7 @@ class LocationEnum(str, Enum):
 class DisplayAsset(TypedDict):
     """Display asset dictionnary."""
 
-    country: LocationChoices
+    country: Union[LocationChoices, Literal["-"]]
     asset: str
     name: str
     maturity: Optional[float]
@@ -68,7 +73,9 @@ LOCATION_MAPPING = {
 }
 
 
-def get_asset_full_name(asset_names: List[AssetNames], asset_short_name) -> str:
+def get_asset_full_name(
+    asset_names: List[AssetNames], asset_short_name
+) -> Optional[str]:
     """Get asset full_name."""
     return next(
         (
@@ -106,7 +113,7 @@ def _sort_by_location_and_maturity(
         for i, loc in enumerate(LOCATION_MAPPING.get(LocationEnum(location_group), []))
     }
     return group.assign(
-        location_order=group["location"].map(location_order).fillna(999)
+        location_order=group["location"].map(lambda x: location_order.get(x, 999))
     ).sort_values(["location_order", "maturity"], na_position="last")
 
 
@@ -124,8 +131,8 @@ def format_data_for_market_recap_display(
         for loc, countries in LOCATION_MAPPING.items()
         for country in countries
     }
-    df["location_group"] = (
-        df["location"].map(country_to_location).fillna(LocationEnum.NO_LOCATION.value)
+    df["location_group"] = df["location"].map(
+        lambda x: country_to_location.get(x, LocationEnum.NO_LOCATION.value)
     )
     df = df.sort_values(by="asset_id")
 
@@ -135,16 +142,22 @@ def format_data_for_market_recap_display(
         for location_group, loc_group in asset_group.groupby(
             "location_group", sort=False
         ):
-            sorted_group = _sort_by_location_and_maturity(loc_group, location_group)
+            sorted_group = _sort_by_location_and_maturity(
+                loc_group, str(location_group)
+            )
             assets = _build_assets(sorted_group)
             if assets:
                 locations.append(
-                    DisplayAssetbyLocation(location=location_group, assets=assets)
+                    DisplayAssetbyLocation(
+                        location=LocationEnum(str(location_group)), assets=assets
+                    )
                 )
         if locations:
             data_to_display.append(
                 DisplayData(
-                    asset_class=AssetClassChoices(asset_class).label,
+                    asset_class=cast(
+                        AssetClassChoices, AssetClassChoices(asset_class).label
+                    ),
                     locations=locations,
                 )
             )
@@ -178,12 +191,12 @@ def _get_start_date(reference_date: date, chart_duration: ChartDuration) -> date
 class MarketChartsDropdownValues(TypedDict):
     """Dropdown values."""
 
-    stocks: list[str]
-    fx: list[str]
-    crypto: list[str]
-    commodity: list[str]
-    rates: list[str]
-    locations: list[str]
+    stocks: List[AssetNames]
+    fx: List[AssetNames]
+    crypto: List[AssetNames]
+    commodity: List[AssetNames]
+    rates: List[AssetNames]
+    locations: List[str]
 
 
 def get_market_charts_dropdown_values() -> MarketChartsDropdownValues:
@@ -199,8 +212,15 @@ def get_market_charts_dropdown_values() -> MarketChartsDropdownValues:
         name: market_overview_services.get_asset_names(filters)
         for name, filters in asset_classes.items()
     }
-    dropdown_values["locations"] = [str(choice.label) for choice in LocationChoices]
-    return dropdown_values
+    locations = LocationChoices.get_labels()
+    return MarketChartsDropdownValues(
+        stocks=dropdown_values["stocks"],
+        fx=dropdown_values["fx"],
+        crypto=dropdown_values["crypto"],
+        commodity=dropdown_values["commodity"],
+        rates=dropdown_values["rates"],
+        locations=locations,
+    )
 
 
 class MarketChartsFrontData(TypedDict):
@@ -229,13 +249,13 @@ class MarketChartsFrontData(TypedDict):
 class MarketChartsLabels(TypedDict):
     """Labels."""
 
-    stocks: str
-    fx: str
-    crypto: str
-    commodity: str
-    yield_curve_location: str
-    main_rate: str
-    spread_rate: str
+    stocks: Optional[str]
+    fx: Optional[str]
+    crypto: Optional[str]
+    commodity: Optional[str]
+    yield_curve_location: Optional[str]
+    main_rate: Optional[str]
+    spread_rate: Optional[str]
     stock_name_compare: Optional[str]
     fx_name_compare: Optional[str]
     crypto_name_compare: Optional[str]
@@ -284,17 +304,17 @@ def get_market_charts_labels(
 class MarketChartsMarketData(TypedDict):
     """Market data."""
 
-    stock_prices: list[dict]
-    stock_prices_compare: list[dict]
-    fx_prices: list[dict]
-    fx_prices_compare: list[dict]
-    crypto_prices: list[dict]
-    crypto_prices_compare: list[dict]
-    commodity_prices: list[dict]
-    commodity_prices_compare: list[dict]
-    reference_yield_curve: list[dict]
-    previous_yield_curve: list[dict]
-    spread_rates: list[dict]
+    stock_prices: List[HistoricalPrice]
+    stock_prices_compare: List[HistoricalPrice]
+    fx_prices: List[HistoricalPrice]
+    fx_prices_compare: List[HistoricalPrice]
+    crypto_prices: List[HistoricalPrice]
+    crypto_prices_compare: List[HistoricalPrice]
+    commodity_prices: List[HistoricalPrice]
+    commodity_prices_compare: List[HistoricalPrice]
+    reference_yield_curve: List[YieldCurvePoint]
+    previous_yield_curve: List[YieldCurvePoint]
+    spread_rates: List[HistoricalPrice]
 
 
 def get_market_charts_market_data(
@@ -325,6 +345,10 @@ def get_market_charts_market_data(
     spread_rate_df["price"] = (
         spread_rate_df["price_current"] - spread_rate_df["price_prev"]
     )
+    spread_rates = cast(
+        List[HistoricalPrice],
+        spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
+    )
     return {
         "stock_prices": market_overview_services.get_historical_prices(
             front_data["stock_name"],
@@ -342,7 +366,7 @@ def get_market_charts_market_data(
                 end_date=reference_date,
             )
             if front_data["stock_name_compare"]
-            else None
+            else []
         ),
         "fx_prices": market_overview_services.get_historical_prices(
             front_data["fx_name"],
@@ -358,7 +382,7 @@ def get_market_charts_market_data(
                 end_date=reference_date,
             )
             if front_data["fx_name_compare"]
-            else None
+            else []
         ),
         "crypto_prices": market_overview_services.get_historical_prices(
             front_data["crypto_name"],
@@ -376,7 +400,7 @@ def get_market_charts_market_data(
                 end_date=reference_date,
             )
             if front_data["crypto_name_compare"]
-            else None
+            else []
         ),
         "commodity_prices": market_overview_services.get_historical_prices(
             front_data["commodity_name"],
@@ -394,7 +418,7 @@ def get_market_charts_market_data(
                 end_date=reference_date,
             )
             if front_data["commodity_name_compare"]
-            else None
+            else []
         ),
         "reference_yield_curve": market_overview_services.get_yield_curve(
             reference_date,
@@ -404,9 +428,7 @@ def get_market_charts_market_data(
             previous_curve_date,
             LocationChoices.from_label(front_data["yield_curve_location"]),
         ),
-        "spread_rates": spread_rate_df[["price_date", "price"]].to_dict(
-            orient="records"
-        ),
+        "spread_rates": spread_rates,
     }
 
 
@@ -416,7 +438,7 @@ class EconomicRecapItem(TypedDict):
     category: str
     location: str
     name: str
-    last: Optional[float]
+    current: Optional[float]
     previous: Optional[float]
     change: Optional[float]
     period: Optional[str]
@@ -424,7 +446,7 @@ class EconomicRecapItem(TypedDict):
 
 def get_economic_recap_data(locations: List[str]) -> Dict[str, List[EconomicRecapItem]]:
     """Get economic recap data."""
-    indicators = EconomicIndicatorInformationModel.objects.all()
+    indicators = EconomicIndicatorInformationModel.objects.all().order_by("id")
     economic_data: Dict[str, List[EconomicRecapItem]] = {}
 
     for indicator in indicators:
@@ -441,13 +463,13 @@ def get_economic_recap_data(locations: List[str]) -> Dict[str, List[EconomicReca
                 ).order_by("-period")[:2]
             )
 
-            last, prev = (records + [None, None])[:2]
-            last_value = getattr(last, "data_value", None)
+            curr, prev = (records + [None, None])[:2]
+            curr_value = getattr(curr, "data_value", None)
             prev_value = getattr(prev, "data_value", None)
-            period = last.get_period_display() if last else None
+            period = curr.get_period_display() if curr else None
             change = (
-                last_value - prev_value
-                if last_value is not None and prev_value is not None
+                curr_value - prev_value
+                if curr_value is not None and prev_value is not None
                 else None
             )
 
@@ -456,7 +478,7 @@ def get_economic_recap_data(locations: List[str]) -> Dict[str, List[EconomicReca
                     category=category,
                     location=location,
                     name=indicator.type,
-                    last=last_value,
+                    current=curr_value,
                     previous=prev_value,
                     change=change,
                     period=period,
@@ -500,7 +522,9 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
 
         event = EconomicEvent(
             name=schedule.indicator.type,
-            location=EconomicDataLocationChoices(schedule.indicator.location).label,
+            location=str(
+                EconomicDataLocationChoices(schedule.indicator.location).label
+            ),
             publication_date=publication_date,
             time_str=publication_date.strftime("%H:%M"),
         )

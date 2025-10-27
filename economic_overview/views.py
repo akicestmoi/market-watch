@@ -1,6 +1,6 @@
 import json
 from datetime import date, timedelta
-from typing import List, TypedDict
+from typing import List, Optional, TypedDict
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -34,7 +34,9 @@ from shared.views import BaseAPIView
 class EconomicOverviewBaseView(BaseAPIView):
     """Base view for economic overview operations."""
 
-    def _validate_indicators_exist(self, indicator_names: List[str]) -> Response | None:
+    def _validate_indicators_exist(
+        self, indicator_names: List[str]
+    ) -> Optional[Response]:
         """Validate that all indicator names exist in the database."""
         if not indicator_names:
             return None
@@ -49,7 +51,6 @@ class EconomicOverviewBaseView(BaseAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return None
 
 
 class GenerateBaseEconomicIndicatorInformationView(EconomicOverviewBaseView):
@@ -115,11 +116,7 @@ class UpdatePublicationScheduleView(EconomicOverviewBaseView):
             data=UpdatePublicationScheduleResponseSerializer(
                 {
                     "message": "Publication schedule successfully updated.",
-                    "schedule_not_updated": (
-                        [schedule.indicator.name for schedule in schedule_not_updated]
-                        if schedule_not_updated
-                        else []
-                    ),
+                    "schedule_not_updated": schedule_not_updated,
                 }
             ).data,
             status=status.HTTP_200_OK,

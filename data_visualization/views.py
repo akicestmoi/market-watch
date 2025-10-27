@@ -6,7 +6,7 @@ from pandas.tseries.offsets import BDay
 
 import data_visualization.services as data_visualization_services
 import market_overview.services as market_overview_services
-from data_visualization.services import ChartDuration
+from data_visualization.services import ChartDuration, MarketChartsFrontData
 from economic_overview.models import EconomicDataLocationChoices
 from market_overview.models import AssetClassChoices, LocationChoices
 
@@ -142,12 +142,12 @@ def market_charts_view(request):
 
     # Get Label
     labels = data_visualization_services.get_market_charts_labels(
-        dropdown_values, front_data
+        dropdown_values, MarketChartsFrontData(**front_data)
     )
 
     # Get Market Data
     market_data = data_visualization_services.get_market_charts_market_data(
-        reference_date, previous_curve_date, front_data
+        reference_date, previous_curve_date, MarketChartsFrontData(**front_data)
     )
 
     # Return all to Front
@@ -156,7 +156,7 @@ def market_charts_view(request):
         "previous_curve_date": previous_curve_date.isoformat(),
         "default_reference_date": default_values["reference_date"],
         "default_previous_curve_date": default_values["previous_curve_date"],
-        "dropdown_values": json.dumps(dropdown_values),
+        "dropdown_values": json.dumps(dropdown_values, default=str),
         "selected_values": json.dumps(selected_values),
         "labels": json.dumps(labels),
         "market_data": json.dumps(market_data, default=str),

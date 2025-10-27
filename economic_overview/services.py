@@ -2,11 +2,12 @@ import io
 import json
 import zipfile
 from datetime import date, datetime
-from typing import List, Optional, TypedDict
+from typing import List, Optional, TypedDict, Union
 
 import pandas as pd
 import requests
 from cachetools.func import ttl_cache
+from django.db.models import QuerySet
 from django.utils import timezone
 
 import shared.services as shared_services
@@ -150,14 +151,14 @@ def _get_data_from_insee(
             )
         target_row = target_row[0]
 
-    period = datetime.strptime(df.iloc[target_row, 0], "%Y-%m").date()
-    data_value = float(df.iloc[target_row, 1])
+    period = datetime.strptime(str(df.iloc[target_row, 0]), "%Y-%m").date()
+    data_value = float(str(df.iloc[target_row, 1]))
     return ScrappingResult(period=period, data_value=data_value, comment="")
 
 
 def get_economic_indicators_by_names(
     indicator_names: List[str] = [],
-) -> List[EconomicIndicatorInformationModel]:
+) -> QuerySet[EconomicIndicatorInformationModel]:
     """Get economic indicators by names."""
     if not indicator_names:
         return EconomicIndicatorInformationModel.objects.all()
@@ -195,7 +196,10 @@ def _update_publication_schedule(
 
 
 def update_publication_schedules(
-    indicators: List[EconomicIndicatorInformationModel],
+    indicators: Union[
+        List[EconomicIndicatorInformationModel],
+        QuerySet[EconomicIndicatorInformationModel],
+    ],
 ) -> List[str]:
     """Update publication schedules."""
     schedule_not_updated = []
@@ -241,7 +245,7 @@ def get_economic_indicators_to_update(
     start_date: date,
     end_date: date,
     indicator_names: List[str] = [],
-) -> List[EconomicIndicatorInformationModel]:
+) -> QuerySet[EconomicIndicatorInformationModel]:
     """Get economic indicators to update."""
     indicators_to_update = get_economic_indicators_by_names(indicator_names)
     publication_schedules = _get_indicators_with_no_publication_date()
@@ -285,7 +289,10 @@ class SpecificEconomicDataNotUpdatedItem(TypedDict):
 
 
 def ingest_economic_data(
-    indicators: List[EconomicIndicatorInformationModel],
+    indicators: Union[
+        List[EconomicIndicatorInformationModel],
+        QuerySet[EconomicIndicatorInformationModel],
+    ],
 ) -> List[str]:
     """Ingest economic data for all indicators."""
     economic_data_not_updated = []
@@ -298,7 +305,10 @@ def ingest_economic_data(
 
 
 def ingest_specific_economic_data(
-    indicators: List[EconomicIndicatorInformationModel],
+    indicators: Union[
+        List[EconomicIndicatorInformationModel],
+        QuerySet[EconomicIndicatorInformationModel],
+    ],
     periods: List[List[str]],
 ) -> List[SpecificEconomicDataNotUpdatedItem]:
     """Ingest specific economic data for indicators and target periods."""
@@ -321,7 +331,7 @@ def ingest_specific_economic_data(
 
 def check_economic_indicator_existence(indicator_name: str) -> bool:
     """Check economic indicator existence in database."""
-    return EconomicIndicatorInformationModel.objects.filter(
+    return EconomicIndicatorInformationModel.objects.filter(  # type: ignore[reportAttributeAccessIssue]
         name=indicator_name
     ).exists()
 

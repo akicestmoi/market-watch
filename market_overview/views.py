@@ -1,14 +1,13 @@
 import json
 from datetime import date
+from typing import List
 
-from pandas.tseries.offsets import BDay
 from rest_framework import status
-from rest_framework.request import Request
 from rest_framework.response import Response
 
 import market_overview.services as market_overview_services
 import shared.services as shared_services
-from market_overview.models import AssetModel, MarketPriceModel
+from market_overview.models import AssetModel, LocationChoices, MarketPriceModel
 from market_overview.request_serializers import (
     BulkUpdateAssetsPricesSerializer,
     CalculatePriceDiffSerializer,
@@ -32,6 +31,7 @@ from market_overview.response_serializers import (
     PriceUpdateLogResponseSerializer,
     SpecificAssetMarketPriceIngestionResponseSerializer,
 )
+from market_overview.services import BulkUpdateAssetsPricesItem
 from shared.open_api import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -92,10 +92,12 @@ class IngestMarketPricesView(BaseAPIView):
         description="Ingest market prices gathered from various sources for a specific date. This endpoint scrapes data from multiple sources and stores it in the database.",
         request_serializer=MarketPriceIngestionSerializer,
         response=CreatedOpenApiResponse(MarketPriceIngestionResponseSerializer),
+        error_responses=[BadRequestOpenApiResponse("Date is required")],
     )
     def post(self, validated_data: dict) -> Response:
         """Ingest market prices gathered from various sources."""
-        price_date: date = validated_data.get("date")
+        price_date: date = validated_data["date"]
+
         logger.info(f"Ingesting market data for date: {price_date}")
         market_data = market_overview_services.get_market_data(price_date)
         asset_not_updated = market_overview_services.ingest_market_data(market_data)
@@ -128,9 +130,9 @@ class IngestSpecificAssetMarketPricesView(BaseAPIView):
     )
     def post(self, validated_data: dict) -> Response:
         """Ingest market prices for a specific asset over a target period."""
-        short_name: str = validated_data.get("short_name")
-        start_date: date = validated_data.get("start_date")
-        end_date: date = validated_data.get("end_date", (date.today() - BDay(1)).date())
+        short_name: str = validated_data["short_name"]
+        start_date: date = validated_data["start_date"]
+        end_date: date = validated_data["end_date"]
 
         if not market_overview_services.check_asset_existence(short_name):
             return Response(
@@ -168,8 +170,8 @@ class CalculatePriceChangeView(BaseAPIView):
     )
     def post(self, validated_data: dict) -> Response:
         """Calculate price change for all assets between two dates."""
-        reference_date: date = validated_data.get("reference_date")
-        previous_date: date = validated_data.get("previous_date")
+        reference_date: date = validated_data["reference_date"]
+        previous_date: date = validated_data["previous_date"]
 
         reference_market_prices = (
             market_overview_services.get_all_asset_prices_for_date(reference_date)
@@ -207,10 +209,11 @@ class GetMarketPriceView(BaseAPIView):
         request_serializer=GetMarketPriceSerializer,
         response=OkOpenApiResponse(MarketPriceResponseSerializer),
     )
-    def get(self, request: Request) -> Response:
+    def get(self, validated_data: dict) -> Response:
         """Get or list all market prices."""
-        price_date: date = request.query_params.get("date")
-        short_name: str = request.query_params.get("short_name")
+        price_date: date = validated_data["date"]
+        short_name: str = validated_data["short_name"]
+
         asset = shared_services.get(
             MarketPriceModel, date=price_date, asset__short_name=short_name
         )
@@ -231,7 +234,8 @@ class ListMarketPricesView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """List all market prices for a specific date."""
-        price_date: date = validated_data.get("date")
+        price_date: date = validated_data["date"]
+
         market_data = market_overview_services.get_all_asset_prices_for_date(price_date)
         return Response(
             data=MarketPriceResponseSerializer(market_data, many=True).data,
@@ -251,9 +255,10 @@ class GetHistoricalPricesView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """Get historical prices of an asset."""
-        short_name: str = validated_data.get("short_name")
-        start_date: date = validated_data.get("start_date")
-        end_date: date = validated_data.get("end_date")
+        short_name: str = validated_data["short_name"]
+        start_date: date = validated_data["start_date"]
+        end_date: date = validated_data["end_date"]
+
         historical_prices = market_overview_services.get_historical_prices(
             short_name, start_date, end_date
         )
@@ -275,8 +280,9 @@ class GetYieldCurveView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """Get yield curve for a specific date and location."""
-        target_date: date = validated_data.get("date")
-        location: str = validated_data.get("location")
+        target_date: date = validated_data["date"]
+        location: LocationChoices = validated_data["location"]
+
         yield_curve = market_overview_services.get_yield_curve(target_date, location)
         return Response(
             data=GetYieldCurveResponseSerializer(yield_curve).data,
@@ -296,7 +302,7 @@ class GetAssetsWithoutPricesView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """Get assets without prices."""
-        price_date: date = validated_data.get("price_date")
+        price_date: date = validated_data["price_date"]
         assets_queryset = market_overview_services.get_assets_without_prices(price_date)
         return Response(
             data=MarketPriceResponseSerializer(assets_queryset, many=True).data,
@@ -314,9 +320,10 @@ class BulkUpdateAssetsPricesView(BaseAPIView):
         request_serializer=BulkUpdateAssetsPricesSerializer,
         response=OkOpenApiResponse(MarketPriceResponseSerializer),
     )
-    def patch(self, validated_data: dict) -> Response:
+    def patch(self, validated_data: List[BulkUpdateAssetsPricesItem]) -> Response:
         """Bulk update assets prices."""
-        updates = validated_data
+        updates: List[BulkUpdateAssetsPricesItem] = validated_data
+
         assets = market_overview_services.bulk_update_assets_prices(updates)
         return Response(
             data=MarketPriceResponseSerializer(assets).data, status=status.HTTP_200_OK
@@ -335,8 +342,8 @@ class GetPriceUpdateLogsView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """Get price update logs with optional filtering."""
-        price_date: date = validated_data.get("price_date")
-        short_name: str = validated_data.get("short_name")
+        price_date: date = validated_data["price_date"]
+        short_name: str = validated_data["short_name"]
         price_update_logs = market_overview_services.get_price_update_logs(
             price_date=price_date, short_name=short_name
         )

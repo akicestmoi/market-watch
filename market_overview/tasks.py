@@ -13,8 +13,8 @@ def scheduled_market_data_ingestion():
     Celery task to ingest market data.
     This task will be scheduled to run 3 times a day.
     """
+    price_date = (date.today() - BDay(1)).date()
     try:
-        price_date = (date.today() - BDay(1)).date()
         logger.info(f"Ingesting market data for {price_date}")
         market_data = market_overview_services.get_market_data(price_date)
         asset_not_updated = market_overview_services.ingest_market_data(market_data)
@@ -22,7 +22,9 @@ def scheduled_market_data_ingestion():
             "status": "success",
             "message": f"Market data ingested successfully for {price_date}",
             "date": price_date.isoformat(),
-            "asset_not_updated": [data["short_name"] for data in asset_not_updated],
+            "asset_not_updated": [
+                data["asset"].short_name for data in asset_not_updated
+            ],
         }
 
     except Exception as e:

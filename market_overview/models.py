@@ -1,3 +1,5 @@
+from typing import List, cast
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -39,13 +41,24 @@ class LocationChoices(models.TextChoices):
     JP = "JP", _("Japan")
 
     @classmethod
-    def from_label(cls, label) -> str:
+    def from_label(cls, label) -> "LocationChoices":
         for choice in cls:
             if choice.label == label:
-                return str(choice.value)
+                return cast(LocationChoices, choice.value)
         raise ValueError(
             f"Choice does not exist, available choices: {[choice.value for choice in LocationChoices]}"
         )
+
+    @classmethod
+    def ordered(cls) -> List["LocationChoices"]:
+        """Ordered list of economic data location choices."""
+        order = ["US", "EU", "DE", "FR", "JP"]
+        return [cls[value] for value in order]
+
+    @classmethod
+    def get_labels(cls) -> List[str]:
+        """Get labels of location choices."""
+        return [cast(str, choice.label) for choice in cls.ordered()]
 
 
 class SourceChoices(models.TextChoices):

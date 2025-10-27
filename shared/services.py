@@ -1,16 +1,16 @@
-from typing import List, TypeVar
+from typing import List, Type, TypeVar
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.manager import BaseManager
+from django.db.models import QuerySet
 from rest_framework.exceptions import NotFound
 
 from .models import BaseLogModel, BaseModel
 
 T = TypeVar("T", bound=BaseModel)
-L = TypeVar("V", bound=BaseLogModel)
+L = TypeVar("L", bound=BaseLogModel)
 
 
-def get(model=T, *args, **kwargs) -> T:
+def get(model: Type[T], *args, **kwargs) -> T:
     """Get entity from database."""
     try:
         return model.objects.get(*args, **kwargs)
@@ -19,7 +19,10 @@ def get(model=T, *args, **kwargs) -> T:
 
 
 def update_with_logs(
-    model_to_update: T, log_model: L, updates: dict, enable_none_updates: bool = False
+    model_to_update: T,
+    log_model: Type[L],
+    updates: dict,
+    enable_none_updates: bool = False,
 ) -> T:
     """Update entity and create logs in a related log table."""
     update_logs = updates.pop("logs", None)
@@ -45,8 +48,8 @@ def update_with_logs(
 
 
 def upsert_with_logs(
-    model: T,
-    log_model: L,
+    model: Type[T],
+    log_model: Type[L],
     lookup_kwargs: dict,
     updates: dict,
     enable_none_updates: bool = False,
@@ -65,6 +68,6 @@ def upsert_with_logs(
         return model.objects.create(**create_data)
 
 
-def convert_query_to_dictionary_list(queryset: BaseManager) -> List[dict]:
+def convert_query_to_dictionary_list(queryset: QuerySet) -> List[dict]:
     """Convert a query into a List of Dictionary."""
     return [object.convert_to_dict() for object in queryset]

@@ -1,6 +1,6 @@
 import functools
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Type, TypeVar, Union
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -112,12 +112,15 @@ class MethodNotAllowedOpenApiResponse(OpenApiResponse):
         )
 
 
+S = TypeVar("S", bound=Union[serializers.Serializer, serializers.ListSerializer])
+
+
 class SuccessResponse:
     """Base Success Response class for OpenAPI documentation."""
 
     def __init__(
         self,
-        response_serializer: serializers.Serializer,
+        response_serializer: Type[S],
         status_code: int = status.HTTP_200_OK,
     ):
         self.response_serializer = response_serializer
@@ -131,54 +134,48 @@ class SuccessResponse:
         }
 
 
-class DefaultOpenApiResponseSerializer(SuccessResponse):
+class DefaultOpenApiResponseSerializer(serializers.Serializer):
     """Default OpenApi Response Serializer."""
 
-    class BaseResponseSerializer(serializers.Serializer):
-        message = serializers.CharField()
-
-    def __init__(self):
-        super().__init__(self.BaseResponseSerializer, status.HTTP_200_OK)
+    message = serializers.CharField()
 
 
 class OkOpenApiResponse(SuccessResponse):
     """200 OK Response."""
 
-    def __init__(self, response_serializer: serializers.Serializer):
+    def __init__(self, response_serializer: Type[S]):
         super().__init__(response_serializer, status.HTTP_200_OK)
 
 
 class CreatedOpenApiResponse(SuccessResponse):
     """201 Created Response."""
 
-    def __init__(self, response_serializer: serializers.Serializer):
+    def __init__(self, response_serializer: Type[S]):
         super().__init__(response_serializer, status.HTTP_201_CREATED)
 
 
 class AcceptedOpenApiResponse(SuccessResponse):
     """202 Accepted Response."""
 
-    def __init__(self, response_serializer: serializers.Serializer):
+    def __init__(self, response_serializer: Type[S]):
         super().__init__(response_serializer, status.HTTP_202_ACCEPTED)
 
 
 class NoContentOpenApiResponse(SuccessResponse):
     """204 No Content Response."""
 
-    def __init__(self, response_serializer: serializers.Serializer):
+    def __init__(self, response_serializer: Type[S]):
         super().__init__(response_serializer, status.HTTP_204_NO_CONTENT)
 
 
-def _build_parameters_for_get_requests(request_serializer: serializers.Serializer):
+def _build_parameters_for_get_requests(
+    request_serializer: Type[Union[serializers.Serializer, serializers.ListSerializer]],
+):
     """Build parameters for GET requests in OpenAPI documentation."""
     parameters = []
 
-    fields = (
-        request_serializer().fields
-        if callable(request_serializer)
-        else request_serializer.fields
-    )
-
+    serializer_instance = request_serializer()
+    fields = getattr(serializer_instance, "fields", {})
     for field_name, field in fields.items():
         if hasattr(field, "choices") and field.choices:
             parameters.append(
@@ -224,7 +221,7 @@ def _build_responses(
     if response and hasattr(response, "response_serializer"):
         responses_dict[response.status_code] = response.response_serializer
     else:
-        responses_dict[status.HTTP_200_OK] = DefaultOpenApiResponseSerializer
+        responses_dict[status.HTTP_200_OK] = DefaultOpenApiResponseSerializer()
 
     if error_responses:
         for error_response in error_responses:
@@ -237,7 +234,9 @@ def open_api(
     tags: List[ApiTags],
     summary: str,
     description: str,
-    request_serializer: Optional[serializers.Serializer] = None,
+    request_serializer: Optional[
+        Type[Union[serializers.Serializer, serializers.ListSerializer]]
+    ] = None,
     response: Optional[SuccessResponse] = None,
     error_responses: List[OpenApiResponse] = [],
 ):
