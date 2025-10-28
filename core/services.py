@@ -1,3 +1,4 @@
+import logging
 from typing import List, Type, TypeVar
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -5,6 +6,8 @@ from django.db.models import QuerySet
 from rest_framework.exceptions import NotFound
 
 from .models import BaseLogModel, BaseModel
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 L = TypeVar("L", bound=BaseLogModel)

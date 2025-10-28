@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional, TypedDict, Union, cast
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
-import market_overview.services as market_overview_services
+import market_overview.services.market_data_services as market_data_services
 from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicDataModel,
@@ -18,7 +18,7 @@ from market_overview.models import (
     LocationChoices,
     MarketPriceModel,
 )
-from market_overview.services import (
+from market_overview.services.market_data_services import (
     AssetNames,
     HistoricalPrice,
     YieldCurvePoint,
@@ -209,7 +209,7 @@ def get_market_charts_dropdown_values() -> MarketChartsDropdownValues:
         "rates": {"asset_type": AssetTypeChoices.GOVERNMENT_BOND_RATE},
     }
     dropdown_values = {
-        name: market_overview_services.get_asset_names(filters)
+        name: market_data_services.get_asset_names(filters)
         for name, filters in asset_classes.items()
     }
     locations = LocationChoices.get_labels()
@@ -321,14 +321,14 @@ def get_market_charts_market_data(
     reference_date: date, previous_curve_date: date, front_data: MarketChartsFrontData
 ) -> MarketChartsMarketData:
     """Get market data."""
-    main_rate_historical_yield = market_overview_services.get_historical_prices(
+    main_rate_historical_yield = market_data_services.get_historical_prices(
         front_data["main_rate"],
         start_date=_get_start_date(
             reference_date, front_data["spread_rates_chart_duration"]
         ),
         end_date=reference_date,
     )
-    spread_rate_historical_yield = market_overview_services.get_historical_prices(
+    spread_rate_historical_yield = market_data_services.get_historical_prices(
         front_data["spread_rate"],
         start_date=_get_start_date(
             reference_date, front_data["spread_rates_chart_duration"]
@@ -350,7 +350,7 @@ def get_market_charts_market_data(
         spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
     )
     return {
-        "stock_prices": market_overview_services.get_historical_prices(
+        "stock_prices": market_data_services.get_historical_prices(
             front_data["stock_name"],
             start_date=_get_start_date(
                 reference_date, front_data["stock_chart_duration"]
@@ -358,7 +358,7 @@ def get_market_charts_market_data(
             end_date=reference_date,
         ),
         "stock_prices_compare": (
-            market_overview_services.get_historical_prices(
+            market_data_services.get_historical_prices(
                 front_data["stock_name_compare"],
                 start_date=_get_start_date(
                     reference_date, front_data["stock_chart_duration"]
@@ -368,13 +368,13 @@ def get_market_charts_market_data(
             if front_data["stock_name_compare"]
             else []
         ),
-        "fx_prices": market_overview_services.get_historical_prices(
+        "fx_prices": market_data_services.get_historical_prices(
             front_data["fx_name"],
             start_date=_get_start_date(reference_date, front_data["fx_chart_duration"]),
             end_date=reference_date,
         ),
         "fx_prices_compare": (
-            market_overview_services.get_historical_prices(
+            market_data_services.get_historical_prices(
                 front_data["fx_name_compare"],
                 start_date=_get_start_date(
                     reference_date, front_data["fx_chart_duration"]
@@ -384,7 +384,7 @@ def get_market_charts_market_data(
             if front_data["fx_name_compare"]
             else []
         ),
-        "crypto_prices": market_overview_services.get_historical_prices(
+        "crypto_prices": market_data_services.get_historical_prices(
             front_data["crypto_name"],
             start_date=_get_start_date(
                 reference_date, front_data["crypto_chart_duration"]
@@ -392,7 +392,7 @@ def get_market_charts_market_data(
             end_date=reference_date,
         ),
         "crypto_prices_compare": (
-            market_overview_services.get_historical_prices(
+            market_data_services.get_historical_prices(
                 front_data["crypto_name_compare"],
                 start_date=_get_start_date(
                     reference_date, front_data["crypto_chart_duration"]
@@ -402,7 +402,7 @@ def get_market_charts_market_data(
             if front_data["crypto_name_compare"]
             else []
         ),
-        "commodity_prices": market_overview_services.get_historical_prices(
+        "commodity_prices": market_data_services.get_historical_prices(
             front_data["commodity_name"],
             start_date=_get_start_date(
                 reference_date, front_data["commodity_chart_duration"]
@@ -410,7 +410,7 @@ def get_market_charts_market_data(
             end_date=reference_date,
         ),
         "commodity_prices_compare": (
-            market_overview_services.get_historical_prices(
+            market_data_services.get_historical_prices(
                 front_data["commodity_name_compare"],
                 start_date=_get_start_date(
                     reference_date, front_data["commodity_chart_duration"]
@@ -420,11 +420,11 @@ def get_market_charts_market_data(
             if front_data["commodity_name_compare"]
             else []
         ),
-        "reference_yield_curve": market_overview_services.get_yield_curve(
+        "reference_yield_curve": market_data_services.get_yield_curve(
             reference_date,
             LocationChoices.from_label(front_data["yield_curve_location"]),
         ),
-        "previous_yield_curve": market_overview_services.get_yield_curve(
+        "previous_yield_curve": market_data_services.get_yield_curve(
             previous_curve_date,
             LocationChoices.from_label(front_data["yield_curve_location"]),
         ),

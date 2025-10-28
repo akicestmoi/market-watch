@@ -7,7 +7,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from shared.utils import logger
+from core.services import logger
 
 
 class BaseErrorResponseModel(BaseModel):

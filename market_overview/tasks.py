@@ -3,8 +3,8 @@ from datetime import date
 from celery import shared_task
 from pandas.tseries.offsets import BDay
 
-import market_overview.services as market_overview_services
-from shared.utils import logger
+import market_overview.services.price_ingestion_services as price_ingestion_services
+from core.services import logger
 
 
 @shared_task
@@ -16,8 +16,8 @@ def scheduled_market_data_ingestion():
     price_date = (date.today() - BDay(1)).date()
     try:
         logger.info(f"Ingesting market data for {price_date}")
-        market_data = market_overview_services.get_market_data(price_date)
-        asset_not_updated = market_overview_services.ingest_market_data(market_data)
+        market_data = price_ingestion_services.get_market_data(price_date)
+        asset_not_updated = price_ingestion_services.ingest_market_data(market_data)
         return {
             "status": "success",
             "message": f"Market data ingested successfully for {price_date}",

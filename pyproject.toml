@@ -26,7 +26,7 @@ ensure_newline_before_comments = true
 skip_glob = ["*/migrations/*", "*/staticfiles/*"]
 
 [tool.pyright]
-include = ["core", "economic_overview", "market_overview", "data_visualization", "shared"]
+include = ["core", "economic_overview", "market_overview", "data_visualization"]
 pythonVersion = "3.12"
 reportMissingTypeStubs = false
 reportMissingImports = true

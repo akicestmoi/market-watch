@@ -6,8 +6,8 @@ from market_overview.models import (
     AssetTypeChoices,
     LocationChoices,
     MarketPriceModel,
+    PriceSourceChoices,
     PriceUpdateLogModel,
-    SourceChoices,
 )
 
 
@@ -49,7 +49,7 @@ class CalculatePriceChangeResponseSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     maturity = serializers.FloatField(required=False, allow_null=True)
     asset_type = serializers.ChoiceField(choices=AssetTypeChoices.choices)
-    source = serializers.ChoiceField(choices=SourceChoices.choices)
+    source = serializers.ChoiceField(choices=PriceSourceChoices.choices)
     location = serializers.ChoiceField(
         choices=LocationChoices.choices, required=False, allow_null=True
     )

@@ -5,30 +5,32 @@ from typing import List, Optional, TypedDict
 from rest_framework import status
 from rest_framework.response import Response
 
-import economic_overview.services as economic_overview_services
-from economic_overview.models import (
-    EconomicIndicatorInformationModel,
-    PublicationScheduleModel,
-)
-from economic_overview.request_serializers import (
-    EconomicDataIngestionSerializer,
-    SpecificEconomicDataIngestionSerializer,
-    UpdatePublicationScheduleSerializer,
-)
-from economic_overview.response_serializers import (
-    EconomicDataIngestionResponseSerializer,
-    SpecificEconomicDataIngestionResponseSerializer,
-    UpdatePublicationScheduleResponseSerializer,
-)
-from shared.open_api import (
+import economic_overview.services.data_ingestion_services as data_ingestion_services
+import economic_overview.services.economic_data_services as economic_data_services
+import economic_overview.services.publication_services as publication_services
+from core.open_api import (
     ApiTags,
     CreatedOpenApiResponse,
     NotFoundOpenApiResponse,
     OkOpenApiResponse,
     open_api,
 )
-from shared.utils import logger
-from shared.views import BaseAPIView
+from core.services import logger
+from core.views import BaseAPIView
+from economic_overview.models import (
+    EconomicIndicatorInformationModel,
+    PublicationScheduleModel,
+)
+from economic_overview.open_api.request_serializers import (
+    EconomicDataIngestionSerializer,
+    SpecificEconomicDataIngestionSerializer,
+    UpdatePublicationScheduleSerializer,
+)
+from economic_overview.open_api.response_serializers import (
+    EconomicDataIngestionResponseSerializer,
+    SpecificEconomicDataIngestionResponseSerializer,
+    UpdatePublicationScheduleResponseSerializer,
+)
 
 
 class EconomicOverviewBaseView(BaseAPIView):
@@ -42,7 +44,7 @@ class EconomicOverviewBaseView(BaseAPIView):
             return None
 
         not_existing_indicators = (
-            economic_overview_services.identify_not_existing_indicators(indicator_names)
+            economic_data_services.identify_not_existing_indicators(indicator_names)
         )
         if not_existing_indicators:
             return Response(
@@ -106,10 +108,10 @@ class UpdatePublicationScheduleView(EconomicOverviewBaseView):
         if validation_error:
             return validation_error
 
-        indicators = economic_overview_services.get_economic_indicators_by_names(
+        indicators = economic_data_services.get_economic_indicators_by_names(
             indicator_names
         )
-        schedule_not_updated = economic_overview_services.update_publication_schedules(
+        schedule_not_updated = publication_services.update_publication_schedules(
             indicators
         )
         return Response(
@@ -142,17 +144,15 @@ class IngestEconomicDataView(EconomicOverviewBaseView):
         end_date: date = validated_data.get("end_date", date.today())
         update_schedule: bool = validated_data.get("update_schedule", True)
 
-        indicators = economic_overview_services.get_economic_indicators_to_update(
+        indicators = economic_data_services.get_economic_indicators_to_update(
             start_date=start_date,
             end_date=end_date,
         )
-        indicator_not_updated = economic_overview_services.ingest_economic_data(
-            indicators
-        )
+        indicator_not_updated = data_ingestion_services.ingest_economic_data(indicators)
         schedule_not_updated = []
         if update_schedule:
-            schedule_not_updated = (
-                economic_overview_services.update_publication_schedules(indicators)
+            schedule_not_updated = publication_services.update_publication_schedules(
+                indicators
             )
         return Response(
             data=EconomicDataIngestionResponseSerializer(
@@ -195,13 +195,11 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
         if validation_error:
             return validation_error
 
-        indicators = economic_overview_services.get_economic_indicators_by_names(
+        indicators = economic_data_services.get_economic_indicators_by_names(
             indicator_names=indicator_names
         )
-        indicator_not_updated = (
-            economic_overview_services.ingest_specific_economic_data(
-                indicators, periods=periods
-            )
+        indicator_not_updated = data_ingestion_services.ingest_specific_economic_data(
+            indicators, periods=periods
         )
         return Response(
             data=SpecificEconomicDataIngestionResponseSerializer(

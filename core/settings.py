@@ -16,7 +16,7 @@ from pathlib import Path
 import environ
 from celery.schedules import crontab
 
-from shared.open_api import ApiTags
+from core.open_api import ApiTags
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     "market_overview.apps.MarketOverviewConfig",
     "data_visualization.apps.DataVisualizationConfig",
     "economic_overview.apps.EconomicOverviewConfig",
-    "shared.apps.SharedConfig",
 ]
 
 MIDDLEWARE = [

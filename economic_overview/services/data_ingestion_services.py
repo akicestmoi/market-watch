@@ -1,5 +1,4 @@
 import io
-import json
 import zipfile
 from datetime import date, datetime
 from typing import List, Optional, TypedDict, Union
@@ -8,26 +7,22 @@ import pandas as pd
 import requests
 from cachetools.func import ttl_cache
 from django.db.models import QuerySet
-from django.utils import timezone
 
-import shared.services as shared_services
+import core.services as core_services
+from core.services import logger
 from economic_overview.models import (
     EconomicDataModel,
     EconomicDataSourceChoices,
     EconomicDataUpdateLogModel,
     EconomicIndicatorInformationModel,
-    PublicationScheduleModel,
 )
-from shared.utils import logger
 
-
-class EconomicData(TypedDict):
-    """Economic data dictionnary."""
-
-    indicator: EconomicIndicatorInformationModel
-    period: Optional[date]
-    data_value: Optional[float]
-    comment: Optional[str]
+SOURCE_SCRAP_MAP = {
+    EconomicDataSourceChoices.INSEE: lambda t, p: _get_data_from_insee(t, p),
+    EconomicDataSourceChoices.JP_CABINET_OFFICE: lambda t, p: _get_data_from_japan_cabinet_office(
+        t, p
+    ),
+}
 
 
 class ScrappingResult(TypedDict):
@@ -38,60 +33,13 @@ class ScrappingResult(TypedDict):
     comment: str
 
 
-SOURCE_SCRAP_MAP = {
-    EconomicDataSourceChoices.INSEE: lambda t, p: _get_data_from_insee(t, p),
-}
+class EconomicData(TypedDict):
+    """Economic data dictionnary."""
 
-PUBLICATION_SOURCE_MAP = {
-    EconomicDataSourceChoices.INSEE: lambda n: _get_publication_dates_from_insee(n),
-}
-
-
-@ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_insee_publication_schedule() -> pd.DataFrame:
-    """Get INSEE publication schedule.
-
-    Source: https://www.insee.fr/fr/agenda-diffusion
-    """
-    INSEE_PUBLICATION_SCHEDULE_URL = "https://www.insee.fr/fr/agenda-diffusion"
-    payload = {
-        "q": "*:*",
-        "start": 0,
-        "sortFields": [{"field": "dateEmbargo_dt", "order": "asc"}],
-        "filters": [],
-        "rows": 100,
-        "facetsQuery": [],
-    }
-    response = requests.post(INSEE_PUBLICATION_SCHEDULE_URL, json=payload)
-    if response.status_code >= 400:
-        logger.warning(f"Error scraping INSEE publication schedule: {response.text}")
-        return pd.DataFrame()
-
-    data = json.loads(response.content)["documents"]
-    records = []
-    for item in data:
-        record = {
-            "name": item.get("famille", {})
-            .get("facetteConjoncture", {})
-            .get("libelleEn", ""),
-            "publication_date": item.get("embargo"),
-        }
-        records.append(record)
-
-    df = pd.DataFrame(records)
-    df["publication_date"] = pd.to_datetime(df["publication_date"], utc=True)
-    df = df.sort_values("publication_date").reset_index(drop=True)
-    return df
-
-
-@ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_publication_dates_from_insee(name: str) -> List[datetime]:
-    """Get publication dates from INSEE."""
-    publication_schedule = _get_insee_publication_schedule()
-    publication_dates = publication_schedule[publication_schedule["name"] == name][
-        "publication_date"
-    ]
-    return publication_dates.tolist()[:2]
+    indicator: EconomicIndicatorInformationModel
+    period: Optional[date]
+    data_value: Optional[float]
+    comment: Optional[str]
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
@@ -156,58 +104,12 @@ def _get_data_from_insee(
     return ScrappingResult(period=period, data_value=data_value, comment="")
 
 
-def get_economic_indicators_by_names(
-    indicator_names: List[str] = [],
-) -> QuerySet[EconomicIndicatorInformationModel]:
-    """Get economic indicators by names."""
-    if not indicator_names:
-        return EconomicIndicatorInformationModel.objects.all()
-    return EconomicIndicatorInformationModel.objects.filter(name__in=indicator_names)
-
-
-def _update_publication_schedule(
-    indicator: EconomicIndicatorInformationModel,
-) -> Optional[PublicationScheduleModel]:
-    """Update publication schedule."""
-    logger.info(f"Updating publication schedule for indicator: {indicator.name}")
-    publication_schedule = shared_services.get(
-        model=PublicationScheduleModel,
-        indicator=indicator,
-    )
-    if (
-        publication_schedule.current_publication_date
-        and publication_schedule.current_publication_date > timezone.now()
-    ):
-        logger.info(
-            f"Current publication date for indicator: {indicator.name} is not reached. Skipping update."
-        )
-        return publication_schedule
-
-    publication_function = PUBLICATION_SOURCE_MAP.get(indicator.source)
-    next_publication_dates = (
-        publication_function(indicator.technical_name) if publication_function else []
-    )
-    publication_schedule.previous_publication_date = (
-        publication_schedule.current_publication_date
-    )
-    publication_schedule.current_publication_date = next_publication_dates[0]
-    publication_schedule.next_publication_date = next_publication_dates[1]
-    publication_schedule.save()
-
-
-def update_publication_schedules(
-    indicators: Union[
-        List[EconomicIndicatorInformationModel],
-        QuerySet[EconomicIndicatorInformationModel],
-    ],
-) -> List[str]:
-    """Update publication schedules."""
-    schedule_not_updated = []
-    for indicator in indicators:
-        schedule = _update_publication_schedule(indicator)
-        if schedule:
-            schedule_not_updated.append(indicator.name)
-    return schedule_not_updated
+@ttl_cache(maxsize=128, ttl=10 * 60)
+def _get_data_from_japan_cabinet_office(
+    ticker: str, target_period: Optional[str] = None
+) -> ScrappingResult:
+    """Get data from Japan Cabinet Office."""
+    raise NotImplementedError("Not implemented.")
 
 
 def _get_economic_data(
@@ -232,43 +134,13 @@ def _get_economic_data(
     )
 
 
-def _get_indicators_with_no_publication_date() -> List[PublicationScheduleModel]:
-    """Get indicators with no publication date."""
-    return list(
-        PublicationScheduleModel.objects.filter(
-            current_publication_date__isnull=True,
-        )
-    )
-
-
-def get_economic_indicators_to_update(
-    start_date: date,
-    end_date: date,
-    indicator_names: List[str] = [],
-) -> QuerySet[EconomicIndicatorInformationModel]:
-    """Get economic indicators to update."""
-    indicators_to_update = get_economic_indicators_by_names(indicator_names)
-    publication_schedules = _get_indicators_with_no_publication_date()
-
-    target_date_schedules = list(
-        PublicationScheduleModel.objects.filter(
-            current_publication_date__gte=start_date,
-            current_publication_date__lte=end_date,
-        )
-    )
-    publication_schedules.extend(target_date_schedules)
-
-    indicator_ids = [schedule.indicator.id for schedule in publication_schedules]
-    return indicators_to_update.filter(id__in=indicator_ids)
-
-
 def _ingest_single_economic_data(
     indicator: EconomicIndicatorInformationModel, target_period: Optional[str] = None
 ) -> bool:
     """Ingest a single economic data."""
     data = _get_economic_data(indicator, target_period)
     is_success = data["data_value"] is not None
-    shared_services.upsert_with_logs(
+    core_services.upsert_with_logs(
         model=EconomicDataModel,
         log_model=EconomicDataUpdateLogModel,
         lookup_kwargs={"indicator": data["indicator"], "period": data["period"]},
@@ -327,17 +199,3 @@ def ingest_specific_economic_data(
                     )
                 )
     return economic_data_not_updated
-
-
-def check_economic_indicator_existence(indicator_name: str) -> bool:
-    """Check economic indicator existence in database."""
-    return EconomicIndicatorInformationModel.objects.filter(  # type: ignore[reportAttributeAccessIssue]
-        name=indicator_name
-    ).exists()
-
-
-def identify_not_existing_indicators(indicator_names: List[str]) -> List[str]:
-    """Identify not existing indicators."""
-    return [
-        name for name in indicator_names if not check_economic_indicator_existence(name)
-    ]

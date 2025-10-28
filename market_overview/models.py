@@ -3,7 +3,7 @@ from typing import List, cast
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from shared.models import BaseLogModel, BaseModel
+from core.models import BaseLogModel, BaseModel
 
 
 class AssetClassChoices(models.TextChoices):
@@ -61,8 +61,8 @@ class LocationChoices(models.TextChoices):
         return [cast(str, choice.label) for choice in cls.ordered()]
 
 
-class SourceChoices(models.TextChoices):
-    """Source Choices."""
+class PriceSourceChoices(models.TextChoices):
+    """Price Source Choices."""
 
     GOV_TREASURY_DEPT = "GOV_TREASURY_DEPT", _("US Treasury Department")
     NYFED = "NYFED", _("New York Federal Reserve")
@@ -94,7 +94,7 @@ class AssetModel(BaseModel):
         default=None,
     )
     ticker = models.CharField(max_length=100)
-    source = models.CharField(max_length=100, choices=SourceChoices.choices)
+    source = models.CharField(max_length=100, choices=PriceSourceChoices.choices)
 
     def __str__(self):
         return f"{self.short_name}"

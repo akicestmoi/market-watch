@@ -3,7 +3,7 @@ from typing import List
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from shared.models import BaseLogModel, BaseModel
+from core.models import BaseLogModel, BaseModel
 
 
 class EconomicDataLocationChoices(models.TextChoices):
@@ -25,6 +25,7 @@ class EconomicDataSourceChoices(models.TextChoices):
     """Economic Data Source Choices."""
 
     INSEE = "INSEE", _("INSEE")
+    JP_CABINET_OFFICE = "JP_CABINET_OFFICE", _("Japan Cabinet Office")
 
 
 class EconomicDataCategoryChoices(models.TextChoices):

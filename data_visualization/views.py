@@ -5,7 +5,7 @@ from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
 import data_visualization.services as data_visualization_services
-import market_overview.services as market_overview_services
+import market_overview.services.market_data_services as market_data_services
 from data_visualization.services import ChartDuration, MarketChartsFrontData
 from economic_overview.models import EconomicDataLocationChoices
 from market_overview.models import AssetClassChoices, LocationChoices
@@ -44,7 +44,7 @@ def market_recap_view(request):
         )
         return render(request, "data_visualization/market_recap.html", base_context)
 
-    reference_market_prices = market_overview_services.get_all_asset_prices_for_date(
+    reference_market_prices = market_data_services.get_all_asset_prices_for_date(
         reference_date
     )
     if not reference_market_prices:
@@ -53,7 +53,7 @@ def market_recap_view(request):
         )
         return render(request, "data_visualization/market_recap.html", base_context)
 
-    previous_market_prices = market_overview_services.get_all_asset_prices_for_date(
+    previous_market_prices = market_data_services.get_all_asset_prices_for_date(
         previous_date
     )
     if not previous_market_prices:

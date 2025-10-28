@@ -4,7 +4,7 @@ from market_overview.models import (
     AssetClassChoices,
     AssetTypeChoices,
     LocationChoices,
-    SourceChoices,
+    PriceSourceChoices,
 )
 
 
@@ -30,7 +30,10 @@ class GetAssetNamesSerializer(serializers.Serializer):
         allow_null=True,
     )
     source = serializers.ChoiceField(
-        choices=SourceChoices.choices, required=False, allow_blank=True, allow_null=True
+        choices=PriceSourceChoices.choices,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
 
 

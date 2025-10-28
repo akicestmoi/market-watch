@@ -34,5 +34,27 @@
     "asset_type": "CB_TARGET_RATE",
     "ticker": "FM/FM.D.U2.EUR.4F.KR.MLFR.LEV",
     "source": "WEBSTAT"
+  },
+  {
+    "id": 0,
+    "location": "JP",
+    "category": "GROWTH",
+    "type": "Gross Domestic Product (QoQ)",
+    "name": "Japan GDP (QoQ)",
+    "technical_name": "",
+    "frequency": "QUARTERLY",
+    "source": "JP_CABINET_OFFICE",
+    "ticker": ""
+  },
+  {
+    "id": 0,
+    "location": "JP",
+    "category": "GROWTH",
+    "type": "Gross Domestic Product (YoY)",
+    "name": "Japan GDP (YoY)",
+    "technical_name": "",
+    "frequency": "ANNUAL",
+    "source": "JP_CABINET_OFFICE",
+    "ticker": ""
   }
 ]
