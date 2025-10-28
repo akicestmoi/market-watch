@@ -27,6 +27,7 @@ def update_with_logs(
     """Update entity and create logs in a related log table."""
     update_logs = updates.pop("logs", None)
     has_changes = False
+    is_none_value_override = False
 
     for field, new_value in updates.items():
         old_value = getattr(model_to_update, field, None)
@@ -35,11 +36,12 @@ def update_with_logs(
             if should_update:
                 setattr(model_to_update, field, new_value)
                 has_changes = True
+                is_none_value_override = new_value and not old_value
 
     if has_changes:
         model_to_update.save()
 
-        if update_logs:
+        if update_logs and is_none_value_override:
             fk_field = getattr(log_model, "fk_name", None)
             log_kwargs = {fk_field: model_to_update, "logs": update_logs}
             log_model.objects.create(**log_kwargs)

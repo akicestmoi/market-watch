@@ -139,7 +139,7 @@ The application includes automated market data ingestion using Celery and Redis:
 
 ### **Scheduled Tasks**
 Market data is automatically ingested **3 times daily (Europe/Paris Time)**:
-- **9:00 AM** - Morning market data
+- **8:00 AM** - Morning market data
 - **2:00 PM** - Afternoon market data
 - **8:00 PM** - Evening market data
 

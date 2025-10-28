@@ -344,7 +344,7 @@ def get_market_charts_market_data(
     )
     spread_rate_df["price"] = (
         spread_rate_df["price_current"] - spread_rate_df["price_prev"]
-    )
+    ) * 100
     spread_rates = cast(
         List[HistoricalPrice],
         spread_rate_df[["price_date", "price"]].to_dict(orient="records"),

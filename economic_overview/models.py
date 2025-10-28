@@ -60,7 +60,6 @@ class EconomicDataCategoryChoices(models.TextChoices):
 class EconomicPublicationFrequencyChoices(models.TextChoices):
     """Economic Publication Frequency Choices."""
 
-    DAILY = "DAILY", _("Daily")
     MONTHLY = "MONTHLY", _("Monthly")
     QUARTERLY = "QUARTERLY", _("Quarterly")
     ANNUAL = "ANNUAL", _("Annual")
@@ -119,8 +118,6 @@ class EconomicDataModel(BaseModel):
         if not self.period:
             return None
         match self.indicator.frequency:
-            case EconomicPublicationFrequencyChoices.DAILY:
-                return self.period.strftime("%Y-%m-%d")
             case EconomicPublicationFrequencyChoices.MONTHLY:
                 month_str = self.period.strftime("%b")
                 year_short = self.period.strftime("%y")
