@@ -33,6 +33,7 @@
                 <input type="date" id="reference_date" name="reference_date"
                     value="{{ reference_date|default:default_reference_date }}">
                 <button type="submit" class="btn-primary">Update</button>
+                <button type="button" class="btn-primary" id="lastBtn">Last</button>
             </form>
         </div>
     </div>
@@ -162,6 +163,7 @@
         window.marketDataJSON = {{ market_data | safe }};
         window.selectedValuesJSON = {{ selected_values | safe }};
         window.labelsJSON = {{ labels | safe }};
+        window.defaultReferenceDate = "{{ default_reference_date }}";
     </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
     {% if error_message %}

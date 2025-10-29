@@ -25,6 +25,7 @@
                 <input type="date" id="previous_date" name="previous_date"
                     value="{{ previous_date|default:default_previous_date }}">
                 <button type="submit" class="btn-primary">Update</button>
+                <button type="button" class="btn-primary" id="lastBtn">Last</button>
             </form>
         </div>
     </div>
@@ -50,12 +51,17 @@
         </div>
     </div>
 
+    <script>
+        window.defaultReferenceDate = "{{ default_reference_date }}";
+        window.defaultPreviousDate = "{{ default_previous_date }}";
+    </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
     {% if error_message %}
     <script>
         window.errorMessage = "{{ error_message|escapejs }}";
     </script>
     {% endif %}
+    <script src="{% static 'data_visualization/js/market_recap.js' %}"></script>
 </body>
 
 </html>

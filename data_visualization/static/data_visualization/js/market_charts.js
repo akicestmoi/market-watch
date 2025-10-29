@@ -691,8 +691,27 @@ function initializeCustomFieldHandlers() {
   });
 }
 
+/**
+ * Initialize Last button handler
+ */
+function initializeLastButton() {
+  const lastBtn = document.getElementById('lastBtn');
+  if (lastBtn && window.defaultReferenceDate) {
+    lastBtn.addEventListener('click', function() {
+      const referenceDateInput = document.getElementById('reference_date');
+      if (referenceDateInput) {
+        referenceDateInput.value = window.defaultReferenceDate;
+        document.querySelector('form').submit();
+      }
+    });
+  }
+}
+
 // Initialize zone buttons when the page loads
 initializeZoneButtons();
 
 // Initialize custom field handlers when the page loads
 initializeCustomFieldHandlers();
+
+// Initialize Last button when the page loads
+initializeLastButton();
