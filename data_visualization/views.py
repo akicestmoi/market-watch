@@ -4,9 +4,12 @@ from datetime import date, datetime
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
-import data_visualization.services as data_visualization_services
+import data_visualization.services.visualization_services as data_visualization_services
 import market_overview.services.market_data_services as market_data_services
-from data_visualization.services import ChartDuration, MarketChartsFrontData
+from data_visualization.services.visualization_services import (
+    ChartDuration,
+    MarketChartsFrontData,
+)
 from economic_overview.models import EconomicDataLocationChoices
 from market_overview.models import AssetClassChoices, LocationChoices
 

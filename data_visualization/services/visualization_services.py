@@ -149,7 +149,8 @@ def format_data_for_market_recap_display(
             if assets:
                 locations.append(
                     DisplayAssetbyLocation(
-                        location=LocationEnum(str(location_group)), assets=assets
+                        location=cast(LocationEnum, LocationEnum(location_group).value),
+                        assets=assets,
                     )
                 )
         if locations:
