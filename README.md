@@ -1,8 +1,8 @@
-# Market Watch 📊
+# Market Watch
 
 A Django-based market monitoring application with comprehensive API documentation, Docker support, and development tools.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### For Local Development
 
@@ -52,8 +52,6 @@ A Django-based market monitoring application with comprehensive API documentatio
 1. **Start with Docker**:
    ```bash
    make start
-   # or
-   docker-compose up --build
    ```
 
 2. **Access the application**:
@@ -64,21 +62,14 @@ A Django-based market monitoring application with comprehensive API documentatio
 3. **Port conflicts:**
    ```bash
    make stop
-   # or
-   docker-compose down
    ```
 
-4. **Database issues:**
-   ```bash
-   make reset  # Reset database and restart
-   ```
-
-5. **View logs:**
+4. **View logs:**
    ```bash
    make logs-webapp  # Webapp container logs
    ```
 
-6. 🐳 Docker Commands
+5. Docker Commands
    Use the Makefile for convenient commands:
 
    ```bash
@@ -101,9 +92,11 @@ A Django-based market monitoring application with comprehensive API documentatio
    make celery-worker   # Execute worker
    make test            # Run tests
    make clean           # Clean up Docker resources
+   make db-export       # Export database to SQL file
+	make db-import       # Import database from SQL file (requires SQL_FILE=path)
    ```
 
-## 📊 API Documentation
+## API Documentation
 
 The application includes comprehensive OpenAPI documentation:
 
@@ -111,46 +104,14 @@ The application includes comprehensive OpenAPI documentation:
 - **Schema**: http://localhost:8000/api/schema/
 
 
-## 📂 Project Structure
-
-```
-market-watch/
-├── core/                    # Django core settings
-├── data_visualization/      # Data visualization app
-├── economic_overview/       # Economic data app
-├── market_overview/         # Market data app
-├── shared/                  # Shared utilities
-├── .vscode/                 # VS Code configuration
-├── Dockerfile              # Docker container definition
-├── docker-compose.yml      # Docker services configuration
-├── Makefile                # Convenient Docker commands
-├── entrypoint.sh           # Docker startup script
-└── README.md               # This file
-```
-
-## 🔄 Celery Task Scheduling
+## Celery Task Scheduling
 
 The application includes automated market data ingestion using Celery and Redis:
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Django    │    │   Celery    │    │    Redis    │    │   Worker    │
-│   Web App   │───►│    Beat     │───►│   (Broker)  │───►│   Process   │
-│             │    │ (Scheduler) │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+Django Web App ==> Celery Beat (Scheduler) ==> Redis (Broker) ==> Worker Process
+
 
 ### **Scheduled Tasks**
 Market data is automatically ingested **3 times daily (Europe/Paris Time)**:
 - **8:00 AM** - Morning market data
 - **2:00 PM** - Afternoon market data
 - **8:00 PM** - Evening market data
-
-### **Celery Commands**
-```bash
-# Start Celery beat (scheduler)
-make celery-beat
-
-# Start Celery worker (processes tasks)
-make celery-worker
-```
-
-### **Task Monitoring**
-- **Redis**: http://localhost:6379 (Redis database for task queue)
