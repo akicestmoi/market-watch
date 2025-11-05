@@ -24,19 +24,20 @@ import subprocess
 import sys
 from pathlib import Path
 
+import django
+from django.conf import settings
+from django.core.management import call_command
+from django.db import connection
+
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Setup Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-import django
+
 
 django.setup()
-
-from django.conf import settings
-from django.core.management import call_command
-from django.db import connection
 
 
 def drop_all_tables():
@@ -184,7 +185,7 @@ def main():
 
     if not sql_path.exists():
         print(f"ERROR: SQL file not found: {sql_path}")
-        print(f"Please provide the correct path to your SQL dump file.")
+        print("Please provide the correct path to your SQL dump file.")
         sys.exit(1)
 
     if not sql_path.is_file():
@@ -213,8 +214,8 @@ def main():
 
     # Ask for confirmation
     if not no_confirm:
-        confirm = input("\nAre you sure you want to proceed? (yes/no): ")
-        if confirm.lower() not in ["yes", "y"]:
+        confirm = input("\nAre you sure you want to proceed? (y/n): ")
+        if confirm != "y":
             print("Import cancelled.")
             sys.exit(0)
 

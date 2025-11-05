@@ -1,6 +1,6 @@
 import json
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -195,7 +195,7 @@ class CalculatePriceChangeView(BaseAPIView):
             reference_market_prices, comparison_market_prices
         )
         return Response(
-            data=CalculatePriceChangeResponseSerializer(price_diffs).data,
+            data=CalculatePriceChangeResponseSerializer(price_diffs, many=True).data,
             status=status.HTTP_200_OK,
         )
 
@@ -257,14 +257,16 @@ class GetHistoricalPricesView(BaseAPIView):
     def get(self, validated_data: dict) -> Response:
         """Get historical prices of an asset."""
         short_name: str = validated_data["short_name"]
-        start_date: date = validated_data["start_date"]
-        end_date: date = validated_data["end_date"]
+        start_date: Optional[date] = validated_data.get("start_date")
+        end_date: Optional[date] = validated_data.get("end_date")
 
         historical_prices = market_data_services.get_historical_prices(
             short_name, start_date, end_date
         )
         return Response(
-            data=GetHistoricalPriceResponseSerializer(historical_prices).data,
+            data=GetHistoricalPriceResponseSerializer(
+                historical_prices, many=True
+            ).data,
             status=status.HTTP_200_OK,
         )
 
@@ -286,7 +288,7 @@ class GetYieldCurveView(BaseAPIView):
 
         yield_curve = market_data_services.get_yield_curve(target_date, location)
         return Response(
-            data=GetYieldCurveResponseSerializer(yield_curve).data,
+            data=GetYieldCurveResponseSerializer(yield_curve, many=True).data,
             status=status.HTTP_200_OK,
         )
 
@@ -327,7 +329,8 @@ class BulkUpdateAssetsPricesView(BaseAPIView):
 
         assets = market_data_services.bulk_update_assets_prices(updates)
         return Response(
-            data=MarketPriceResponseSerializer(assets).data, status=status.HTTP_200_OK
+            data=MarketPriceResponseSerializer(assets, many=True).data,
+            status=status.HTTP_200_OK,
         )
 
 
@@ -349,6 +352,6 @@ class GetPriceUpdateLogsView(BaseAPIView):
             price_date=price_date, short_name=short_name
         )
         return Response(
-            data=PriceUpdateLogResponseSerializer(price_update_logs).data,
+            data=PriceUpdateLogResponseSerializer(price_update_logs, many=True).data,
             status=status.HTTP_200_OK,
         )

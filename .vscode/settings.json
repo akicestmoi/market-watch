@@ -2,6 +2,15 @@
   // ===========================
   // Python Linting & Formatting
   // ===========================
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+  "python.analysis.extraPaths": ["${workspaceFolder}/venv/Lib/site-packages"],
+  "python.venvPath": "${workspaceFolder}",
+  "python.venvFolders": ["${workspaceFolder}"],
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.stubPath": "${workspaceFolder}/venv/Lib/site-packages",
   "python.linting.enabled": true,
   "python.linting.lintOnSave": true,
   "python.linting.flake8Enabled": true,
@@ -11,6 +20,20 @@
   "python.formatting.provider": "black",
   "isort.args": ["--settings-path=pyproject.toml"],
   "isort.check": true,
+
+  // ===========================
+  // Pyright Configuration
+  // ===========================
+  "pyright.useLibraryCodeForTypes": true,
+  "pyright.include": ["core", "economic_overview", "market_overview", "data_visualization"],
+  "pyright.exclude": ["**/migrations", "**/staticfiles", "**/__pycache__", "**/node_modules"],
+  "pyright.reportMissingTypeStubs": false,
+  "pyright.reportMissingImports": true,
+  "pyright.reportIncompatibleVariableOverride": false,
+  "pyright.reportInvalidTypeForm": false,
+  "pyright.pythonVersion": "3.12",
+  "pyright.venvPath": "${workspaceFolder}",
+  "pyright.venv": "venv",
 
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",

@@ -23,18 +23,18 @@ help:
 
 DOCKER_COMPOSE = docker compose -f scripts/docker/docker-compose.yml
 
+# Helper variable to run commands in temporary container
+RUN_TMP = $(DOCKER_COMPOSE) run --rm --no-deps webapp
+
 # Install dependencies
 install:
 	$(DOCKER_COMPOSE) exec webapp npm install
 	$(DOCKER_COMPOSE) exec webapp pip install -r requirements.txt
 
-.run-tmp:
-	$(DOCKER_COMPOSE) run --rm --no-deps webapp $(CMD)
-
 # Lint
 lint:
-	$(DOCKER_COMPOSE) exec webapp npm run lint:all
 	$(DOCKER_COMPOSE) exec webapp black . & isort .
+	$(DOCKER_COMPOSE) exec webapp npm run lint:all
 
 # Flake8
 flake8:
@@ -112,21 +112,17 @@ db-export:
 		$(DOCKER_COMPOSE) exec webapp python scripts/db_management/export_db.py; \
 	else \
 		echo "Container not running, starting temporary container..."; \
-		.run-tmp python scripts/db_management/export_db.py; \
+		$(RUN_TMP) python scripts/db_management/export_db.py; \
 	fi
 
 # Import database
 db-import:
-	@echo "Usage: make db-import SQL_FILE=path/to/backup.sql"
-	@if [ -z "$(SQL_FILE)" ]; then \
-		echo "ERROR: SQL_FILE is required. Example: make db-import SQL_FILE=db_backup.sql"; \
-		exit 1; \
-	fi
+	$(if $(SQL_FILE),,$(error SQL_FILE is required. Example: make db-import SQL_FILE=db_backup.sql))
 	@if $(DOCKER_COMPOSE) ps webapp 2>/dev/null | grep -q "Up"; then \
-		$(DOCKER_COMPOSE) exec webapp python scripts/db_management/import_db.py $(SQL_FILE); \
+		$(DOCKER_COMPOSE) exec webapp python scripts/db_management/import_db.py $(SQL_FILE) --no-confirm; \
 	else \
 		echo "Container not running, starting temporary container..."; \
-		.run-tmp python scripts/db_management/import_db.py $(SQL_FILE); \
+		$(RUN_TMP) python scripts/db_management/import_db.py $(SQL_FILE) --no-confirm; \
 	fi
 
 .PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker db-export db-import

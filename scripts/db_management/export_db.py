@@ -19,17 +19,18 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import django
+from django.conf import settings
+
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Setup Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-import django
+
 
 django.setup()
-
-from django.conf import settings
 
 
 def main():
@@ -98,7 +99,7 @@ def main():
     print("This may take a few moments...")
 
     try:
-        result = subprocess.run(
+        _ = subprocess.run(
             pg_dump_args,
             env=env,
             capture_output=True,
@@ -109,7 +110,7 @@ def main():
         file_size = os.path.getsize(output_path)
         file_size_mb = file_size / (1024 * 1024)
 
-        print(f"\n✓ Database exported successfully!")
+        print("\n✓ Database exported successfully!")
         print(f"File: {output_path}")
         print(f"Size: {file_size_mb:.2f} MB")
 
