@@ -94,7 +94,17 @@ class AssetResponseSerializer(serializers.ModelSerializer):
         ]
 
 
-class MarketPriceResponseSerializer(serializers.ModelSerializer):
+class GetAssetWithoutPriceResponseSerializer(serializers.Serializer):
+    """Get Asset Without Price Response Serializer."""
+
+    id = serializers.IntegerField()
+    short_name = serializers.CharField()
+    full_name = serializers.CharField()
+    maturity = serializers.FloatField()
+    comment = serializers.CharField()
+
+
+class MarketPriceResponseSerializer(serializers.Serializer):
     """Market Price Serializer with Asset information."""
 
     asset = AssetResponseSerializer(read_only=True)

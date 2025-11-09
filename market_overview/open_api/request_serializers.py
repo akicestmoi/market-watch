@@ -132,6 +132,7 @@ class BulkUpdateAssetsPricesItemSerializer(serializers.Serializer):
     short_name = serializers.CharField()
     date = serializers.DateField()
     price = serializers.FloatField()
+    logs = serializers.CharField(required=False)
 
 
 class BulkUpdateAssetsPricesSerializer(serializers.ListSerializer):

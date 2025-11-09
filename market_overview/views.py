@@ -35,6 +35,7 @@ from market_overview.open_api.request_serializers import (
 from market_overview.open_api.response_serializers import (
     CalculatePriceChangeResponseSerializer,
     GetAssetNamesResponseSerializer,
+    GetAssetWithoutPriceResponseSerializer,
     GetHistoricalPriceResponseSerializer,
     GetYieldCurveResponseSerializer,
     MarketPriceIngestionResponseSerializer,
@@ -301,14 +302,16 @@ class GetAssetsWithoutPricesView(BaseAPIView):
         summary="Get Assets Without Prices",
         description="Get assets without prices.",
         request_serializer=GetAssetsWithoutPricesSerializer,
-        response=OkOpenApiResponse(MarketPriceResponseSerializer),
+        response=OkOpenApiResponse(GetAssetWithoutPriceResponseSerializer),
     )
     def get(self, validated_data: dict) -> Response:
         """Get assets without prices."""
-        price_date: date = validated_data["price_date"]
+        price_date: Optional[date] = validated_data.get("price_date")
         assets_queryset = market_data_services.get_assets_without_prices(price_date)
         return Response(
-            data=MarketPriceResponseSerializer(assets_queryset, many=True).data,
+            data=GetAssetWithoutPriceResponseSerializer(
+                assets_queryset, many=True
+            ).data,
             status=status.HTTP_200_OK,
         )
 

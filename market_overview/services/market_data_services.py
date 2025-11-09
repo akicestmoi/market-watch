@@ -2,7 +2,6 @@ from datetime import date
 from typing import Dict, List, Optional, TypedDict, cast
 
 import pandas as pd
-from django.db.models import QuerySet
 
 import core.services as core_services
 from market_overview.models import (
@@ -59,12 +58,23 @@ class AssetNames(TypedDict):
     full_name: str
 
 
+class AssetWithoutPrice(TypedDict):
+    """Asset without price dictionnary."""
+
+    id: int
+    short_name: str
+    full_name: str
+    maturity: Optional[float]
+    comment: Optional[str]
+
+
 class BulkUpdateAssetsPricesItem(TypedDict):
     """Bulk update assets prices dictionnary."""
 
     date: date
     short_name: str
     price: float
+    logs: Optional[str]
 
 
 def get_all_asset_prices_for_date(price_date: date) -> List[MarketPriceModel]:
@@ -203,14 +213,30 @@ def get_price_update_logs(
 
 def get_assets_without_prices(
     price_date: Optional[date] = None,
-) -> QuerySet[MarketPriceModel]:
+) -> List[AssetWithoutPrice]:
     """Get assets without prices."""
     assets_queryset = MarketPriceModel.objects.filter(
         price__isnull=True
     ).select_related("asset")
     if price_date:
         assets_queryset = assets_queryset.filter(date=price_date)
-    return assets_queryset
+    assets_data = assets_queryset.values(
+        "id",
+        "comment",
+        "asset__short_name",
+        "asset__full_name",
+        "asset__maturity",
+    )
+    return [
+        AssetWithoutPrice(
+            id=asset["id"],
+            short_name=asset["asset__short_name"],
+            full_name=asset["asset__full_name"],
+            maturity=asset["asset__maturity"],
+            comment=asset["comment"],
+        )
+        for asset in assets_data
+    ]
 
 
 def bulk_update_assets_prices(
@@ -229,7 +255,10 @@ def bulk_update_assets_prices(
                 market_price,
                 PriceUpdateLogModel,
                 {
-                    "logs": f"Bulk update of {update['short_name']} to price: {update['price']}.",
+                    "logs": update.get(
+                        "logs",
+                        f"Bulk update of {update['short_name']} to price: {update['price']}.",
+                    ),
                     "price": update["price"],
                 },
             )
