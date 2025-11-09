@@ -61,6 +61,7 @@ class AssetWithoutPrice(TypedDict):
     """Asset without price dictionnary."""
 
     id: int
+    date: date
     short_name: str
     full_name: str
     maturity: Optional[float]
@@ -222,20 +223,26 @@ def get_assets_without_prices(
     assets_data = assets_queryset.values(
         "id",
         "comment",
+        "date",
         "asset__short_name",
         "asset__full_name",
         "asset__maturity",
     )
-    return [
-        AssetWithoutPrice(
-            id=asset["id"],
-            short_name=asset["asset__short_name"],
-            full_name=asset["asset__full_name"],
-            maturity=asset["asset__maturity"],
-            comment=asset["comment"],
-        )
-        for asset in assets_data
-    ]
+    return sorted(
+        [
+            AssetWithoutPrice(
+                id=asset["id"],
+                date=asset["date"],
+                short_name=asset["asset__short_name"],
+                full_name=asset["asset__full_name"],
+                maturity=asset["asset__maturity"],
+                comment=asset["comment"],
+            )
+            for asset in assets_data
+        ],
+        key=lambda x: x["id"],
+        reverse=True,
+    )
 
 
 def bulk_update_assets_prices(

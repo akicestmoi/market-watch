@@ -97,6 +97,7 @@ class GetAssetWithoutPriceResponseSerializer(serializers.Serializer):
     """Get Asset Without Price Response Serializer."""
 
     id = serializers.IntegerField()
+    date = serializers.DateField()
     short_name = serializers.CharField()
     full_name = serializers.CharField()
     maturity = serializers.FloatField()
