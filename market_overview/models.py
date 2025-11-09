@@ -78,12 +78,12 @@ class PriceSourceChoices(models.TextChoices):
 class AssetModel(BaseModel):
     """Asset Model."""
 
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(unique=True)
     asset_class = models.CharField(max_length=50, choices=AssetClassChoices.choices)
     location = models.CharField(
         max_length=2, choices=LocationChoices.choices, null=True, blank=True
     )
-    short_name = models.CharField(max_length=100, unique=True)
+    short_name = models.CharField(max_length=100, primary_key=True)
     full_name = models.CharField(max_length=100)
     maturity = models.FloatField(null=True, blank=True)
     asset_type = models.CharField(
@@ -104,11 +104,24 @@ class MarketPriceModel(BaseModel):
     """Market Price Model."""
 
     asset = models.ForeignKey(
-        AssetModel, on_delete=models.CASCADE, related_name="market_prices"
+        AssetModel,
+        to_field="short_name",
+        db_column="asset_short_name",
+        on_delete=models.CASCADE,
+        related_name="market_prices",
     )
     date = models.DateField()
     price = models.FloatField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True, default="")
+
+    def convert_to_dict(self, remove_foreign_key: bool = False) -> dict:
+        """Override convert_to_dict to include asset identifiers."""
+        data = super().convert_to_dict(remove_foreign_key=remove_foreign_key)
+        asset = getattr(self, "asset", None)
+        if asset:
+            data["asset_id"] = asset.id
+            data["asset_short_name"] = asset.short_name
+        return data
 
 
 class PriceUpdateLogModel(BaseLogModel):

@@ -19,7 +19,6 @@ from market_overview.services.price_ingestion_services import MarketData
 class PriceChange(TypedDict):
     """Price change dictionnary."""
 
-    id: int
     asset_id: int
     asset_class: AssetClassChoices
     short_name: str
@@ -92,14 +91,14 @@ def calculate_price_change(
     reference_data = []
     for market_price in reference_market_prices:
         asset = market_price.asset.convert_to_dict()
-        data = market_price.convert_to_dict()
+        data = market_price.convert_to_dict(remove_foreign_key=True)
         data.update(asset)
         reference_data.append(data)
 
     comparison_data = []
     for market_price in comparison_market_prices:
         asset = market_price.asset.convert_to_dict()
-        data = market_price.convert_to_dict()
+        data = market_price.convert_to_dict(remove_foreign_key=True)
         data.update(asset)
         comparison_data.append(data)
 

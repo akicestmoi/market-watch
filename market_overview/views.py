@@ -61,7 +61,9 @@ class GenerateBaseAssetsDataView(BaseAPIView):
         with open("market_overview/data_sources/market_data.json") as f:
             assets_base_info = json.load(f)
         for asset in assets_base_info:
-            AssetModel.objects.update_or_create(id=asset["id"], defaults=asset)
+            AssetModel.objects.update_or_create(
+                short_name=asset["short_name"], defaults=asset
+            )
         return Response(
             data={"message": "Asset data successfully generated."},
             status=status.HTTP_200_OK,

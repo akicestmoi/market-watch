@@ -42,7 +42,6 @@ class SpecificAssetMarketPriceIngestionResponseSerializer(serializers.Serializer
 class CalculatePriceChangeResponseSerializer(serializers.Serializer):
     """Calculate Price Change Response Serializer."""
 
-    id = serializers.IntegerField()
     asset_id = serializers.IntegerField()
     asset_class = serializers.ChoiceField(choices=AssetClassChoices.choices)
     short_name = serializers.CharField()
