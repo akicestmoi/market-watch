@@ -243,7 +243,7 @@ def open_api(
     """Open API Decorator."""
 
     def decorator(func):
-        if func.__name__ == "get" and request_serializer:
+        if func.__name__ in {"get", "delete"} and request_serializer:
             parameters = _build_parameters_for_get_requests(request_serializer)
             request = None
         else:
