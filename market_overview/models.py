@@ -105,7 +105,6 @@ class MarketPriceModel(BaseModel):
 
     asset = models.ForeignKey(
         AssetModel,
-        to_field="short_name",
         db_column="asset_short_name",
         on_delete=models.CASCADE,
         related_name="market_prices",
