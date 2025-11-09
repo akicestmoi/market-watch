@@ -8,6 +8,12 @@ from market_overview.models import (
 )
 
 
+class BaseAssetSerializer(serializers.Serializer):
+    """Base Asset Serializer."""
+
+    id = serializers.IntegerField()
+
+
 class GetAssetNamesSerializer(serializers.Serializer):
     """Get Asset Names Serializer."""
 

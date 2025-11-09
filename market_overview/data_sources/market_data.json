@@ -584,17 +584,6 @@
   },
   {
     "id": 54,
-    "asset_class": "CRYPTO",
-    "location": null,
-    "short_name": "USDT",
-    "full_name": "USDT-USD Exchange Rate",
-    "maturity": null,
-    "asset_type": "CRYPTO_SPOT_RATE",
-    "ticker": "USDT-USD",
-    "source": "YAHOO"
-  },
-  {
-    "id": 55,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Gold",
@@ -605,7 +594,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 56,
+    "id": 55,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "WTI Oil",
@@ -616,7 +605,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 57,
+    "id": 56,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Brent Oil",
@@ -627,7 +616,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 58,
+    "id": 57,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Natural Gas",
@@ -638,7 +627,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 59,
+    "id": 58,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Corn",
@@ -649,7 +638,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 60,
+    "id": 59,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Wheat",
@@ -660,7 +649,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 61,
+    "id": 60,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Rice",
@@ -671,7 +660,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 62,
+    "id": 61,
     "asset_class": "OTHERS",
     "location": null,
     "short_name": "Volatility",

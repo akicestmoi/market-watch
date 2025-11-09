@@ -272,7 +272,7 @@ def open_api(
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 return func(self, serializer.validated_data, *args, **kwargs)
-            elif method == "GET" and request_serializer:
+            elif (method == "GET" or method == "DELETE") and request_serializer:
                 serializer = request_serializer(data=request.query_params)
                 if not serializer.is_valid():
                     return Response(

@@ -20,6 +20,7 @@ from core.services import logger
 from core.views import BaseAPIView
 from market_overview.models import AssetModel, LocationChoices, MarketPriceModel
 from market_overview.open_api.request_serializers import (
+    BaseAssetSerializer,
     BulkUpdateAssetsPricesSerializer,
     CalculatePriceDiffSerializer,
     GetAssetNamesSerializer,
@@ -33,6 +34,7 @@ from market_overview.open_api.request_serializers import (
     SpecificAssetMarketPriceIngestionSerializer,
 )
 from market_overview.open_api.response_serializers import (
+    AssetResponseSerializer,
     CalculatePriceChangeResponseSerializer,
     GetAssetNamesResponseSerializer,
     GetAssetWithoutPriceResponseSerializer,
@@ -81,6 +83,42 @@ class GetAssetNamesView(BaseAPIView):
         asset_names = market_data_services.get_asset_names(validated_data)
         return Response(
             data=GetAssetNamesResponseSerializer(asset_names).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class AssetDetailsView(BaseAPIView):
+    """Asset Details APIView."""
+
+    @open_api(
+        tags=[ApiTags.ASSETS],
+        summary="Get Asset",
+        description="Get an asset.",
+        request_serializer=BaseAssetSerializer,
+        response=OkOpenApiResponse(AssetResponseSerializer),
+    )
+    def get(self, validated_data: dict) -> Response:
+        """Get an asset."""
+        asset_id: int = validated_data["id"]
+        asset = core_services.get(AssetModel, id=asset_id)
+        return Response(
+            data=AssetResponseSerializer(asset).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @open_api(
+        tags=[ApiTags.ASSETS],
+        summary="Delete Asset",
+        description="Delete an asset.",
+        request_serializer=BaseAssetSerializer,
+    )
+    def delete(self, validated_data: dict) -> Response:
+        """Delete an asset."""
+        asset_id: int = validated_data["id"]
+        asset = core_services.get(AssetModel, id=asset_id)
+        asset.delete()
+        return Response(
+            data={"message": "Asset deleted successfully."},
             status=status.HTTP_200_OK,
         )
 

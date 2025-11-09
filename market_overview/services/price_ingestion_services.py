@@ -70,7 +70,7 @@ def _get_yahoo_finance_closing_prices(
 
     Using publicly available yahoo scrapper module yfiance.
     """
-    prices = yf.Ticker(str(ticker)).history(period="5d").reset_index()
+    prices = yf.Ticker(str(ticker)).history(period="1mo").reset_index()
     if prices.empty:
         return ScrappingResult(price=None, comment="Yahoo Finance: No prices found.")
     closing_price = prices[prices["Date"].dt.date == target_date].reset_index()
@@ -430,7 +430,11 @@ def get_specific_asset_market_data(
     """Get specific asset market data."""
     asset = AssetModel.objects.get(short_name=short_name)
     delta_days = (end_date - start_date).days
-    date_range = [start_date + timedelta(days=i) for i in range(delta_days + 1)]
+    date_range = [
+        start_date + timedelta(days=i)
+        for i in range(delta_days + 1)
+        if (start_date + timedelta(days=i)).weekday() < 5
+    ]
     market_data = []
     for target_date in date_range:
         logger.info(f"Scrapping asset: {asset.short_name} for date: {target_date}")
