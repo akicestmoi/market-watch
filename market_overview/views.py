@@ -381,8 +381,8 @@ class GetPriceUpdateLogsView(BaseAPIView):
     """Get Price Update Logs APIView."""
 
     @open_api(
-        tags=[ApiTags.PRICE_LOGS],
-        summary="Get Price Update Logs",
+        tags=[ApiTags.LOGS],
+        summary="Get Market Price Change Logs",
         description="Get price update logs with optional filtering.",
         request_serializer=GetPriceUpdateLogsSerializer,
         response=OkOpenApiResponse(PriceUpdateLogResponseSerializer),

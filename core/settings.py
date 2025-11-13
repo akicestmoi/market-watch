@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "market_overview.apps.MarketOverviewConfig",
     "data_visualization.apps.DataVisualizationConfig",
     "economic_overview.apps.EconomicOverviewConfig",
+    "central_banks_overview.apps.CentralBanksOverviewConfig",
 ]
 
 MIDDLEWARE = [
@@ -204,10 +205,6 @@ SPECTACULAR_SETTINGS = {
             "description": "Market data related endpoints",
         },
         {
-            "name": ApiTags.PRICE_LOGS.value,
-            "description": "Price update logs endpoints",
-        },
-        {
             "name": ApiTags.ECONOMIC_INDICATOR_INFORMATION.value,
             "description": "Economic indicator information related endpoints",
         },
@@ -218,6 +215,14 @@ SPECTACULAR_SETTINGS = {
         {
             "name": ApiTags.PUBLICATION_SCHEDULE.value,
             "description": "Economic publication schedule related endpoints",
+        },
+        {
+            "name": ApiTags.CENTRAL_BANKS.value,
+            "description": "Central banks related endpoints",
+        },
+        {
+            "name": ApiTags.LOGS.value,
+            "description": "Endpoints to get change logs",
         },
     ],
 }

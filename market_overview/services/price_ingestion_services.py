@@ -24,6 +24,17 @@ from market_overview.models import (
 env = environ.Env()
 
 
+# To be added in the future:
+# {
+#   "id": 1,
+#   "central_bank": "FED",
+#   "short_name": "FedFunds",
+#   "full_name": "Effective Fed Funds Rate",
+#   "ticker": "FEDFUNDS",
+#   "source": "FRED"
+# }
+
+
 SOURCE_SCRAP_MAP = {
     PriceSourceChoices.GOV_TREASURY_DEPT: lambda d, t: _get_treasury_yield_from_dep_treasury(
         d, t
@@ -37,7 +48,7 @@ SOURCE_SCRAP_MAP = {
     PriceSourceChoices.GLOBAL_RATES: lambda d, t: _scrap_euribor_from_global_rates(
         d, t
     ),
-    PriceSourceChoices.YAHOO: lambda d, t: _get_yahoo_finance_closing_prices(d, t),
+    PriceSourceChoices.YAHOO: lambda d, t: get_yahoo_finance_closing_prices(d, t),
 }
 
 
@@ -63,9 +74,7 @@ def _parse_str_decimals_to_float(a: str) -> Optional[float]:
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_yahoo_finance_closing_prices(
-    target_date: date, ticker: str
-) -> ScrappingResult:
+def get_yahoo_finance_closing_prices(target_date: date, ticker: str) -> ScrappingResult:
     """Get closing prices from Yahoo Finance.
 
     Using publicly available yahoo scrapper module yfiance.

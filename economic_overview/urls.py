@@ -9,10 +9,10 @@ from .views import (
 
 urlpatterns = [
     path(
-        "generate-base-economic-indicator-information",
+        "indicator/generate-base-information",
         GenerateBaseEconomicIndicatorInformationView.as_view(),
     ),
-    path("ingest-economic-data", IngestEconomicDataView.as_view()),
-    path("ingest-specific-economic-data", IngestSpecificEconomicDataView.as_view()),
-    path("update-publication-schedules", UpdatePublicationScheduleView.as_view()),
+    path("indicator/ingest", IngestEconomicDataView.as_view()),
+    path("indicator/ingest-specific", IngestSpecificEconomicDataView.as_view()),
+    path("schedule/update", UpdatePublicationScheduleView.as_view()),
 ]

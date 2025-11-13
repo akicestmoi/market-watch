@@ -1,0 +1,293 @@
+/* Page background gradient */
+body {
+    background: linear-gradient(to right, #1e40af, #3b82f6, #93c5fd);
+    color: #1e293b;
+    min-height: 100vh;
+    padding: 2rem;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 2rem 1rem;
+    border-bottom: 1px solid #0f0cd3;
+}
+
+.header-title h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.header-form {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-form label {
+    color: white;
+    font-weight: 500;
+    font-size: 1.2rem;
+}
+
+.header-form input[type="date"] {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #0f172a;
+    background-color: #e0f2fe;
+    color: #1e293b;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.header-form input[type="date"]:hover {
+    background-color: #dbeafe;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #0284c7;
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0369a1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-small {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.875rem;
+}
+
+/* Cards Container */
+.cards-container {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Central Bank Card */
+.central-bank-card {
+    background-color: #e0f2fe;
+    border: 1px solid #2b6dd1;
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    flex: 1;
+    min-width: 400px;
+    max-width: 600px;
+}
+
+.central-bank-card h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1e293b;
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 0.5rem;
+    text-align: center;
+}
+
+/* Section Headers */
+.cb-data-section h3,
+.probability-matrix-section h3,
+.probability-matrix-diff-section h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Central Bank Data Section */
+.cb-data-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #bae6fd;
+}
+
+.cb-data-placeholder {
+    background-color: white;
+    border: 1px solid #179bd8;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    min-height: 60px;
+}
+
+.cb-data-item {
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    background-color: #f8fafc;
+    border-radius: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cb-data-label {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.cb-data-value {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.cb-data-item.empty {
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+    justify-content: center;
+}
+
+/* Probability Matrix Section */
+.probability-matrix-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #bae6fd;
+}
+
+/* Matrix Container */
+.matrix-container {
+    overflow-x: auto;
+    background-color: white;
+    border: 1px solid #179bd8;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+}
+
+/* Probability Matrix Table */
+.probability-matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    background-color: white;
+}
+
+.probability-matrix-table th,
+.probability-matrix-table td {
+    border: 1px solid #bae6fd;
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.probability-matrix-table thead {
+    background-color: #bfdbfe;
+}
+
+.probability-matrix-table thead th {
+    font-weight: 600;
+    color: #1e293b;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.meeting-date-cell {
+    background-color: #f1f5f9;
+    font-weight: 500;
+    text-align: left;
+    padding-left: 0.75rem;
+    white-space: nowrap;
+}
+
+/* Probability Cell Styling */
+.prob-cell {
+    background-color: white;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+/* Max and Second Max Highlighting */
+.prob-cell.prob-max {
+    background-color: #bfdbfe !important; /* Light blue */
+}
+
+.prob-cell.prob-second-max {
+    background-color: #dbeafe !important; /* Even lighter blue */
+}
+
+.prob-cell.prob-third-max {
+    background-color: #e0f2fe !important; /* Even lighter blue */
+}
+
+/* Diff Table Styling */
+.diff-table .prob-cell {
+    font-weight: 500;
+}
+
+/* Diff Cell Color Coding */
+.diff-cell.diff-positive-large {
+    background-color: #0b722f !important; /* Dark green */
+    color: #c9f5da;
+}
+
+.diff-cell.diff-positive-small {
+    background-color: #dcfce7 !important; /* Light green */
+    color: #00521e;
+}
+
+.diff-cell.diff-negative-large {
+    background-color: #9c1414 !important; /* Dark red */
+    color: #fcdddd;
+}
+
+.diff-cell.diff-negative-small {
+    background-color: #fee2e2 !important; /* Light red */
+    color: #8b0000;
+}
+
+/* Probability Matrix Diff Section */
+.probability-matrix-diff-section {
+    margin-bottom: 0;
+}
+
+/* Empty Matrix */
+.empty-matrix {
+    background-color: white;
+    border: 1px solid #179bd8;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.error-message {
+    color: #dc2626;
+    font-weight: 500;
+    font-style: normal;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .cards-container {
+        flex-direction: column;
+    }
+
+    .central-bank-card {
+        max-width: 100%;
+    }
+}
+

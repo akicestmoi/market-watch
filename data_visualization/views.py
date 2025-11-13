@@ -6,6 +6,7 @@ from pandas.tseries.offsets import BDay
 
 import data_visualization.services.visualization_services as data_visualization_services
 import market_overview.services.market_data_services as market_data_services
+from central_banks_overview.models import CentralBankChoices
 from data_visualization.services.visualization_services import (
     ChartDuration,
     MarketChartsFrontData,
@@ -180,3 +181,73 @@ def economic_recap_view(request):
         "upcoming_events": upcoming_events,
     }
     return render(request, "data_visualization/economic_recap.html", context)
+
+
+def central_banks_recap_view(request):
+    """Central Banks Overview View."""
+    default_reference_date = (date.today() - BDay(1)).date()
+    reference_date = request.GET.get(
+        "reference_date", default_reference_date.isoformat()
+    )
+    reference_date = datetime.fromisoformat(reference_date).date()
+
+    default_previous_date = (default_reference_date - BDay(1)).date()
+    previous_date = request.GET.get(
+        "previous_date",
+        default_previous_date.isoformat(),
+    )
+    previous_date = datetime.fromisoformat(previous_date).date()
+
+    base_context = {
+        "reference_date": reference_date.isoformat(),
+        "previous_date": previous_date.isoformat(),
+        "default_reference_date": default_reference_date.isoformat(),
+        "default_previous_date": default_previous_date.isoformat(),
+    }
+    if reference_date >= date.today():
+        base_context["error_message"] = (
+            f"Reference date: {reference_date} must be before today: {date.today()}."
+        )
+        return render(
+            request, "data_visualization/central_banks_recap.html", base_context
+        )
+
+    central_banks_data = {}
+    for central_bank in CentralBankChoices.ordered():
+        try:
+            cb_data_items = data_visualization_services.get_central_bank_data_item(
+                central_bank
+            )
+            probability_matrix = data_visualization_services.get_central_bank_formatted_probability_matrix(
+                central_bank, reference_date
+            )
+            previous_probability_matrix = data_visualization_services.get_central_bank_formatted_probability_matrix(
+                central_bank, previous_date
+            )
+            probability_change_matrix = (
+                data_visualization_services.get_formatted_probability_matrix_changes(
+                    probability_matrix, previous_probability_matrix
+                )
+            )
+
+            central_banks_data[central_bank] = {
+                "display_name": central_bank.label,
+                "data": cb_data_items,
+                "probability_matrix": probability_matrix,
+                "probability_change_matrix": probability_change_matrix,
+            }
+        except Exception as e:
+            central_banks_data[central_bank] = {
+                "display_name": central_bank.label,
+                "data": [],
+                "probability_matrix": None,
+                "probability_change_matrix": None,
+                "error": str(e),
+            }
+
+    context = {
+        "central_banks_data": central_banks_data,
+        **base_context,
+    }
+    print(context)
+    return render(request, "data_visualization/central_banks_recap.html", context)

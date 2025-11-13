@@ -18,10 +18,11 @@ class ApiTags(str, Enum):
 
     ASSETS = "Assets"
     ASSET_PRICES = "Asset Prices"
-    PRICE_LOGS = "Price Logs"
     ECONOMIC_INDICATOR_INFORMATION = "Economic Indicator Information"
     ECONOMIC_DATA = "Economic Data"
     PUBLICATION_SCHEDULE = "Publication Schedule"
+    CENTRAL_BANKS = "Central Banks"
+    LOGS = "Logs"
 
 
 DEFAULT_ERROR_MESSAGES = {
@@ -143,29 +144,41 @@ class DefaultOpenApiResponseSerializer(serializers.Serializer):
 class OkOpenApiResponse(SuccessResponse):
     """200 OK Response."""
 
-    def __init__(self, response_serializer: Type[S]):
-        super().__init__(response_serializer, status.HTTP_200_OK)
+    def __init__(self, response_serializer: Optional[Type[S]] = None):
+        super().__init__(
+            response_serializer=response_serializer or DefaultOpenApiResponseSerializer,
+            status_code=status.HTTP_200_OK,
+        )
 
 
 class CreatedOpenApiResponse(SuccessResponse):
     """201 Created Response."""
 
-    def __init__(self, response_serializer: Type[S]):
-        super().__init__(response_serializer, status.HTTP_201_CREATED)
+    def __init__(self, response_serializer: Optional[Type[S]] = None):
+        super().__init__(
+            response_serializer=response_serializer or DefaultOpenApiResponseSerializer,
+            status_code=status.HTTP_201_CREATED,
+        )
 
 
 class AcceptedOpenApiResponse(SuccessResponse):
     """202 Accepted Response."""
 
-    def __init__(self, response_serializer: Type[S]):
-        super().__init__(response_serializer, status.HTTP_202_ACCEPTED)
+    def __init__(self, response_serializer: Optional[Type[S]] = None):
+        super().__init__(
+            response_serializer=response_serializer or DefaultOpenApiResponseSerializer,
+            status_code=status.HTTP_202_ACCEPTED,
+        )
 
 
 class NoContentOpenApiResponse(SuccessResponse):
     """204 No Content Response."""
 
-    def __init__(self, response_serializer: Type[S]):
-        super().__init__(response_serializer, status.HTTP_204_NO_CONTENT)
+    def __init__(self, response_serializer: Optional[Type[S]] = None):
+        super().__init__(
+            response_serializer=response_serializer or DefaultOpenApiResponseSerializer,
+            status_code=status.HTTP_204_NO_CONTENT,
+        )
 
 
 def _build_parameters_for_get_requests(

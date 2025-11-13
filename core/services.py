@@ -1,6 +1,8 @@
 import logging
-from typing import List, Type, TypeVar
+from typing import List, Optional, Type, TypeVar
 
+import requests
+from bs4 import BeautifulSoup
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
 from rest_framework.exceptions import NotFound
@@ -76,3 +78,16 @@ def upsert_with_logs(
 def convert_query_to_dictionary_list(queryset: QuerySet) -> List[dict]:
     """Convert a query into a List of Dictionary."""
     return [object.convert_to_dict() for object in queryset]
+
+
+def fetch_html(url: str) -> Optional[BeautifulSoup]:
+    """Fetch and parse HTML from a URL with error handling."""
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code >= 400:
+            logger.warning(f"Error fetching {url}: HTTP {response.status_code}")
+            return
+        return BeautifulSoup(response.text, "html.parser")
+    except requests.RequestException as e:
+        logger.error(f"Error fetching {url}: {str(e)}")
+        return

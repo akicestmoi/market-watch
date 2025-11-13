@@ -20,9 +20,9 @@ urlpatterns = [
     path("asset/generate-base-assets-data", GenerateBaseAssetsDataView.as_view()),
     path("asset/get-asset-names", GetAssetNamesView.as_view()),
     path("asset", AssetDetailsView.as_view()),
-    path("prices/ingest-all", IngestMarketPricesView.as_view()),
+    path("prices/ingest", IngestMarketPricesView.as_view()),
     path(
-        "prices/ingest-specific-asset",
+        "prices/ingest-specific",
         IngestSpecificAssetMarketPricesView.as_view(),
     ),
     path("prices", GetMarketPriceView.as_view()),

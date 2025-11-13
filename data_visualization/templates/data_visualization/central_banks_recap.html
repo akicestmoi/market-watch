@@ -1,0 +1,176 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Central Banks Recap — As of {{ reference_date|default:default_reference_date }}</title>
+    <link href="{% static 'data_visualization/css/central_banks_recap.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-title">
+            <h1>Central Banks Recap — As of {{ reference_date|default:default_reference_date }}</h1>
+        </div>
+        <div class="header-form">
+            <form method="get">
+                <label for="reference_date">Target Date:</label>
+                <input type="date" id="reference_date" name="reference_date"
+                    value="{{ reference_date|default:default_reference_date }}">
+                <label for="previous_date">Previous Date:</label>
+                <input type="date" id="previous_date" name="previous_date"
+                    value="{{ previous_date|default:default_previous_date }}">
+                <button type="submit" class="btn-primary">Update</button>
+                <button type="button" class="btn-primary" id="lastBtn">Last</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cards Container -->
+    <div class="cards-container">
+        {% for central_bank, cb_data in central_banks_data.items %}
+        <div class="central-bank-card" data-bank="{{ cb_data.display_name }}">
+            <h2>{{ cb_data.display_name }}</h2>
+
+            <!-- Central Bank Data Section (Top) -->
+            <div class="cb-data-section">
+                <h3>Central Bank Data</h3>
+                <div class="cb-data-placeholder">
+                    {% if cb_data.data %}
+                        {% for data_item in cb_data.data %}
+                        <div class="cb-data-item">
+                            <span class="cb-data-label">{{ data_item.label }}:</span>
+                            <span class="cb-data-value">{{ data_item.value }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="cb-data-item empty">No data available</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Probability Matrix Section (Middle) -->
+            <div class="probability-matrix-section">
+                <h3>Probability Matrix</h3>
+                {% if cb_data.probability_matrix and cb_data.probability_matrix.meeting_dates %}
+                    {% with prob_matrix=cb_data.probability_matrix %}
+                    {% with limited_entries=prob_matrix.probability_matrix|slice:":8" %}
+                    <div class="matrix-container">
+                        <table class="probability-matrix-table" data-bank="{{ cb_data.display_name }}" data-type="main">
+                            <thead>
+                                <tr>
+                                    <th>Meeting Date</th>
+                                    {% for prob_entry in limited_entries %}
+                                    <th>{{ prob_entry.expected_rate_step }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for meeting_date in prob_matrix.meeting_dates %}
+                                {% with meeting_idx=forloop.counter0 %}
+                                <tr data-meeting-date="{{ meeting_date|date:'Y-m-d' }}" data-row-index="{{ meeting_idx }}">
+                                    <td class="meeting-date-cell">{{ meeting_date|date:"Y-m-d" }}</td>
+                                    {% for prob_entry in limited_entries %}
+                                        {% if meeting_idx < prob_entry.probabilities|length %}
+                                            {% for prob_value in prob_entry.probabilities %}
+                                                {% if forloop.counter0 == meeting_idx %}
+                                                    <td class="prob-cell"
+                                                        data-step="{{ prob_entry.expected_rate_step }}"
+                                                        data-value="{{ prob_value|default:'0' }}">
+                                                        {{ prob_value|floatformat:2|default:"0.00" }}
+                                                    </td>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <td class="prob-cell">-</td>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                                {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endwith %}
+                    {% endwith %}
+                {% else %}
+                    <div class="empty-matrix">
+                        {% if cb_data.error %}
+                            <p class="error-message">Error: {{ cb_data.error }}</p>
+                        {% else %}
+                            <p>No probability matrix available</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Probability Matrix Diff Section (Bottom) -->
+            <div class="probability-matrix-diff-section">
+                <h3>Probability Changes</h3>
+                {% if cb_data.probability_change_matrix and cb_data.probability_change_matrix.meeting_dates %}
+                    {% with change_matrix=cb_data.probability_change_matrix %}
+                    {% with limited_entries=change_matrix.probability_matrix|slice:":8" %}
+                    <div class="matrix-container">
+                        <table class="probability-matrix-table diff-table" data-bank="{{ cb_data.display_name }}" data-type="diff">
+                            <thead>
+                                <tr>
+                                    <th>Meeting Date</th>
+                                    {% for prob_entry in limited_entries %}
+                                    <th>{{ prob_entry.expected_rate_step }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for meeting_date in change_matrix.meeting_dates %}
+                                {% with meeting_idx=forloop.counter0 %}
+                                <tr data-meeting-date="{{ meeting_date|date:'Y-m-d' }}" data-row-index="{{ meeting_idx }}">
+                                    <td class="meeting-date-cell">{{ meeting_date|date:"Y-m-d" }}</td>
+                                    {% for prob_entry in limited_entries %}
+                                        {% if meeting_idx < prob_entry.probabilities|length %}
+                                            {% for diff_value in prob_entry.probabilities %}
+                                                {% if forloop.counter0 == meeting_idx %}
+                                                    <td class="prob-cell diff-cell"
+                                                        data-step="{{ prob_entry.expected_rate_step }}"
+                                                        data-diff="{{ diff_value|default:'0' }}">
+                                                        <span class="diff-value">{{ diff_value|floatformat:2|default:"0.00" }}</span>
+                                                    </td>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <td class="prob-cell diff-cell">-</td>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                                {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endwith %}
+                    {% endwith %}
+                {% else %}
+                    <div class="empty-matrix">
+                        {% if cb_data.error %}
+                            <p class="error-message">Error: {{ cb_data.error }}</p>
+                        {% else %}
+                            <p>No comparison data available</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        window.defaultReferenceDate = "{{ default_reference_date }}";
+        window.defaultPreviousDate = "{{ default_previous_date }}";
+    </script>
+    <script src="{% static 'data_visualization/js/central_banks_recap.js' %}"></script>
+</body>
+
+</html>

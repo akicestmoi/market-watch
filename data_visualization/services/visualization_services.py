@@ -6,6 +6,12 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import market_overview.services.market_data_services as market_data_services
+from central_banks_overview.models import CentralBankChoices
+from central_banks_overview.services.cb_inference_services import (
+    CentralBankProbabilityMatrix,
+    calculate_probability_changes,
+    get_central_bank_probability_matrices,
+)
 from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicDataModel,
@@ -549,3 +555,87 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
         upcoming_events.append(date_group)
 
     return upcoming_events
+
+
+class CentralBankDataItem(TypedDict):
+    """Central bank data item."""
+
+    label: str
+    value: str
+
+
+def get_central_bank_data_item(
+    central_bank: CentralBankChoices,
+) -> List[CentralBankDataItem]:
+    """Get central bank data item."""
+    if central_bank == CentralBankChoices.FRB:
+        return [
+            CentralBankDataItem(label="Current Rate", value="3.875%"),
+            CentralBankDataItem(label="Target Rate", value="4.0%"),
+            CentralBankDataItem(label="Next Meeting", value="2025-12-10"),
+        ]
+    elif central_bank == CentralBankChoices.BOJ:
+        return [
+            CentralBankDataItem(label="Current Rate", value="0.48%"),
+            CentralBankDataItem(label="Target Rate", value="0.5%"),
+            CentralBankDataItem(label="Next Meeting", value="2025-12-19"),
+        ]
+    else:  # ECB
+        return [
+            CentralBankDataItem(label="Current Rate", value="1.93%"),
+            CentralBankDataItem(label="Target Rate", value="2.15%"),
+            CentralBankDataItem(label="ECB Deposit Facility Rate", value="2.0%"),
+            CentralBankDataItem(
+                label="ECB Main Refinancing Operation Rate", value="2.15%"
+            ),
+            CentralBankDataItem(
+                label="ECB Marginal Lending Facility Rate", value="2.40%"
+            ),
+            CentralBankDataItem(label="Next Meeting", value="2025-12-18"),
+        ]
+
+
+def get_central_bank_formatted_probability_matrix(
+    central_bank: CentralBankChoices,
+    reference_date: date,
+) -> Optional[CentralBankProbabilityMatrix]:
+    """Get formatted probability matrix for a central bank."""
+    if central_bank == CentralBankChoices.ECB:
+        return None
+    cb_probability_matrices = get_central_bank_probability_matrices(
+        reference_date, [central_bank]
+    )
+    for prob_matrix in cb_probability_matrices:
+        if prob_matrix["central_bank"] == central_bank:
+            sorted_probability_matrix = sorted(
+                prob_matrix["probability_matrix"],
+                key=lambda x: x["expected_rate_step"],
+            )
+            return {
+                "central_bank": prob_matrix["central_bank"],
+                "meeting_dates": prob_matrix["meeting_dates"],
+                "probability_matrix": sorted_probability_matrix,
+            }
+
+
+def get_formatted_probability_matrix_changes(
+    probability_matrix: Optional[CentralBankProbabilityMatrix],
+    previous_probability_matrix: Optional[CentralBankProbabilityMatrix],
+) -> Optional[CentralBankProbabilityMatrix]:
+    """Get formatted probability change matrix."""
+    if not probability_matrix or not previous_probability_matrix:
+        return None
+
+    probability_change_matrix = calculate_probability_changes(
+        probability_matrix, previous_probability_matrix
+    )
+    # Sort by expected_rate_step in ascending order
+    sorted_probability_change_matrix = sorted(
+        probability_change_matrix["probability_matrix"],
+        key=lambda x: x["expected_rate_step"],
+    )
+    return {
+        "central_bank": probability_change_matrix["central_bank"],
+        "meeting_dates": probability_change_matrix["meeting_dates"],
+        "probability_matrix": sorted_probability_change_matrix,
+    }
