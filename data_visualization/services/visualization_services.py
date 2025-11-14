@@ -545,9 +545,7 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
             events_by_date[date_key] = []
         events_by_date[date_key].append(event)
 
-    for central_bank_meeting_date in get_central_bank_meeting_dates(
-        [CentralBankChoices.FRB, CentralBankChoices.BOJ]
-    ):
+    for central_bank_meeting_date in get_central_bank_meeting_dates():
         central_bank = CentralBankChoices(central_bank_meeting_date["central_bank"])
         central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
         meeting_date = central_bank_meeting_date["meeting_dates"][0]
@@ -592,19 +590,25 @@ def get_central_bank_data_item(
 ) -> List[CentralBankDataItem]:
     """Get central bank data item."""
     effective_rate = get_central_bank_effective_rate(central_bank, reference_date)
+    meeting_dates = get_central_bank_meeting_dates([central_bank])
+    meeting_date = (
+        meeting_dates[0]["meeting_dates"][0].strftime("%Y-%m-%d")
+        if meeting_dates
+        else "N/A"
+    )
+
     base_data = [
-        CentralBankDataItem(label="Effective Rate", value=f"{effective_rate}%")
+        CentralBankDataItem(label="Effective Rate", value=f"{effective_rate}%"),
+        CentralBankDataItem(label="Next Meeting", value=meeting_date),
     ]
     match central_bank:
         case CentralBankChoices.FRB:
             additional_data = [
                 CentralBankDataItem(label="Target Rate", value="4.0%"),
-                CentralBankDataItem(label="Next Meeting", value="2025-12-10"),
             ]
         case CentralBankChoices.BOJ:
             additional_data = [
                 CentralBankDataItem(label="Target Rate", value="0.5%"),
-                CentralBankDataItem(label="Next Meeting", value="2025-12-19"),
             ]
         case CentralBankChoices.ECB:
             additional_data = [
@@ -615,7 +619,6 @@ def get_central_bank_data_item(
                 CentralBankDataItem(
                     label="ECB Marginal Lending Facility Rate", value="2.40%"
                 ),
-                CentralBankDataItem(label="Next Meeting", value="2025-12-18"),
             ]
     return base_data + additional_data
 
