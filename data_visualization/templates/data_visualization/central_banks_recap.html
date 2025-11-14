@@ -99,11 +99,7 @@
                     {% endwith %}
                 {% else %}
                     <div class="empty-matrix">
-                        {% if cb_data.error %}
-                            <p class="error-message">Error: {{ cb_data.error }}</p>
-                        {% else %}
-                            <p>No probability matrix available</p>
-                        {% endif %}
+                        <p>No probability matrix available</p>
                     </div>
                 {% endif %}
             </div>
@@ -154,11 +150,7 @@
                     {% endwith %}
                 {% else %}
                     <div class="empty-matrix">
-                        {% if cb_data.error %}
-                            <p class="error-message">Error: {{ cb_data.error }}</p>
-                        {% else %}
-                            <p>No comparison data available</p>
-                        {% endif %}
+                        <p>No comparison data available</p>
                     </div>
                 {% endif %}
             </div>
@@ -170,6 +162,12 @@
         window.defaultReferenceDate = "{{ default_reference_date }}";
         window.defaultPreviousDate = "{{ default_previous_date }}";
     </script>
+    <script src="{% static 'data_visualization/js/errors.js' %}"></script>
+    {% if error_message %}
+    <script>
+        window.errorMessage = "{{ error_message|escapejs }}";
+    </script>
+    {% endif %}
     <script src="{% static 'data_visualization/js/central_banks_recap.js' %}"></script>
 </body>
 

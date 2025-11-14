@@ -10,6 +10,7 @@ from central_banks_overview.models import CentralBankChoices
 from central_banks_overview.services.cb_inference_services import (
     CentralBankProbabilityMatrix,
     calculate_probability_changes,
+    get_central_bank_effective_rate,
     get_central_bank_probability_matrices,
 )
 from economic_overview.models import (
@@ -565,34 +566,36 @@ class CentralBankDataItem(TypedDict):
 
 
 def get_central_bank_data_item(
-    central_bank: CentralBankChoices,
+    central_bank: CentralBankChoices, reference_date: date
 ) -> List[CentralBankDataItem]:
     """Get central bank data item."""
-    if central_bank == CentralBankChoices.FRB:
-        return [
-            CentralBankDataItem(label="Current Rate", value="3.875%"),
-            CentralBankDataItem(label="Target Rate", value="4.0%"),
-            CentralBankDataItem(label="Next Meeting", value="2025-12-10"),
-        ]
-    elif central_bank == CentralBankChoices.BOJ:
-        return [
-            CentralBankDataItem(label="Current Rate", value="0.48%"),
-            CentralBankDataItem(label="Target Rate", value="0.5%"),
-            CentralBankDataItem(label="Next Meeting", value="2025-12-19"),
-        ]
-    else:  # ECB
-        return [
-            CentralBankDataItem(label="Current Rate", value="1.93%"),
-            CentralBankDataItem(label="Target Rate", value="2.15%"),
-            CentralBankDataItem(label="ECB Deposit Facility Rate", value="2.0%"),
-            CentralBankDataItem(
-                label="ECB Main Refinancing Operation Rate", value="2.15%"
-            ),
-            CentralBankDataItem(
-                label="ECB Marginal Lending Facility Rate", value="2.40%"
-            ),
-            CentralBankDataItem(label="Next Meeting", value="2025-12-18"),
-        ]
+    effective_rate = get_central_bank_effective_rate(central_bank, reference_date)
+    base_data = [
+        CentralBankDataItem(label="Effective Rate", value=f"{effective_rate}%")
+    ]
+    match central_bank:
+        case CentralBankChoices.FRB:
+            additional_data = [
+                CentralBankDataItem(label="Target Rate", value="4.0%"),
+                CentralBankDataItem(label="Next Meeting", value="2025-12-10"),
+            ]
+        case CentralBankChoices.BOJ:
+            additional_data = [
+                CentralBankDataItem(label="Target Rate", value="0.5%"),
+                CentralBankDataItem(label="Next Meeting", value="2025-12-19"),
+            ]
+        case CentralBankChoices.ECB:
+            additional_data = [
+                CentralBankDataItem(label="ECB Deposit Facility Rate", value="2.0%"),
+                CentralBankDataItem(
+                    label="ECB Main Refinancing Operation Rate", value="2.15%"
+                ),
+                CentralBankDataItem(
+                    label="ECB Marginal Lending Facility Rate", value="2.40%"
+                ),
+                CentralBankDataItem(label="Next Meeting", value="2025-12-18"),
+            ]
+    return base_data + additional_data
 
 
 def get_central_bank_formatted_probability_matrix(

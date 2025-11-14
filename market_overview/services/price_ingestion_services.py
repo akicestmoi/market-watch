@@ -320,7 +320,7 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
             return ScrappingResult(price=None, comment=response.text)
 
     df = pd.read_excel(BytesIO(response.content))
-    matches = df.applymap(lambda x: "Average" in str(x))  # type: ignore[CallIssue]
+    matches = df.map(lambda x: "Average" in str(x))
     match_locations = [(i, j) for i, j in zip(*matches.to_numpy().nonzero())]
     if len(match_locations) > 1:
         return ScrappingResult(

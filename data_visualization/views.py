@@ -213,14 +213,31 @@ def central_banks_recap_view(request):
         )
 
     central_banks_data = {}
+    error_messages = []
     for central_bank in CentralBankChoices.ordered():
+        cb_data_items = []
+        probability_matrix = None
+        probability_change_matrix = None
+
         try:
             cb_data_items = data_visualization_services.get_central_bank_data_item(
-                central_bank
+                central_bank, reference_date
             )
+        except Exception as e:
+            error_messages.append(
+                f"Error getting central bank data item for {central_bank.label}: {e}"
+            )
+
+        try:
             probability_matrix = data_visualization_services.get_central_bank_formatted_probability_matrix(
                 central_bank, reference_date
             )
+        except Exception as e:
+            error_messages.append(
+                f"Error getting probability matrix for {central_bank.label}: {e}"
+            )
+
+        try:
             previous_probability_matrix = data_visualization_services.get_central_bank_formatted_probability_matrix(
                 central_bank, previous_date
             )
@@ -229,25 +246,23 @@ def central_banks_recap_view(request):
                     probability_matrix, previous_probability_matrix
                 )
             )
-
-            central_banks_data[central_bank] = {
-                "display_name": central_bank.label,
-                "data": cb_data_items,
-                "probability_matrix": probability_matrix,
-                "probability_change_matrix": probability_change_matrix,
-            }
         except Exception as e:
-            central_banks_data[central_bank] = {
-                "display_name": central_bank.label,
-                "data": [],
-                "probability_matrix": None,
-                "probability_change_matrix": None,
-                "error": str(e),
-            }
+            error_messages.append(
+                f"Error getting probability change matrix for {central_bank.label}: {e}"
+            )
+
+        central_banks_data[central_bank] = {
+            "display_name": central_bank.label,
+            "data": cb_data_items,
+            "probability_matrix": probability_matrix,
+            "probability_change_matrix": probability_change_matrix,
+        }
+
+    if error_messages:
+        base_context["error_message"] = "; ".join(error_messages)
 
     context = {
         "central_banks_data": central_banks_data,
         **base_context,
     }
-    print(context)
     return render(request, "data_visualization/central_banks_recap.html", context)

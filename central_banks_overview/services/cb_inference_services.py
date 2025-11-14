@@ -992,6 +992,26 @@ def _initiate_central_bank_probability_matrix_calculation(
             raise ValueError(f"Invalid central bank: {central_bank}")
 
 
+def get_central_bank_effective_rate(
+    central_bank: CentralBankChoices,
+    target_date: date,
+) -> float:
+    """Get effective rate for a central bank."""
+    match central_bank:
+        case CentralBankChoices.FRB:
+            return 3.875
+        case CentralBankChoices.BOJ:
+            base_rate_obj = MarketPriceModel.objects.get(
+                date=target_date,
+                asset__short_name=CENTRAL_BANK_TARGET_RATE_MAP[central_bank],
+            )
+            return base_rate_obj.price
+        case CentralBankChoices.ECB:
+            return 2.15
+        case _:
+            raise ValueError(f"Invalid central bank: {central_bank}")
+
+
 def get_central_bank_probability_matrices(
     target_date: date,
     central_banks: List[CentralBankChoices] = [],
@@ -1023,23 +1043,8 @@ def get_central_bank_probability_matrices(
     for central_bank in central_banks_to_process:
         logger.info(f"Processing probability matrix for {central_bank}")
 
-        # Get base rate
-        if central_bank == CentralBankChoices.FRB:
-            # FEDFUNDS NOT IMPLEMENTED YET
-            initial_base_rate = 3.875
-        else:
-            try:
-                base_rate_obj = MarketPriceModel.objects.get(
-                    date=target_date,
-                    asset__short_name=CENTRAL_BANK_TARGET_RATE_MAP[central_bank],
-                )
-                initial_base_rate = base_rate_obj.price
-            except MarketPriceModel.DoesNotExist:
-                logger.error(
-                    f"Base rate not found for {central_bank} on {target_date}. "
-                    f"Asset: {CENTRAL_BANK_TARGET_RATE_MAP[central_bank]}"
-                )
-                raise
+        # Get initial base rate
+        initial_base_rate = get_central_bank_effective_rate(central_bank, target_date)
 
         # Get meeting dates
         meeting_dates = meeting_dates_lookup.get(central_bank)

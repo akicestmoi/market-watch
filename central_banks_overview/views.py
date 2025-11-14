@@ -51,7 +51,7 @@ class StirFuturesPriceIngestionView(BaseAPIView):
                 {
                     "message": "STIR Futures prices successfully ingested",
                     "stir_futures_not_updated": [
-                        stir_future_price["short_name"]
+                        f"{stir_future_price['short_name']}.{stir_future_price['maturity']}"
                         for stir_future_price in stir_futures_not_updated
                     ],
                     "date": price_date,

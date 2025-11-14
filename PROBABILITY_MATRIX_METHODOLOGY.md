@@ -4,451 +4,504 @@ This document provides a detailed mathematical explanation of how probability ma
 
 ## Table of Contents
 
-1. [Common Concepts](#common-concepts)
-2. [Federal Reserve (FED) Calculations](#federal-reserve-fed-calculations)
-3. [Bank of Japan (BOJ) Calculations](#bank-of-japan-boj-calculations)
-4. [Probability Matrix Construction](#probability-matrix-construction)
+1. [Notations](#notations)
+2. [First Futures Contract](#first-futures-contract)
+3. [Subsequent Futures Contracts (Recursion)](#subsequent-futures-contracts-recursion)
+4. [Normalization](#normalization)
+5. [Final Result](#final-result)
+6. [FED-Specific Calculations](#fed-specific-calculations)
+7. [BOJ-Specific Calculations](#boj-specific-calculations)
 
 ---
 
-## Common Concepts
+## Notations
+
+### Common Variables
+
+- **r₀**: Starting/base rate (e.g., `base_rate`)
+- **Δ = 25 bps**: Step size (unit rate change)
+- **P_t**: Futures price at date `t`
+- **r_t**: Implied rate of futures at date `t`
+- **N_t**: Number of meetings before futures expiration at date `t`
+- **M*{t,1}, M*{t,2}**: Meeting dates (1st, 2nd)
+- **p_t(k)**: Cumulative probability of a total rate change of `k` bps at futures expiration `t`
+
+### Possible Rate Steps
+
+At each meeting, the possible rate steps are:
+
+```
+k ∈ {-50, -25, 0, +25, +50} (in basis points)
+```
 
 ### Constants
 
 - **STEP_SIZE** = 25 basis points (0.25%)
-- **STANDARD_STEP_SCENARIOS** = [-50, -25, 0, 25, 50] (in basis points)
 - **PROBABILITY_EXTENSION_STEPS** = 5
 - **PROBABILITY_THRESHOLD** = 1.0%
 - **DAYS_PER_YEAR** = 365
 - **MUTAN_FUTURES_AVERAGE_DAYS** = 90 (for BOJ only)
 
-### Rate Change Decomposition
+---
 
-Given a rate change in basis points, we decompose it into integer steps and a fractional part:
+## First Futures Contract
 
-\[
-\text{meeting\_steps} = \frac{\text{rate\_change\_bps}}{\text{STEP\_SIZE}}
-\]
+### Case (a): Single Meeting (N₁ = 1)
 
-\[
-\text{fractional}, \text{integer} = \text{modf}(\text{meeting\_steps})
-\]
+For a futures contract with one meeting before expiration:
 
-\[
-\text{sign} = \text{copysign}(1, \text{meeting\_steps})
-\]
+#### Step 1: Calculate Implied Meeting Rate
+
+The implied meeting rate is obtained by inverting the discounting formula:
+
+```
+r_{M₁} = f(r₀, P₁, M_{1,1})
+```
+
+This corresponds to `get_implied_meeting_rate()` in the code.
+
+#### Step 2: Calculate Fractional Number of Steps
+
+From the implied meeting rate, we derive the fractional number of rate steps:
+
+```
+n₁ = (r_{M₁} - r₀) / (Δ / 100)
+```
+
+This gives the number of 25 bps steps (can be fractional).
+
+#### Step 3: Decompose into Integer and Fractional Parts
+
+```
+fractional, integer = modf(n₁)
+sign = copysign(1, n₁)
+```
 
 Where:
-- **nb_steps** = `int(integer)` - the integer number of steps
-- **proportion** = `abs(fractional)` - the fractional part (0 ≤ proportion < 1)
+
+- **integer** = `int(integer)` - the integer number of steps
+- **fractional** = `abs(fractional)` - the fractional part (0 ≤ fractional < 1)
 - **sign** = ±1 - indicates direction of change
 
-### Linear Interpolation
+#### Step 4: Assign Initial Probabilities
 
-For probability assignment, we use linear interpolation between adjacent rate steps.
+The probability of rate change is distributed using linear interpolation:
 
-#### Initial Assignment (First Meeting)
+```
+p(+Δ) = fractional
+p(0) = 1 - fractional
+p(-Δ) = 0
+```
 
-For the first meeting, probabilities are assigned to three adjacent steps:
+Where `fractional(n₁)` is the fractional part (e.g., 0.3 means 30% chance of a 25 bps increase).
 
-\[
-\text{step\_up} = \text{int}((\text{nb\_steps} + \text{sign}) \times \text{STEP\_SIZE})
-\]
+For all other steps: **p(step) = 0**
 
-\[
-\text{step\_current} = \text{int}(\text{nb\_steps} \times \text{STEP\_SIZE})
-\]
+### Case (b): Two Meetings (N₁ = 2)
 
-\[
-P(\text{step\_up}) = \text{proportion}
-\]
+For a futures contract with two meetings before expiration:
 
-\[
-P(\text{step\_current}) = 1 - \text{proportion}
-\]
+#### Step 1: Calculate Probability Matrix for Both Meetings
 
-\[
-P(\text{step\_down}) = 0
-\]
+We calculate the probability matrix for the two meetings:
 
-For all other steps: \(P(\text{step}) = 0\)
+```
+P₁ = [
+  [p₁(Δ_{M_{1,1}} = -50), ..., p₁(Δ_{M_{1,1}} = +50)],
+  [p₂(Δ_{M_{1,2}} = -50), ..., p₂(Δ_{M_{1,2}} = +50)]
+]
+```
 
-#### Subsequent Assignment
+Such that:
 
-For subsequent meetings, probabilities are calculated using linear interpolation from the previous meeting's probabilities:
+```
+Σᵢ pᵢ = 1
+```
 
-\[
-\text{prev\_step\_key} = \text{step\_key} - \text{nb\_steps} \times \text{STEP\_SIZE}
-\]
+#### Step 2: Calculate Total Distribution After Both Meetings
 
-\[
-\text{next\_step\_key} = \text{step\_key} - \text{int}((\text{nb\_steps} + \text{sign}) \times \text{STEP\_SIZE})
-\]
+The total distribution after both meetings is:
 
-\[
-P_X = (1 - \text{proportion}) \times P_{\text{prev}} + \text{proportion} \times P_{\text{next}}
-\]
+```
+p_total(k) = Σ_{x+y=k} p₁(x) × p₂(y)
+```
 
-Where:
-- \(P_{\text{prev}}\) = probability at `prev_step_key` from previous meeting
-- \(P_{\text{next}}\) = probability at `next_step_key` from previous meeting
-- \(P_X\) = new probability for step `step_key`
+This is exactly what the code does with:
+
+```python
+p_1_X = prob_df[prob_df["first_rate_step"] == X]["probability"].sum()
+p_2_X = prob_df[prob_df["total_step"] == X]["probability"].sum()
+```
+
+#### Step 3: Rate Combinations
+
+We consider 7 possible rate change combinations:
+
+- **(-25, -25)**: Both meetings decrease by 25 bps
+- **(-25, 0)**: First decreases, second unchanged
+- **(0, -25)**: First unchanged, second decreases
+- **(0, 0)**: Both unchanged
+- **(0, 25)**: First unchanged, second increases
+- **(25, 0)**: First increases, second unchanged
+- **(25, 25)**: Both increase by 25 bps
+
+Note: **(25, -25)** is excluded as it's unlikely.
+
+#### Step 4: Distance Calculation and Inverse Distance Weighting
+
+For each scenario, calculate the distance from market price:
+
+```
+distance_i = |future_price - price_i|
+```
+
+Then calculate inverse distance:
+
+```
+reverse_distance_i = 1 / (distance_i + ε)
+```
+
+Where **ε = 10^-10** to avoid division by zero.
+
+```
+probability_i = reverse_distance_i / Σ(reverse_distance_j) for j=1 to 7
+```
+
+This ensures: **Σ(probability_i) for i=1 to 7 = 1**
 
 ---
 
-## Federal Reserve (FED) Calculations
+## Subsequent Futures Contracts (Recursion)
 
-### 1. Implied Rate Calculation
+For each futures contract **t > 1**, we start from the last probability vector **p\_{t-1}(k)** and "propagate" the possible transitions induced by the new meetings.
+
+### Case 1: Single Meeting (N_t = 1)
+
+For a subsequent contract with one meeting:
+
+```
+p_t(k) = (1 - f_t) × p_{t-1}(k - Δ×n_t) + f_t × p_{t-1}(k - Δ×(n_t + s))
+```
+
+Where:
+
+- **f_t = fractional(n_t)** - the fractional part
+- **s = sign(n_t)** - the sign of the change
+
+This is exactly the code block:
+
+```python
+p_X = (1 - fractional) × p_prev[X - integer × step]
+      + fractional × p_prev[X - (integer + sign) × step]
+```
+
+#### Probability Extension
+
+Before calculating probabilities for subsequent meetings, we extend the support:
+
+```
+extended_keys = {min_step - i × STEP_SIZE, max_step + i × STEP_SIZE}
+```
+
+For **i = 1, 2, ..., PROBABILITY_EXTENSION_STEPS**
+
+New steps are initialized with zero probabilities for all previous meetings.
+
+### Case 2: Two Meetings (N_t = 2)
+
+For a subsequent contract with two meetings:
+
+```
+p_t(k) = Σ_{x ∈ {-2, -1, 0, 1, 2}} p_{t-1}(k - Δ×x) × p^(2)(x)
+```
+
+Where **p^(2)(x)** is the probability from the product of the two meetings:
+
+```
+p^(2)(x) = {
+  p₁(0) × p₂(0)                    if x = 0
+  p₁(+25) × p₂(0) + p₁(0) × p₂(+25) if x = +25
+  ...
+}
+```
+
+This is what the code does with:
+
+```python
+p_1_X = p_prev[X] × new_prob_dict[0][0]
+        + p_prev[X - step] × new_prob_dict[25][0]
+        + ...
+
+p_2_X = ...
+```
+
+#### First Meeting Probability Update
+
+```
+P₁(step_key) = P_prev(step_key) × P₁(0)
+                + P_prev(step_key - 25) × P₁(25)
+                + P_prev(step_key + 25) × P₁(-25)
+```
+
+Where:
+
+- **P_prev(step_key)** = previous probability at `step_key`
+- **P₁(0)**, **P₁(25)**, **P₁(-25)** = new first meeting probabilities from current contract
+
+#### Second Meeting Probability Update
+
+```
+P₂(step_key) = P_prev(step_key) × P₂(0)
+                + P_prev(step_key - 25) × P₂(25)
+                + P_prev(step_key + 25) × P₂(-25)
+                + P_prev(step_key - 50) × P₂(50)
+                + P_prev(step_key + 50) × P₂(-50)
+```
+
+Where:
+
+- **P_prev(step_key)** = previous probability at `step_key`
+- **P₂(0)**, **P₂(25)**, **P₂(-25)**, **P₂(50)**, **P₂(-50)** = new second meeting probabilities from current contract
+
+---
+
+## Normalization
+
+After each futures contract, probabilities are normalized:
+
+```
+Σ_k p_t(k) = 1
+```
+
+And converted to percentages:
+
+```
+p_t(k)_% = 100 × p_t(k)
+```
+
+Rounded to 2 decimal places.
+
+---
+
+## Final Result
+
+We obtain a matrix equivalent to a transition matrix:
+
+| Meeting   | -50 | -25  | 0   | +25  | +50 | Σ   |
+| --------- | --- | ---- | --- | ---- | --- | --- |
+| Meeting 1 | 0.0 | 0.3  | 0.7 | 0.0  | 0.0 | 1.0 |
+| Meeting 2 | 0.0 | 0.15 | 0.5 | 0.35 | 0.0 | 1.0 |
+| ...       | ... | ...  | ... | ...  | ... | ... |
+
+Where:
+
+- Each row corresponds to a meeting date
+- Each column corresponds to a rate step change
+- Each entry is a probability percentage
+- Each row sums to approximately 100% (within rounding)
+
+### Filtering Low-Probability Steps
+
+Remove steps where:
+
+```
+Σ(P_%,i) for i=1 to n < PROBABILITY_THRESHOLD
+```
+
+---
+
+## FED-Specific Calculations
+
+### Implied Rate Calculation
 
 Fed Funds Futures prices are quoted as: **Price = 100 - Implied Rate**
 
-\[
-\text{implied\_rate} = 100 - \text{futures\_price}
-\]
+```
+implied_rate = 100 - futures_price
+```
 
 The implied rate represents the **average** of daily Fed Funds rates over the contract period.
 
-### 2. Rate Calculation for Contracts with Meetings
+### Rate Calculation for Contracts with Meetings
 
 For a futures contract with a meeting date, we need to calculate either the start rate (before meeting) or end rate (after meeting).
 
 #### Time Periods
 
-\[
-\text{days\_after\_meeting} = (\text{settlement\_date} - \text{meeting\_date}).\text{days}
-\]
+```
+days_after_meeting = (settlement_date - meeting_date).days
+```
 
-\[
-\text{days\_before\_meeting} = \text{contract\_days} - \text{days\_after\_meeting}
-\]
+```
+days_before_meeting = contract_days - days_after_meeting
+```
 
-\[
-\text{prior\_ratio} = \frac{\text{days\_before\_meeting}}{\text{contract\_days}}
-\]
+```
+prior_ratio = days_before_meeting / contract_days
+```
 
-\[
-\text{after\_ratio} = \frac{\text{days\_after\_meeting}}{\text{contract\_days}}
-\]
+```
+after_ratio = days_after_meeting / contract_days
+```
 
 #### Average Rate Relationship
 
 The implied rate is the weighted average of rates before and after the meeting:
 
-\[
-\text{implied\_rate} = \text{start\_rate} \times \text{prior\_ratio} + \text{end\_rate} \times \text{after\_ratio}
-\]
+```
+implied_rate = start_rate × prior_ratio + end_rate × after_ratio
+```
 
 #### Solving for Start Rate
 
 If we know the end rate:
 
-\[
-\text{start\_rate} = \frac{\text{implied\_rate} - \text{end\_rate} \times \text{after\_ratio}}{\text{prior\_ratio}}
-\]
+```
+start_rate = (implied_rate - end_rate × after_ratio) / prior_ratio
+```
 
 #### Solving for End Rate
 
 If we know the start rate:
 
-\[
-\text{end\_rate} = \frac{\text{implied\_rate} - \text{start\_rate} \times \text{prior\_ratio}}{\text{after\_ratio}}
-\]
+```
+end_rate = (implied_rate - start_rate × prior_ratio) / after_ratio
+```
 
-### 3. Rate Change Calculation
+### Rate Change Calculation
 
 For each meeting, we calculate the rate change:
 
-\[
-\text{rate\_diff} = \text{end\_rate} - \text{start\_rate}
-\]
+```
+rate_diff = end_rate - start_rate
+```
 
 Convert to basis points:
 
-\[
-\text{rate\_diff\_bps} = \text{rate\_diff} \times 100
-\]
+```
+rate_diff_bps = rate_diff × 100
+```
 
-### 4. Handling Contracts Without Meetings
+### Handling Contracts Without Meetings
 
 For contracts without meetings:
+
 - The implied rate is propagated as the end rate for the previous meeting
 - The implied rate becomes the start rate for the next meeting with a meeting
 
-### 5. Probability Matrix Generation
-
-1. Calculate rate changes for all meetings
-2. For each meeting (in chronological order):
-   - Convert rate change to basis points
-   - Apply linear interpolation (initial for first meeting, subsequent for others)
-3. Format probabilities:
-   - Convert to percentages: \(P_{\%} = P \times 100\)
-   - Round to 2 decimal places
-   - Remove steps where sum of probabilities < PROBABILITY_THRESHOLD
-
 ---
 
-## Bank of Japan (BOJ) Calculations
+## BOJ-Specific Calculations
 
-### 1. Implied Rate Calculation
+### Implied Rate Calculation
 
 Mutan Futures prices are quoted as: **Price = 100 - Implied Rate**
 
-\[
-\text{implied\_rate} = 100 - \text{futures\_price}
-\]
+```
+implied_rate = 100 - futures_price
+```
 
-### 2. Single Meeting: Average Rate Calculation
+### Single Meeting: Average Rate Calculation
 
 For a contract with one meeting, we calculate the implied rate at the meeting date.
 
 #### Time Periods
 
-\[
-\text{days\_after\_meeting} = (\text{settlement\_date} - \text{meeting\_date}).\text{days}
-\]
+```
+days_after_meeting = (settlement_date - meeting_date).days
+```
 
-\[
-\text{days\_before\_meeting} = \text{contract\_days} - \text{days\_after\_meeting}
-\]
+```
+days_before_meeting = contract_days - days_after_meeting
+```
 
 #### Daily Compounding Factors
 
-\[
-\text{daily\_rate\_factor} = 1 + \frac{\text{base\_rate}}{100} \times \frac{1}{365}
-\]
+```
+daily_rate_factor = 1 + (base_rate / 100) × (1 / 365)
+```
 
-\[
-\text{discounted\_base\_rate} = (\text{daily\_rate\_factor})^{-\text{days\_before\_meeting}}
-\]
+```
+discounted_base_rate = (daily_rate_factor)^(-days_before_meeting)
+```
 
-\[
-\text{future\_rate\_factor} = 1 + \frac{\text{contract\_days}}{365} \times \frac{\text{future\_rate}}{100}
-\]
+```
+future_rate_factor = 1 + (contract_days / 365) × (future_rate / 100)
+```
 
 #### Meeting Implied Rate
 
-\[
-\text{compound\_factor} = (\text{future\_rate\_factor} \times \text{discounted\_base\_rate})^{\frac{1}{\text{days\_after\_meeting}}}
-\]
+```
+compound_factor = (future_rate_factor × discounted_base_rate)^(1 / days_after_meeting)
+```
 
-\[
-\text{meeting\_implied\_rate} = (\text{compound\_factor} - 1) \times 365 \times 100
-\]
+```
+meeting_implied_rate = (compound_factor - 1) × 365 × 100
+```
 
-### 3. Two Meetings: Price Calculation
+### Two Meetings: Price Calculation
 
 For a contract with two meetings, we calculate the futures price for different rate scenarios.
 
 #### Time Periods
 
-\[
-\text{days\_after\_second} = (\text{settlement\_date} - \text{second\_meeting\_date}).\text{days}
-\]
+```
+days_after_second = (settlement_date - second_meeting_date).days
+```
 
-\[
-\text{days\_between\_meetings} = (\text{second\_meeting\_date} - \text{first\_meeting\_date}).\text{days}
-\]
+```
+days_between_meetings = (second_meeting_date - first_meeting_date).days
+```
 
-\[
-\text{days\_before\_first} = \text{contract\_days} - (\text{days\_after\_second} + \text{days\_between\_meetings})
-\]
+```
+days_before_first = contract_days - (days_after_second + days_between_meetings)
+```
 
 #### Rate Scenarios
 
 For each scenario, we calculate rates:
 
-\[
-\text{first\_rate} = \text{base\_rate} + \frac{\text{first\_rate\_step}}{100}
-\]
+```
+first_rate = base_rate + (first_rate_step / 100)
+```
 
-\[
-\text{second\_rate} = \text{base\_rate} + \frac{\text{second\_rate\_step}}{100}
-\]
+```
+second_rate = base_rate + (second_rate_step / 100)
+```
 
-Where `first_rate_step` and `second_rate_step` are from the set: {-25, 0, 25} (in basis points)
+Where `first_rate_step` and `second_rate_step` are from the set: **{-25, 0, 25}** (in basis points)
 
 #### Daily Compounding
 
-\[
-\text{daily\_rate\_factor} = \frac{1}{100 \times 365}
-\]
+```
+daily_rate_factor = 1 / (100 × 365)
+```
 
-\[
-\text{compounded\_base} = (1 + \text{base\_rate} \times \text{daily\_rate\_factor})^{\text{days\_before\_first}}
-\]
+```
+compounded_base = (1 + base_rate × daily_rate_factor)^days_before_first
+```
 
-\[
-\text{compounded\_first} = (1 + \text{first\_rate} \times \text{daily\_rate\_factor})^{\text{days\_between\_meetings}}
-\]
+```
+compounded_first = (1 + first_rate × daily_rate_factor)^days_between_meetings
+```
 
-\[
-\text{compounded\_second} = (1 + \text{second\_rate} \times \text{daily\_rate\_factor})^{\text{days\_after\_second}}
-\]
+```
+compounded_second = (1 + second_rate × daily_rate_factor)^days_after_second
+```
 
 #### Par Rate and Price
 
-\[
-\text{par\_rate} = \text{compounded\_base} \times \text{compounded\_first} \times \text{compounded\_second} - 1
-\]
+```
+par_rate = compounded_base × compounded_first × compounded_second - 1
+```
 
-\[
-\text{annualized\_par\_rate} = \text{par\_rate} \times 100 \times \frac{365}{90}
-\]
+```
+annualized_par_rate = par_rate × 100 × (365 / 90)
+```
 
-\[
-\text{price} = 100 - \text{annualized\_par\_rate}
-\]
-
-### 4. Probability Distribution for Two Meetings
-
-#### Rate Combinations
-
-We consider 7 possible rate change combinations:
-- (-25, -25): Both meetings decrease by 25 bps
-- (-25, 0): First decreases, second unchanged
-- (0, -25): First unchanged, second decreases
-- (0, 0): Both unchanged
-- (0, 25): First unchanged, second increases
-- (25, 0): First increases, second unchanged
-- (25, 25): Both increase by 25 bps
-
-Note: (25, -25) is excluded as it's unlikely.
-
-#### Distance Calculation
-
-For each scenario, calculate the distance from market price:
-
-\[
-\text{distance}_i = |\text{future\_price} - \text{price}_i|
-\]
-
-#### Inverse Distance Weighting
-
-\[
-\text{reverse\_distance}_i = \frac{1}{\text{distance}_i + \epsilon}
-\]
-
-Where \(\epsilon = 10^{-10}\) to avoid division by zero.
-
-\[
-\text{probability}_i = \frac{\text{reverse\_distance}_i}{\sum_{j=1}^{7} \text{reverse\_distance}_j}
-\]
-
-This ensures: \(\sum_{i=1}^{7} \text{probability}_i = 1\)
-
-### 5. Probability Aggregation
-
-#### First Meeting Probabilities
-
-For each step \(X\):
-
-\[
-P_1(X) = \sum_{i: \text{first\_rate\_step}_i = X} \text{probability}_i
-\]
-
-#### Second Meeting Probabilities
-
-For each step \(X\):
-
-\[
-P_2(X) = \sum_{i: \text{total\_step}_i = X} \text{probability}_i
-\]
-
-Where \(\text{total\_step}_i = \text{first\_rate\_step}_i + \text{second\_rate\_step}_i\)
-
-### 6. Subsequent Meetings: Probability Update
-
-For subsequent contracts with two meetings, we update probabilities based on previous probabilities.
-
-#### First Meeting Probability Update
-
-\[
-P_1(\text{step\_key}) = P_{\text{prev}}(\text{step\_key}) \times P_1(0) + P_{\text{prev}}(\text{step\_key} - 25) \times P_1(25) + P_{\text{prev}}(\text{step\_key} + 25) \times P_1(-25)
-\]
-
-Where:
-- \(P_{\text{prev}}(\text{step\_key})\) = previous probability at `step_key`
-- \(P_1(0)\), \(P_1(25)\), \(P_1(-25)\) = new first meeting probabilities from current contract
-
-#### Second Meeting Probability Update
-
-\[
-\begin{align}
-P_2(\text{step\_key}) &= P_{\text{prev}}(\text{step\_key}) \times P_2(0) \\
-&\quad + P_{\text{prev}}(\text{step\_key} - 25) \times P_2(25) \\
-&\quad + P_{\text{prev}}(\text{step\_key} + 25) \times P_2(-25) \\
-&\quad + P_{\text{prev}}(\text{step\_key} - 50) \times P_2(50) \\
-&\quad + P_{\text{prev}}(\text{step\_key} + 50) \times P_2(-50)
-\end{align}
-\]
-
-Where:
-- \(P_{\text{prev}}(\text{step\_key})\) = previous probability at `step_key`
-- \(P_2(0)\), \(P_2(25)\), \(P_2(-25)\), \(P_2(50)\), \(P_2(-50)\) = new second meeting probabilities from current contract
-
-### 7. Probability Matrix Generation
-
-1. Process contracts in chronological order
-2. For each contract:
-   - **Initial contract**:
-     - Single meeting: Calculate implied rate, apply linear interpolation
-     - Two meetings: Calculate probability distribution, aggregate probabilities
-   - **Subsequent contracts**:
-     - Single meeting: Calculate implied rate, apply linear interpolation with extension
-     - Two meetings: Calculate probability distribution, update probabilities using previous probabilities
-3. Format probabilities:
-   - Convert to percentages: \(P_{\%} = P \times 100\)
-   - Round to 2 decimal places
-   - Remove steps where sum of probabilities < PROBABILITY_THRESHOLD
-
----
-
-## Probability Matrix Construction
-
-### Matrix Structure
-
-The probability matrix is a list of probability distributions, one for each meeting date:
-
-\[
-\text{Probability Matrix} = \begin{bmatrix}
-P_1(-50) & P_1(-25) & P_1(0) & P_1(25) & P_1(50) & \cdots \\
-P_2(-50) & P_2(-25) & P_2(0) & P_2(25) & P_2(50) & \cdots \\
-\vdots & \vdots & \vdots & \vdots & \vdots & \ddots
-\end{bmatrix}
-\]
-
-Where each row represents a meeting date, and each column represents a rate step change.
-
-### Probability Extension
-
-Before calculating probabilities for subsequent meetings, we extend the support:
-
-\[
-\text{extended\_keys} = \{\text{min\_step} - i \times \text{STEP\_SIZE}, \text{max\_step} + i \times \text{STEP\_SIZE}\}
-\]
-
-For \(i = 1, 2, \ldots, \text{PROBABILITY\_EXTENSION\_STEPS}\)
-
-New steps are initialized with zero probabilities for all previous meetings.
-
-### Final Formatting
-
-1. **Convert to percentages**:
-   \[
-   P_{\%,i} = \text{round}(P_i \times 100, 2)
-   \]
-
-2. **Filter low-probability steps**:
-   Remove steps where:
-   \[
-   \sum_{i=1}^{n} P_{\%,i} < \text{PROBABILITY\_THRESHOLD}
-   \]
-
-3. **Result**: A matrix where:
-   - Each row corresponds to a meeting date
-   - Each column corresponds to a rate step change
-   - Each entry is a probability percentage
-   - Each row sums to approximately 100% (within rounding)
+```
+price = 100 - annualized_par_rate
+```
 
 ---
 
@@ -456,14 +509,14 @@ New steps are initialized with zero probabilities for all previous meetings.
 
 ### Key Differences: FED vs BOJ
 
-| Aspect | FED | BOJ |
-|--------|-----|-----|
-| **Rate Type** | Average rate | Compounded rate |
-| **Price Calculation** | Simple average | Daily compounding |
-| **Single Meeting** | Direct rate change | Implied rate calculation |
-| **Two Meetings** | Sequential processing | Joint probability distribution |
-| **Probability Method** | Linear interpolation | Inverse distance weighting |
-| **Extension Steps** | 5 steps | 5 steps (but can be customized) |
+| Aspect                 | FED                   | BOJ                             |
+| ---------------------- | --------------------- | ------------------------------- |
+| **Rate Type**          | Average rate          | Compounded rate                 |
+| **Price Calculation**  | Simple average        | Daily compounding               |
+| **Single Meeting**     | Direct rate change    | Implied rate calculation        |
+| **Two Meetings**       | Sequential processing | Joint probability distribution  |
+| **Probability Method** | Linear interpolation  | Inverse distance weighting      |
+| **Extension Steps**    | 5 steps               | 5 steps (but can be customized) |
 
 ### Mathematical Principles
 
@@ -473,6 +526,15 @@ New steps are initialized with zero probabilities for all previous meetings.
 4. **Both**: Extend probability support before subsequent calculations
 5. **Both**: Filter out low-probability scenarios in final output
 
+### General Formulation
+
+The entire process can be viewed as a sequence of **discrete probability distribution convolutions**:
+
+- **First contract**: Direct calculation from implied rates
+- **Subsequent contracts**: Convolution of previous probabilities with new meeting probabilities
+
+This recursive structure ensures that probabilities are properly propagated through time, accounting for all possible rate change paths.
+
 ---
 
 ## References
@@ -481,4 +543,3 @@ New steps are initialized with zero probabilities for all previous meetings.
 - Mutan Futures: Based on TONA (Tokyo Overnight Average Rate) compounding
 - Day count convention: ACT/365 for both
 - Mutan Futures annualization: Uses 90-day convention regardless of actual contract days
-
