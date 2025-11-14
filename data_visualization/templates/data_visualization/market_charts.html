@@ -10,15 +10,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- CSS -->
+    <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/market_charts.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
 </head>
 
 <body>
+    {% include "data_visualization/_navbar.html" %}
     <div class="header">
-        <div class="header-title">
-            <h1>Market Charts — {{ reference_date|default:default_reference_date }}</h1>
-        </div>
         <div class="header-form">
             <div class="zone-section">
                 <label for="zone-buttons" class="zone-label">Zone:</label>

@@ -6,16 +6,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Central Banks Recap — As of {{ reference_date|default:default_reference_date }}</title>
+    <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/central_banks_recap.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
 </head>
 
 <body>
+    {% include "data_visualization/_navbar.html" %}
     <!-- Header -->
     <div class="header">
-        <div class="header-title">
-            <h1>Central Banks Recap — As of {{ reference_date|default:default_reference_date }}</h1>
-        </div>
         <div class="header-form">
             <form method="get">
                 <label for="reference_date">Target Date:</label>

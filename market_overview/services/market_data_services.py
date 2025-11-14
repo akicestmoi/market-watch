@@ -137,7 +137,7 @@ def calculate_price_change(
 def get_asset_names(filters: Dict[str, str]) -> List[AssetNames]:
     """Get all assets based on unique short_name and full_name pair."""
     asset_names = []
-    for asset in AssetModel.objects.filter(**filters).order_by("id"):
+    for asset in AssetModel.objects.filter(**filters).order_by("asset_id"):
         asset_names.append(
             AssetNames(short_name=asset.short_name, full_name=asset.full_name)
         )

@@ -1,0 +1,98 @@
+/* Navbar Styles */
+.navbar {
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 2px solid #3b82f6;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    margin: 0;
+}
+
+.navbar-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 1rem 2rem;
+    gap: 2rem;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+
+.navbar-brand a {
+    color: white;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.navbar-brand a:hover {
+    color: #93c5fd;
+}
+
+.navbar-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0.5rem;
+}
+
+.navbar-item {
+    margin: 0;
+}
+
+.navbar-link {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.navbar-link:hover {
+    background-color: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+.navbar-link.active {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.navbar-link.active:hover {
+    background-color: #2563eb;
+    color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .navbar-container {
+        flex-direction: column;
+        padding: 1rem;
+        align-items: flex-start;
+    }
+
+    .navbar-menu {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .navbar-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}

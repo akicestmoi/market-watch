@@ -6,15 +6,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Economic Overview</title>
+    <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/economic_recap.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
 </head>
 
 <body>
+    {% include "data_visualization/_navbar.html" %}
     <div class="header">
-        <div class="header-title">
-            <h1>Economic Overview</h1>
-        </div>
     </div>
 
     <div class="columns">

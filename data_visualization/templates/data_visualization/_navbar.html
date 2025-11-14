@@ -1,0 +1,31 @@
+{% load static %}
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="navbar-brand">
+            <a href="{% url 'market-recap' %}">Market Watch</a>
+        </div>
+        <ul class="navbar-menu">
+            <li class="navbar-item">
+                <a href="{% url 'market-recap' %}" class="navbar-link {% if request.resolver_match.url_name == 'market-recap' %}active{% endif %}">
+                    Market Recap
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="{% url 'market-charts' %}" class="navbar-link {% if request.resolver_match.url_name == 'market-charts' %}active{% endif %}">
+                    Market Charts
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="{% url 'economic-recap-view' %}" class="navbar-link {% if request.resolver_match.url_name == 'economic-recap-view' %}active{% endif %}">
+                    Economic Recap
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="{% url 'central-banks-recap' %}" class="navbar-link {% if request.resolver_match.url_name == 'central-banks-recap' %}active{% endif %}">
+                    Central Banks
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
