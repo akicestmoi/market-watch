@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from typing import List, Optional, Tuple, TypedDict
 
 from cachetools.func import ttl_cache
@@ -9,11 +9,15 @@ from core.services import fetch_html, logger
 
 FOMC_MEETING_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 BOJ_MPM_URL = "https://www.boj.or.jp/mopo/mpmsche_minu/index.htm"
+ECB_MEETING_URL = "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html"
 
 # FOMC meetings typically start at 2:00 PM ET (13:00 UTC during standard time)
 FOMC_MEETING_HOUR_UTC = 13
 # BoJ meetings typically start at 9:00 AM JST (4:00 UTC during standard time)
 BOJ_MEETING_HOUR_UTC = 4
+# ECB meetings typically start at 2:15 PM CET (13:15 UTC during standard time)
+ECB_MEETING_HOUR_UTC = 13
+ECB_MEETING_MINUTE_UTC = 15
 
 MONTH_ABBREVIATIONS = {
     "jan": 1,
@@ -34,6 +38,7 @@ NB_MEETINGS_TO_INGEST = 15
 
 CB_MEETINGS_EXTRACT_MAP = {
     CentralBankChoices.FRB: lambda: _extract_fomc_meeting_dates(),
+    CentralBankChoices.ECB: lambda: _extract_ecb_meeting_dates(),
     CentralBankChoices.BOJ: lambda: _extract_boj_meeting_dates(),
 }
 
@@ -122,6 +127,36 @@ def _extract_fomc_meeting_dates() -> List[datetime]:
             except ValueError:
                 continue
 
+    return sorted(meeting_dates)
+
+
+@ttl_cache(maxsize=128, ttl=10 * 60)
+def _extract_ecb_meeting_dates() -> List[datetime]:
+    """Extract ECB meeting dates from the ECB website.
+
+    Returns:
+        Sorted list of future ECB meeting dates (UTC timezone).
+
+    Source: https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html
+    """
+    soup = fetch_html(ECB_MEETING_URL)
+    if not soup:
+        return []
+
+    meeting_dates: List[datetime] = []
+
+    for dt, dd in zip(soup.find_all("dt"), soup.find_all("dd")):
+        date_text = dt.get_text(strip=True)
+        description_text = dd.get_text(strip=True)
+
+        if "Day 2" in description_text:
+            meeting_dates.append(
+                datetime.combine(
+                    datetime.strptime(date_text, "%d/%m/%Y").date(),
+                    time(ECB_MEETING_HOUR_UTC, ECB_MEETING_MINUTE_UTC),
+                    tzinfo=timezone.utc,
+                )
+            )
     return sorted(meeting_dates)
 
 

@@ -551,7 +551,7 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
         meeting_date = central_bank_meeting_date["meeting_dates"][0]
 
         event = EconomicEvent(
-            name=f"{central_bank.label} Rate Decision",
+            name=f"{central_bank.label} Rates Decision",
             location=str(EconomicDataLocationChoices(central_bank_location).label),
             publication_date=meeting_date,
             time_str=meeting_date.strftime("%H:%M"),
