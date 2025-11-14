@@ -26,6 +26,7 @@ PROBABILITY_THRESHOLD = 1.0
 
 CENTRAL_BANK_TARGET_RATE_MAP = {
     CentralBankChoices.FRB: "EFFR",
+    CentralBankChoices.ECB: "ESTR",
     CentralBankChoices.BOJ: "MUTAN",
 }
 
@@ -997,17 +998,9 @@ def get_central_bank_effective_rate(
     target_date: date,
 ) -> float:
     """Get effective rate for a central bank."""
-    match central_bank:
-        case CentralBankChoices.FRB | CentralBankChoices.BOJ:
-            base_rate_obj = MarketPriceModel.objects.get(
-                date=target_date,
-                asset__short_name=CENTRAL_BANK_TARGET_RATE_MAP[central_bank],
-            )
-            return base_rate_obj.price
-        case CentralBankChoices.ECB:
-            return 2.15
-        case _:
-            raise ValueError(f"Invalid central bank: {central_bank}")
+    return MarketPriceModel.objects.get(
+        date=target_date, asset__short_name=CENTRAL_BANK_TARGET_RATE_MAP[central_bank]
+    ).price
 
 
 def get_central_bank_probability_matrices(
