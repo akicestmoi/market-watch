@@ -117,7 +117,7 @@ class MarketPriceModel(BaseModel):
         data = super().convert_to_dict(remove_foreign_key=remove_foreign_key)
         asset = getattr(self, "asset", None)
         if asset:
-            data["asset_id"] = asset.id
+            data["asset_id"] = asset.asset_id
             data["asset_short_name"] = asset.short_name
         return data
 
