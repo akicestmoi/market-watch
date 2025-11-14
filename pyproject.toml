@@ -14,6 +14,7 @@ exclude = '''
   | staticfiles
   | build
   | dist
+  | node_modules
 )/
 '''
 
@@ -24,7 +25,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
-skip_glob = ["*/migrations/*", "*/staticfiles/*", "*/venv/*", "*/.venv/*"]
+skip_glob = ["*/migrations/*", "*/staticfiles/*", "*/venv/*", "*/.venv/*", "*/node_modules/*"]
 
 [tool.pyright]
 include = ["core", "economic_overview", "market_overview", "data_visualization"]
