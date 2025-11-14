@@ -81,7 +81,7 @@ class AssetResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssetModel
         fields = [
-            "id",
+            "asset_id",
             "short_name",
             "full_name",
             "asset_class",
