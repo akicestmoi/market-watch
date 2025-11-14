@@ -6,12 +6,15 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import market_overview.services.market_data_services as market_data_services
-from central_banks_overview.models import CentralBankChoices
+from central_banks_overview.models import CENTRAL_BANK_LOCATION_MAP, CentralBankChoices
 from central_banks_overview.services.cb_inference_services import (
     CentralBankProbabilityMatrix,
     calculate_probability_changes,
     get_central_bank_effective_rate,
     get_central_bank_probability_matrices,
+)
+from central_banks_overview.services.cb_meetings_services import (
+    get_central_bank_meeting_dates,
 )
 from economic_overview.models import (
     EconomicDataLocationChoices,
@@ -538,6 +541,25 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
         )
 
         date_key = publication_date.strftime("%Y-%m-%d")
+        if date_key not in events_by_date:
+            events_by_date[date_key] = []
+        events_by_date[date_key].append(event)
+
+    for central_bank_meeting_date in get_central_bank_meeting_dates(
+        [CentralBankChoices.FRB, CentralBankChoices.BOJ]
+    ):
+        central_bank = CentralBankChoices(central_bank_meeting_date["central_bank"])
+        central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
+        meeting_date = central_bank_meeting_date["meeting_dates"][0]
+
+        event = EconomicEvent(
+            name=f"{central_bank.label} Rate Decision",
+            location=str(EconomicDataLocationChoices(central_bank_location).label),
+            publication_date=meeting_date,
+            time_str=meeting_date.strftime("%H:%M"),
+        )
+
+        date_key = meeting_date.strftime("%Y-%m-%d")
         if date_key not in events_by_date:
             events_by_date[date_key] = []
         events_by_date[date_key].append(event)

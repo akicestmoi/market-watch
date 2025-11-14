@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from core.models import BaseLogModel, BaseModel
+from market_overview.models import LocationChoices
 
 
 class CentralBankChoices(models.TextChoices):
@@ -18,6 +19,13 @@ class CentralBankChoices(models.TextChoices):
         """Ordered list of economic data location choices."""
         order = ["FRB", "ECB", "BOJ"]
         return [cls[value] for value in order]
+
+
+CENTRAL_BANK_LOCATION_MAP = {
+    CentralBankChoices.FRB: LocationChoices.US,
+    CentralBankChoices.BOJ: LocationChoices.JP,
+    CentralBankChoices.ECB: LocationChoices.EU,
+}
 
 
 class CentralBankMeetingModel(BaseModel):
