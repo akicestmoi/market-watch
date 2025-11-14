@@ -1,4 +1,3 @@
-import json
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
@@ -10,7 +9,6 @@ import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
 from cachetools.func import ttl_cache
-from dateutil.relativedelta import relativedelta
 
 import core.services as core_services
 from core.services import logger
@@ -24,23 +22,11 @@ from market_overview.models import (
 env = environ.Env()
 
 
-# To be added in the future:
-# {
-#   "id": 1,
-#   "central_bank": "FED",
-#   "short_name": "FedFunds",
-#   "full_name": "Effective Fed Funds Rate",
-#   "ticker": "FEDFUNDS",
-#   "source": "FRED"
-# }
-
-
 SOURCE_SCRAP_MAP = {
     PriceSourceChoices.GOV_TREASURY_DEPT: lambda d, t: _get_treasury_yield_from_dep_treasury(
         d, t
     ),
-    PriceSourceChoices.FRED: lambda d, t: _get_fed_funds_rate_from_fred(d, t),
-    PriceSourceChoices.NYFED: lambda d, _: _get_sofr_from_nyfed(d),
+    PriceSourceChoices.NYFED: lambda d, t: _scrap_rate_from_nyfed_xml(d, t),
     PriceSourceChoices.WEBSTAT: lambda d, t: _get_webstat_rates(d, t),
     PriceSourceChoices.BUNDESBANK: lambda d, t: _get_bund_yield_from_bundesbank(d, t),
     PriceSourceChoices.BOJ: lambda d, _: _get_mutan_rate_from_boj(d),
@@ -133,38 +119,15 @@ def _scrap_euribor_from_global_rates(target_date: date, ticker: str) -> Scrappin
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_fed_funds_rate_from_fred(target_date: date, ticker: str) -> ScrappingResult:
-    """Get Fedfund rate from FRED via API
+def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrappingResult:
+    """Scrap rate from NY Fed XML.
 
-    Source: https://fred.stlouisfed.org/series/FEDFUNDS
+    Source: https://www.newyorkfed.org/markets/reference-rates/
     """
-    BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
-    obs_start = target_date - relativedelta(months=2)
-    FRED_API_KEY = env("FRED_API_KEY")
-    query_params = f"series_id={ticker}&api_key={FRED_API_KEY}&file_type=json&observation_start={obs_start}&sort_order=desc"
-    response = requests.get(f"{BASE_URL}?{query_params}")
+    NY_FED_RATE_URL = f"https://markets.newyorkfed.org/read?productCode=50&eventCodes={ticker}&limit=25&startPosition=0&sort=postDt:-1&format=xml"
+    response = requests.get(NY_FED_RATE_URL)
     if response.status_code >= 400:
-        logger.warning(f"Error scraping Fedfund rates: {response.text}")
-        return ScrappingResult(price=None, comment=response.text)
-    result = json.loads(response.content)
-    observations = result.get("observations", [])
-    if observations and (value := observations[0].get("value")):
-        return ScrappingResult(price=float(value), comment="")
-    return ScrappingResult(price=None, comment="Fedfund rate not found.")
-
-
-@ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_sofr_from_nyfed(target_date: date) -> ScrappingResult:
-    """
-    Scrap SOFR rate from NY Fed XML.
-
-    Source: https://www.newyorkfed.org/markets/reference-rates/sofr
-    """
-    response = requests.get(
-        "https://markets.newyorkfed.org/read?productCode=50&eventCodes=520&limit=25&startPosition=0&sort=postDt:-1&format=xml"
-    )
-    if response.status_code >= 400:
-        logger.warning(f"Error scraping SOFR rates: {response.text}")
+        logger.warning(f"Error scraping rates from NY Fed XML: {response.text}")
         return ScrappingResult(price=None, comment=response.text)
 
     root = ET.fromstring(response.content)
@@ -174,7 +137,7 @@ def _get_sofr_from_nyfed(target_date: date) -> ScrappingResult:
             percent_rate = rate.find("percentRate").text  # type: ignore[reportOptionalMemberAccess]
             if percent_rate:
                 return ScrappingResult(price=float(percent_rate), comment="")
-    return ScrappingResult(price=None, comment="SOFR rate not found.")
+    return ScrappingResult(price=None, comment="Rate not found.")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)

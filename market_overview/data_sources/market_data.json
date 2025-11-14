@@ -69,15 +69,26 @@
     "id": 7,
     "asset_class": "RATES",
     "location": "US",
-    "short_name": "SOFR",
-    "full_name": "Secured Overnight Financing Rate",
+    "short_name": "EFFR",
+    "full_name": "Effective Fed Funds Rate",
     "maturity": 0,
     "asset_type": "INTERBANK_RATE",
-    "ticker": "SOFR",
+    "ticker": "500",
     "source": "NYFED"
   },
   {
     "id": 8,
+    "asset_class": "RATES",
+    "location": "US",
+    "short_name": "SOFR",
+    "full_name": "Secured Overnight Financing Rate",
+    "maturity": 0,
+    "asset_type": "INTERBANK_RATE",
+    "ticker": "520",
+    "source": "NYFED"
+  },
+  {
+    "id": 9,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST1M",
@@ -88,7 +99,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 9,
+    "id": 10,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST2M",
@@ -99,7 +110,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 10,
+    "id": 11,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST3M",
@@ -110,7 +121,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 11,
+    "id": 12,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST6M",
@@ -121,7 +132,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 12,
+    "id": 13,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST1Y",
@@ -132,7 +143,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 13,
+    "id": 14,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST2Y",
@@ -143,7 +154,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 14,
+    "id": 15,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST5Y",
@@ -154,7 +165,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 15,
+    "id": 16,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST7Y",
@@ -165,7 +176,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 16,
+    "id": 17,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST10Y",
@@ -176,7 +187,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 17,
+    "id": 18,
     "asset_class": "RATES",
     "location": "US",
     "short_name": "UST20Y",
@@ -187,7 +198,7 @@
     "source": "GOV_TREASURY_DEPT"
   },
   {
-    "id": 18,
+    "id": 19,
     "asset_class": "RATES",
     "location": "EU",
     "short_name": "ESTR",
@@ -198,7 +209,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 19,
+    "id": 20,
     "asset_class": "RATES",
     "location": "EU",
     "short_name": "EURIBOR1W",
@@ -209,7 +220,7 @@
     "source": "GLOBAL_RATES"
   },
   {
-    "id": 20,
+    "id": 21,
     "asset_class": "RATES",
     "location": "EU",
     "short_name": "EURIBOR1M",
@@ -220,7 +231,7 @@
     "source": "GLOBAL_RATES"
   },
   {
-    "id": 21,
+    "id": 22,
     "asset_class": "RATES",
     "location": "EU",
     "short_name": "EURIBOR3M",
@@ -231,7 +242,7 @@
     "source": "GLOBAL_RATES"
   },
   {
-    "id": 22,
+    "id": 23,
     "asset_class": "RATES",
     "location": "EU",
     "short_name": "EURIBOR6M",
@@ -242,7 +253,7 @@
     "source": "GLOBAL_RATES"
   },
   {
-    "id": 23,
+    "id": 24,
     "asset_class": "RATES",
     "location": "EU",
     "short_name": "EURIBOR12M",
@@ -253,7 +264,7 @@
     "source": "GLOBAL_RATES"
   },
   {
-    "id": 24,
+    "id": 25,
     "asset_class": "RATES",
     "location": "FR",
     "short_name": "OAT1Y",
@@ -264,7 +275,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 25,
+    "id": 26,
     "asset_class": "RATES",
     "location": "FR",
     "short_name": "OAT2Y",
@@ -275,7 +286,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 26,
+    "id": 27,
     "asset_class": "RATES",
     "location": "FR",
     "short_name": "OAT5Y",
@@ -286,7 +297,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 27,
+    "id": 28,
     "asset_class": "RATES",
     "location": "FR",
     "short_name": "OAT7Y",
@@ -297,7 +308,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 28,
+    "id": 29,
     "asset_class": "RATES",
     "location": "FR",
     "short_name": "OAT10Y",
@@ -308,7 +319,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 29,
+    "id": 30,
     "asset_class": "RATES",
     "location": "FR",
     "short_name": "OAT20Y",
@@ -319,7 +330,7 @@
     "source": "WEBSTAT"
   },
   {
-    "id": 30,
+    "id": 31,
     "asset_class": "RATES",
     "location": "DE",
     "short_name": "BUND2Y",
@@ -330,7 +341,7 @@
     "source": "BUNDESBANK"
   },
   {
-    "id": 31,
+    "id": 32,
     "asset_class": "RATES",
     "location": "DE",
     "short_name": "BUND5Y",
@@ -341,7 +352,7 @@
     "source": "BUNDESBANK"
   },
   {
-    "id": 32,
+    "id": 33,
     "asset_class": "RATES",
     "location": "DE",
     "short_name": "BUND7Y",
@@ -352,7 +363,7 @@
     "source": "BUNDESBANK"
   },
   {
-    "id": 33,
+    "id": 34,
     "asset_class": "RATES",
     "location": "DE",
     "short_name": "BUND10Y",
@@ -363,7 +374,7 @@
     "source": "BUNDESBANK"
   },
   {
-    "id": 34,
+    "id": 35,
     "asset_class": "RATES",
     "location": "DE",
     "short_name": "BUND15Y",
@@ -374,7 +385,7 @@
     "source": "BUNDESBANK"
   },
   {
-    "id": 35,
+    "id": 36,
     "asset_class": "RATES",
     "location": "DE",
     "short_name": "BUND30Y",
@@ -385,7 +396,7 @@
     "source": "BUNDESBANK"
   },
   {
-    "id": 36,
+    "id": 37,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "MUTAN",
@@ -396,7 +407,7 @@
     "source": "BOJ"
   },
   {
-    "id": 37,
+    "id": 38,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "TDB3M",
@@ -407,7 +418,7 @@
     "source": "BB"
   },
   {
-    "id": 38,
+    "id": 39,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "TDB6M",
@@ -418,7 +429,7 @@
     "source": "BB"
   },
   {
-    "id": 39,
+    "id": 40,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "TDB1Y",
@@ -429,7 +440,7 @@
     "source": "BB"
   },
   {
-    "id": 40,
+    "id": 41,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "JGB2Y",
@@ -440,7 +451,7 @@
     "source": "BB"
   },
   {
-    "id": 41,
+    "id": 42,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "JGB5Y",
@@ -451,7 +462,7 @@
     "source": "BB"
   },
   {
-    "id": 42,
+    "id": 43,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "JGB10Y",
@@ -462,7 +473,7 @@
     "source": "BB"
   },
   {
-    "id": 43,
+    "id": 44,
     "asset_class": "RATES",
     "location": "JP",
     "short_name": "JGB20Y",
@@ -473,7 +484,7 @@
     "source": "BB"
   },
   {
-    "id": 44,
+    "id": 45,
     "asset_class": "FX",
     "location": null,
     "short_name": "EURUSD",
@@ -484,7 +495,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 45,
+    "id": 46,
     "asset_class": "FX",
     "location": null,
     "short_name": "GBPUSD",
@@ -495,7 +506,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 46,
+    "id": 47,
     "asset_class": "FX",
     "location": null,
     "short_name": "USDJPY",
@@ -506,7 +517,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 47,
+    "id": 48,
     "asset_class": "FX",
     "location": null,
     "short_name": "EURJPY",
@@ -517,7 +528,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 48,
+    "id": 49,
     "asset_class": "FX",
     "location": null,
     "short_name": "AUDUSD",
@@ -528,7 +539,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 49,
+    "id": 50,
     "asset_class": "FX",
     "location": null,
     "short_name": "USDCNY",
@@ -539,7 +550,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 50,
+    "id": 51,
     "asset_class": "FX",
     "location": null,
     "short_name": "USDRUB",
@@ -550,7 +561,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 51,
+    "id": 52,
     "asset_class": "CRYPTO",
     "location": null,
     "short_name": "BTC",
@@ -561,7 +572,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 52,
+    "id": 53,
     "asset_class": "CRYPTO",
     "location": null,
     "short_name": "ETH",
@@ -572,7 +583,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 53,
+    "id": 54,
     "asset_class": "CRYPTO",
     "location": null,
     "short_name": "XRP",
@@ -583,7 +594,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 54,
+    "id": 55,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Gold",
@@ -594,7 +605,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 55,
+    "id": 56,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "WTI Oil",
@@ -605,7 +616,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 56,
+    "id": 57,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Brent Oil",
@@ -616,7 +627,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 57,
+    "id": 58,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Natural Gas",
@@ -627,7 +638,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 58,
+    "id": 59,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Corn",
@@ -638,7 +649,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 59,
+    "id": 60,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Wheat",
@@ -649,7 +660,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 60,
+    "id": 61,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Rice",
@@ -660,7 +671,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 61,
+    "id": 62,
     "asset_class": "OTHERS",
     "location": null,
     "short_name": "Volatility",

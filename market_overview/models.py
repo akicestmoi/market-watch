@@ -66,7 +66,6 @@ class PriceSourceChoices(models.TextChoices):
 
     GOV_TREASURY_DEPT = "GOV_TREASURY_DEPT", _("US Treasury Department")
     NYFED = "NYFED", _("New York Federal Reserve")
-    FRED = "FRED", _("Federal Reserve Bank of St Louis")
     WEBSTAT = "WEBSTAT", _("Webstat, Banque de France")
     BUNDESBANK = "BUNDESBANK", _("Deutsche Bundesbank")
     BOJ = "BOJ", _("Bank of Japan")
@@ -78,7 +77,7 @@ class PriceSourceChoices(models.TextChoices):
 class AssetModel(BaseModel):
     """Asset Model."""
 
-    id = models.IntegerField(unique=True)
+    asset_id = models.IntegerField()
     asset_class = models.CharField(max_length=50, choices=AssetClassChoices.choices)
     location = models.CharField(
         max_length=2, choices=LocationChoices.choices, null=True, blank=True

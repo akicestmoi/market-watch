@@ -11,7 +11,7 @@ from market_overview.models import (
 class BaseAssetSerializer(serializers.Serializer):
     """Base Asset Serializer."""
 
-    id = serializers.IntegerField()
+    short_name = serializers.CharField()
 
 
 class GetAssetNamesSerializer(serializers.Serializer):

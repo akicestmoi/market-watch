@@ -60,10 +60,16 @@ class GenerateBaseAssetsDataView(BaseAPIView):
         """Generate asset data from market_data.json."""
         with open("market_overview/data_sources/market_data.json") as f:
             assets_base_info = json.load(f)
+
         for asset in assets_base_info:
+            asset_data = {
+                **{k: v for k, v in asset.items() if k != "id"},
+                "asset_id": asset["id"],
+            }
             AssetModel.objects.update_or_create(
-                short_name=asset["short_name"], defaults=asset
+                short_name=asset_data["short_name"], defaults=asset_data
             )
+
         return Response(
             data={"message": "Asset data successfully generated."},
             status=status.HTTP_200_OK,
@@ -116,8 +122,8 @@ class AssetDetailsView(BaseAPIView):
     )
     def delete(self, validated_data: dict) -> Response:
         """Delete an asset."""
-        asset_id: int = validated_data["id"]
-        asset = core_services.get(AssetModel, id=asset_id)
+        short_name: str = validated_data["short_name"]
+        asset = core_services.get(AssetModel, short_name=short_name)
         asset.delete()
         return Response(
             data={"message": "Asset deleted successfully."},
