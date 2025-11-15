@@ -4,6 +4,7 @@ from .views import (
     AssetDetailsView,
     BulkUpdateAssetsPricesView,
     CalculatePriceChangeView,
+    CsvBulkUpdateAssetsPricesView,
     GenerateBaseAssetsDataView,
     GetAssetNamesView,
     GetAssetsWithoutPricesView,
@@ -32,5 +33,6 @@ urlpatterns = [
     path("prices/calculate-price-change", CalculatePriceChangeView.as_view()),
     path("prices/get-assets-without-prices", GetAssetsWithoutPricesView.as_view()),
     path("prices/bulk-update", BulkUpdateAssetsPricesView.as_view()),
+    path("prices/bulk-update-from-csv", CsvBulkUpdateAssetsPricesView.as_view()),
     path("prices/get-price-update-logs", GetPriceUpdateLogsView.as_view()),
 ]

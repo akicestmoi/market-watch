@@ -10,6 +10,8 @@ body {
   padding-top: 0;
   margin: 0;
   text-align: center;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* ==========================================

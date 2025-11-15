@@ -23,6 +23,7 @@ from market_overview.open_api.request_serializers import (
     BaseAssetSerializer,
     BulkUpdateAssetsPricesSerializer,
     CalculatePriceDiffSerializer,
+    CsvBulkUpdateAssetsPricesSerializer,
     GetAssetNamesSerializer,
     GetAssetsWithoutPricesSerializer,
     GetHistoricalPricesSerializer,
@@ -377,6 +378,27 @@ class BulkUpdateAssetsPricesView(BaseAPIView):
         updates: List[BulkUpdateAssetsPricesItem] = validated_data
 
         assets = market_data_services.bulk_update_assets_prices(updates)
+        return Response(
+            data=MarketPriceResponseSerializer(assets, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class CsvBulkUpdateAssetsPricesView(BaseAPIView):
+    """Csv Bulk Update Assets Prices APIView."""
+
+    @open_api(
+        tags=[ApiTags.ASSET_PRICES],
+        summary="Csv Bulk Update Assets Prices",
+        description="Bulk update assets prices from a CSV file.",
+        request_serializer=CsvBulkUpdateAssetsPricesSerializer,
+        response=OkOpenApiResponse(MarketPriceResponseSerializer),
+    )
+    def post(self, validated_data: dict) -> Response:
+        """Bulk update assets prices from a CSV file."""
+        uploaded_file = validated_data["csv_file"]
+        csv_file_bytes = uploaded_file.read()
+        assets = market_data_services.bulk_update_assets_prices_from_csv(csv_file_bytes)
         return Response(
             data=MarketPriceResponseSerializer(assets, many=True).data,
             status=status.HTTP_200_OK,

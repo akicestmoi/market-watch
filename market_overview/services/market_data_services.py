@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime
+from io import BytesIO
 from typing import Dict, List, Optional, TypedDict, cast
 
 import pandas as pd
@@ -270,3 +271,40 @@ def bulk_update_assets_prices(
             )
         )
     return updated_assets
+
+
+EXPECTED_CSV_FORMAT = {
+    "date": str,
+    "short_name": str,
+    "price": float,
+    "logs": str,
+}
+
+
+def bulk_update_assets_prices_from_csv(
+    csv_file: bytes,
+) -> List[MarketPriceModel]:
+    """Bulk update assets prices from a CSV file."""
+    df = pd.read_csv(BytesIO(csv_file))
+
+    missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)
+    if missing_columns:
+        raise ValueError(
+            f"CSV file must have the following columns: {', '.join(missing_columns)}."
+        )
+    df.fillna("", inplace=True)
+    df = df.astype(EXPECTED_CSV_FORMAT)
+    updates = [
+        BulkUpdateAssetsPricesItem(
+            date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
+            short_name=row["short_name"],
+            price=row["price"],
+            logs=(
+                row["logs"]
+                if row["logs"]
+                else f"Bulk update from CSV file of {row['short_name']} to price: {row['price']}."
+            ),
+        )
+        for row in df.to_dict(orient="records")
+    ]
+    return bulk_update_assets_prices(updates)

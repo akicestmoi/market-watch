@@ -7,7 +7,8 @@ body {
     padding-top: 0;
     margin: 0;
     font-family: 'Inter', sans-serif;
-    overflow-x: auto; /* Allow horizontal scrolling for wider content */
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 /* Header */
@@ -70,7 +71,7 @@ table {
     border-collapse: collapse;
     font-size: 0.875rem;
     table-layout: fixed;
-    min-width: 1200px; /* Reduced to fit better in card */
+    min-width: 1200px;
 }
 
 table th, table td {

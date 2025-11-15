@@ -145,3 +145,9 @@ class BulkUpdateAssetsPricesSerializer(serializers.ListSerializer):
     """Bulk Update list-level validation (cross-item checks)."""
 
     child = BulkUpdateAssetsPricesItemSerializer()
+
+
+class CsvBulkUpdateAssetsPricesSerializer(serializers.Serializer):
+    """Csv Bulk Update Assets Prices Serializer."""
+
+    csv_file = serializers.FileField()
