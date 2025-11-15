@@ -1,6 +1,6 @@
 import re
 from datetime import date, datetime, timedelta
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import List, Optional, TypedDict
 
 import pandas as pd
@@ -64,6 +64,16 @@ class StirFutures(TypedDict):
     comment: Optional[str]
 
 
+class BulkUpdateFuturesPricesItem(TypedDict):
+    """Bulk update futures prices dictionnary."""
+
+    date: date
+    short_name: str
+    maturity: str
+    price: float
+    logs: Optional[str]
+
+
 @ttl_cache(maxsize=128, ttl=10 * 60)
 def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirFutures:
     """Get the price of a Fed Funds Futures contract for a given date.
@@ -88,8 +98,8 @@ def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirF
             short_name=StirFuturesNameChoices.FF1M,
             full_name=str(StirFuturesNameChoices.FF1M.label),
             maturity=maturity,
-            reference_start_date=None,
-            reference_end_date=None,
+            reference_start_date=month_start.rollback(ticker_date).date(),
+            reference_end_date=month_end.rollforward(ticker_date).date(),
             date=target_date,
             price=None,
             source=StirFuturesSourceChoices.YAHOO,
@@ -329,3 +339,67 @@ def get_futures_prices(
     if central_banks:
         query = query.filter(central_bank__in=central_banks)
     return list(query.order_by("central_bank", "maturity"))
+
+
+def bulk_update_futures_prices(
+    updates: List[BulkUpdateFuturesPricesItem],
+) -> List[StirFuturesModel]:
+    """Bulk update futures prices."""
+    updated_futures = []
+    for update in updates:
+        future = core_services.get(
+            StirFuturesModel,
+            date=update["date"],
+            short_name=update["short_name"],
+            maturity=update["maturity"],
+        )
+        updated_futures.append(
+            core_services.update_with_logs(
+                future,
+                StirFuturesPriceUpdateLogModel,
+                {
+                    "logs": update["logs"],
+                    "price": update["price"],
+                },
+            )
+        )
+    return updated_futures
+
+
+EXPECTED_CSV_FORMAT = {
+    "date": str,
+    "short_name": str,
+    "maturity": str,
+    "price": float,
+    "logs": str,
+}
+
+
+def bulk_update_futures_prices_from_csv(
+    csv_file: bytes,
+) -> List[StirFuturesModel]:
+    """Bulk update futures prices from a CSV file."""
+    df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)
+    df.fillna("", inplace=True)
+
+    missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)
+    if missing_columns:
+        raise ValueError(
+            f"CSV file must have the following columns: {', '.join(missing_columns)}."
+        )
+
+    updates = [
+        BulkUpdateFuturesPricesItem(
+            date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
+            short_name=row["short_name"],
+            maturity=row["maturity"],
+            price=row["price"],
+            logs=(
+                row["logs"]
+                if row["logs"]
+                else f"Bulk update from CSV file of {row['short_name']} to price: {row['price']}."
+            ),
+        )
+        for row in df.to_dict(orient="records")
+    ]
+    return bulk_update_futures_prices(updates)

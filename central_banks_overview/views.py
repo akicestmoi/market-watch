@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -9,6 +9,8 @@ import central_banks_overview.services.cb_meetings_services as cb_meetings_servi
 import central_banks_overview.services.stir_prices_ingestion_services as stir_futures_services
 from central_banks_overview.models import CentralBankChoices
 from central_banks_overview.open_api.request_serializers import (
+    BulkUpdateStirFuturesPricesSerializer,
+    CsvBulkUpdateStirFuturesPricesSerializer,
     GetCentralBankMeetingDatesSerializer,
     GetCentralBankProbabilityMatrixSerializer,
     ListStirFuturesPricesSerializer,
@@ -19,6 +21,9 @@ from central_banks_overview.open_api.response_serializers import (
     CentralBankProbabilityMatrixResponseSerializer,
     StirFuturesPriceIngestionResponseSerializer,
     StirFuturesPriceResponseSerializer,
+)
+from central_banks_overview.services.stir_prices_ingestion_services import (
+    BulkUpdateFuturesPricesItem,
 )
 from core.open_api import ApiTags, CreatedOpenApiResponse, OkOpenApiResponse, open_api
 from core.services import logger
@@ -102,6 +107,50 @@ class ListStirFuturesPricesView(BaseAPIView):
         prices = stir_futures_services.get_futures_prices(price_date, central_banks)
         return Response(
             data=StirFuturesPriceResponseSerializer(prices, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class BulkUpdateStirFuturesPricesView(BaseAPIView):
+    """Bulk Update Stir Futures Prices APIView."""
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="Bulk Update Stir Futures Prices",
+        description="Bulk update stir futures prices.",
+        request_serializer=BulkUpdateStirFuturesPricesSerializer,
+        response=OkOpenApiResponse(StirFuturesPriceResponseSerializer),
+    )
+    def patch(self, validated_data: List[BulkUpdateFuturesPricesItem]) -> Response:
+        """Bulk update stir futures prices."""
+        updates: List[BulkUpdateFuturesPricesItem] = validated_data
+
+        futures_prices = stir_futures_services.bulk_update_futures_prices(updates)
+        return Response(
+            data=StirFuturesPriceResponseSerializer(futures_prices, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class CsvBulkUpdateStirFuturesPricesView(BaseAPIView):
+    """Bulk Update Stir Futures Prices from CSV APIView."""
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="Bulk Update Stir Futures Prices from CSV",
+        description="Bulk update stir futures prices from a CSV file.",
+        request_serializer=CsvBulkUpdateStirFuturesPricesSerializer,
+        response=OkOpenApiResponse(StirFuturesPriceResponseSerializer),
+    )
+    def post(self, validated_data: dict) -> Response:
+        """Bulk update stir futures prices from a CSV file."""
+        uploaded_file = validated_data["csv_file"]
+        csv_file_bytes = uploaded_file.read()
+        futures_prices = stir_futures_services.bulk_update_futures_prices_from_csv(
+            csv_file_bytes
+        )
+        return Response(
+            data=StirFuturesPriceResponseSerializer(futures_prices, many=True).data,
             status=status.HTTP_200_OK,
         )
 

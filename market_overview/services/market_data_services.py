@@ -285,15 +285,15 @@ def bulk_update_assets_prices_from_csv(
     csv_file: bytes,
 ) -> List[MarketPriceModel]:
     """Bulk update assets prices from a CSV file."""
-    df = pd.read_csv(BytesIO(csv_file))
+    df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)
+    df.fillna("", inplace=True)
 
     missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)
     if missing_columns:
         raise ValueError(
             f"CSV file must have the following columns: {', '.join(missing_columns)}."
         )
-    df.fillna("", inplace=True)
-    df = df.astype(EXPECTED_CSV_FORMAT)
+
     updates = [
         BulkUpdateAssetsPricesItem(
             date=datetime.strptime(row["date"], "%Y-%m-%d").date(),

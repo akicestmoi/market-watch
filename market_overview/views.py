@@ -385,11 +385,11 @@ class BulkUpdateAssetsPricesView(BaseAPIView):
 
 
 class CsvBulkUpdateAssetsPricesView(BaseAPIView):
-    """Csv Bulk Update Assets Prices APIView."""
+    """Bulk Update Assets Prices from CSV APIView."""
 
     @open_api(
         tags=[ApiTags.ASSET_PRICES],
-        summary="Csv Bulk Update Assets Prices",
+        summary="Bulk Update Assets Prices from CSV",
         description="Bulk update assets prices from a CSV file.",
         request_serializer=CsvBulkUpdateAssetsPricesSerializer,
         response=OkOpenApiResponse(MarketPriceResponseSerializer),

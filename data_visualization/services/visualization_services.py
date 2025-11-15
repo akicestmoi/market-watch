@@ -598,26 +598,29 @@ def get_central_bank_data_item(
     )
 
     base_data = [
-        CentralBankDataItem(label="Effective Rate", value=f"{effective_rate}%"),
+        CentralBankDataItem(
+            label="Effective Rate",
+            value=f"{effective_rate} %" if effective_rate else "N/A",
+        ),
         CentralBankDataItem(label="Next Meeting", value=meeting_date),
     ]
     match central_bank:
         case CentralBankChoices.FRB:
             additional_data = [
-                CentralBankDataItem(label="Target Rate", value="4.0%"),
+                CentralBankDataItem(label="Target Rate", value="4.0 %"),
             ]
         case CentralBankChoices.BOJ:
             additional_data = [
-                CentralBankDataItem(label="Target Rate", value="0.5%"),
+                CentralBankDataItem(label="Target Rate", value="0.5 %"),
             ]
         case CentralBankChoices.ECB:
             additional_data = [
-                CentralBankDataItem(label="ECB Deposit Facility Rate", value="2.0%"),
+                CentralBankDataItem(label="ECB Deposit Facility Rate", value="2.0 %"),
                 CentralBankDataItem(
-                    label="ECB Main Refinancing Operation Rate", value="2.15%"
+                    label="ECB Main Refinancing Operation Rate", value="2.15 %"
                 ),
                 CentralBankDataItem(
-                    label="ECB Marginal Lending Facility Rate", value="2.40%"
+                    label="ECB Marginal Lending Facility Rate", value="2.40 %"
                 ),
             ]
     return base_data + additional_data

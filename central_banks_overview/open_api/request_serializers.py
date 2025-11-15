@@ -51,6 +51,28 @@ class ListStirFuturesPricesSerializer(CentralBankBaseSerializer):
         return value
 
 
+class BulkUpdateStirFuturesPricesItemSerializer(serializers.Serializer):
+    """Bulk Update Stir Futures Prices Item Serializer."""
+
+    date = serializers.DateField()
+    short_name = serializers.CharField()
+    maturity = serializers.CharField()
+    price = serializers.FloatField()
+    logs = serializers.CharField(required=False)
+
+
+class BulkUpdateStirFuturesPricesSerializer(serializers.ListSerializer):
+    """Bulk Update Stir Futures Prices Serializer."""
+
+    child = BulkUpdateStirFuturesPricesItemSerializer()
+
+
+class CsvBulkUpdateStirFuturesPricesSerializer(serializers.Serializer):
+    """Csv Bulk Update Stir Futures Prices Serializer."""
+
+    csv_file = serializers.FileField()
+
+
 class GetCentralBankProbabilityMatrixSerializer(CentralBankBaseSerializer):
     """Get Central Bank Probability Matrix Serializer."""
 
