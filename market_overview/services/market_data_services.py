@@ -285,7 +285,7 @@ def bulk_update_assets_prices_from_csv(
     csv_file: bytes,
 ) -> List[MarketPriceModel]:
     """Bulk update assets prices from a CSV file."""
-    df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)
+    df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)  # type: ignore[reportArgumentType]
     df.fillna("", inplace=True)
 
     missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)

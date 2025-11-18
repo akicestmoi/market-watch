@@ -1,3 +1,4 @@
+import re
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
@@ -7,11 +8,10 @@ import environ
 import pandas as pd
 import requests
 import yfinance as yf
-from bs4 import BeautifulSoup
 from cachetools.func import ttl_cache
 
 import core.services as core_services
-from core.services import logger
+from core.services import fetch_html, logger
 from market_overview.models import (
     AssetModel,
     MarketPriceModel,
@@ -21,19 +21,25 @@ from market_overview.models import (
 
 env = environ.Env()
 
+GLOBAL_RATES_URL = "https://www.global-rates.com/en/interest-rates"
+NY_FED_RATE_URL = "https://markets.newyorkfed.org/read?productCode=50&limit=25&startPosition=0&sort=postDt:-1&format=xml"
+DEPT_TREASURY_RATE_URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xmlview?data=daily_treasury_yield_curve"
+WEBSTAT_RATE_URL = "https://webstat.banque-france.fr/export/csv/fr/catalog"
+BUNDESBANK_RATE_URL = "https://api.statistiken.bundesbank.de/rest/download/BBSSY"
+BOJ_MUTAN_RATE_URL = "https://www.boj.or.jp/statistics/market/short/mutan/d_release"
+BB_YIELD_CURVE_URL = "https://www.bb.jbts.co.jp/en/historical/main_rate.html"
+
 
 SOURCE_SCRAP_MAP = {
     PriceSourceChoices.GOV_TREASURY_DEPT: lambda d, t: _get_treasury_yield_from_dep_treasury(
         d, t
     ),
     PriceSourceChoices.NYFED: lambda d, t: _scrap_rate_from_nyfed_xml(d, t),
-    PriceSourceChoices.WEBSTAT: lambda d, t: _get_webstat_rates(d, t),
+    PriceSourceChoices.WEBSTAT: lambda d, t: get_webstat_rates(d, t),
     PriceSourceChoices.BUNDESBANK: lambda d, t: _get_bund_yield_from_bundesbank(d, t),
     PriceSourceChoices.BOJ: lambda d, _: _get_mutan_rate_from_boj(d),
     PriceSourceChoices.BB: lambda d, t: _get_jgb_yield_from_bb(d, t),
-    PriceSourceChoices.GLOBAL_RATES: lambda d, t: _scrap_euribor_from_global_rates(
-        d, t
-    ),
+    PriceSourceChoices.GLOBAL_RATES: lambda d, t: scrap_from_global_rates(d, t),
     PriceSourceChoices.YAHOO: lambda d, t: get_yahoo_finance_closing_prices(d, t),
 }
 
@@ -76,46 +82,104 @@ def get_yahoo_finance_closing_prices(target_date: date, ticker: str) -> Scrappin
     return ScrappingResult(price=None, comment="Yahoo Finance: No prices found.")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
-def _scrap_euribor_from_global_rates(target_date: date, ticker: str) -> ScrappingResult:
-    """Scrap euribor rates from GlobalRates.
-
-    Source: https://www.global-rates.com/en/
-    """
-    response = requests.get(
-        f"https://www.global-rates.com/en/interest-rates/euribor/{ticker}"
-    )
-    if response.status_code >= 400:
-        logger.warning(f"Error scraping Euribor rates: {response.text}")
-        return ScrappingResult(price=None, comment=response.text)
-    soup = BeautifulSoup(response.content, "html.parser")  # type: ignore[reportArgumentType]
-
-    table = soup.find("table")
-    if not table:
+def _parse_euribor_rate_from_table(
+    table, target_date: Optional[date]
+) -> ScrappingResult:
+    """Parse EURIBOR rate from table for a specific date."""
+    if target_date is None:
         return ScrappingResult(
-            price=None, comment="Could not find Euribor rates table on page"
+            price=None, comment="Target date is required for EURIBOR rates"
         )
 
     for tr in table.find_all("tr"):  # type: ignore[reportAttributeAccessIssue]
         cells = tr.find_all("td")
-        if len(cells) == 2:
-            raw_date = cells[0].get_text(strip=True)
-            raw_rate = cells[1].get_text(strip=True)
+        if len(cells) != 2:
+            continue
 
+        raw_date = cells[0].get_text(strip=True)
+        raw_rate = cells[1].get_text(strip=True)
+
+        try:
+            parsed_date = datetime.strptime(raw_date, "%m-%d-%Y").date()
+        except ValueError:
+            logger.debug(f"Could not parse date format: {raw_date}")
+            continue
+
+        if parsed_date == target_date:
+            rate_str = raw_rate.replace("%", "").replace(",", ".").strip()
             try:
-                parsed_date = datetime.strptime(raw_date, "%m-%d-%Y").date()
+                return ScrappingResult(price=float(rate_str), comment="")
             except ValueError:
-                continue
-
-            if parsed_date == target_date:
-                rate_str = raw_rate.replace("%", "").replace(",", ".").strip()
-                try:
-                    return ScrappingResult(price=float(rate_str), comment="")
-                except ValueError:
-                    return ScrappingResult(
-                        price=None, comment="Could not parse Euribor rate"
-                    )
+                return ScrappingResult(
+                    price=None,
+                    comment=f"Could not parse Euribor rate: {raw_rate}",
+                )
     return ScrappingResult(price=None, comment="Euribor rate not found.")
+
+
+def _parse_central_bank_rate_from_table(table) -> ScrappingResult:
+    """Parse central bank rate from table (first row, second column)."""
+    tbody = table.find("tbody")
+    if not tbody:
+        return ScrappingResult(price=None, comment="Table has no <tbody>")
+
+    first_row = tbody.find("tr")
+    if not first_row:
+        return ScrappingResult(price=None, comment="Table contains no rows")
+
+    cells = first_row.find_all("td")
+    if len(cells) < 2:
+        return ScrappingResult(price=None, comment="Row has insufficient columns")
+
+    rate_text = cells[1].get_text(strip=True)
+    if not rate_text:
+        return ScrappingResult(price=None, comment="Rate cell is empty")
+
+    match = re.search(r"([-+]?\d+(?:\.\d+)?)", rate_text)
+    if not match:
+        return ScrappingResult(
+            price=None, comment=f"Could not extract rate from: {rate_text}"
+        )
+
+    try:
+        return ScrappingResult(price=float(match.group(1)), comment="")
+    except ValueError:
+        return ScrappingResult(
+            price=None, comment=f"Could not convert rate to float: {match.group(1)}"
+        )
+
+
+@ttl_cache(maxsize=128, ttl=10 * 60)
+def scrap_from_global_rates(
+    target_date: Optional[date], ticker: str
+) -> ScrappingResult:
+    """Scrape rates from GlobalRates.
+
+    Source: https://www.global-rates.com/en/
+    """
+    soup = fetch_html(f"{GLOBAL_RATES_URL}/{ticker}")
+    if not soup:
+        return ScrappingResult(
+            price=None, comment=f"Failed to fetch HTML from {GLOBAL_RATES_URL}"
+        )
+
+    table = soup.find("table")
+    if not table:
+        return ScrappingResult(
+            price=None, comment="Could not find interest rates table on page"
+        )
+
+    rate_type = ticker.split("/")[0] if "/" in ticker else ticker
+    match rate_type:
+        case "euribor":
+            result = _parse_euribor_rate_from_table(table, target_date)
+        case "central-banks":
+            result = _parse_central_bank_rate_from_table(table)
+        case _:
+            result = ScrappingResult(
+                price=None, comment=f"Unsupported rate type: {rate_type}"
+            )
+    return result
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
@@ -124,8 +188,7 @@ def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrappingResul
 
     Source: https://www.newyorkfed.org/markets/reference-rates/
     """
-    NY_FED_RATE_URL = f"https://markets.newyorkfed.org/read?productCode=50&eventCodes={ticker}&limit=25&startPosition=0&sort=postDt:-1&format=xml"
-    response = requests.get(NY_FED_RATE_URL)
+    response = requests.get(f"{NY_FED_RATE_URL}&eventCodes={ticker}")
     if response.status_code >= 400:
         logger.warning(f"Error scraping rates from NY Fed XML: {response.text}")
         return ScrappingResult(price=None, comment=response.text)
@@ -148,7 +211,7 @@ def _get_treasury_yield_curve_from_dep_treasury(target_date: date) -> dict:
     Source: https://home.treasury.gov/
     """
     response = requests.get(
-        f"https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xmlview?data=daily_treasury_yield_curve&field_tdr_date_value={target_date.year}"
+        f"{DEPT_TREASURY_RATE_URL}&field_tdr_date_value={target_date.year}"
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping Treasury yield curve: {response.text}")
@@ -206,14 +269,12 @@ def _get_treasury_yield_from_dep_treasury(
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
+def get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
     """Get Webstat data.
 
     Source: https://webstat.banque-france.fr/en/
     """
-    response = requests.get(
-        f"https://webstat.banque-france.fr/export/csv/fr/catalog/{ticker}"
-    )
+    response = requests.get(f"{WEBSTAT_RATE_URL}/{ticker}")
     if response.status_code >= 400:
         logger.warning(f"Error scraping Webstat rates: {response.text}")
         return ScrappingResult(price=None, comment=response.text)
@@ -237,9 +298,7 @@ def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> Scrapping
 
     Source: https://www.bundesbank.de/en/statistics/time-series-databases/
     """
-    response = requests.get(
-        f"https://api.statistiken.bundesbank.de/rest/download/BBSSY/{ticker}?format=sdmx&lang=en"
-    )
+    response = requests.get(f"{BUNDESBANK_RATE_URL}/{ticker}?format=sdmx&lang=en")
     if response.status_code >= 400:
         logger.warning(f"Error scraping Bundesbank rates: {response.text}")
         return ScrappingResult(price=None, comment=response.text)
@@ -271,12 +330,12 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
     DATA_TYPE = {"prevision": "mp", "certified": "md"}
     file_name = f"{DATA_TYPE['certified']}{target_date.strftime('%Y%m%d')}.xlsx"
     response = requests.get(
-        f"https://www.boj.or.jp/statistics/market/short/mutan/d_release/{DATA_TYPE['certified']}/{target_date.year}/{file_name}"
+        f"{BOJ_MUTAN_RATE_URL}/{DATA_TYPE['certified']}/{target_date.year}/{file_name}"
     )
     if response.status_code != 200:
         file_name = f"{DATA_TYPE['prevision']}{target_date.strftime('%Y%m%d')}.xlsx"
         response = requests.get(
-            f"https://www.boj.or.jp/statistics/market/short/mutan/d_release/{DATA_TYPE['prevision']}/{file_name}"
+            f"{BOJ_MUTAN_RATE_URL}/{DATA_TYPE['prevision']}/{file_name}"
         )
         if response.status_code >= 400:
             logger.warning(f"Error scraping BoJ rates: {response.text}")
@@ -304,11 +363,9 @@ def _scrap_jgb_yield_curve_from_bb(target_date: date) -> dict:
 
     Source: https://www.bb.jbts.co.jp/en/index.html
     """
-    response = requests.get("https://www.bb.jbts.co.jp/en/historical/main_rate.html")
-    if response.status_code >= 400:
-        logger.warning(f"Error scraping JGB yield curve: {response.text}")
-        return {"error": response.text}
-    soup = BeautifulSoup(response.content, "html.parser")  # type: ignore[reportArgumentType]
+    soup = fetch_html(BB_YIELD_CURVE_URL)
+    if not soup:
+        return {"error": f"Failed to fetch HTML from {BB_YIELD_CURVE_URL}"}
 
     rows = []
     for tr in soup.select("table.tbCore tr"):

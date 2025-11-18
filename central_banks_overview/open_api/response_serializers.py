@@ -1,6 +1,41 @@
 from rest_framework import serializers
 
-from central_banks_overview.models import CentralBankChoices, StirFuturesModel
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankDataModel,
+    StirFuturesModel,
+)
+
+
+class CentralBankDataIngestionResponseItemSerializer(serializers.Serializer):
+    """Central Bank Data Ingestion Response Item Serializer."""
+
+    data_name = serializers.CharField()
+    date = serializers.DateField()
+
+
+class CentralBankDataIngestionResponseSerializer(serializers.Serializer):
+    """Stir Futures Price Response Serializer."""
+
+    message = serializers.CharField()
+    updates = serializers.ListField(
+        child=CentralBankDataIngestionResponseItemSerializer()
+    )
+
+
+class CentralBankDataResponseSerializer(serializers.ModelSerializer):
+    """Central Bank Data Response Serializer."""
+
+    class Meta:
+        model = CentralBankDataModel
+        fields = [
+            "central_bank",
+            "short_name",
+            "full_name",
+            "date",
+            "value",
+            "comment",
+        ]
 
 
 class CentralBankMeetingDatesResponseSerializer(serializers.Serializer):
@@ -14,7 +49,7 @@ class StirFuturesPriceIngestionResponseSerializer(serializers.Serializer):
     """Stir Futures Price Response Serializer."""
 
     message = serializers.CharField()
-    stir_futures_not_updated = serializers.ListField(child=serializers.CharField())
+    stir_futures_updated = serializers.ListField(child=serializers.CharField())
     date = serializers.DateField()
 
 

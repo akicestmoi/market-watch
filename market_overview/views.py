@@ -417,8 +417,8 @@ class GetPriceUpdateLogsView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """Get price update logs with optional filtering."""
-        price_date: date = validated_data["price_date"]
-        short_name: str = validated_data["short_name"]
+        price_date: Optional[date] = validated_data.get("price_date")
+        short_name: Optional[str] = validated_data.get("short_name")
         price_update_logs = market_data_services.get_price_update_logs(
             price_date=price_date, short_name=short_name
         )

@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 import market_overview.services.market_data_services as market_data_services
 from central_banks_overview.models import CENTRAL_BANK_LOCATION_MAP, CentralBankChoices
+from central_banks_overview.services.cb_data_services import get_central_bank_data
 from central_banks_overview.services.cb_inference_services import (
     CentralBankProbabilityMatrix,
     calculate_probability_changes,
@@ -15,6 +16,7 @@ from central_banks_overview.services.cb_inference_services import (
 )
 from central_banks_overview.services.cb_meetings_services import (
     get_central_bank_meeting_dates,
+    get_central_bank_next_meeting_date,
 )
 from economic_overview.models import (
     EconomicDataLocationChoices,
@@ -590,38 +592,38 @@ def get_central_bank_data_item(
 ) -> List[CentralBankDataItem]:
     """Get central bank data item."""
     effective_rate = get_central_bank_effective_rate(central_bank, reference_date)
-    meeting_dates = get_central_bank_meeting_dates([central_bank])
-    meeting_date = (
-        meeting_dates[0]["meeting_dates"][0].strftime("%Y-%m-%d")
-        if meeting_dates
-        else "N/A"
+    next_meeting_date = get_central_bank_next_meeting_date(central_bank)
+    next_meeting_date = (
+        next_meeting_date.strftime("%Y-%m-%d") if next_meeting_date else "N/A"
     )
+    data_items = [
+        CentralBankDataItem(
+            label=item.full_name, value=f"{item.value} %" if item.value else "N/A"
+        )
+        for item in get_central_bank_data(central_banks=[central_bank], last_value=True)
+    ]
 
     base_data = [
         CentralBankDataItem(
             label="Effective Rate",
             value=f"{effective_rate} %" if effective_rate else "N/A",
         ),
-        CentralBankDataItem(label="Next Meeting", value=meeting_date),
+        CentralBankDataItem(label="Next Meeting", value=next_meeting_date),
+        *data_items,
     ]
     match central_bank:
         case CentralBankChoices.FRB:
             additional_data = [
-                CentralBankDataItem(label="Target Rate", value="4.0 %"),
+                CentralBankDataItem(label="US Inflation Rate", value="3.0 %"),
             ]
         case CentralBankChoices.BOJ:
             additional_data = [
-                CentralBankDataItem(label="Target Rate", value="0.5 %"),
+                CentralBankDataItem(label="Japan Inflation Rate", value="2.9 %"),
             ]
         case CentralBankChoices.ECB:
             additional_data = [
-                CentralBankDataItem(label="ECB Deposit Facility Rate", value="2.0 %"),
-                CentralBankDataItem(
-                    label="ECB Main Refinancing Operation Rate", value="2.15 %"
-                ),
-                CentralBankDataItem(
-                    label="ECB Marginal Lending Facility Rate", value="2.40 %"
-                ),
+                CentralBankDataItem(label="France Inflation Rate", value="0.9 %"),
+                CentralBankDataItem(label="Eurozone Inflation Rate", value="2.1 %"),
             ]
     return base_data + additional_data
 

@@ -1,0 +1,42 @@
+[
+  {
+    "cb_data_id": 1,
+    "central_bank": "FRB",
+    "short_name": "FRB_FEDFUNDS",
+    "full_name": "FRB Target Fed Funds Rate",
+    "ticker": "central-banks/1002/american-fed-federal-funds-rate/",
+    "source": "GLOBAL_RATES"
+  },
+  {
+    "cb_data_id": 2,
+    "central_bank": "ECB",
+    "short_name": "ECB_Deposit",
+    "full_name": "ECB Deposit Facility Rate",
+    "ticker": "FM/FM.D.U2.EUR.4F.KR.DFR.LEV",
+    "source": "WEBSTAT"
+  },
+  {
+    "cb_data_id": 3,
+    "central_bank": "ECB",
+    "short_name": "ECB_Refinancing",
+    "full_name": "ECB Main Refinancing Operation Rate",
+    "ticker": "FM/FM.D.U2.EUR.4F.KR.MRR_FR.LEV",
+    "source": "WEBSTAT"
+  },
+  {
+    "cb_data_id": 4,
+    "central_bank": "ECB",
+    "short_name": "ECB_Marginal_Lending",
+    "full_name": "ECB Marginal Lending Facility Rate",
+    "ticker": "FM/FM.D.U2.EUR.4F.KR.MLFR.LEV",
+    "source": "WEBSTAT"
+  },
+  {
+    "cb_data_id": 5,
+    "central_bank": "BOJ",
+    "short_name": "BOJ_MUTAN",
+    "full_name": "BOJ Target Uncollateralized Overnight Rate",
+    "ticker": "central-banks/9/japanese-boj-overnight-call-rate/",
+    "source": "GLOBAL_RATES"
+  }
+]

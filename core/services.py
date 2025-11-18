@@ -37,8 +37,7 @@ def update_with_logs(
     for field, new_value in updates.items():
         old_value = getattr(model_to_update, field, None)
         if old_value != new_value:
-            should_update = enable_none_updates or new_value is not None
-            if should_update:
+            if enable_none_updates or new_value is not None:
                 setattr(model_to_update, field, new_value)
                 has_changes = True
                 is_none_value_override = new_value and not old_value

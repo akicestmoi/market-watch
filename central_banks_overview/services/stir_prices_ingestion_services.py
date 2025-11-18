@@ -300,11 +300,8 @@ def extract_all_stir_futures_prices(target_date: date) -> List[StirFutures]:
 
 def ingest_stir_futures_prices(stir_futures_prices: List[StirFutures]):
     """Ingest Stir Futures Prices."""
-    stir_futures_not_updated = []
+    stir_futures_updated = []
     for stir_future_price in stir_futures_prices:
-        if not stir_future_price["price"]:
-            stir_futures_not_updated.append(stir_future_price)
-
         date = stir_future_price["date"]
         maturity = stir_future_price["maturity"]
         name = stir_future_price["short_name"]
@@ -328,7 +325,9 @@ def ingest_stir_futures_prices(stir_futures_prices: List[StirFutures]):
                 "comment": stir_future_price["comment"],
             },
         )
-    return stir_futures_not_updated
+        if price:
+            stir_futures_updated.append(stir_future_price)
+    return stir_futures_updated
 
 
 def get_futures_prices(
@@ -379,7 +378,7 @@ def bulk_update_futures_prices_from_csv(
     csv_file: bytes,
 ) -> List[StirFuturesModel]:
     """Bulk update futures prices from a CSV file."""
-    df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)
+    df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)  # type: ignore[reportArgumentType]
     df.fillna("", inplace=True)
 
     missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)

@@ -2,15 +2,19 @@ from django.urls import path
 
 from .views import (
     BulkUpdateStirFuturesPricesView,
+    CentralBankDataIngestionView,
     CentralBankMeetingDatesIngestionView,
     CsvBulkUpdateStirFuturesPricesView,
     GetCentralBankMeetingDatesView,
     GetCentralBankProbabilityMatrixView,
+    ListCentralBankDataView,
     ListStirFuturesPricesView,
     StirFuturesPriceIngestionView,
 )
 
 urlpatterns = [
+    path("data", ListCentralBankDataView.as_view()),
+    path("data/ingest", CentralBankDataIngestionView.as_view()),
     path("meeting-dates", GetCentralBankMeetingDatesView.as_view()),
     path(
         "meeting-dates/ingest",

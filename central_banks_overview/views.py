@@ -4,30 +4,100 @@ from typing import List, Optional
 from rest_framework import status
 from rest_framework.response import Response
 
+import central_banks_overview.services.cb_data_services as cb_data_services
 import central_banks_overview.services.cb_inference_services as cb_inference_services
 import central_banks_overview.services.cb_meetings_services as cb_meetings_services
 import central_banks_overview.services.stir_prices_ingestion_services as stir_futures_services
 from central_banks_overview.models import CentralBankChoices
 from central_banks_overview.open_api.request_serializers import (
     BulkUpdateStirFuturesPricesSerializer,
+    CentralBankDataIngestionItemSerializer,
+    CentralBankDataIngestionSerializer,
     CsvBulkUpdateStirFuturesPricesSerializer,
     GetCentralBankMeetingDatesSerializer,
     GetCentralBankProbabilityMatrixSerializer,
+    ListCentralBankDataSerializer,
     ListStirFuturesPricesSerializer,
     StirFuturesPriceIngestionSerializer,
 )
 from central_banks_overview.open_api.response_serializers import (
+    CentralBankDataIngestionResponseSerializer,
+    CentralBankDataResponseSerializer,
     CentralBankMeetingDatesResponseSerializer,
     CentralBankProbabilityMatrixResponseSerializer,
     StirFuturesPriceIngestionResponseSerializer,
     StirFuturesPriceResponseSerializer,
 )
+from central_banks_overview.services.cb_data_services import CentralBankDataDates
 from central_banks_overview.services.stir_prices_ingestion_services import (
     BulkUpdateFuturesPricesItem,
 )
 from core.open_api import ApiTags, CreatedOpenApiResponse, OkOpenApiResponse, open_api
 from core.services import logger
 from core.views import BaseAPIView
+
+
+class CentralBankDataIngestionView(BaseAPIView):
+    """Central Bank Data Ingestion APIView."""
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="Ingest Central Bank Data",
+        description="Ingest Central Bank Data for a given date.",
+        request_serializer=CentralBankDataIngestionSerializer,
+        response=CreatedOpenApiResponse(CentralBankDataIngestionResponseSerializer),
+    )
+    def post(
+        self, validated_data: List[CentralBankDataIngestionItemSerializer]
+    ) -> Response:
+        """Ingest central bank data."""
+        requested_central_bank_data_dates: List[CentralBankDataDates] = validated_data  # type: ignore[reportAssignmentType]
+
+        central_bank_data_dates = cb_data_services.get_all_central_bank_data_dates(
+            requested_central_bank_data_dates
+        )
+        central_bank_data_updated = cb_data_services.ingest_central_bank_data(
+            central_bank_data_dates
+        )
+        return Response(
+            data=CentralBankDataIngestionResponseSerializer(
+                {
+                    "message": "Central Bank Data successfully ingested",
+                    "updates": central_bank_data_updated,
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ListCentralBankDataView(BaseAPIView):
+    """List Central Bank Data APIView."""
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="List Central Bank Data",
+        description="List Central Bank Data for a specific date and central bank.",
+        request_serializer=ListCentralBankDataSerializer,
+        response=OkOpenApiResponse(CentralBankDataResponseSerializer),
+    )
+    def get(self, validated_data: dict) -> Response:
+        """List Central Bank Data for a specific date and central bank."""
+        target_date: Optional[date] = validated_data.get("date")
+        last_value: bool = validated_data.get("last_value", False)
+        central_banks_str: Optional[str] = validated_data.get("central_banks")
+        central_banks = (
+            [CentralBankChoices(cb) for cb in central_banks_str.split(",")]
+            if central_banks_str
+            else []
+        )
+
+        central_bank_data = cb_data_services.get_central_bank_data(
+            target_date, central_banks, last_value
+        )
+        return Response(
+            data=CentralBankDataResponseSerializer(central_bank_data, many=True).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class StirFuturesPriceIngestionView(BaseAPIView):
@@ -48,16 +118,16 @@ class StirFuturesPriceIngestionView(BaseAPIView):
         stir_futures_prices = stir_futures_services.extract_all_stir_futures_prices(
             price_date
         )
-        stir_futures_not_updated = stir_futures_services.ingest_stir_futures_prices(
+        stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
             stir_futures_prices
         )
         return Response(
             data=StirFuturesPriceIngestionResponseSerializer(
                 {
                     "message": "STIR Futures prices successfully ingested",
-                    "stir_futures_not_updated": [
+                    "stir_futures_updated": [
                         f"{stir_future_price['short_name']}.{stir_future_price['maturity']}"
-                        for stir_future_price in stir_futures_not_updated
+                        for stir_future_price in stir_futures_updated
                     ],
                     "date": price_date,
                 }

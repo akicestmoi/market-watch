@@ -303,3 +303,10 @@ def get_central_bank_meeting_dates(
         )
         for central_bank in distinct_central_banks
     ]
+
+
+def get_central_bank_next_meeting_date(
+    central_bank: CentralBankChoices,
+) -> Optional[datetime]:
+    """Get central bank next meeting date."""
+    return get_central_bank_meeting_dates([central_bank])[0]["meeting_dates"][0]

@@ -36,26 +36,12 @@ class CentralBankMeetingModel(BaseModel):
     date = models.DateTimeField()
 
 
-class CentralBankDataNameChoices(models.TextChoices):
-    """Central Bank Data Name Choices."""
-
-    FEDFUNDS = "FEDFUNDS", _("FRB Target Fed Funds Rate")
-    ESTR = "ESTR", _("ECB Target Overnight Rate")
-    ECB_DEPOSIT = "ECB_DEPOSIT", _("ECB Deposit Facility Rate")
-    ECB_REFINANCING = "ECB_REFINANCING", _("ECB Main Refinancing Operation Rate")
-    ECB_MARGINAL_LENDING = "ECB_MARGINAL_LENDING", _(
-        "ECB Marginal Lending Facility Rate"
-    )
-    MUTAN = "MUTAN", _("BOJ Target Uncollateralized Overnight Rate")
-
-
 class CentralBankDataModel(BaseModel):
     """Central Bank Data Model."""
 
+    cb_data_id = models.IntegerField(default=None, null=True, blank=True)
     central_bank = models.CharField(max_length=255, choices=CentralBankChoices.choices)
-    short_name = models.CharField(
-        max_length=255, choices=CentralBankDataNameChoices.choices
-    )
+    short_name = models.CharField(max_length=255, default="")
     full_name = models.CharField(max_length=255)
     date = models.DateField()
     value = models.FloatField(null=True, blank=True, default=None)

@@ -216,7 +216,7 @@
     "full_name": "Euribor 1 Week",
     "maturity": 0.019,
     "asset_type": "INTERBANK_RATE",
-    "ticker": "5/euribor-interest-1-week/",
+    "ticker": "euribor/5/euribor-interest-1-week/",
     "source": "GLOBAL_RATES"
   },
   {
@@ -227,7 +227,7 @@
     "full_name": "Euribor 1 Month",
     "maturity": 0.0833,
     "asset_type": "INTERBANK_RATE",
-    "ticker": "1/euribor-interest-1-month/",
+    "ticker": "euribor/1/euribor-interest-1-month/",
     "source": "GLOBAL_RATES"
   },
   {
@@ -238,7 +238,7 @@
     "full_name": "Euribor 3 Month",
     "maturity": 0.25,
     "asset_type": "INTERBANK_RATE",
-    "ticker": "2/euribor-interest-3-months/",
+    "ticker": "euribor/2/euribor-interest-3-months/",
     "source": "GLOBAL_RATES"
   },
   {
@@ -249,7 +249,7 @@
     "full_name": "Euribor 6 Month",
     "maturity": 0.5,
     "asset_type": "INTERBANK_RATE",
-    "ticker": "3/euribor-interest-6-months/",
+    "ticker": "euribor/3/euribor-interest-6-months/",
     "source": "GLOBAL_RATES"
   },
   {
@@ -260,7 +260,7 @@
     "full_name": "Euribor 12 Month",
     "maturity": 1,
     "asset_type": "INTERBANK_RATE",
-    "ticker": "4/euribor-interest-12-months/",
+    "ticker": "euribor/4/euribor-interest-12-months/",
     "source": "GLOBAL_RATES"
   },
   {

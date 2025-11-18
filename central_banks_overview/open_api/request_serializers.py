@@ -22,6 +22,43 @@ class CentralBankBaseSerializer(serializers.Serializer):
         return value
 
 
+class CentralBankDataIngestionItemSerializer(serializers.Serializer):
+    """Central Bank Data Ingestion Item Serializer."""
+
+    central_bank = serializers.CharField()
+    date = serializers.DateField()
+
+    def validate_central_bank(self, value: str) -> str:
+        """Validate central bank."""
+        if value not in [choice.value for choice in CentralBankChoices]:
+            raise serializers.ValidationError(f"Invalid central bank value: {value}")
+        return value
+
+
+class CentralBankDataIngestionSerializer(serializers.ListSerializer):
+    """Central Bank Data Ingestion Serializer."""
+
+    child = CentralBankDataIngestionItemSerializer(required=False)
+
+
+class ListCentralBankDataSerializer(CentralBankBaseSerializer):
+    """List Central Bank Data Serializer."""
+
+    date = serializers.DateField(required=False, allow_null=True)
+    last_value = serializers.BooleanField(required=False, default=False)
+
+    def validate_central_bank(self, value: str) -> str:
+        """Validate central bank."""
+        if value:
+            for cb_value in value.split(","):
+                cb_value = cb_value.strip()
+                if cb_value not in CentralBankChoices.choices:
+                    raise serializers.ValidationError(
+                        f"Invalid central bank value: {value}"
+                    )
+        return value
+
+
 class GetCentralBankMeetingDatesSerializer(CentralBankBaseSerializer):
     """Get Central Bank Meeting Dates Serializer."""
 
