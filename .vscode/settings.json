@@ -131,5 +131,11 @@
   // ===========================
   // Problems Panel
   // ===========================
-  "problems.showCurrentInStatus": true
+  "problems.showCurrentInStatus": true,
+
+  // Disable format on save for markdown files
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  }
 }

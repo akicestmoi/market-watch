@@ -608,8 +608,8 @@ def get_central_bank_data_item(
             label="Effective Rate",
             value=f"{effective_rate} %" if effective_rate else "N/A",
         ),
-        CentralBankDataItem(label="Next Meeting", value=next_meeting_date),
         *data_items,
+        CentralBankDataItem(label="Next Meeting", value=next_meeting_date),
     ]
     match central_bank:
         case CentralBankChoices.FRB:
@@ -633,8 +633,6 @@ def get_central_bank_formatted_probability_matrix(
     reference_date: date,
 ) -> Optional[CentralBankProbabilityMatrix]:
     """Get formatted probability matrix for a central bank."""
-    if central_bank == CentralBankChoices.ECB:
-        return None
     cb_probability_matrices = get_central_bank_probability_matrices(
         reference_date, [central_bank]
     )

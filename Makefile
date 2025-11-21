@@ -28,8 +28,8 @@ RUN_TMP = $(DOCKER_COMPOSE) run --rm --no-deps webapp
 
 # Install dependencies
 install:
-	$(DOCKER_COMPOSE) exec webapp npm install
 	$(DOCKER_COMPOSE) exec webapp pip install -r requirements.txt
+	$(DOCKER_COMPOSE) exec webapp npm install
 
 # Lint
 lint:

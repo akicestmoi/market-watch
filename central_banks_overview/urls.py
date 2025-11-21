@@ -5,6 +5,7 @@ from .views import (
     CentralBankDataIngestionView,
     CentralBankMeetingDatesIngestionView,
     CsvBulkUpdateStirFuturesPricesView,
+    EstrPriceIngestionViaPdfView,
     GetCentralBankMeetingDatesView,
     GetCentralBankProbabilityMatrixView,
     ListCentralBankDataView,
@@ -20,8 +21,12 @@ urlpatterns = [
         "meeting-dates/ingest",
         CentralBankMeetingDatesIngestionView.as_view(),
     ),
-    path("stir-futures/ingest", StirFuturesPriceIngestionView.as_view()),
     path("stir-futures", ListStirFuturesPricesView.as_view()),
+    path("stir-futures/ingest", StirFuturesPriceIngestionView.as_view()),
+    path(
+        "stir-futures/ingest-estr-pdf",
+        EstrPriceIngestionViaPdfView.as_view(),
+    ),
     path("stir-futures/bulk-update", BulkUpdateStirFuturesPricesView.as_view()),
     path(
         "stir-futures/bulk-update-from-csv",

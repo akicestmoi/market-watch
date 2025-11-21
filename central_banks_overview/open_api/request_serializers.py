@@ -71,6 +71,13 @@ class StirFuturesPriceIngestionSerializer(serializers.Serializer):
     date = serializers.DateField()
 
 
+class EstrPriceIngestionViaPdfSerializer(serializers.Serializer):
+    """ESTR Price Ingestion via PDF Serializer."""
+
+    pdf_file = serializers.FileField()
+    date = serializers.DateField()
+
+
 class ListStirFuturesPricesSerializer(CentralBankBaseSerializer):
     """List Stir Futures Prices Serializer."""
 

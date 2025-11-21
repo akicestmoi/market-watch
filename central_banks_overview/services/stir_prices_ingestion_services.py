@@ -1,14 +1,15 @@
 import re
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
-from typing import List, Optional, TypedDict
+from typing import List, Optional, Tuple, TypedDict
 
 import pandas as pd
+import pdfplumber  # type: ignore[reportMissingImports]
 import requests
 from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 from dateutil.relativedelta import relativedelta
-from pandas.tseries.offsets import MonthBegin, MonthEnd
+from pandas.tseries.offsets import BDay, MonthBegin, MonthEnd
 
 import core.services as core_services
 from central_banks_overview.models import (
@@ -18,6 +19,7 @@ from central_banks_overview.models import (
     StirFuturesPriceUpdateLogModel,
     StirFuturesSourceChoices,
 )
+from central_banks_overview.services.cb_meetings_services import MONTH_ABBREVIATIONS
 from core.services import logger
 from market_overview.services.price_ingestion_services import (
     get_yahoo_finance_closing_prices,
@@ -56,8 +58,8 @@ class StirFutures(TypedDict):
     short_name: StirFuturesNameChoices
     full_name: str
     maturity: str
-    reference_start_date: Optional[date]
-    reference_end_date: Optional[date]
+    first_accrual_date: Optional[date]
+    last_accrual_date: Optional[date]
     date: date
     price: Optional[float]
     source: StirFuturesSourceChoices
@@ -98,8 +100,8 @@ def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirF
             short_name=StirFuturesNameChoices.FF1M,
             full_name=str(StirFuturesNameChoices.FF1M.label),
             maturity=maturity,
-            reference_start_date=month_start.rollback(ticker_date).date(),
-            reference_end_date=month_end.rollforward(ticker_date).date(),
+            first_accrual_date=month_start.rollback(ticker_date).date(),
+            last_accrual_date=month_end.rollforward(ticker_date).date(),
             date=target_date,
             price=None,
             source=StirFuturesSourceChoices.YAHOO,
@@ -111,8 +113,8 @@ def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirF
         short_name=StirFuturesNameChoices.FF1M,
         full_name=str(StirFuturesNameChoices.FF1M.label),
         maturity=maturity,
-        reference_start_date=month_start.rollback(ticker_date).date(),
-        reference_end_date=month_end.rollforward(ticker_date).date(),
+        first_accrual_date=month_start.rollback(ticker_date).date(),
+        last_accrual_date=month_end.rollforward(ticker_date).date(),
         date=target_date,
         price=price,
         source=StirFuturesSourceChoices.YAHOO,
@@ -240,8 +242,8 @@ def _get_mutan_futures_reference_dates() -> pd.DataFrame:
         if len(ref_period_split) < 2:
             continue
 
-        reference_start_date = _parse_jp_date(ref_period_split[0])
-        reference_end_date = _parse_jp_date(ref_period_split[1])
+        first_accrual_date = _parse_jp_date(ref_period_split[0])
+        last_accrual_date = _parse_jp_date(ref_period_split[1])
 
         # Combine year + month into YY.MM
         # month_text like "3月限" -> "03"
@@ -251,8 +253,8 @@ def _get_mutan_futures_reference_dates() -> pd.DataFrame:
         rows.append(
             {
                 "限月": str(contract_yy_mm),
-                "reference_start_date": reference_start_date,
-                "reference_end_date": reference_end_date,
+                "first_accrual_date": first_accrual_date,
+                "last_accrual_date": last_accrual_date,
             }
         )
 
@@ -276,8 +278,8 @@ def _get_mutan_futures_prices(target_date: date) -> List[StirFutures]:
             short_name=StirFuturesNameChoices.MUTAN3M,
             full_name=str(StirFuturesNameChoices.MUTAN3M.label),
             maturity=row.get("限月", "Maturity not found"),
-            reference_start_date=row.get("reference_start_date"),
-            reference_end_date=row.get("reference_end_date"),
+            first_accrual_date=row.get("first_accrual_date"),
+            last_accrual_date=row.get("last_accrual_date"),
             date=target_date,
             price=row.get("公式終値"),
             source=StirFuturesSourceChoices.TFX,
@@ -287,14 +289,130 @@ def _get_mutan_futures_prices(target_date: date) -> List[StirFutures]:
     ]
 
 
-def extract_all_stir_futures_prices(target_date: date) -> List[StirFutures]:
+def _parse_maturity_from_estr_pdf(maturity: str) -> str:
+    """Parse maturity from ESTR PDF."""
+    if len(maturity) < 5:
+        raise ValueError(f"Invalid maturity: {maturity}")
+    month_str = maturity[:3].lower()
+    year_str = maturity[3:]
+
+    if month_str not in MONTH_ABBREVIATIONS or not year_str.isdigit():
+        raise ValueError(f"Invalid maturity: {maturity}")
+
+    return f"{year_str}.{MONTH_ABBREVIATIONS[month_str]:02d}"
+
+
+def _get_third_wednesday_of_month(year: int, month: int) -> date:
+    """Get the third Wednesday of a given month."""
+    first_day = date(year, month, 1)
+
+    # weekday() returns 0=Monday, 1=Tuesday, 2=Wednesday, etc.
+    first_day_weekday = first_day.weekday()
+
+    # Calculate days to add to get to the first Wednesday
+    # (2 - weekday) % 7 correctly handles all cases:
+    # - If weekday <= 2: gives days to add within the week
+    # - If weekday > 2: gives days to add to reach next week's Wednesday
+    days_to_first_wednesday = (2 - first_day_weekday) % 7
+    first_wednesday = first_day + timedelta(days=days_to_first_wednesday)
+    # Third Wednesday is 14 days after the first Wednesday
+    third_wednesday = first_wednesday + timedelta(days=14)
+    return third_wednesday
+
+
+def calculate_estr_reference_dates(maturity: str) -> Tuple[date, date]:
+    """Calculate ESTR reference start and end dates from maturity.
+
+    Source: https://www.ice.com/products/82908552/Three-Month-ESTR-Indexed-Future
+    """
+    try:
+        # Parse maturity string "YY.MM" to year and month
+        parts = maturity.split(".")
+        if len(parts) != 2:
+            raise ValueError(f"Invalid maturity format: {maturity}")
+
+        year_str, month_str = parts
+        year = 2000 + int(year_str)
+        month = int(month_str)
+
+        if month < 1 or month > 12:
+            raise ValueError(f"Invalid month in maturity: {maturity}")
+
+        # Calculate First Accrual Date: Third Wednesday of the delivery month
+        first_accrual_date = _get_third_wednesday_of_month(year, month)
+
+        # Calculate Last Accrual Date:
+        # Business day prior to the third Wednesday of the third calendar month
+        # after the First Accrual Date
+        third_month_after = first_accrual_date + relativedelta(months=3)
+        third_wednesday_third_month = _get_third_wednesday_of_month(
+            third_month_after.year, third_month_after.month
+        )
+        last_accrual_date = third_wednesday_third_month - BDay(1)
+
+        return first_accrual_date, last_accrual_date.date()
+
+    except (ValueError, IndexError) as e:
+        raise ValueError(
+            f"Failed to calculate reference dates from maturity {maturity}: {e}"
+        ) from e
+
+
+def extract_estr_prices_from_pdf(
+    pdf_file: bytes, price_date: date
+) -> List[StirFutures]:
+    """Extract ESTR Prices from PDF."""
+    try:
+        tables = []
+        with pdfplumber.open(BytesIO(pdf_file)) as pdf_reader:
+            for page in pdf_reader.pages:
+                tables.extend(page.extract_tables())
+    except Exception as e:
+        raise ValueError(f"Failed to parse PDF file: {e}") from e
+
+    stir_futures_prices = []
+    for table in tables:
+        for row in table:
+            if len(row) >= 6 and row[0] == "ER3":
+                maturity = row[1]
+                parsed_maturity = _parse_maturity_from_estr_pdf(maturity)
+                closing_price = row[5]
+                volume = int(row[8].replace(",", ""))
+                first_accrual_date, last_accrual_date = calculate_estr_reference_dates(
+                    parsed_maturity
+                )
+
+                if (
+                    parsed_maturity
+                    and closing_price
+                    and volume > 1000
+                    and last_accrual_date > date.today()
+                ):
+                    stir_futures_prices.append(
+                        StirFutures(
+                            central_bank=CentralBankChoices.ECB,
+                            short_name=StirFuturesNameChoices.ESTR3M,
+                            full_name=str(StirFuturesNameChoices.ESTR3M.label),
+                            maturity=parsed_maturity,
+                            first_accrual_date=first_accrual_date,
+                            last_accrual_date=last_accrual_date,
+                            date=price_date,
+                            price=float(closing_price),
+                            source=StirFuturesSourceChoices.PDF,
+                            comment="Prices extracted from PDF file.",
+                        )
+                    )
+    return stir_futures_prices
+
+
+def extract_all_stir_futures_prices(price_date: date) -> List[StirFutures]:
     """Get all Stir Futures Prices."""
     stir_futures_prices = []
     for central_bank in CentralBankChoices:
         if central_bank not in STIR_FUTURES_PRICES_MAP:
             continue
         logger.info(f"Extracting Stir Futures Prices for {central_bank}")
-        stir_futures_prices.extend(STIR_FUTURES_PRICES_MAP[central_bank](target_date))
+        stir_futures_prices.extend(STIR_FUTURES_PRICES_MAP[central_bank](price_date))
     return stir_futures_prices
 
 
@@ -315,8 +433,8 @@ def ingest_stir_futures_prices(stir_futures_prices: List[StirFutures]):
                 "date": date,
                 "short_name": name,
                 "maturity": maturity,
-                "reference_start_date": stir_future_price["reference_start_date"],
-                "reference_end_date": stir_future_price["reference_end_date"],
+                "first_accrual_date": stir_future_price["first_accrual_date"],
+                "last_accrual_date": stir_future_price["last_accrual_date"],
                 "source": stir_future_price["source"],
             },
             updates={

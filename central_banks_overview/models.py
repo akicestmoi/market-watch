@@ -52,6 +52,7 @@ class StirFuturesNameChoices(models.TextChoices):
     """Stir Futures Name Choices."""
 
     FF1M = "FF1M", _("1 Month Fed Funds STIR Futures")
+    ESTR3M = "ESTR3M", _("3 Month ESTR Futures")
     MUTAN3M = "MUTAN3M", _("3 Month Mutan STIR Futures")
 
 
@@ -60,6 +61,7 @@ class StirFuturesSourceChoices(models.TextChoices):
 
     YAHOO = "YAHOO", _("Yahoo Finance")
     TFX = "TFX", _("TFX")
+    PDF = "PDF", _("PDF")
 
 
 class StirFuturesModel(BaseModel):
@@ -71,8 +73,8 @@ class StirFuturesModel(BaseModel):
     )
     full_name = models.CharField(max_length=255)
     maturity = models.TextField(blank=True, null=True)
-    reference_start_date = models.DateField(null=True, blank=True, default=None)
-    reference_end_date = models.DateField(null=True, blank=True, default=None)
+    first_accrual_date = models.DateField(null=True, blank=True, default=None)
+    last_accrual_date = models.DateField(null=True, blank=True, default=None)
     date = models.DateField()
     price = models.FloatField(null=True, blank=True, default=None)
     source = models.CharField(max_length=255, choices=StirFuturesSourceChoices.choices)

@@ -14,6 +14,7 @@ from central_banks_overview.open_api.request_serializers import (
     CentralBankDataIngestionItemSerializer,
     CentralBankDataIngestionSerializer,
     CsvBulkUpdateStirFuturesPricesSerializer,
+    EstrPriceIngestionViaPdfSerializer,
     GetCentralBankMeetingDatesSerializer,
     GetCentralBankProbabilityMatrixSerializer,
     ListCentralBankDataSerializer,
@@ -120,6 +121,42 @@ class StirFuturesPriceIngestionView(BaseAPIView):
         )
         stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
             stir_futures_prices
+        )
+        return Response(
+            data=StirFuturesPriceIngestionResponseSerializer(
+                {
+                    "message": "STIR Futures prices successfully ingested",
+                    "stir_futures_updated": [
+                        f"{stir_future_price['short_name']}.{stir_future_price['maturity']}"
+                        for stir_future_price in stir_futures_updated
+                    ],
+                    "date": price_date,
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class EstrPriceIngestionViaPdfView(BaseAPIView):
+    """ESTR Price Ingestion via PDF APIView."""
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="Ingest ESTR Prices via PDF",
+        description="Ingest ESTR Prices via PDF for a given date.",
+        request_serializer=EstrPriceIngestionViaPdfSerializer,
+        response=CreatedOpenApiResponse(StirFuturesPriceIngestionResponseSerializer),
+    )
+    def post(self, validated_data: dict) -> Response:
+        """Ingest PDF Prices for a given date."""
+        pdf_file = validated_data["pdf_file"]
+        price_date: date = validated_data["date"]
+
+        estr_prices = stir_futures_services.extract_estr_prices_from_pdf(
+            pdf_file.read(), price_date
+        )
+        stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
+            estr_prices
         )
         return Response(
             data=StirFuturesPriceIngestionResponseSerializer(
