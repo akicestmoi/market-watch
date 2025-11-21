@@ -164,6 +164,14 @@ CELERY_BEAT_SCHEDULE = {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="20", minute="0"),
     },
+    "scheduled-stir-prices-ingestion-morning": {
+        "task": "central_banks_overview.tasks.scheduled_stir_prices_ingestion",
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+    },
+    "scheduled-stir-prices-ingestion-evening": {
+        "task": "central_banks_overview.tasks.scheduled_stir_prices_ingestion",
+        "schedule": crontab(day_of_week="1-5", hour="20", minute="40"),
+    },
 }
 
 
