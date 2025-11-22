@@ -1,9 +1,11 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 from celery import shared_task
 from pandas.tseries.offsets import BDay
 
+import central_banks_overview.services.cb_meetings_services as cb_meetings_services
 import central_banks_overview.services.stir_prices_ingestion_services as stir_futures_services
+from central_banks_overview.models import CentralBankChoices
 from core.services import logger
 
 
@@ -68,4 +70,44 @@ def scheduled_stir_futures_price_update_logs_cleanup():
             "status": "error",
             "message": f"Error: {str(e)}",
             "date": logs_date.isoformat(),
+        }
+
+
+@shared_task
+def scheduled_update_cb_meetings_and_stir_futures_prices_cleanup():
+    """
+    Celery task to update central bank meetings and stir futures prices.
+    This task will be scheduled to run daily.
+    """
+    DAYS_TO_KEEP = 7
+    results = []
+    try:
+        for central_bank in CentralBankChoices:
+            logger.info(f"Checking Central Bank: {central_bank.label}")
+            meeting_date = cb_meetings_services.get_central_bank_next_meeting_date(
+                central_bank
+            )
+            if meeting_date and meeting_date < datetime.now(timezone.utc):
+                price_date = date.today() - timedelta(days=DAYS_TO_KEEP)
+                results.append(f"{central_bank.value} - {price_date.isoformat()}")
+                logger.info(
+                    f"Cleaning up stir futures prices for Central Bank: {central_bank.label} on {price_date}"
+                )
+                stir_futures_services.delete_stir_futures_prices_before_date(
+                    central_bank, price_date
+                )
+        if results:
+            cb_meetings_services.ingest_central_bank_meeting_dates()
+            message = f"Central bank meetings updated successfully for {results}"
+        else:
+            message = "No central bank meetings to update"
+        return {
+            "status": "success",
+            "message": message,
+        }
+    except Exception as e:
+        logger.error(f"Error in stir futures prices cleanup task: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Error: {str(e)}",
         }

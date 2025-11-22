@@ -525,3 +525,12 @@ def bulk_update_futures_prices_from_csv(
 def delete_stir_futures_price_update_logs_before_date(logs_date: date):
     """Delete stir futures price update logs before a given date."""
     StirFuturesPriceUpdateLogModel.objects.filter(date_added__lt=logs_date).delete()
+
+
+def delete_stir_futures_prices_before_date(
+    central_bank: CentralBankChoices, price_date: date
+):
+    """Delete stir futures prices before a given date and for a given central bank."""
+    StirFuturesModel.objects.filter(
+        central_bank=central_bank, date__lt=price_date
+    ).delete()
