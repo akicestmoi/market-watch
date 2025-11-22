@@ -308,3 +308,8 @@ def bulk_update_assets_prices_from_csv(
         for row in df.to_dict(orient="records")
     ]
     return bulk_update_assets_prices(updates)
+
+
+def delete_price_update_logs_before_date(logs_date: date):
+    """Delete price update logs before a given date."""
+    PriceUpdateLogModel.objects.filter(date_added__lt=logs_date).delete()

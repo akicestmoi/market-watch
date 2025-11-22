@@ -39,3 +39,33 @@ def scheduled_stir_prices_ingestion():
             "message": f"Error: {str(e)}",
             "date": price_date.isoformat(),
         }
+
+
+@shared_task
+def scheduled_stir_futures_price_update_logs_cleanup():
+    """
+    Celery task to clean up stir futures price update logs.
+    This task will be scheduled to run daily.
+    """
+    today = date.today()
+    if today.month == 1:
+        logs_date = date(today.year - 1, 12, 1)
+    else:
+        logs_date = date(today.year, today.month - 1, 1)
+    try:
+        logger.info(f"Cleaning up stir futures price update logs for {logs_date}")
+        stir_futures_services.delete_stir_futures_price_update_logs_before_date(
+            logs_date
+        )
+        return {
+            "status": "success",
+            "message": f"Stir futures price update logs deleted successfully for {logs_date}",
+            "date": logs_date.isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"Error in stir futures price update logs cleanup task: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Error: {str(e)}",
+            "date": logs_date.isoformat(),
+        }
