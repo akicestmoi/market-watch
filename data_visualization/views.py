@@ -95,13 +95,13 @@ def market_charts_view(request):
     default_values = {
         "reference_date": (date.today() - BDay(1)).date().isoformat(),
         "previous_curve_date": (date.today() - BDay(2)).date().isoformat(),
-        "yield_curve_location": str(LocationChoices.US.label),  # Used for Yield Curve
+        "yield_curve_location": str(LocationChoices.US.label),
         "stock_name": "DJIA",
         "fx_name": "EURUSD",
         "crypto_name": "BTC",
         "commodity_name": "Gold",
         "main_rate": "UST10Y",
-        "spread_rate": "UST2Y",
+        "spread_rate": None,
         "stock_chart_duration": ChartDuration.ONE_MONTH.value,
         "fx_chart_duration": ChartDuration.ONE_MONTH.value,
         "crypto_chart_duration": ChartDuration.ONE_MONTH.value,

@@ -53,10 +53,11 @@ function populateComparisonDropdown(
   selectId,
   options,
   selectedValue,
-  removeFromOptions = null
+  removeFromOptions = null,
+  placeholderText = "-- Compare Prices --"
 ) {
   const select = document.getElementById(selectId);
-  select.innerHTML = '<option value="">-- Compare Prices --</option>';
+  select.innerHTML = `<option value="">${placeholderText}</option>`;
 
   options.forEach((opt) => {
     // Skip the currently selected main asset
@@ -83,9 +84,12 @@ function handleDropdownChange(selectId, paramKey) {
   const select = document.getElementById(selectId);
   select.addEventListener("change", (e) => {
     const selected = e.target.value;
-    if (!selected) return;
     const params = new URLSearchParams(window.location.search);
-    params.set(paramKey, selected);
+    if (!selected) {
+      params.delete(paramKey);
+    } else {
+      params.set(paramKey, selected);
+    }
     window.location.search = params.toString();
   });
 }
@@ -107,6 +111,11 @@ function handleRemoveComparison(btnId, paramKey) {
  */
 function toggleRemoveButton(btnId, hasComparison) {
   const btn = document.getElementById(btnId);
+  if (!btn) {
+    console.warn(`Button ${btnId} not found`);
+    return; // Button doesn't exist, skip
+  }
+  // Show button if hasComparison is truthy (not null, undefined, empty string, or false)
   if (hasComparison) {
     btn.classList.remove("hidden");
   } else {
@@ -278,11 +287,16 @@ function createYieldSpreadChart(
   mainRate,
   spreadRate,
   headerId,
-  color = "rgb(153,102,255)"
+  color = "rgb(153,102,255)",
+  mainRateFullName = null
 ) {
   const ctx = document.getElementById(assetId).getContext("2d");
   const header = document.getElementById(headerId);
-  const label = `Yield Spread: ${mainRate} - ${spreadRate}`;
+  // When no spread rate, use full name if available; otherwise use short name
+  // When spread rate is selected, use short names for both
+  const label = spreadRate
+    ? `Yield Spread: ${mainRate} - ${spreadRate}`
+    : `Yield: ${mainRateFullName || mainRate}`;
   header.innerText = label;
 
   return new Chart(ctx, {
@@ -307,7 +321,12 @@ function createYieldSpreadChart(
       maintainAspectRatio: false,
       scales: {
         x: { title: { display: true, text: "Date" } },
-        y: { title: { display: true, text: "Spread (bps)" } },
+        y: {
+          title: {
+            display: true,
+            text: spreadRate ? "Spread (bps)" : "Yield (bps)",
+          },
+        },
       },
     },
   });
@@ -332,10 +351,12 @@ populateDropdown(
 );
 populateDropdown("cryptoSelect", dropdownValues.crypto, selectedValues.crypto_name);
 populateDropdown("mainRateSelect", dropdownValues.rates, selectedValues.main_rate);
-populateDropdown(
+populateComparisonDropdown(
   "spreadRateSelect",
   dropdownValues.rates,
-  selectedValues.spread_rate
+  selectedValues.spread_rate,
+  selectedValues.main_rate,
+  "-- Yield Spread --"
 );
 
 // Comparison dropdowns
@@ -369,13 +390,43 @@ populateComparisonDropdown(
 // ==========================================
 
 // Main dropdown handlers
-handleDropdownChange("yieldCurveLocationSelect", "yield_curve_location");
+// Special handler for yield curve location to update main_rate to 10Y for that location
+const yieldCurveLocationSelect = document.getElementById("yieldCurveLocationSelect");
+if (yieldCurveLocationSelect) {
+  yieldCurveLocationSelect.addEventListener("change", (e) => {
+    const selectedLocation = e.target.value;
+    const params = new URLSearchParams(window.location.search);
+    params.set("yield_curve_location", selectedLocation);
+    // Update main_rate to 10Y for the selected location
+    if (LOCATION_TO_10Y[selectedLocation]) {
+      params.set("main_rate", LOCATION_TO_10Y[selectedLocation]);
+    }
+    // Clear spread_rate when location changes
+    params.delete("spread_rate");
+    window.location.search = params.toString();
+  });
+}
 handleDropdownChange("stockSelect", "stock_name");
 handleDropdownChange("fxSelect", "fx_name");
 handleDropdownChange("commoditySelect", "commodity_name");
 handleDropdownChange("cryptoSelect", "crypto_name");
 handleDropdownChange("mainRateSelect", "main_rate");
-handleDropdownChange("spreadRateSelect", "spread_rate");
+// Special handler for spreadRateSelect to also toggle remove button
+const spreadRateSelect = document.getElementById("spreadRateSelect");
+if (spreadRateSelect) {
+  spreadRateSelect.addEventListener("change", (e) => {
+    const selected = e.target.value;
+    const params = new URLSearchParams(window.location.search);
+    if (!selected) {
+      params.delete("spread_rate");
+    } else {
+      params.set("spread_rate", selected);
+    }
+    // Update button visibility before reload
+    toggleRemoveButton("spreadRemoveBtn", selected);
+    window.location.search = params.toString();
+  });
+}
 
 // Comparison dropdown handlers
 handleDropdownChange("stockCompareSelect", "stock_name_compare");
@@ -388,9 +439,13 @@ handleRemoveComparison("stockRemoveBtn", "stock_name_compare");
 handleRemoveComparison("fxRemoveBtn", "fx_name_compare");
 handleRemoveComparison("commodityRemoveBtn", "commodity_name_compare");
 handleRemoveComparison("cryptoRemoveBtn", "crypto_name_compare");
+handleRemoveComparison("spreadRemoveBtn", "spread_rate");
 
 // Toggle remove button visibility
 toggleRemoveButton("stockRemoveBtn", selectedValues.stock_name_compare);
+// For spread_rate, check if it's not null/undefined/empty string
+const hasSpreadRate = selectedValues.spread_rate && selectedValues.spread_rate !== "";
+toggleRemoveButton("spreadRemoveBtn", hasSpreadRate);
 toggleRemoveButton("fxRemoveBtn", selectedValues.fx_name_compare);
 toggleRemoveButton("commodityRemoveBtn", selectedValues.commodity_name_compare);
 toggleRemoveButton("cryptoRemoveBtn", selectedValues.crypto_name_compare);
@@ -458,8 +513,10 @@ createYieldSpreadChart(
   "yieldSpreadChart",
   marketData.spread_rates,
   labels.main_rate,
-  labels.spread_rate,
-  "spreadHeader"
+  labels.spread_rate || null,
+  "spreadHeader",
+  undefined, // color (use default)
+  labels.main_rate_full_name
 );
 
 // ==========================================
@@ -607,7 +664,7 @@ const ZONE_VALUES = {
     'crypto_name': 'BTC',
     'commodity_name': 'Gold',
     'main_rate': 'UST10Y',
-    'spread_rate': 'UST2Y',
+    'spread_rate': null,
     'yield_curve_location': 'United States'
   },
   'FR': {
@@ -616,7 +673,7 @@ const ZONE_VALUES = {
     'crypto_name': 'BTC',
     'commodity_name': 'Gold',
     'main_rate': 'OAT10Y',
-    'spread_rate': 'OAT2Y',
+    'spread_rate': null,
     'yield_curve_location': 'France'
   },
   'JP': {
@@ -625,9 +682,17 @@ const ZONE_VALUES = {
     'crypto_name': 'BTC',
     'commodity_name': 'Gold',
     'main_rate': 'JGB10Y',
-    'spread_rate': 'JGB2Y',
+    'spread_rate': null,
     'yield_curve_location': 'Japan'
   }
+};
+
+// Location to 10Y yield mapping
+const LOCATION_TO_10Y = {
+  'United States': 'UST10Y',
+  'France': 'OAT10Y',
+  'Germany': 'BUND10Y',
+  'Japan': 'JGB10Y'
 };
 
 /**
@@ -644,7 +709,13 @@ function updateZone(zone) {
   const zoneValues = ZONE_VALUES[zone];
   if (zoneValues) {
     Object.keys(zoneValues).forEach(field => {
-      params.set(field, zoneValues[field]);
+      const value = zoneValues[field];
+      // Skip null/undefined values or delete them from params
+      if (value === null || value === undefined) {
+        params.delete(field);
+      } else {
+        params.set(field, value);
+      }
     });
   }
 

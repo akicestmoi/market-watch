@@ -247,7 +247,6 @@ class MarketChartsFrontData(TypedDict):
     crypto_name: str
     commodity_name: str
     main_rate: str
-    spread_rate: str
     stock_chart_duration: ChartDuration
     fx_chart_duration: ChartDuration
     crypto_chart_duration: ChartDuration
@@ -257,6 +256,7 @@ class MarketChartsFrontData(TypedDict):
     fx_name_compare: str
     crypto_name_compare: str
     commodity_name_compare: str
+    spread_rate: Optional[str]
 
 
 class MarketChartsLabels(TypedDict):
@@ -268,6 +268,7 @@ class MarketChartsLabels(TypedDict):
     commodity: Optional[str]
     yield_curve_location: Optional[str]
     main_rate: Optional[str]
+    main_rate_full_name: Optional[str]
     spread_rate: Optional[str]
     stock_name_compare: Optional[str]
     fx_name_compare: Optional[str]
@@ -298,7 +299,9 @@ def get_market_charts_labels(
         ),
         "yield_curve_location": front_data["yield_curve_location"],
         "main_rate": front_data["main_rate"],
-        "spread_rate": front_data["spread_rate"],
+        "main_rate_full_name": _generic_asset_label_getter(
+            "rates", front_data["main_rate"]
+        ),
         "stock_name_compare": _generic_asset_label_getter(
             "stocks", front_data["stock_name_compare"]
         ),
@@ -311,6 +314,7 @@ def get_market_charts_labels(
         "commodity_name_compare": _generic_asset_label_getter(
             "commodity", front_data["commodity_name_compare"]
         ),
+        "spread_rate": front_data["spread_rate"],
     }
 
 
@@ -341,27 +345,47 @@ def get_market_charts_market_data(
         ),
         end_date=reference_date,
     )
-    spread_rate_historical_yield = market_data_services.get_historical_prices(
-        front_data["spread_rate"],
-        start_date=_get_start_date(
-            reference_date, front_data["spread_rates_chart_duration"]
-        ),
-        end_date=reference_date,
-    )
-    spread_rate_df = pd.merge(
-        pd.DataFrame(main_rate_historical_yield),
-        pd.DataFrame(spread_rate_historical_yield),
-        on="price_date",
-        how="left",
-        suffixes=("_current", "_prev"),
-    )
-    spread_rate_df["price"] = (
-        spread_rate_df["price_current"] - spread_rate_df["price_prev"]
-    ) * 100
-    spread_rates = cast(
-        List[HistoricalPrice],
-        spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
-    )
+
+    spread_rate = front_data.get("spread_rate")
+    if spread_rate:
+        spread_rate_historical_yield = market_data_services.get_historical_prices(
+            str(spread_rate),
+            start_date=_get_start_date(
+                reference_date, front_data["spread_rates_chart_duration"]
+            ),
+            end_date=reference_date,
+        )
+        if main_rate_historical_yield and spread_rate_historical_yield:
+            main_df = pd.DataFrame(main_rate_historical_yield)
+            spread_df = pd.DataFrame(spread_rate_historical_yield)
+            spread_rate_df = pd.merge(
+                main_df,
+                spread_df,
+                on="price_date",
+                how="left",
+                suffixes=("_current", "_prev"),
+            )
+            spread_rate_df["price"] = (
+                spread_rate_df["price_current"] - spread_rate_df["price_prev"]
+            ) * 100
+            spread_rates = cast(
+                List[HistoricalPrice],
+                spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
+            )
+        else:
+            spread_rate_df = pd.DataFrame(main_rate_historical_yield)
+            spread_rate_df["price"] = spread_rate_df["price"] * 100
+            spread_rates = cast(
+                List[HistoricalPrice],
+                spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
+            )
+    else:
+        spread_rate_df = pd.DataFrame(main_rate_historical_yield)
+        spread_rate_df["price"] = spread_rate_df["price"] * 100
+        spread_rates = cast(
+            List[HistoricalPrice],
+            spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
+        )
     return {
         "stock_prices": market_data_services.get_historical_prices(
             front_data["stock_name"],
