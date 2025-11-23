@@ -151,3 +151,33 @@ class CsvBulkUpdateAssetsPricesSerializer(serializers.Serializer):
     """Csv Bulk Update Assets Prices Serializer."""
 
     csv_file = serializers.FileField()
+
+
+class IngestHolidaysSerializer(serializers.Serializer):
+    """Ingest Holidays Serializer."""
+
+    date = serializers.DateField(required=False)
+    location = serializers.ChoiceField(choices=LocationChoices.choices, required=False)
+
+
+class ListHolidaysSerializer(serializers.Serializer):
+    """List Holidays Serializer."""
+
+    location = serializers.ChoiceField(choices=LocationChoices.choices, required=False)
+    year = serializers.IntegerField(required=False)
+    months = serializers.CharField(required=False)
+
+    def validate_months(self, value):
+        """Validate months is a valid list of months."""
+        if value:
+            months = value.split(",")
+            for month in months:
+                if not month.isdigit() or int(month) < 1 or int(month) > 12:
+                    raise serializers.ValidationError("Invalid month.")
+        return value
+
+
+class DeleteHolidaysSerializer(serializers.Serializer):
+    """Delete Holidays Serializer."""
+
+    date = serializers.DateField()

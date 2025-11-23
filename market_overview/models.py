@@ -129,3 +129,11 @@ class PriceUpdateLogModel(BaseLogModel):
     market_price = models.ForeignKey(
         "MarketPriceModel", on_delete=models.CASCADE, related_name="price_update_logs"
     )
+
+
+class HolidayModel(BaseModel):
+    """Holiday Model."""
+
+    date = models.DateField()
+    name = models.CharField(max_length=100)
+    location = models.CharField(max_length=100, choices=LocationChoices.choices)

@@ -5,6 +5,7 @@ from typing import Dict, List, Literal, Optional, TypedDict, Union, cast
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
+import market_overview.services.holiday_services as holiday_services
 import market_overview.services.market_data_services as market_data_services
 from central_banks_overview.models import CENTRAL_BANK_LOCATION_MAP, CentralBankChoices
 from central_banks_overview.services.cb_data_services import get_central_bank_data
@@ -30,6 +31,7 @@ from market_overview.models import (
     LocationChoices,
     MarketPriceModel,
 )
+from market_overview.services.holiday_services import HOLIDAY_COUNTRIES
 from market_overview.services.market_data_services import (
     AssetNames,
     HistoricalPrice,
@@ -542,15 +544,16 @@ class UpcomingEventGroup(TypedDict):
     events: List[EconomicEvent]
 
 
-def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
-    """Get economic recap upcoming events from publication schedules."""
+def _get_upcoming_events_from_publication_schedules(
+    start_date: date,
+) -> Dict[str, List[EconomicEvent]]:
+    """Get upcoming events from publication schedules."""
+    events_by_date: Dict[str, List[EconomicEvent]] = {}
     upcoming_schedules = (
-        PublicationScheduleModel.objects.filter(next_publication_date__gte=date.today())
+        PublicationScheduleModel.objects.filter(next_publication_date__gte=start_date)
         .select_related("indicator")
         .order_by("next_publication_date")[:100]
     )
-
-    events_by_date: Dict[str, List[EconomicEvent]] = {}
 
     for schedule in upcoming_schedules:
         publication_date = schedule.current_publication_date
@@ -571,6 +574,12 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
             events_by_date[date_key] = []
         events_by_date[date_key].append(event)
 
+    return events_by_date
+
+
+def _get_upcoming_central_bank_events() -> Dict[str, List[EconomicEvent]]:
+    """Get upcoming central bank events."""
+    events_by_date: Dict[str, List[EconomicEvent]] = {}
     for central_bank_meeting_date in get_central_bank_meeting_dates():
         central_bank = CentralBankChoices(central_bank_meeting_date["central_bank"])
         central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
@@ -587,6 +596,56 @@ def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
         if date_key not in events_by_date:
             events_by_date[date_key] = []
         events_by_date[date_key].append(event)
+
+    return events_by_date
+
+
+def _get_upcoming_holidays_events(start_date: date) -> Dict[str, List[EconomicEvent]]:
+    """Get upcoming holidays events."""
+    events_by_date: Dict[str, List[EconomicEvent]] = {}
+    current_month = start_date.month
+    current_year = start_date.year
+    next_month = current_month + 1 if current_month < 12 else 1
+    next_year = current_year if current_month < 12 else current_year + 1
+
+    for location in HOLIDAY_COUNTRIES:
+        current_month_holidays = holiday_services.get_holidays(
+            location=location,
+            year=current_year,
+            months=[current_month],
+        )
+        next_month_holidays = holiday_services.get_holidays(
+            location=location,
+            year=next_year,
+            months=[next_month],
+        )
+
+        for holiday in list(current_month_holidays) + list(next_month_holidays):
+            holiday_datetime = datetime.combine(holiday.date, datetime.min.time())
+
+            event = EconomicEvent(
+                name=holiday.name,
+                location=str(LocationChoices(holiday.location).label),
+                publication_date=holiday_datetime,
+                time_str="HOLIDAYS",
+            )
+
+            date_key = holiday.date.strftime("%Y-%m-%d")
+            if date_key not in events_by_date:
+                events_by_date[date_key] = []
+            events_by_date[date_key].append(event)
+
+    return events_by_date
+
+
+def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
+    """Get economic recap upcoming events from publication schedules."""
+    events_by_date: Dict[str, List[EconomicEvent]] = {}
+    today = date.today()
+
+    events_by_date.update(_get_upcoming_events_from_publication_schedules(today))
+    events_by_date.update(_get_upcoming_central_bank_events())
+    events_by_date.update(_get_upcoming_holidays_events(today))
 
     upcoming_events: List[UpcomingEventGroup] = []
     for date_key in sorted(events_by_date.keys()):

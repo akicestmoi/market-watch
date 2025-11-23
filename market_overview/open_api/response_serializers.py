@@ -4,6 +4,7 @@ from market_overview.models import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
+    HolidayModel,
     LocationChoices,
     MarketPriceModel,
     PriceSourceChoices,
@@ -112,12 +113,9 @@ class MarketPriceResponseSerializer(serializers.Serializer):
     class Meta:
         model = MarketPriceModel
         fields = [
-            "id",
             "date",
             "price",
             "comment",
-            "date_added",
-            "last_modified",
             "asset",
         ]
 
@@ -128,9 +126,18 @@ class PriceUpdateLogResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceUpdateLogModel
         fields = [
-            "id",
             "market_price_id",
-            "date_added",
-            "last_modified",
             "logs",
+        ]
+
+
+class HolidayResponseSerializer(serializers.ModelSerializer):
+    """Holiday Response Serializer."""
+
+    class Meta:
+        model = HolidayModel
+        fields = [
+            "date",
+            "name",
+            "location",
         ]

@@ -12,6 +12,8 @@ from .views import (
     GetMarketPriceView,
     GetPriceUpdateLogsView,
     GetYieldCurveView,
+    HolidaysDetailsView,
+    IngestHolidaysView,
     IngestMarketPricesView,
     IngestSpecificAssetMarketPricesView,
     ListMarketPricesView,
@@ -35,4 +37,6 @@ urlpatterns = [
     path("prices/bulk-update", BulkUpdateAssetsPricesView.as_view()),
     path("prices/bulk-update-from-csv", CsvBulkUpdateAssetsPricesView.as_view()),
     path("prices/get-price-update-logs", GetPriceUpdateLogsView.as_view()),
+    path("holidays/ingest", IngestHolidaysView.as_view()),
+    path("holidays", HolidaysDetailsView.as_view()),
 ]

@@ -23,6 +23,7 @@ class ApiTags(str, Enum):
     PUBLICATION_SCHEDULE = "Publication Schedule"
     CENTRAL_BANKS = "Central Banks"
     LOGS = "Logs"
+    HOLIDAYS = "Holidays"
 
 
 DEFAULT_ERROR_MESSAGES = {

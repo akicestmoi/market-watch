@@ -3,9 +3,11 @@ from datetime import date
 from celery import shared_task
 from pandas.tseries.offsets import BDay
 
+import market_overview.services.holiday_services as holiday_services
 import market_overview.services.market_data_services as market_data_services
 import market_overview.services.price_ingestion_services as price_ingestion_services
 from core.services import logger
+from market_overview.services.holiday_services import HOLIDAY_COUNTRIES
 
 
 @shared_task
@@ -62,4 +64,27 @@ def scheduled_price_update_logs_cleanup():
             "status": "error",
             "message": f"Error: {str(e)}",
             "date": logs_date.isoformat(),
+        }
+
+
+@shared_task
+def scheduled_holidays_ingestion():
+    """
+    Celery task to ingest holidays.
+    This task will be scheduled to run monthly.
+    """
+    today = date.today()
+    try:
+        for country in HOLIDAY_COUNTRIES:
+            holiday_services.ingest_one_year_holidays(today, country)
+        holiday_services.delete_holidays_before_date(today)
+        return {
+            "status": "success",
+            "message": "Holidays successfully ingested.",
+        }
+    except Exception as e:
+        logger.error(f"Error in holidays ingestion task: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Error: {str(e)}",
         }

@@ -184,6 +184,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "central_banks_overview.tasks.scheduled_stir_futures_price_update_logs_cleanup",
         "schedule": crontab(day_of_month="1", hour="8", minute="0"),
     },
+    "scheduled-holidays-ingestion": {
+        "task": "market_overview.tasks.scheduled_holidays_ingestion",
+        "schedule": crontab(day_of_month="1", hour="8", minute="0"),
+    },
 }
 
 
@@ -243,6 +247,10 @@ SPECTACULAR_SETTINGS = {
         {
             "name": ApiTags.LOGS.value,
             "description": "Endpoints to get change logs",
+        },
+        {
+            "name": ApiTags.HOLIDAYS.value,
+            "description": "Holidays related endpoints",
         },
     ],
 }
