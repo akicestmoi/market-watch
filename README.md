@@ -100,6 +100,7 @@ A Django-based market monitoring application with comprehensive API documentatio
    make clean           # Clean up Docker resources
    make db-export       # Export database to SQL file
    make db-import       # Import database from SQL file (requires SQL_FILE=path)
+   make trigger-task    # Manually trigger a scheduled Celery task (requires TASK=name)
    ```
 
 ## API Documentation
@@ -169,3 +170,73 @@ These tasks clean up old data and maintain database health:
 | CB Meetings & Cleanup | Daily | Weekdays | 8:00 |
 | Logs Cleanup (All) | Monthly | 1st of month | 8:00 |
 | Holidays Ingestion | Monthly | 1st of month | 8:00 |
+
+### Manually Triggering Tasks
+
+You can manually trigger any scheduled task using either the Makefile command or the Django management command:
+
+**Using Makefile (Recommended for Docker):**
+```bash
+# Run task synchronously (direct function call)
+make trigger-task TASK=scheduled_market_data_ingestion
+
+# Run task asynchronously via Celery
+make trigger-task TASK=scheduled_market_data_ingestion ASYNC=1
+```
+
+**Using Django Management Command:**
+```bash
+# Run task synchronously (direct function call)
+python manage.py trigger_task <task_name>
+
+# Run task asynchronously via Celery
+python manage.py trigger_task <task_name> --async
+```
+
+**Available task names:**
+- `scheduled_market_data_ingestion`
+- `scheduled_stir_prices_ingestion`
+- `scheduled_economic_data_and_schedule_update`
+- `scheduled_update_cb_meetings_and_stir_futures_prices_cleanup`
+- `scheduled_price_update_logs_cleanup`
+- `scheduled_stir_futures_price_update_logs_cleanup`
+- `scheduled_economic_data_update_logs_cleanup`
+- `scheduled_holidays_ingestion`
+
+**Examples:**
+
+Using Makefile:
+```bash
+# Trigger market data ingestion synchronously
+make trigger-task TASK=scheduled_market_data_ingestion
+
+# Trigger holidays ingestion asynchronously
+make trigger-task TASK=scheduled_holidays_ingestion ASYNC=1
+
+# Trigger economic data update
+make trigger-task TASK=scheduled_economic_data_and_schedule_update
+```
+
+Using Django management command:
+```bash
+# Trigger market data ingestion synchronously
+python manage.py trigger_task scheduled_market_data_ingestion
+
+# Trigger holidays ingestion asynchronously
+python manage.py trigger_task scheduled_holidays_ingestion --async
+```
+
+**Alternative methods:**
+
+1. **Django Shell:**
+   ```python
+   python manage.py shell
+   >>> from market_overview.tasks import scheduled_market_data_ingestion
+   >>> scheduled_market_data_ingestion.delay()  # Async
+   >>> scheduled_market_data_ingestion()  # Sync
+   ```
+
+2. **Celery CLI (if Celery worker is running):**
+   ```bash
+   celery -A core call market_overview.tasks.scheduled_market_data_ingestion
+   ```

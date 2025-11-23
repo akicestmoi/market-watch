@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "rest_framework",
     "drf_spectacular",
+    "core.apps.CoreConfig",
     "market_overview.apps.MarketOverviewConfig",
     "data_visualization.apps.DataVisualizationConfig",
     "economic_overview.apps.EconomicOverviewConfig",

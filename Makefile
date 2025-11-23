@@ -20,6 +20,7 @@ help:
 	@echo "  clean           - Clean up Docker resources"
 	@echo "  db-export       - Export database to SQL file"
 	@echo "  db-import       - Import database from SQL file (requires SQL_FILE=path)"
+	@echo "  trigger-task    - Manually trigger a scheduled Celery task (requires TASK=name)"
 
 DOCKER_COMPOSE = docker compose -f scripts/docker/docker-compose.yml
 
@@ -125,4 +126,9 @@ db-import:
 		$(RUN_TMP) python scripts/db_management/import_db.py $(SQL_FILE) --no-confirm; \
 	fi
 
-.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker db-export db-import
+# Trigger a scheduled Celery task
+trigger-task:
+	$(if $(TASK),,$(error TASK is required. Example: make trigger-task TASK=scheduled_market_data_ingestion))
+	@$(DOCKER_COMPOSE) exec webapp python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,) || $(RUN_TMP) python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,)
+
+.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker db-export db-import trigger-task
