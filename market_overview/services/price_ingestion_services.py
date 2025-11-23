@@ -14,6 +14,8 @@ import core.services as core_services
 from core.services import fetch_html, logger
 from market_overview.models import (
     AssetModel,
+    HolidayModel,
+    LocationChoices,
     MarketPriceModel,
     PriceSourceChoices,
     PriceUpdateLogModel,
@@ -421,11 +423,26 @@ def _get_jgb_yield_from_bb(target_date: date, ticker: str) -> ScrappingResult:
     return ScrappingResult(price=curve.get(mapping[ticker]), comment="")
 
 
+def _is_holiday_at_location(target_date: date, location: LocationChoices) -> bool:
+    """Check if target date is a holiday at a given location."""
+    return HolidayModel.objects.filter(date=target_date, location=location).exists()
+
+
 def _get_market_data(
     asset: AssetModel,
     target_date: date,
 ) -> MarketData:
     """Get price from scrapping function."""
+    if _is_holiday_at_location(target_date, asset.location):
+        logger.info(
+            f"No price found for {asset.short_name} on {target_date} as it is a bank holiday."
+        )
+        return MarketData(
+            asset=asset,
+            price=None,
+            date=target_date,
+            comment="Bank holiday",
+        )
     scrapping_function = SOURCE_SCRAP_MAP.get(asset.source)
     scrapping_result: ScrappingResult = (
         scrapping_function(target_date, asset.ticker)
