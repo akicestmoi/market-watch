@@ -111,13 +111,61 @@ The application includes comprehensive OpenAPI documentation:
 
 ## Celery Task Scheduling
 
-The application includes automated market data ingestion using Celery and Redis:
+The application includes automated data ingestion and maintenance tasks using Celery and Redis:
 Django Web App ==> Celery Beat (Scheduler) ==> Redis (Broker) ==> Worker Process
 
-### **Scheduled Tasks**
+### Scheduled Tasks Overview
 
-Market data is automatically ingested **3 times daily (Europe/Paris Time)**:
+All scheduled tasks run in **Europe/Paris timezone**. Tasks are organized into two categories:
 
-- **8:00 AM** - Morning market data
-- **2:00 PM** - Afternoon market data
-- **8:00 PM** - Evening market data
+#### **Data Ingestion Tasks** (Daily/Regular - Weekdays Only)
+
+These tasks fetch and ingest data from external sources:
+
+1. **Market Data Ingestion** - Runs **3 times daily** (8:00 AM, 2:00 PM, 8:00 PM)
+   - Ingests asset prices: stocks, FX, crypto, commodities, government bond rates
+   - Task: `market_overview.tasks.scheduled_market_data_ingestion`
+
+2. **STIR Futures Prices Ingestion** - Runs **2 times daily** (8:00 AM, 8:40 PM)
+   - Ingests Short-Term Interest Rate futures prices (FedFunds, ESTR, TONA)
+   - Task: `central_banks_overview.tasks.scheduled_stir_prices_ingestion`
+
+3. **Economic Data and Schedule Update** - Runs **daily** (8:00 AM)
+   - Ingests economic indicators and updates publication schedules
+   - Task: `economic_overview.tasks.scheduled_economic_data_and_schedule_update`
+
+4. **Central Bank Meetings and STIR Futures Cleanup** - Runs **daily** (8:00 AM)
+   - Updates central bank meeting dates
+   - Cleans up old STIR futures prices (keeps last 7 days)
+   - Task: `central_banks_overview.tasks.scheduled_update_cb_meetings_and_stir_futures_prices_cleanup`
+
+#### **Maintenance Tasks** (Monthly - 1st of each month at 8:00 AM)
+
+These tasks clean up old data and maintain database health:
+
+1. **Price Update Logs Cleanup**
+   - Deletes price update logs older than 1 month
+   - Task: `market_overview.tasks.scheduled_price_update_logs_cleanup`
+
+2. **STIR Futures Price Update Logs Cleanup**
+   - Deletes STIR futures price update logs older than 1 month
+   - Task: `central_banks_overview.tasks.scheduled_stir_futures_price_update_logs_cleanup`
+
+3. **Economic Data Update Logs Cleanup**
+   - Deletes economic data update logs older than 1 month
+   - Task: `economic_overview.tasks.scheduled_economic_data_update_logs_cleanup`
+
+4. **Holidays Ingestion**
+   - Ingests holidays for all supported countries (US, FR, DE, JP)
+   - Task: `market_overview.tasks.scheduled_holidays_ingestion`
+
+### Task Schedule Summary
+
+| Task | Frequency | Schedule | Time |
+|------|-----------|----------|------|
+| Market Data Ingestion | 3x daily | Weekdays | 8:00, 14:00, 20:00 |
+| STIR Prices Ingestion | 2x daily | Weekdays | 8:00, 20:40 |
+| Economic Data Update | Daily | Weekdays | 8:00 |
+| CB Meetings & Cleanup | Daily | Weekdays | 8:00 |
+| Logs Cleanup (All) | Monthly | 1st of month | 8:00 |
+| Holidays Ingestion | Monthly | 1st of month | 8:00 |

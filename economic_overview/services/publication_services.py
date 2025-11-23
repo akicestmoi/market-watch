@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -120,3 +120,16 @@ def update_publication_schedules(
         if schedule:
             schedule_not_updated.append(indicator.name)
     return schedule_not_updated
+
+
+def get_publication_schedules_for_dates(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+) -> QuerySet[PublicationScheduleModel, PublicationScheduleModel]:
+    """Get publication schedules, optionally between dates."""
+    queryset = PublicationScheduleModel.objects.all()
+    if start_date:
+        queryset = queryset.filter(current_publication_date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(current_publication_date__lt=end_date)
+    return queryset.all()

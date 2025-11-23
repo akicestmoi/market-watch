@@ -150,8 +150,19 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
+# ============================================================================
 # Celery Beat Schedule (Periodic Tasks)
+# ============================================================================
+# All times are in Europe/Paris timezone (TIME_ZONE setting)
+# ============================================================================
+
 CELERY_BEAT_SCHEDULE = {
+    # ========================================================================
+    # DATA INGESTION TASKS (Daily/Regular)
+    # ========================================================================
+    # These tasks fetch and ingest market data from external sources
+    # Market Data Ingestion - Runs 3 times daily on weekdays
+    # Ingests asset prices (stocks, FX, crypto, commodities, rates)
     "scheduled-market-data-ingestion-morning": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
@@ -164,6 +175,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="20", minute="0"),
     },
+    # STIR Futures Prices Ingestion - Runs 2 times daily on weekdays
+    # Ingests Short-Term Interest Rate futures prices (FedFunds, ESTR, TONA)
     "scheduled-stir-prices-ingestion-morning": {
         "task": "central_banks_overview.tasks.scheduled_stir_prices_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
@@ -172,18 +185,39 @@ CELERY_BEAT_SCHEDULE = {
         "task": "central_banks_overview.tasks.scheduled_stir_prices_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="20", minute="40"),
     },
+    # Economic Data and Schedule Update - Runs daily on weekdays
+    # Ingests economic indicators and updates publication schedules
+    "scheduled-economic-data-and-schedule-update": {
+        "task": "economic_overview.tasks.scheduled_economic_data_and_schedule_update",
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+    },
+    # Central Bank Meetings and STIR Futures Cleanup - Runs daily on weekdays
+    # Updates central bank meeting dates and cleans up old STIR futures prices
     "scheduled-update-cb-meetings-and-stir-futures-prices-cleanup": {
         "task": "central_banks_overview.tasks.scheduled_update_cb_meetings_and_stir_futures_prices_cleanup",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
     },
+    # ========================================================================
+    # MAINTENANCE TASKS (Monthly)
+    # ========================================================================
+    # These tasks clean up old data and maintain database health
+    # All run on the 1st of each month at 8:00 AM
+    # Price Update Logs Cleanup - Deletes logs older than 1 month
     "scheduled-price-update-logs-cleanup": {
         "task": "market_overview.tasks.scheduled_price_update_logs_cleanup",
         "schedule": crontab(day_of_month="1", hour="8", minute="0"),
     },
+    # STIR Futures Price Update Logs Cleanup - Deletes logs older than 1 month
     "scheduled-stir-futures-price-update-logs-cleanup": {
         "task": "central_banks_overview.tasks.scheduled_stir_futures_price_update_logs_cleanup",
         "schedule": crontab(day_of_month="1", hour="8", minute="0"),
     },
+    # Economic Data Update Logs Cleanup - Deletes logs older than 1 month
+    "scheduled-economic-data-update-logs-cleanup": {
+        "task": "economic_overview.tasks.scheduled_economic_data_update_logs_cleanup",
+        "schedule": crontab(day_of_month="1", hour="8", minute="0"),
+    },
+    # Holidays Ingestion - Ingests holidays for all supported countries
     "scheduled-holidays-ingestion": {
         "task": "market_overview.tasks.scheduled_holidays_ingestion",
         "schedule": crontab(day_of_month="1", hour="8", minute="0"),
