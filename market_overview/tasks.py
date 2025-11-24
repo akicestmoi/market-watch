@@ -46,10 +46,11 @@ def scheduled_price_update_logs_cleanup():
     This task will be scheduled to run daily.
     """
     today = date.today()
-    if today.month == 1:
-        logs_date = date(today.year - 1, 12, 1)
-    else:
-        logs_date = date(today.year, today.month - 1, 1)
+    logs_date = (
+        date(today.year - 1, 12, 1)
+        if today.month == 1
+        else date(today.year, today.month - 1, 1)
+    )
     try:
         logger.info(f"Cleaning up price update logs for {logs_date}")
         market_data_services.delete_price_update_logs_before_date(logs_date)
