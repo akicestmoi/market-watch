@@ -39,3 +39,19 @@ class SpecificEconomicDataIngestionSerializer(serializers.ListSerializer):
     """Specific Economic Data Ingestion Serializer."""
 
     child = SpecificEconomicDataIngestionSerializerItem()
+
+
+class ListEconomicDataSerializer(serializers.Serializer):
+    """List Economic Data Serializer."""
+
+    indicator_names = serializers.ListField(
+        child=serializers.CharField(), required=False, default=[]
+    )
+    period = serializers.CharField(required=False)
+
+
+class DeleteEconomicDataSerializer(serializers.Serializer):
+    """Delete Economic Data Serializer."""
+
+    indicator_name = serializers.CharField(required=True)
+    period = serializers.CharField(required=True)

@@ -55,8 +55,16 @@ def _get_data_from_insee(
     Source: https://bdm.insee.fr/
     Docs: https://www.insee.fr/fr/statistiques/serie/{ticker}
     """
-    INSEE_URL = f"https://bdm.insee.fr/series/{ticker}/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=1977&periodeFin=10&anneeFin=2025&revision=sansrevisions"
-    response = requests.get(INSEE_URL)
+    params = {
+        "lang": "fr",
+        "ordre": "antechronologique",
+        "transposition": "donneescolonne",
+        "anneeDebut": "1977",
+        "anneeFin": str(date.today().year),
+        "revision": "sansrevisions",
+    }
+    INSEE_URL = f"https://bdm.insee.fr/series/{ticker}/csv"
+    response = requests.get(INSEE_URL, params=params)
     if response.status_code >= 400:
         logger.warning(f"Error scraping INSEE data: {response.text}")
         return ScrappingResult(period=None, data_value=None, comment=response.text)

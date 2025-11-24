@@ -1,5 +1,10 @@
 from rest_framework import serializers
 
+from economic_overview.models import (
+    EconomicDataModel,
+    EconomicIndicatorInformationModel,
+)
+
 
 class UpdatePublicationScheduleResponseSerializer(serializers.Serializer):
     """Update Publication Schedule Response Serializer."""
@@ -31,3 +36,35 @@ class SpecificEconomicDataIngestionResponseSerializer(serializers.Serializer):
     indicator_not_updated = serializers.ListField(
         child=SpecificEconomicDataIngestionResponseSerializerItem()
     )
+
+
+class EconomicIndicatorInformationSerializer(serializers.ModelSerializer):
+    """Economic Indicator Information Serializer."""
+
+    class Meta:
+        model = EconomicIndicatorInformationModel
+        fields = [
+            "name",
+            "location",
+            "category",
+            "type",
+            "technical_name",
+            "frequency",
+            "source",
+            "ticker",
+        ]
+
+
+class EconomicDataResponseSerializer(serializers.ModelSerializer):
+    """Economic Data Response Serializer."""
+
+    indicator = EconomicIndicatorInformationSerializer(read_only=True)
+
+    class Meta:
+        model = EconomicDataModel
+        fields = [
+            "indicator",
+            "period",
+            "data_value",
+            "comment",
+        ]

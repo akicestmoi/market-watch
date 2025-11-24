@@ -22,12 +22,15 @@ from economic_overview.models import (
     PublicationScheduleModel,
 )
 from economic_overview.open_api.request_serializers import (
+    DeleteEconomicDataSerializer,
     EconomicDataIngestionSerializer,
+    ListEconomicDataSerializer,
     SpecificEconomicDataIngestionSerializer,
     UpdatePublicationScheduleSerializer,
 )
 from economic_overview.open_api.response_serializers import (
     EconomicDataIngestionResponseSerializer,
+    EconomicDataResponseSerializer,
     SpecificEconomicDataIngestionResponseSerializer,
     UpdatePublicationScheduleResponseSerializer,
 )
@@ -209,4 +212,56 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
                 }
             ).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class EconomicDataDetailedView(EconomicOverviewBaseView):
+    """Economic Data Detailed APIView."""
+
+    @open_api(
+        tags=[ApiTags.ECONOMIC_DATA],
+        summary="Get Economic Data Detailed",
+        description="Get economic data detailed for a specific indicator and period.",
+        request_serializer=ListEconomicDataSerializer,
+        response=OkOpenApiResponse(EconomicDataResponseSerializer),
+        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
+    )
+    def get(self, validated_data: dict) -> Response:
+        """List economic data for a specific indicator and period."""
+        indicator_names: List[str] = validated_data.get("indicator_names", [])
+        period: Optional[str] = validated_data.get("period")
+
+        if indicator_names:
+            validation_error = self._validate_indicators_exist(indicator_names)
+            if validation_error:
+                return validation_error
+
+        economic_data = economic_data_services.get_economic_data(
+            indicator_names, period
+        )
+        return Response(
+            data=EconomicDataResponseSerializer(economic_data, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @open_api(
+        tags=[ApiTags.ECONOMIC_DATA],
+        summary="Delete Economic Data",
+        description="Delete economic data",
+        request_serializer=DeleteEconomicDataSerializer,
+        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
+    )
+    def delete(self, validated_data: dict) -> Response:
+        """Delete economic data for a specific indicator and period."""
+        indicator_name: str = validated_data["indicator_name"]
+        period: str = validated_data["period"]
+
+        validation_error = self._validate_indicators_exist([indicator_name])
+        if validation_error:
+            return validation_error
+
+        economic_data_services.delete_economic_data(indicator_name, period)
+        return Response(
+            data={"message": "Economic data successfully deleted"},
+            status=status.HTTP_200_OK,
         )

@@ -87,15 +87,21 @@ def scheduled_update_cb_meetings_and_stir_futures_prices_cleanup():
             meeting_date = cb_meetings_services.get_central_bank_next_meeting_date(
                 central_bank
             )
-            if meeting_date and meeting_date < datetime.now(timezone.utc):
-                price_date = date.today() - timedelta(days=DAYS_TO_KEEP)
-                results.append(f"{central_bank.value} - {price_date.isoformat()}")
+            if not meeting_date or meeting_date >= datetime.now(timezone.utc):
                 logger.info(
-                    f"Cleaning up stir futures prices for Central Bank: {central_bank.label} on {price_date}"
+                    f"No central bank meeting date found for Central Bank: {central_bank.label}. Skipping cleanup."
                 )
-                stir_futures_services.delete_stir_futures_prices_before_date(
-                    central_bank, price_date
-                )
+                continue
+
+            price_date = date.today() - timedelta(days=DAYS_TO_KEEP)
+            results.append(f"{central_bank.value} - {price_date.isoformat()}")
+            logger.info(
+                f"Cleaning up stir futures prices for Central Bank: {central_bank.label} on {price_date}"
+            )
+            stir_futures_services.delete_stir_futures_prices_before_date(
+                central_bank, price_date
+            )
+
         if results:
             cb_meetings_services.ingest_central_bank_meeting_dates()
             message = f"Central bank meetings updated successfully for {results}"

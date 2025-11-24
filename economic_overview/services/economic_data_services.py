@@ -5,6 +5,7 @@ from django.db.models import QuerySet
 
 import economic_overview.services.publication_services as publication_services
 from economic_overview.models import (
+    EconomicDataModel,
     EconomicDataUpdateLogModel,
     EconomicIndicatorInformationModel,
     PublicationScheduleModel,
@@ -63,6 +64,25 @@ def identify_not_existing_indicators(indicator_names: List[str]) -> List[str]:
     return [
         name for name in indicator_names if not check_economic_indicator_existence(name)
     ]
+
+
+def get_economic_data(
+    indicator_names: List[str] = [], period: Optional[str] = None
+) -> QuerySet[EconomicDataModel]:
+    """Get economic data for a specific indicator and period."""
+    query = EconomicDataModel.objects.all()
+    if indicator_names:
+        query = query.filter(indicator__name__in=indicator_names)
+    if period:
+        query = query.filter(period=period)
+    return query
+
+
+def delete_economic_data(indicator_name: str, period: Optional[str] = None):
+    """Delete economic data for a specific indicator and period."""
+    EconomicDataModel.objects.filter(
+        indicator__name=indicator_name, period=period
+    ).delete()
 
 
 def delete_economic_data_update_logs_before_date(logs_date: date):

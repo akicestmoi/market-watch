@@ -29,7 +29,9 @@ def scheduled_economic_data_and_schedule_update():
                 "date": today.isoformat(),
             }
 
-        logger.info(f"Ingesting economic data for {today}")
+        logger.info(
+            f"Ingesting economic data: {[indicator.name for indicator in economic_indicators_to_update]} for {today}"
+        )
         data_ingestion_services.ingest_economic_data(economic_indicators_to_update)
         logger.info("Updating publication schedules.")
         publication_services.update_publication_schedules(economic_indicators_to_update)

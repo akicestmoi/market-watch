@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import Dict, List, Literal, Optional, TypedDict, Union, cast
 
@@ -621,7 +621,9 @@ def _get_upcoming_holidays_events(start_date: date) -> Dict[str, List[EconomicEv
         )
 
         for holiday in list(current_month_holidays) + list(next_month_holidays):
-            holiday_datetime = datetime.combine(holiday.date, datetime.min.time())
+            holiday_datetime = datetime.combine(
+                holiday.date, datetime.min.time()
+            ).replace(tzinfo=timezone.utc)
 
             event = EconomicEvent(
                 name=holiday.name,
@@ -638,15 +640,37 @@ def _get_upcoming_holidays_events(start_date: date) -> Dict[str, List[EconomicEv
     return events_by_date
 
 
+def _merge_events_by_date(
+    base: Dict[str, List[EconomicEvent]],
+    new: Dict[str, List[EconomicEvent]],
+) -> Dict[str, List[EconomicEvent]]:
+    """Merge events dictionaries by extending lists when keys exist.
+
+    Args:
+        base: Base dictionary to merge into
+        new: New dictionary to merge from
+
+    Returns:
+        Merged dictionary with lists extended for existing keys
+    """
+    for date_key, events in new.items():
+        if date_key in base:
+            base[date_key].extend(events)
+        else:
+            base[date_key] = events
+    return base
+
+
 def get_economic_recap_upcoming_events() -> List[UpcomingEventGroup]:
     """Get economic recap upcoming events from publication schedules."""
     events_by_date: Dict[str, List[EconomicEvent]] = {}
     today = date.today()
 
-    events_by_date.update(_get_upcoming_events_from_publication_schedules(today))
-    events_by_date.update(_get_upcoming_central_bank_events())
-    events_by_date.update(_get_upcoming_holidays_events(today))
-
+    _merge_events_by_date(
+        events_by_date, _get_upcoming_events_from_publication_schedules(today)
+    )
+    _merge_events_by_date(events_by_date, _get_upcoming_central_bank_events())
+    _merge_events_by_date(events_by_date, _get_upcoming_holidays_events(today))
     upcoming_events: List[UpcomingEventGroup] = []
     for date_key in sorted(events_by_date.keys()):
         events_for_date = sorted(
