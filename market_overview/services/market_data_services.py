@@ -14,6 +14,7 @@ from market_overview.models import (
     PriceSourceChoices,
     PriceUpdateLogModel,
 )
+from market_overview.services.price_ingestion_services import SpecialComment
 
 
 class PriceChange(TypedDict):
@@ -82,6 +83,40 @@ def get_all_asset_prices_for_date(price_date: date) -> List[MarketPriceModel]:
     return list(
         MarketPriceModel.objects.filter(date=price_date).select_related("asset")
     )
+
+
+def _get_last_market_price_without_holidays_before_date(
+    asset: AssetModel, date: date
+) -> MarketPriceModel:
+    """Get last market price without holidays before a given date."""
+    market_prices_without_holidays = (
+        MarketPriceModel.objects.filter(asset=asset, date__lte=date)
+        .exclude(comment=SpecialComment.BANK_HOLIDAY)
+        .order_by("-date")
+        .first()
+    )
+    if not market_prices_without_holidays:
+        raise ValueError(
+            f"No market price found for {asset.short_name} without holidays."
+        )
+    return market_prices_without_holidays
+
+
+def get_all_asset_prices_for_date_without_holidays(
+    price_date: date,
+) -> List[MarketPriceModel]:
+    queryset = MarketPriceModel.objects.filter(date=price_date).select_related("asset")
+    market_prices_without_holidays = []
+    for market_price in queryset:
+        if market_price.comment == SpecialComment.BANK_HOLIDAY:
+            market_prices_without_holidays.append(
+                _get_last_market_price_without_holidays_before_date(
+                    market_price.asset, price_date
+                )
+            )
+        else:
+            market_prices_without_holidays.append(market_price)
+    return market_prices_without_holidays
 
 
 def calculate_price_change(

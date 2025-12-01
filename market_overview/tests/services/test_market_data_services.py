@@ -1,7 +1,9 @@
 from datetime import date, timedelta
 
+import pytest
 from django.test import TestCase
 
+import core.services as core_services
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -12,9 +14,11 @@ from market_overview.models import (
 from market_overview.services.market_data_services import (
     calculate_price_change,
     get_all_asset_prices_for_date,
+    get_all_asset_prices_for_date_without_holidays,
     get_historical_prices,
     get_yield_curve,
 )
+from market_overview.services.price_ingestion_services import SpecialComment
 
 
 class TestMarketDataServices(TestCase):
@@ -443,4 +447,269 @@ class TestMarketDataServices(TestCase):
 
         assert result == [
             {"maturity": 10.0, "price": 2.0, "short_name": "RATES"},
+        ]
+
+    def test_get_all_asset_prices_for_date_without_holidays_no_holidays(self):
+        """
+        GIVEN market prices for a date without any bank holidays
+        WHEN getting asset prices for that date without holidays
+        THEN all market prices for that date are returned
+        """
+        result = get_all_asset_prices_for_date_without_holidays(
+            price_date=self.price_date
+        )
+        result_dict = [price.convert_to_dict() for price in result]
+
+        expected = core_services.convert_query_to_dictionary_list(
+            queryset=MarketPriceModel.objects.filter(date=self.price_date)
+        )
+
+        assert len(result_dict) == len(expected)
+        assert result_dict == expected
+
+    def test_get_all_asset_prices_for_date_without_holidays_with_holiday(self):
+        """
+        GIVEN market prices for a date where one asset has a bank holiday
+        WHEN getting asset prices for that date without holidays
+        THEN the holiday price is replaced with the last non-holiday price
+        before or on that date
+        """
+        holiday_date = self.price_date
+        previous_non_holiday_date = self.previous_date
+        earlier_date = self.previous_date - timedelta(days=5)
+        future_date = self.price_date + timedelta(days=5)
+
+        second_asset = AssetModel.objects.create(
+            short_name="SECOND_ASSET",
+            full_name="Second Asset",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=self.location,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=earlier_date,
+            price=50.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=previous_non_holiday_date,
+            price=60.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=holiday_date,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=future_date,
+            price=80.0,
+        )
+
+        result = [
+            price.convert_to_dict()
+            for price in get_all_asset_prices_for_date_without_holidays(
+                price_date=holiday_date
+            )
+        ]
+
+        assert result == [
+            {
+                "asset_id": 1,
+                "asset_short_name": "TEST",
+                "date": holiday_date,
+                "price": 100.0,
+                "comment": "",
+            },
+            {
+                "asset_id": 2,
+                "asset_short_name": "SECOND_ASSET",
+                "date": previous_non_holiday_date,
+                "price": 60.0,
+                "comment": "",
+            },
+        ]
+
+    def test_get_all_asset_prices_for_date_without_holidays_multiple_holidays(self):
+        """
+        GIVEN market prices for a date where multiple assets have bank holidays
+        WHEN getting asset prices for that date without holidays
+        THEN all holiday prices are replaced with their respective last non-holiday prices
+        """
+        holiday_date = self.price_date
+        previous_non_holiday_date = self.previous_date
+        earlier_date = self.previous_date - timedelta(days=5)
+
+        second_asset = AssetModel.objects.create(
+            short_name="SECOND_ASSET",
+            full_name="Second Asset",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=self.location,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=previous_non_holiday_date,
+            price=60.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=holiday_date,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+
+        third_asset = AssetModel.objects.create(
+            short_name="THIRD_ASSET",
+            full_name="Third Asset",
+            asset_id=3,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=self.location,
+        )
+        MarketPriceModel.objects.create(
+            asset=third_asset,
+            date=earlier_date,
+            price=70.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=third_asset,
+            date=holiday_date,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+
+        result = [
+            price.convert_to_dict()
+            for price in get_all_asset_prices_for_date_without_holidays(
+                price_date=holiday_date
+            )
+        ]
+
+        assert result == [
+            {
+                "asset_id": 1,
+                "asset_short_name": "TEST",
+                "date": holiday_date,
+                "price": 100.0,
+                "comment": "",
+            },
+            {
+                "asset_id": 2,
+                "asset_short_name": "SECOND_ASSET",
+                "date": previous_non_holiday_date,
+                "price": 60.0,
+                "comment": "",
+            },
+            {
+                "asset_id": 3,
+                "asset_short_name": "THIRD_ASSET",
+                "date": earlier_date,
+                "price": 70.0,
+                "comment": "",
+            },
+        ]
+
+    def test_get_all_asset_prices_for_date_without_holidays_error_raised(self):
+        """
+        GIVEN an asset that only has bank holiday prices on or before the date
+        WHEN getting asset prices for that date without holidays
+        THEN a ValueError is raised
+        """
+        holiday_date = self.price_date
+        future_date = self.price_date + timedelta(days=5)
+        second_asset = AssetModel.objects.create(
+            short_name="SECOND_ASSET",
+            full_name="Second Asset",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=self.location,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=holiday_date,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=future_date,
+            price=80.0,
+        )
+
+        with pytest.raises(ValueError) as exc_info:
+            get_all_asset_prices_for_date_without_holidays(price_date=holiday_date)
+
+        assert "No market price found for SECOND_ASSET without holidays" in str(
+            exc_info.value
+        )
+
+    def test_get_all_asset_prices_for_date_without_holidays_empty_date(self):
+        """
+        GIVEN a date with no market prices
+        WHEN getting asset prices for that date without holidays
+        THEN an empty list is returned
+        """
+        empty_date = self.price_date + timedelta(days=10)
+
+        result = get_all_asset_prices_for_date_without_holidays(price_date=empty_date)
+
+        assert result == []
+
+    def test_get_all_asset_prices_for_date_without_holidays_mixed_comments(self):
+        """
+        GIVEN market prices for a date with mixed comments
+        WHEN getting asset prices for that date without holidays
+        THEN only bank holiday prices are replaced, regular prices remain unchanged
+        """
+        holiday_date = self.price_date
+        previous_non_holiday_date = self.previous_date
+
+        second_asset = AssetModel.objects.create(
+            short_name="SECOND_ASSET",
+            full_name="Second Asset",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=self.location,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=previous_non_holiday_date,
+            price=60.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=second_asset,
+            date=holiday_date,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+
+        result = [
+            price.convert_to_dict()
+            for price in get_all_asset_prices_for_date_without_holidays(
+                price_date=holiday_date
+            )
+        ]
+
+        assert result == [
+            {
+                "asset_id": 1,
+                "asset_short_name": "TEST",
+                "date": holiday_date,
+                "price": 100.0,
+                "comment": "",
+            },
+            {
+                "asset_id": 2,
+                "asset_short_name": "SECOND_ASSET",
+                "date": previous_non_holiday_date,
+                "price": 60.0,
+                "comment": "",
+            },
         ]

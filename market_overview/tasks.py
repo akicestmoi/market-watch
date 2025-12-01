@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from celery import shared_task
 from pandas.tseries.offsets import BDay
@@ -75,10 +75,11 @@ def scheduled_holidays_ingestion():
     This task will be scheduled to run monthly.
     """
     today = date.today()
+    before_date = today - timedelta(days=30)
     try:
         for country in HOLIDAY_COUNTRIES:
             holiday_services.ingest_one_year_holidays(today, country)
-        holiday_services.delete_holidays_before_date(today)
+        holiday_services.delete_holidays_before_date(before_date)
         return {
             "status": "success",
             "message": "Holidays successfully ingested.",

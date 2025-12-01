@@ -60,8 +60,10 @@ def market_recap_view(request):
         )
         return render(request, "data_visualization/market_recap.html", base_context)
 
-    previous_market_prices = market_data_services.get_all_asset_prices_for_date(
-        previous_date
+    previous_market_prices = (
+        market_data_services.get_all_asset_prices_for_date_without_holidays(
+            previous_date
+        )
     )
     if not previous_market_prices:
         base_context["error_message"] = (
