@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.test import TestCase
-from freezegun import freeze_time
+from freezegun import freeze_time  # type: ignore[reportMissingImports]
 from rest_framework import status
 from rest_framework.test import APIClient
 

@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-import pytest
+import pytest  # type: ignore[reportMissingImports]
 from django.test import TestCase
 
 import core.services as core_services

@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 
-import pytest
+import pytest  # type: ignore[reportMissingImports]
 from django.test import TestCase
 
 from core.services import convert_query_to_dictionary_list
