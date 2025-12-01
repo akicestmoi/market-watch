@@ -1,0 +1,145 @@
+<message:GenericData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:generic="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic" xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:common="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common" xsi:schemaLocation="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common https://registry.sdmx.org/schemas/v2_1/SDMXCommon.xsd http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message https://registry.sdmx.org/schemas/v2_1/SDMXMessage.xsd http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic https://registry.sdmx.org/schemas/v2_1/SDMXDataGeneric.xsd">
+	<message:Header>
+		<message:ID>BBSSY_D_REN_EUR_A607_000000WT7070_A</message:ID>
+		<message:Test>false</message:Test>
+		<message:Prepared>2025-11-27T12:26:35+01:00</message:Prepared>
+		<message:Sender id="BBK">
+			<common:Name xml:lang="de">Deutsche Bundesbank</common:Name>
+			<message:Contact>
+				<message:Email>presse-information@bundesbank.de</message:Email>
+			</message:Contact>
+		</message:Sender>
+		<message:Structure structureID="BBK_SESY" dimensionAtObservation="TIME_PERIOD">
+			<common:Structure>
+				<URN>urn:sdmx:org.sdmx.infomodel.datastructure.DataStructure=BBK:BBK_SESY(1.0)</URN>
+			</common:Structure>
+		</message:Structure>
+	</message:Header>
+	<message:DataSet structureRef="BBK_SESY" setID="BBSSY" action="Replace" validFromDate="2025-11-27T12:26:35.864+01:00">
+		<generic:Series>
+			<generic:SeriesKey>
+				<generic:Value id="BBK_STD_FREQ" value="D"/>
+				<generic:Value id="BBK_SEIS_ITEM" value="REN"/>
+				<generic:Value id="BBK_STD_CURRENCY" value="EUR"/>
+				<generic:Value id="BBK_SEIS_SECURITY_CLASS" value="A607"/>
+				<generic:Value id="BBK_SEIS_ISIN" value="000000WT7070"/>
+				<generic:Value id="BBK_SEIS_RATING" value="A"/>
+			</generic:SeriesKey>
+			<generic:Attributes>
+				<generic:Value id="TIME_FORMAT" value="P1D"/>
+				<generic:Value id="BBK_DECIMALS" value="2"/>
+				<generic:Value id="BBK_ID" value="BBSSY.D.REN.EUR.A607.000000WT7070.A"/>
+				<generic:Value id="BBK_UNIT" value="PROZENT"/>
+				<generic:Value id="BBK_UNIT_MULT" value="0"/>
+				<generic:Value id="BBK_TITLE_ENG" value="Daily yield of the current 7 year federal bond"/>
+				<generic:Value id="WEB_CATEGORY" value="ZRWR"/>
+				<generic:Value id="BBK_COMM_GEN" value="ISIN DE000BU27014 seit dem 27.08.2025"/>
+			</generic:Attributes>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-12"/>
+				<generic:ObsValue value="-0.61"/>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-13"/>
+				<generic:ObsValue value="-0.64"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-5.4"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-14"/>
+				<generic:ObsValue value="-0.66"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-1.9"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-15"/>
+				<generic:ObsValue value="-0.66"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-0.8"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-16"/>
+				<generic:Attributes>
+					<generic:Value id="OBS_STATUS" value="K"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-17"/>
+				<generic:Attributes>
+					<generic:Value id="OBS_STATUS" value="K"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-18"/>
+				<generic:ObsValue value="-0.66"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-0.5"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-19"/>
+				<generic:ObsValue value="-0.58"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="12.2"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-20"/>
+				<generic:ObsValue value="-0.56"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="2.9"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-21"/>
+				<generic:ObsValue value="-0.58"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-1.9"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-22"/>
+				<generic:ObsValue value="-0.60"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-4.3"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-23"/>
+				<generic:Attributes>
+					<generic:Value id="OBS_STATUS" value="K"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-24"/>
+				<generic:Attributes>
+					<generic:Value id="OBS_STATUS" value="K"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-25"/>
+				<generic:ObsValue value="-0.59"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="2.2"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-26"/>
+				<generic:ObsValue value="-0.54"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="8.3"/>
+				</generic:Attributes>
+			</generic:Obs>
+			<generic:Obs>
+				<generic:ObsDimension value="2020-05-27"/>
+				<generic:ObsValue value="-0.56"/>
+				<generic:Attributes>
+					<generic:Value id="BBK_DIFF" value="-3.2"/>
+				</generic:Attributes>
+			</generic:Obs>
+		</generic:Series>
+	</message:DataSet>
+</message:GenericData>

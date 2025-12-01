@@ -65,21 +65,6 @@ class SpecificAssetMarketPriceIngestionSerializer(serializers.Serializer):
         return attrs
 
 
-class CalculatePriceDiffSerializer(serializers.Serializer):
-    """Calculate Price Diff Serializer."""
-
-    reference_date = serializers.DateField()
-    previous_date = serializers.DateField()
-
-    def validate(self, attrs):
-        """Validate that reference_date is greater than previous_date."""
-        if attrs.get("reference_date") <= attrs.get("previous_date"):
-            raise serializers.ValidationError(
-                "reference_date must be greater than previous_date."
-            )
-        return attrs
-
-
 class GetMarketPriceSerializer(serializers.Serializer):
     """Get Market Price Serializer."""
 
@@ -91,32 +76,6 @@ class ListMarketPricesSerializer(serializers.Serializer):
     """List Market Prices Serializer."""
 
     date = serializers.DateField()
-
-
-class GetHistoricalPricesSerializer(serializers.Serializer):
-    """Get Historical Prices Serializer."""
-
-    short_name = serializers.CharField()
-    start_date = serializers.DateField(required=False)
-    end_date = serializers.DateField(required=False)
-
-    def validate(self, attrs):
-        """Validate that end_date is greater than start_date."""
-        start_date = attrs.get("start_date")
-        end_date = attrs.get("end_date")
-
-        if start_date and end_date and start_date > end_date:
-            raise serializers.ValidationError(
-                "end_date must be greater than start_date"
-            )
-        return attrs
-
-
-class GetYieldCurveSerializer(serializers.Serializer):
-    """Get Yield Curve Serializer."""
-
-    date = serializers.DateField()
-    location = serializers.ChoiceField(choices=LocationChoices.choices)
 
 
 class GetPriceUpdateLogsSerializer(serializers.Serializer):

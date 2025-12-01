@@ -155,7 +155,7 @@ def _parse_central_bank_rate_from_table(table) -> ScrappingResult:
 def scrap_from_global_rates(
     target_date: Optional[date], ticker: str
 ) -> ScrappingResult:
-    """Scrape rates from GlobalRates.
+    """Scrap rates from GlobalRates.
 
     Source: https://www.global-rates.com/en/
     """
@@ -288,9 +288,15 @@ def get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
     ].reset_index()
     if not closing_price_series.empty:
         closing_price_str = closing_price_series.loc[0, "obs_value"]
-        return ScrappingResult(
-            price=_parse_str_decimals_to_float(str(closing_price_str)), comment=""
-        )
+        try:
+            return ScrappingResult(
+                price=_parse_str_decimals_to_float(str(closing_price_str)), comment=""
+            )
+        except ValueError:
+            return ScrappingResult(
+                price=None,
+                comment=f"Could not convert rate to float: {closing_price_str}",
+            )
     return ScrappingResult(price=None, comment="Webstat rate not found.")
 
 
@@ -505,5 +511,6 @@ def ingest_market_data(
                 "price": data["price"],
                 "comment": data["comment"],
             },
+            none_skip_fields=["price"],
         )
     return asset_not_updated

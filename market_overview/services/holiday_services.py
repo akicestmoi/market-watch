@@ -11,6 +11,14 @@ HOLIDAY_COUNTRIES = [LocationChoices.US, LocationChoices.FR, LocationChoices.JP]
 HOLIDAY_API_URL = "https://date.nager.at/api/v3/publicholidays/"
 
 
+def _call_holiday_api(year: int, location: LocationChoices) -> List[dict]:
+    """Call the holiday API for a given year and location."""
+    url = f"{HOLIDAY_API_URL}{year}/{location.value}"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
 def _ingest_holidays(
     year: int,
     location: LocationChoices,
@@ -18,11 +26,8 @@ def _ingest_holidays(
     filter_end_date: Optional[date],
 ):
     """Ingest holidays for a given country code."""
-    url = f"{HOLIDAY_API_URL}{year}/{location.value}"
-    response = requests.get(url)
-    response.raise_for_status()
-
-    for holiday in response.json():
+    data = _call_holiday_api(year, location)
+    for holiday in data:
         holiday_date = datetime.strptime(holiday["date"], "%Y-%m-%d").date()
         if filter_start_date and holiday_date < filter_start_date:
             continue
@@ -37,7 +42,7 @@ def _ingest_holidays(
 
 def ingest_one_year_holidays(holiday_start_date: date, location: LocationChoices):
     """Ingest one year of holidays for a given country code."""
-    holiday_end_date = holiday_start_date + timedelta(days=366)
+    holiday_end_date = holiday_start_date + timedelta(days=364)
     holiday_years = set([holiday_start_date.year, holiday_end_date.year])
 
     for year in holiday_years:

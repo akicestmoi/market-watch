@@ -112,9 +112,13 @@ class MarketPriceModel(BaseModel):
     price = models.FloatField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True, default="")
 
-    def convert_to_dict(self, remove_foreign_key: bool = False) -> dict:
+    def convert_to_dict(
+        self, remove_foreign_key: bool = False, remove_auto_fields: bool = True
+    ) -> dict:
         """Override convert_to_dict to include asset identifiers."""
-        data = super().convert_to_dict(remove_foreign_key=remove_foreign_key)
+        data = super().convert_to_dict(
+            remove_foreign_key=remove_foreign_key, remove_auto_fields=remove_auto_fields
+        )
         asset = getattr(self, "asset", None)
         if asset:
             data["asset_id"] = asset.asset_id

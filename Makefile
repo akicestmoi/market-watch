@@ -16,11 +16,13 @@ help:
 	@echo "  collectstatic   - Collect static files"
 	@echo "  celery-beat     - View Celery beat scheduler logs"
 	@echo "  celery-worker   - View Celery worker logs"
-	@echo "  test            - Run tests"
+	@echo "  test            - Run all tests (pytest)"
 	@echo "  clean           - Clean up Docker resources"
 	@echo "  db-export       - Export database to SQL file"
 	@echo "  db-import       - Import database from SQL file (requires SQL_FILE=path)"
 	@echo "  trigger-task    - Manually trigger a scheduled Celery task (requires TASK=name)"
+	@echo "  test-coverage   - Run tests with coverage report (HTML + terminal)"
+	@echo "  test-app        - Run tests for a specific app (requires APP=name, uses pytest)"
 
 DOCKER_COMPOSE = docker compose -f scripts/docker/docker-compose.yml
 
@@ -88,7 +90,16 @@ collectstatic:
 
 # Run tests
 test:
-	$(DOCKER_COMPOSE) exec webapp python manage.py test
+	$(DOCKER_COMPOSE) exec webapp python -m pytest --exitfirst
+
+# Run tests with coverage report
+test-coverage:
+	$(DOCKER_COMPOSE) exec webapp python -m pytest --cov --cov-report=term --cov-report=html
+
+# Run tests for a specific app
+test-app:
+	$(if $(APP),,$(error APP is required. Example: make test-app APP=market_overview))
+	$(DOCKER_COMPOSE) exec webapp python -m pytest $(APP)/tests
 
 # Clean up Docker resources
 clean:
@@ -131,4 +142,4 @@ trigger-task:
 	$(if $(TASK),,$(error TASK is required. Example: make trigger-task TASK=scheduled_market_data_ingestion))
 	@$(DOCKER_COMPOSE) exec webapp python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,) || $(RUN_TMP) python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,)
 
-.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test clean reset celery-beat celery-worker db-export db-import trigger-task
+.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test test-coverage test-app clean reset celery-beat celery-worker db-export db-import trigger-task

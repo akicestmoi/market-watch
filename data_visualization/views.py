@@ -4,10 +4,13 @@ from datetime import date, datetime
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
-import data_visualization.services.visualization_services as data_visualization_services
+import data_visualization.services.central_bank_recap_services as central_bank_recap_services
+import data_visualization.services.economic_recap_services as economic_recap_services
+import data_visualization.services.market_chart_services as market_chart_services
+import data_visualization.services.market_recap_services as market_recap_services
 import market_overview.services.market_data_services as market_data_services
 from central_banks_overview.models import CentralBankChoices
-from data_visualization.services.visualization_services import (
+from data_visualization.services.market_chart_services import (
     ChartDuration,
     MarketChartsFrontData,
 )
@@ -66,7 +69,7 @@ def market_recap_view(request):
         )
         return render(request, "data_visualization/market_recap.html", base_context)
 
-    data_to_display = data_visualization_services.format_data_for_market_recap_display(
+    data_to_display = market_recap_services.format_data_for_market_recap_display(
         reference_market_prices, previous_market_prices
     )
 
@@ -142,15 +145,15 @@ def market_charts_view(request):
     }
 
     # Dropdown values
-    dropdown_values = data_visualization_services.get_market_charts_dropdown_values()
+    dropdown_values = market_chart_services.get_market_charts_dropdown_values()
 
     # Get Label
-    labels = data_visualization_services.get_market_charts_labels(
+    labels = market_chart_services.get_market_charts_labels(
         dropdown_values, MarketChartsFrontData(**front_data)
     )
 
     # Get Market Data
-    market_data = data_visualization_services.get_market_charts_market_data(
+    market_data = market_chart_services.get_market_charts_market_data(
         reference_date, previous_curve_date, MarketChartsFrontData(**front_data)
     )
 
@@ -173,8 +176,8 @@ def market_charts_view(request):
 def economic_recap_view(request):
     """Economic Overview View."""
     locations = [loc for loc in EconomicDataLocationChoices.ordered() if loc != "EU"]
-    economic_data = data_visualization_services.get_economic_recap_data(locations)
-    upcoming_events = data_visualization_services.get_economic_recap_upcoming_events()
+    economic_data = economic_recap_services.get_economic_recap_data(locations)
+    upcoming_events = economic_recap_services.get_economic_recap_upcoming_events()
     context = {
         "locations": locations,
         "economic_data": economic_data,
@@ -220,7 +223,7 @@ def central_banks_recap_view(request):
         probability_change_matrix = None
 
         try:
-            cb_data_items = data_visualization_services.get_central_bank_data_item(
+            cb_data_items = central_bank_recap_services.get_central_bank_data_item(
                 central_bank, reference_date
             )
         except Exception as e:
@@ -229,7 +232,7 @@ def central_banks_recap_view(request):
             )
 
         try:
-            probability_matrix = data_visualization_services.get_central_bank_formatted_probability_matrix(
+            probability_matrix = central_bank_recap_services.get_central_bank_formatted_probability_matrix(
                 central_bank, reference_date
             )
         except Exception as e:
@@ -238,11 +241,11 @@ def central_banks_recap_view(request):
             )
 
         try:
-            previous_probability_matrix = data_visualization_services.get_central_bank_formatted_probability_matrix(
+            previous_probability_matrix = central_bank_recap_services.get_central_bank_formatted_probability_matrix(
                 central_bank, previous_date
             )
             probability_change_matrix = (
-                data_visualization_services.get_formatted_probability_matrix_changes(
+                central_bank_recap_services.get_formatted_probability_matrix_changes(
                     probability_matrix, previous_probability_matrix
                 )
             )

@@ -11,10 +11,15 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
-    def convert_to_dict(self, remove_foreign_key: bool = False) -> dict:
+    def convert_to_dict(
+        self, remove_foreign_key: bool = False, remove_auto_fields: bool = True
+    ) -> dict:
         """Convert Model to Dictionary."""
+        auto_fields = ["id", "date_added", "last_modified"]
         model_as_dict = {
-            key: value for key, value in self.__dict__.items() if key != "_state"
+            key: value
+            for key, value in self.__dict__.items()
+            if key != "_state" and not (remove_auto_fields and key in auto_fields)
         }
         if remove_foreign_key:
             foreign_key_list = [

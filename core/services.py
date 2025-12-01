@@ -27,12 +27,27 @@ def update_with_logs(
     model_to_update: T,
     log_model: Type[L],
     updates: dict,
+    none_skip_fields: List[str] = [],
     enable_none_updates: bool = False,
 ) -> T:
     """Update entity and create logs in a related log table."""
+    if not none_skip_fields and not enable_none_updates:
+        raise ValueError("Need to specify fields to skip or enable none updates.")
+
+    if none_skip_fields:
+        model_fields = [field.name for field in model_to_update._meta.get_fields()]
+        if not all(field in model_fields for field in none_skip_fields):
+            raise ValueError(f"Fields to skip must be in model: {model_fields}")
+
     update_logs = updates.pop("logs", None)
     has_changes = False
-    is_none_value_override = False
+
+    for field in none_skip_fields:
+        if field in updates:
+            existing_value = getattr(model_to_update, field, None)
+            new_value = updates[field]
+            if existing_value is not None and new_value is None:
+                return model_to_update
 
     for field, new_value in updates.items():
         old_value = getattr(model_to_update, field, None)
@@ -40,15 +55,13 @@ def update_with_logs(
             if enable_none_updates or new_value is not None:
                 setattr(model_to_update, field, new_value)
                 has_changes = True
-                is_none_value_override = new_value and not old_value
+                update_logs += f"\nUpdated {field} from {old_value} to {new_value}."
 
     if has_changes:
         model_to_update.save()
-
-        if update_logs and is_none_value_override:
-            fk_field = getattr(log_model, "fk_name", None)
-            log_kwargs = {fk_field: model_to_update, "logs": update_logs}
-            log_model.objects.create(**log_kwargs)
+        fk_field = getattr(log_model, "fk_name", None)
+        log_kwargs = {fk_field: model_to_update, "logs": update_logs}
+        log_model.objects.create(**log_kwargs)
 
     return model_to_update
 
@@ -58,13 +71,14 @@ def upsert_with_logs(
     log_model: Type[L],
     lookup_kwargs: dict,
     updates: dict,
+    none_skip_fields: List[str] = [],
     enable_none_updates: bool = False,
 ) -> T:
     """Update entity and create logs if exists, or create entity in database."""
     try:
         model_to_update = model.objects.get(**lookup_kwargs)
         return update_with_logs(
-            model_to_update, log_model, updates, enable_none_updates
+            model_to_update, log_model, updates, none_skip_fields, enable_none_updates
         )
     except ObjectDoesNotExist:
         create_data = {
@@ -74,9 +88,11 @@ def upsert_with_logs(
         return model.objects.create(**create_data)
 
 
-def convert_query_to_dictionary_list(queryset: QuerySet) -> List[dict]:
+def convert_query_to_dictionary_list(
+    queryset: QuerySet, remove_auto_fields: bool = True
+) -> List[dict]:
     """Convert a query into a List of Dictionary."""
-    return [object.convert_to_dict() for object in queryset]
+    return [object.convert_to_dict(remove_auto_fields) for object in queryset]
 
 
 def fetch_html(url: str) -> Optional[BeautifulSoup]:

@@ -14,7 +14,6 @@ from market_overview.models import (
     PriceSourceChoices,
     PriceUpdateLogModel,
 )
-from market_overview.services.price_ingestion_services import MarketData
 
 
 class PriceChange(TypedDict):
@@ -103,6 +102,9 @@ def calculate_price_change(
         data = market_price.convert_to_dict(remove_foreign_key=True)
         data.update(asset)
         comparison_data.append(data)
+
+    if not reference_data or not comparison_data:
+        return []
 
     reference_df = pd.DataFrame(reference_data)
     comparison_df = pd.DataFrame(comparison_data)
@@ -194,22 +196,17 @@ def get_yield_curve(
 
 def get_price_update_logs(
     price_date: Optional[date] = None, short_name: Optional[str] = None
-) -> List[MarketData]:
+) -> List[PriceUpdateLogModel]:
     """Get price update logs with optional filtering."""
     logs_queryset = PriceUpdateLogModel.objects.select_related(
         "market_price__asset"
     ).all()
     if price_date:
-        logs_queryset = logs_queryset.filter(date_added__date=price_date)
+        logs_queryset = logs_queryset.filter(market_price__date=price_date)
     if short_name:
         logs_queryset = logs_queryset.filter(market_price__asset__short_name=short_name)
 
-    return [
-        MarketData(**log)
-        for log in core_services.convert_query_to_dictionary_list(
-            queryset=logs_queryset
-        )
-    ]
+    return list(logs_queryset.order_by("-date_added"))
 
 
 def get_assets_without_prices(
@@ -264,10 +261,11 @@ def bulk_update_assets_prices(
                 {
                     "logs": update.get(
                         "logs",
-                        f"Bulk update of {update['short_name']} to price: {update['price']}.",
+                        "Bulk update of assets prices.",
                     ),
                     "price": update["price"],
                 },
+                none_skip_fields=["price"],
             )
         )
     return updated_assets
@@ -291,7 +289,7 @@ def bulk_update_assets_prices_from_csv(
     missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)
     if missing_columns:
         raise ValueError(
-            f"CSV file must have the following columns: {', '.join(missing_columns)}."
+            f"CSV file must have the following columns: {', '.join(sorted(missing_columns))}."
         )
 
     updates = [

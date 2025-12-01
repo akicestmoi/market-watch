@@ -96,7 +96,9 @@ A Django-based market monitoring application with comprehensive API documentatio
    make collectstatic   # Collect static files
    make celery-beat     # Start periodic tasks
    make celery-worker   # Execute worker
-   make test            # Run tests
+   make test            # Run all tests (pytest)
+   make test-coverage   # Run tests with coverage report (HTML + terminal)
+   make test-app        # Run tests for a specific app (requires APP=name, uses pytest)
    make clean           # Clean up Docker resources
    make db-export       # Export database to SQL file
    make db-import       # Import database from SQL file (requires SQL_FILE=path)
@@ -240,3 +242,79 @@ python manage.py trigger_task scheduled_holidays_ingestion --async
    ```bash
    celery -A core call market_overview.tasks.scheduled_market_data_ingestion
    ```
+
+## Testing
+
+The project uses **pytest** with **pytest-django** for comprehensive unit testing. Tests are organized by app and cover both views and services. Pytest provides detailed test summaries, progress indicators, and performance metrics.
+
+### Running Tests
+
+**Run all tests:**
+```bash
+make test
+```
+
+**Run tests with coverage report:**
+```bash
+make test-coverage
+```
+This generates:
+- Terminal coverage report showing percentage coverage per module
+- HTML coverage report in `htmlcov/` directory (open `htmlcov/index.html` in a browser)
+
+**Run tests for a specific app:**
+```bash
+make test-app APP=market_overview
+```
+
+**Run tests using pytest directly:**
+```bash
+# All tests
+python -m pytest
+
+# Specific app
+python -m pytest market_overview/tests
+
+# Specific test file
+python -m pytest market_overview/tests/views/test_market_overview_views.py
+
+# Specific test class
+python -m pytest market_overview/tests/views/test_market_overview_views.py::AssetDetailsViewTest
+
+# Specific test method
+python -m pytest market_overview/tests/views/test_market_overview_views.py::AssetDetailsViewTest::test_get_asset_details_success
+
+# Run with coverage report (terminal only)
+python -m pytest --cov=market_overview --cov-report=term
+
+# Run with coverage report (HTML + terminal)
+python -m pytest --cov --cov-report=term --cov-report=html
+
+# Run only failed tests from last run
+python -m pytest --lf
+
+# Run tests matching a pattern
+python -m pytest -k "test_get_asset"
+```
+
+### Test Configuration
+
+Pytest configuration is defined in `pytest.ini`:
+- **Test discovery**: Automatically finds tests in any `*/tests` directory
+- **Verbose output**: Detailed test information by default
+- **Color output**: Color-coded pass/fail indicators
+- **Database reuse**: Reuses test database between runs for faster execution (`--reuse-db`)
+- **Duration reporting**: Shows slowest 10 tests
+- **Django integration**: Configured with `pytest-django` for Django-specific features
+
+### Test Structure
+
+Tests are organized in `tests/` directories within each app:
+- `tests/views/` - API view tests
+- `tests/services/` - Service function tests
+
+Each test file follows Django's TestCase pattern and includes:
+- Setup methods for test fixtures
+- Tests for success scenarios
+- Tests for error handling
+- Tests for edge cases

@@ -1,19 +1,17 @@
 from django.urls import path
 
-from .views import (
+from market_overview.views.asset_views import (
     AssetDetailsView,
-    BulkUpdateAssetsPricesView,
-    CalculatePriceChangeView,
-    CsvBulkUpdateAssetsPricesView,
     GenerateBaseAssetsDataView,
     GetAssetNamesView,
+)
+from market_overview.views.holiday_views import HolidaysDetailsView, IngestHolidaysView
+from market_overview.views.logs_views import GetPriceUpdateLogsView
+from market_overview.views.price_views import (
+    BulkUpdateAssetsPricesView,
+    CsvBulkUpdateAssetsPricesView,
     GetAssetsWithoutPricesView,
-    GetHistoricalPricesView,
     GetMarketPriceView,
-    GetPriceUpdateLogsView,
-    GetYieldCurveView,
-    HolidaysDetailsView,
-    IngestHolidaysView,
     IngestMarketPricesView,
     IngestSpecificAssetMarketPricesView,
     ListMarketPricesView,
@@ -30,9 +28,6 @@ urlpatterns = [
     ),
     path("prices", GetMarketPriceView.as_view()),
     path("prices/list-all", ListMarketPricesView.as_view()),
-    path("prices/get-yield-curve", GetYieldCurveView.as_view()),
-    path("prices/get-historical-prices", GetHistoricalPricesView.as_view()),
-    path("prices/calculate-price-change", CalculatePriceChangeView.as_view()),
     path("prices/get-assets-without-prices", GetAssetsWithoutPricesView.as_view()),
     path("prices/bulk-update", BulkUpdateAssetsPricesView.as_view()),
     path("prices/bulk-update-from-csv", CsvBulkUpdateAssetsPricesView.as_view()),
