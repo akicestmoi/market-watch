@@ -1,10 +1,12 @@
 from django.urls import path
 
-from .views import (
+from economic_overview.views.economic_data_views import (
     EconomicDataDetailedView,
     GenerateBaseEconomicIndicatorInformationView,
     IngestEconomicDataView,
     IngestSpecificEconomicDataView,
+)
+from economic_overview.views.publication_schedules_views import (
     UpdatePublicationScheduleView,
 )
 

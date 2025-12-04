@@ -4,10 +4,11 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 from bs4 import BeautifulSoup
+from django.test import TestCase
 
 from core.tests import MockResponse, read_file_content
 from market_overview.services.price_ingestion_services import (
-    ScrappingResult,
+    ScrapingResult,
     _get_bund_yield_from_bundesbank,
     _get_jgb_yield_from_bb,
     _get_mutan_rate_from_boj,
@@ -28,7 +29,7 @@ def _read_yfinance_mock(file_path: str) -> pd.DataFrame:
     return mock_df
 
 
-class TestYahooFinanceScraping:
+class TestYahooFinanceScraping(TestCase):
     """Test cases for get_yahoo_finance_closing_prices."""
 
     MOCK_YAHOO_FINANCE_SUCCESS = _read_yfinance_mock(
@@ -38,7 +39,7 @@ class TestYahooFinanceScraping:
         "market_overview/tests/mock_web_data/yfinance/empty.csv"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         get_yahoo_finance_closing_prices.cache_clear()
 
@@ -60,7 +61,7 @@ class TestYahooFinanceScraping:
 
         result = get_yahoo_finance_closing_prices(target_date, ticker)
 
-        assert result == ScrappingResult(price=110.0, comment="")
+        assert result == ScrapingResult(price=110.0, comment="")
 
     @patch("market_overview.services.price_ingestion_services.yf.Ticker")
     def test_yahoo_finance_empty_dataframe(self, mock_ticker):
@@ -80,7 +81,7 @@ class TestYahooFinanceScraping:
 
         result = get_yahoo_finance_closing_prices(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Yahoo Finance: No prices found."
         )
 
@@ -102,12 +103,12 @@ class TestYahooFinanceScraping:
 
         result = get_yahoo_finance_closing_prices(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Yahoo Finance: No prices found."
         )
 
 
-class TestGlobalRatesScraping:
+class TestGlobalRatesScraping(TestCase):
     """Test cases for scrap_from_global_rates."""
 
     MOCK_GLOBAL_RATES_EURIBOR_SUCCESS = read_file_content(
@@ -126,7 +127,7 @@ class TestGlobalRatesScraping:
         "market_overview/tests/mock_web_data/global_rates/central_bank_empty_rate.html"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         scrap_from_global_rates.cache_clear()
 
@@ -146,7 +147,7 @@ class TestGlobalRatesScraping:
         )
 
         result = scrap_from_global_rates(target_date, ticker)
-        assert result == ScrappingResult(price=1.926, comment="")
+        assert result == ScrapingResult(price=1.926, comment="")
 
     @patch("core.services.requests.get")
     def test_global_rates_euribor_not_found(self, mock_get):
@@ -165,7 +166,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Euribor rate not found.")
+        assert result == ScrapingResult(price=None, comment="Euribor rate not found.")
 
     @patch("core.services.requests.get")
     def test_global_rates_euribor_invalid_date(self, mock_get):
@@ -184,7 +185,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Euribor rate not found.")
+        assert result == ScrapingResult(price=None, comment="Euribor rate not found.")
 
     @patch("core.services.requests.get")
     def test_global_rates_euribor_invalid_rate(self, mock_get):
@@ -203,7 +204,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Could not parse Euribor rate: invalid-rate"
         )
 
@@ -223,7 +224,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(None, ticker)
 
-        assert result == ScrappingResult(price=0.5, comment="")
+        assert result == ScrapingResult(price=0.5, comment="")
 
     @patch("core.services.requests.get")
     def test_global_rates_central_bank_empty_rate(self, mock_get):
@@ -242,7 +243,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Rate cell is empty")
+        assert result == ScrapingResult(price=None, comment="Rate cell is empty")
 
     @patch("market_overview.services.price_ingestion_services.fetch_html")
     def test_global_rates_fetch_failed(self, mock_fetch_html):
@@ -258,7 +259,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None,
             comment="Failed to fetch HTML from https://www.global-rates.com/en/interest-rates",
         )
@@ -278,7 +279,7 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Could not find interest rates table on page"
         )
 
@@ -297,19 +298,19 @@ class TestGlobalRatesScraping:
 
         result = scrap_from_global_rates(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Unsupported rate type: unknown"
         )
 
 
-class TestNYFedScraping:
+class TestNYFedScraping(TestCase):
     """Test cases for _scrap_rate_from_nyfed_xml."""
 
     MOCK_NYFED_SUCCESS = read_file_content(
         "market_overview/tests/mock_web_data/nyfed/success.xml"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _scrap_rate_from_nyfed_xml.cache_clear()
 
@@ -329,7 +330,7 @@ class TestNYFedScraping:
 
         result = _scrap_rate_from_nyfed_xml(target_date, ticker)
 
-        assert result == ScrappingResult(price=3.96, comment="")
+        assert result == ScrapingResult(price=3.96, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_nyfed_not_found(self, mock_get):
@@ -347,7 +348,7 @@ class TestNYFedScraping:
 
         result = _scrap_rate_from_nyfed_xml(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Rate not found.")
+        assert result == ScrapingResult(price=None, comment="Rate not found.")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_nyfed_http_error(self, mock_get):
@@ -365,17 +366,17 @@ class TestNYFedScraping:
 
         result = _scrap_rate_from_nyfed_xml(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Not Found")
+        assert result == ScrapingResult(price=None, comment="Not Found")
 
 
-class TestTreasuryDeptScraping:
+class TestTreasuryDeptScraping(TestCase):
     """Test cases for _get_treasury_yield_from_dep_treasury."""
 
     MOCK_TREASURY_DEPT_SUCCESS = read_file_content(
         "market_overview/tests/mock_web_data/treasury_dept/success.xml"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_treasury_yield_curve_from_dep_treasury.cache_clear()
 
@@ -395,7 +396,7 @@ class TestTreasuryDeptScraping:
 
         result = _get_treasury_yield_from_dep_treasury(target_date, ticker)
 
-        assert result == ScrappingResult(price=4.62, comment="")
+        assert result == ScrapingResult(price=4.62, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_treasury_yield_not_found(self, mock_get):
@@ -413,7 +414,7 @@ class TestTreasuryDeptScraping:
 
         result = _get_treasury_yield_from_dep_treasury(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Yield curve not found.")
+        assert result == ScrapingResult(price=None, comment="Yield curve not found.")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_treasury_yield_invalid_ticker(self, mock_get):
@@ -431,7 +432,7 @@ class TestTreasuryDeptScraping:
 
         result = _get_treasury_yield_from_dep_treasury(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Ticker not found in mapping."
         )
 
@@ -453,10 +454,10 @@ class TestTreasuryDeptScraping:
 
         result = _get_treasury_yield_from_dep_treasury(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Internal Server Error")
+        assert result == ScrapingResult(price=None, comment="Internal Server Error")
 
 
-class TestWebstatScraping:
+class TestWebstatScraping(TestCase):
     """Test cases for get_webstat_rates."""
 
     MOCK_WEBSTAT_SUCCESS = read_file_content(
@@ -469,7 +470,7 @@ class TestWebstatScraping:
         "market_overview/tests/mock_web_data/webstat/invalid_value.csv"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         get_webstat_rates.cache_clear()
 
@@ -489,7 +490,7 @@ class TestWebstatScraping:
 
         result = get_webstat_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=2.7, comment="")
+        assert result == ScrapingResult(price=2.7, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_webstat_not_found(self, mock_get):
@@ -507,7 +508,7 @@ class TestWebstatScraping:
 
         result = get_webstat_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Webstat rate not found.")
+        assert result == ScrapingResult(price=None, comment="Webstat rate not found.")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_webstat_not_french_decimal_format(self, mock_get):
@@ -525,7 +526,7 @@ class TestWebstatScraping:
 
         result = get_webstat_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=3.45, comment="")
+        assert result == ScrapingResult(price=3.45, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_webstat_invalid_value(self, mock_get):
@@ -543,7 +544,7 @@ class TestWebstatScraping:
 
         result = get_webstat_rates(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Could not convert rate to float: invalid"
         )
 
@@ -563,17 +564,17 @@ class TestWebstatScraping:
 
         result = get_webstat_rates(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Not Found")
+        assert result == ScrapingResult(price=None, comment="Not Found")
 
 
-class TestBundesbankScraping:
+class TestBundesbankScraping(TestCase):
     """Test cases for _get_bund_yield_from_bundesbank."""
 
     MOCK_BUNDESBANK_SUCCESS = read_file_content(
         "market_overview/tests/mock_web_data/bundesbank/success.xml"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_bund_yield_from_bundesbank.cache_clear()
 
@@ -593,7 +594,7 @@ class TestBundesbankScraping:
 
         result = _get_bund_yield_from_bundesbank(target_date, ticker)
 
-        assert result == ScrappingResult(price=-0.56, comment="")
+        assert result == ScrapingResult(price=-0.56, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_bundesbank_not_found(self, mock_get):
@@ -611,7 +612,7 @@ class TestBundesbankScraping:
 
         result = _get_bund_yield_from_bundesbank(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Bunds rate not found.")
+        assert result == ScrapingResult(price=None, comment="Bunds rate not found.")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_bundesbank_http_error(self, mock_get):
@@ -629,10 +630,10 @@ class TestBundesbankScraping:
 
         result = _get_bund_yield_from_bundesbank(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Internal Server Error")
+        assert result == ScrapingResult(price=None, comment="Internal Server Error")
 
 
-class TestBOJScraping:
+class TestBOJScraping(TestCase):
     """Test cases for _get_mutan_rate_from_boj."""
 
     MOCK_BOJ_CERTIFIED_SUCCESS = read_file_content(
@@ -642,7 +643,7 @@ class TestBOJScraping:
         "market_overview/tests/mock_web_data/boj/previsional_success.xlsx"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_mutan_rate_from_boj.cache_clear()
 
@@ -661,7 +662,7 @@ class TestBOJScraping:
 
         result = _get_mutan_rate_from_boj(target_date)
 
-        assert result == ScrappingResult(price=0.478, comment="")
+        assert result == ScrapingResult(price=0.478, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_boj_prevision_fallback(self, mock_get):
@@ -681,7 +682,7 @@ class TestBOJScraping:
 
         result = _get_mutan_rate_from_boj(target_date)
 
-        assert result == ScrappingResult(price=0.477, comment="")
+        assert result == ScrapingResult(price=0.477, comment="")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_boj_both_fail(self, mock_get):
@@ -699,7 +700,7 @@ class TestBOJScraping:
 
         result = _get_mutan_rate_from_boj(target_date)
 
-        assert result == ScrappingResult(price=None, comment="Not Found")
+        assert result == ScrapingResult(price=None, comment="Not Found")
 
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_boj_multiple_averages(self, mock_get):
@@ -727,19 +728,19 @@ class TestBOJScraping:
 
         result = _get_mutan_rate_from_boj(target_date)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="BoJ file has likely changed. Review of code is needed."
         )
 
 
-class TestBBScraping:
+class TestBBScraping(TestCase):
     """Test cases for _get_jgb_yield_from_bb."""
 
     MOCK_BB_SUCCESS = read_file_content(
         "market_overview/tests/mock_web_data/bb/success.html"
     )
 
-    def teardown_method(self):
+    def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _scrap_jgb_yield_curve_from_bb.cache_clear()
 
@@ -759,7 +760,7 @@ class TestBBScraping:
 
         result = _get_jgb_yield_from_bb(target_date, ticker)
 
-        assert result == ScrappingResult(price=1.8, comment="")
+        assert result == ScrapingResult(price=1.8, comment="")
 
     @patch("core.services.requests.get")
     def test_bb_not_found(self, mock_get):
@@ -777,7 +778,7 @@ class TestBBScraping:
 
         result = _get_jgb_yield_from_bb(target_date, ticker)
 
-        assert result == ScrappingResult(price=None, comment="Yield curve not found.")
+        assert result == ScrapingResult(price=None, comment="Yield curve not found.")
 
     @patch("core.services.requests.get")
     def test_bb_invalid_ticker(self, mock_get):
@@ -795,6 +796,6 @@ class TestBBScraping:
 
         result = _get_jgb_yield_from_bb(target_date, ticker)
 
-        assert result == ScrappingResult(
+        assert result == ScrapingResult(
             price=None, comment="Ticker not found in mapping."
         )

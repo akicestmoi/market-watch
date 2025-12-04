@@ -113,11 +113,18 @@ class MarketPriceModel(BaseModel):
     comment = models.TextField(null=True, blank=True, default="")
 
     def convert_to_dict(
-        self, remove_foreign_key: bool = False, remove_auto_fields: bool = True
+        self,
+        remove_foreign_key: bool = False,
+        remove_auto_fields: bool = True,
+        remove_cache_fields: bool = True,
+        remove_specific_fields: List[str] = [],
     ) -> dict:
         """Override convert_to_dict to include asset identifiers."""
         data = super().convert_to_dict(
-            remove_foreign_key=remove_foreign_key, remove_auto_fields=remove_auto_fields
+            remove_foreign_key=remove_foreign_key,
+            remove_auto_fields=remove_auto_fields,
+            remove_cache_fields=remove_cache_fields,
+            remove_specific_fields=remove_specific_fields,
         )
         asset = getattr(self, "asset", None)
         if asset:

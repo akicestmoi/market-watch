@@ -89,10 +89,22 @@ def upsert_with_logs(
 
 
 def convert_query_to_dictionary_list(
-    queryset: QuerySet, remove_auto_fields: bool = True
+    queryset: QuerySet,
+    remove_foreign_key: bool = False,
+    remove_auto_fields: bool = True,
+    remove_cache_fields: bool = True,
+    remove_specific_fields: List[str] = [],
 ) -> List[dict]:
     """Convert a query into a List of Dictionary."""
-    return [object.convert_to_dict(remove_auto_fields) for object in queryset]
+    return [
+        object.convert_to_dict(
+            remove_foreign_key,
+            remove_auto_fields,
+            remove_cache_fields,
+            remove_specific_fields,
+        )
+        for object in queryset
+    ]
 
 
 def fetch_html(url: str) -> Optional[BeautifulSoup]:

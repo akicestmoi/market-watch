@@ -32,14 +32,15 @@ class TestAssetsViews(TestCase):
             asset_type=AssetTypeChoices.EQUITY_INDEX,
         )
 
-    @patch("builtins.open")
     @patch("json.load")
-    def test_generate_base_assets_data_success(self, mock_json_load, mock_open):
+    @patch("builtins.open")
+    def test_generate_base_assets_data_success(self, mock_open, mock_json_load):
         """
         GIVEN a valid JSON file
         WHEN the generate base assets data view is called
         THEN new data should be added without deleting the existing data
         """
+        mock_open.return_value.__enter__.return_value = MagicMock()
         mock_json_load.return_value = [
             {
                 "id": 2,
@@ -49,8 +50,6 @@ class TestAssetsViews(TestCase):
                 "asset_type": "EQUITY",
             }
         ]
-        mock_file = MagicMock()
-        mock_open.return_value.__enter__.return_value = mock_file
 
         response = self.client.post(f"{self.base_url}{self.GENERATE_BASE_ASSETS_URL}")
 

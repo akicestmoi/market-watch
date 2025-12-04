@@ -26,13 +26,11 @@ from economic_overview.open_api.request_serializers import (
     EconomicDataIngestionSerializer,
     ListEconomicDataSerializer,
     SpecificEconomicDataIngestionSerializer,
-    UpdatePublicationScheduleSerializer,
 )
 from economic_overview.open_api.response_serializers import (
     EconomicDataIngestionResponseSerializer,
     EconomicDataResponseSerializer,
     SpecificEconomicDataIngestionResponseSerializer,
-    UpdatePublicationScheduleResponseSerializer,
 )
 
 
@@ -58,7 +56,7 @@ class EconomicOverviewBaseView(BaseAPIView):
             )
 
 
-class GenerateBaseEconomicIndicatorInformationView(EconomicOverviewBaseView):
+class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
     """Generate Base Economic Indicator Information APIView."""
 
     @open_api(
@@ -88,42 +86,6 @@ class GenerateBaseEconomicIndicatorInformationView(EconomicOverviewBaseView):
             data={
                 "message": "Economic indicator information successfully generated.",
             },
-            status=status.HTTP_200_OK,
-        )
-
-
-class UpdatePublicationScheduleView(EconomicOverviewBaseView):
-    """Update Publication Schedule APIView."""
-
-    @open_api(
-        tags=[ApiTags.PUBLICATION_SCHEDULE],
-        summary="Update Publication Schedule",
-        description="Update publication schedule for specific economic indicators.",
-        request_serializer=UpdatePublicationScheduleSerializer,
-        response=OkOpenApiResponse(UpdatePublicationScheduleResponseSerializer),
-        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
-    )
-    def post(self, validated_data: dict) -> Response:
-        """Update publication schedule for specific economic indicators."""
-        indicator_names: List[str] = validated_data.get("indicator_names", [])
-
-        validation_error = self._validate_indicators_exist(indicator_names)
-        if validation_error:
-            return validation_error
-
-        indicators = economic_data_services.get_economic_indicators_by_names(
-            indicator_names
-        )
-        schedule_not_updated = publication_services.update_publication_schedules(
-            indicators
-        )
-        return Response(
-            data=UpdatePublicationScheduleResponseSerializer(
-                {
-                    "message": "Publication schedule successfully updated.",
-                    "schedule_not_updated": schedule_not_updated,
-                }
-            ).data,
             status=status.HTTP_200_OK,
         )
 

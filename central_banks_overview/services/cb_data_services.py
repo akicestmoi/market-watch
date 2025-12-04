@@ -11,7 +11,7 @@ from central_banks_overview.services.cb_meetings_services import (
 from core.services import logger
 from market_overview.models import PriceSourceChoices
 from market_overview.services.price_ingestion_services import (
-    ScrappingResult,
+    ScrapingResult,
     get_webstat_rates,
     scrap_from_global_rates,
 )
@@ -100,14 +100,14 @@ def get_specific_central_bank_data(
     logger.info(
         f"Ingesting central bank data for {central_bank_data['short_name']} on {target_date}"
     )
-    scrapping_function = CENTRAL_BANK_DATA_MAP.get(central_bank_data["source"])
-    scrapping_result: ScrappingResult = (
-        scrapping_function(target_date, central_bank_data["ticker"])
-        if scrapping_function
-        else ScrappingResult(price=None, comment="No scrapping function found.")
+    scraping_function = CENTRAL_BANK_DATA_MAP.get(central_bank_data["source"])
+    scraping_result: ScrapingResult = (
+        scraping_function(target_date, central_bank_data["ticker"])
+        if scraping_function
+        else ScrapingResult(price=None, comment="No scraping function found.")
     )
 
-    if not scrapping_result.get("price"):
+    if not scraping_result.get("price"):
         logger.warning("No price found.")
 
     return CentralBankData(
@@ -116,8 +116,8 @@ def get_specific_central_bank_data(
         short_name=central_bank_data["short_name"],
         full_name=central_bank_data["full_name"],
         date=target_date,
-        value=scrapping_result.get("price"),
-        comment=scrapping_result.get("comment"),
+        value=scraping_result.get("price"),
+        comment=scraping_result.get("comment"),
     )
 
 

@@ -17,7 +17,7 @@ from market_overview.models import (
 )
 from market_overview.services.price_ingestion_services import (
     MarketData,
-    ScrappingResult,
+    ScrapingResult,
     get_market_data,
     get_specific_asset_market_data,
     ingest_market_data,
@@ -26,8 +26,8 @@ from market_overview.services.price_ingestion_services import (
 
 def _scraper_side_effect(_, ticker):
     if ticker == "TEST":
-        return ScrappingResult(price=100.0, comment="")
-    return ScrappingResult(price=None, comment="No price")
+        return ScrapingResult(price=100.0, comment="")
+    return ScrapingResult(price=None, comment="No price")
 
 
 class TestGetMarketData(TestCase):
@@ -57,7 +57,7 @@ class TestGetMarketData(TestCase):
         WHEN getting market data
         THEN all assets are returned with their prices
         """
-        mock_scraper = Mock(return_value=ScrappingResult(price=100.0, comment=""))
+        mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
         result = get_market_data(self.target_date)
@@ -160,7 +160,7 @@ class TestGetMarketData(TestCase):
             ticker="NOSOURCE",
             source=PriceSourceChoices.GOV_TREASURY_DEPT,
         )
-        mock_scraper = Mock(return_value=ScrappingResult(price=100.0, comment=""))
+        mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
         result = get_market_data(self.target_date)
@@ -176,7 +176,7 @@ class TestGetMarketData(TestCase):
                 "asset": no_source_asset,
                 "price": None,
                 "date": self.target_date,
-                "comment": "No scrapping function found.",
+                "comment": "No scraping function found.",
             },
         ]
 
@@ -209,7 +209,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         WHEN getting specific asset market data
         THEN only weekdays are processed and returned
         """
-        mock_scraper = Mock(return_value=ScrappingResult(price=100.0, comment=""))
+        mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
         result = get_specific_asset_market_data(
@@ -232,7 +232,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         WHEN getting specific asset market data
         THEN a single day result is returned if it's a weekday
         """
-        mock_scraper = Mock(return_value=ScrappingResult(price=100.0, comment=""))
+        mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
         result = get_specific_asset_market_data(
@@ -268,7 +268,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         friday = date(2024, 1, 5)
         monday = date(2024, 1, 8)
 
-        mock_scraper = Mock(return_value=ScrappingResult(price=100.0, comment=""))
+        mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
         result = get_specific_asset_market_data(self.asset.short_name, friday, monday)
@@ -313,7 +313,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
             return target_date == holiday_date and location == LocationChoices.US
 
         mock_is_holiday.side_effect = _is_holiday_side_effect
-        mock_scraper = Mock(return_value=ScrappingResult(price=100.0, comment=""))
+        mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
         result = get_specific_asset_market_data(
@@ -487,10 +487,10 @@ class IngestMarketDataTest(TestCase):
             asset=self.asset, date=self.target_date
         )
         queryset = PriceUpdateLogModel.objects.filter(market_price=market_price)
-        logs = convert_query_to_dictionary_list(queryset)
+        logs = convert_query_to_dictionary_list(queryset, remove_foreign_key=True)
         assert logs == [
             {
-                "logs": "Automated price update on TEST to price: 100.0.\n"
+                "logs": "Automated price update on TEST.\n"
                 "Updated price from 90.0 to 100.0.",
             },
         ]

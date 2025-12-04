@@ -442,6 +442,7 @@ def ingest_stir_futures_prices(stir_futures_prices: List[StirFutures]):
                 "price": price,
                 "comment": stir_future_price["comment"],
             },
+            none_skip_fields=["price"],
         )
         if price:
             stir_futures_updated.append(stir_future_price)
@@ -472,12 +473,13 @@ def bulk_update_futures_prices(
         )
         updated_futures.append(
             core_services.update_with_logs(
-                future,
-                StirFuturesPriceUpdateLogModel,
-                {
+                model_to_update=future,
+                log_model=StirFuturesPriceUpdateLogModel,
+                updates={
                     "logs": update["logs"],
                     "price": update["price"],
                 },
+                none_skip_fields=["price"],
             )
         )
     return updated_futures

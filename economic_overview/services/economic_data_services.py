@@ -80,9 +80,10 @@ def get_economic_data(
 
 def delete_economic_data(indicator_name: str, period: Optional[str] = None):
     """Delete economic data for a specific indicator and period."""
-    EconomicDataModel.objects.filter(
-        indicator__name=indicator_name, period=period
-    ).delete()
+    query = EconomicDataModel.objects.filter(indicator__name=indicator_name)
+    if period is not None:
+        query = query.filter(period=period)
+    query.delete()
 
 
 def delete_economic_data_update_logs_before_date(logs_date: date):

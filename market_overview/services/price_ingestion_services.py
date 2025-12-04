@@ -53,8 +53,8 @@ class SpecialComment(str, Enum):
     BANK_HOLIDAY = "Bank holiday"
 
 
-class ScrappingResult(TypedDict):
-    """Scrapping result dictionnary."""
+class ScrapingResult(TypedDict):
+    """Scraping result dictionnary."""
 
     price: Optional[float]
     comment: Optional[str]
@@ -75,28 +75,28 @@ def _parse_str_decimals_to_float(a: str) -> Optional[float]:
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def get_yahoo_finance_closing_prices(target_date: date, ticker: str) -> ScrappingResult:
+def get_yahoo_finance_closing_prices(target_date: date, ticker: str) -> ScrapingResult:
     """Get closing prices from Yahoo Finance.
 
-    Using publicly available yahoo scrapper module yfiance.
+    Using publicly available yahoo scraper module yfiance.
     """
     prices = yf.Ticker(str(ticker)).history(period="1mo").reset_index()
     if prices.empty:
-        return ScrappingResult(price=None, comment="Yahoo Finance: No prices found.")
+        return ScrapingResult(price=None, comment="Yahoo Finance: No prices found.")
     closing_price = prices[prices["Date"].dt.date == target_date].reset_index()
     if not closing_price.empty:
-        return ScrappingResult(
+        return ScrapingResult(
             price=float(str(closing_price.loc[0, "Close"])), comment=""
         )
-    return ScrappingResult(price=None, comment="Yahoo Finance: No prices found.")
+    return ScrapingResult(price=None, comment="Yahoo Finance: No prices found.")
 
 
 def _parse_euribor_rate_from_table(
     table, target_date: Optional[date]
-) -> ScrappingResult:
+) -> ScrapingResult:
     """Parse EURIBOR rate from table for a specific date."""
     if target_date is None:
-        return ScrappingResult(
+        return ScrapingResult(
             price=None, comment="Target date is required for EURIBOR rates"
         )
 
@@ -117,64 +117,62 @@ def _parse_euribor_rate_from_table(
         if parsed_date == target_date:
             rate_str = raw_rate.replace("%", "").replace(",", ".").strip()
             try:
-                return ScrappingResult(price=float(rate_str), comment="")
+                return ScrapingResult(price=float(rate_str), comment="")
             except ValueError:
-                return ScrappingResult(
+                return ScrapingResult(
                     price=None,
                     comment=f"Could not parse Euribor rate: {raw_rate}",
                 )
-    return ScrappingResult(price=None, comment="Euribor rate not found.")
+    return ScrapingResult(price=None, comment="Euribor rate not found.")
 
 
-def _parse_central_bank_rate_from_table(table) -> ScrappingResult:
+def _parse_central_bank_rate_from_table(table) -> ScrapingResult:
     """Parse central bank rate from table (first row, second column)."""
     tbody = table.find("tbody")
     if not tbody:
-        return ScrappingResult(price=None, comment="Table has no <tbody>")
+        return ScrapingResult(price=None, comment="Table has no <tbody>")
 
     first_row = tbody.find("tr")
     if not first_row:
-        return ScrappingResult(price=None, comment="Table contains no rows")
+        return ScrapingResult(price=None, comment="Table contains no rows")
 
     cells = first_row.find_all("td")
     if len(cells) < 2:
-        return ScrappingResult(price=None, comment="Row has insufficient columns")
+        return ScrapingResult(price=None, comment="Row has insufficient columns")
 
     rate_text = cells[1].get_text(strip=True)
     if not rate_text:
-        return ScrappingResult(price=None, comment="Rate cell is empty")
+        return ScrapingResult(price=None, comment="Rate cell is empty")
 
     match = re.search(r"([-+]?\d+(?:\.\d+)?)", rate_text)
     if not match:
-        return ScrappingResult(
+        return ScrapingResult(
             price=None, comment=f"Could not extract rate from: {rate_text}"
         )
 
     try:
-        return ScrappingResult(price=float(match.group(1)), comment="")
+        return ScrapingResult(price=float(match.group(1)), comment="")
     except ValueError:
-        return ScrappingResult(
+        return ScrapingResult(
             price=None, comment=f"Could not convert rate to float: {match.group(1)}"
         )
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def scrap_from_global_rates(
-    target_date: Optional[date], ticker: str
-) -> ScrappingResult:
+def scrap_from_global_rates(target_date: Optional[date], ticker: str) -> ScrapingResult:
     """Scrap rates from GlobalRates.
 
     Source: https://www.global-rates.com/en/
     """
     soup = fetch_html(f"{GLOBAL_RATES_URL}/{ticker}")
     if not soup:
-        return ScrappingResult(
+        return ScrapingResult(
             price=None, comment=f"Failed to fetch HTML from {GLOBAL_RATES_URL}"
         )
 
     table = soup.find("table")
     if not table:
-        return ScrappingResult(
+        return ScrapingResult(
             price=None, comment="Could not find interest rates table on page"
         )
 
@@ -185,14 +183,14 @@ def scrap_from_global_rates(
         case "central-banks":
             result = _parse_central_bank_rate_from_table(table)
         case _:
-            result = ScrappingResult(
+            result = ScrapingResult(
                 price=None, comment=f"Unsupported rate type: {rate_type}"
             )
     return result
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrappingResult:
+def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrapingResult:
     """Scrap rate from NY Fed XML.
 
     Source: https://www.newyorkfed.org/markets/reference-rates/
@@ -200,7 +198,7 @@ def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrappingResul
     response = requests.get(f"{NY_FED_RATE_URL}&eventCodes={ticker}")
     if response.status_code >= 400:
         logger.warning(f"Error scraping rates from NY Fed XML: {response.text}")
-        return ScrappingResult(price=None, comment=response.text)
+        return ScrapingResult(price=None, comment=response.text)
 
     root = ET.fromstring(response.content)
     for rate in root.findall(".//rate"):
@@ -208,8 +206,8 @@ def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrappingResul
         if effective_date == target_date.isoformat():
             percent_rate = rate.find("percentRate").text  # type: ignore[reportOptionalMemberAccess]
             if percent_rate:
-                return ScrappingResult(price=float(percent_rate), comment="")
-    return ScrappingResult(price=None, comment="Rate not found.")
+                return ScrapingResult(price=float(percent_rate), comment="")
+    return ScrapingResult(price=None, comment="Rate not found.")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
@@ -252,7 +250,7 @@ def _get_treasury_yield_curve_from_dep_treasury(target_date: date) -> dict:
 
 def _get_treasury_yield_from_dep_treasury(
     target_date: date, ticker: str
-) -> ScrappingResult:
+) -> ScrapingResult:
     """Infer UST yield from Treasury department yield curve."""
     mapping = {
         "UST1M": "1MONTH",
@@ -268,17 +266,17 @@ def _get_treasury_yield_from_dep_treasury(
         "UST20Y": "20YEAR",
     }
     if ticker not in mapping.keys():
-        return ScrappingResult(price=None, comment="Ticker not found in mapping.")
+        return ScrapingResult(price=None, comment="Ticker not found in mapping.")
     curve = _get_treasury_yield_curve_from_dep_treasury(target_date)
     if not curve:
-        return ScrappingResult(price=None, comment="Yield curve not found.")
+        return ScrapingResult(price=None, comment="Yield curve not found.")
     if curve.get("error"):
-        return ScrappingResult(price=None, comment=curve.get("error"))
-    return ScrappingResult(price=curve.get(mapping[ticker]), comment="")
+        return ScrapingResult(price=None, comment=curve.get("error"))
+    return ScrapingResult(price=curve.get(mapping[ticker]), comment="")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
+def get_webstat_rates(target_date: date, ticker: str) -> ScrapingResult:
     """Get Webstat data.
 
     Source: https://webstat.banque-france.fr/en/
@@ -286,7 +284,7 @@ def get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
     response = requests.get(f"{WEBSTAT_RATE_URL}/{ticker}")
     if response.status_code >= 400:
         logger.warning(f"Error scraping Webstat rates: {response.text}")
-        return ScrappingResult(price=None, comment=response.text)
+        return ScrapingResult(price=None, comment=response.text)
 
     csv_data = StringIO(response.text)
     prices = pd.read_csv(csv_data, sep=";")
@@ -296,19 +294,19 @@ def get_webstat_rates(target_date: date, ticker: str) -> ScrappingResult:
     if not closing_price_series.empty:
         closing_price_str = closing_price_series.loc[0, "obs_value"]
         try:
-            return ScrappingResult(
+            return ScrapingResult(
                 price=_parse_str_decimals_to_float(str(closing_price_str)), comment=""
             )
         except ValueError:
-            return ScrappingResult(
+            return ScrapingResult(
                 price=None,
                 comment=f"Could not convert rate to float: {closing_price_str}",
             )
-    return ScrappingResult(price=None, comment="Webstat rate not found.")
+    return ScrapingResult(price=None, comment="Webstat rate not found.")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> ScrappingResult:
+def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> ScrapingResult:
     """Extract Bunds yield from Bundesbank database.
 
     Source: https://www.bundesbank.de/en/statistics/time-series-databases/
@@ -316,7 +314,7 @@ def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> Scrapping
     response = requests.get(f"{BUNDESBANK_RATE_URL}/{ticker}?format=sdmx&lang=en")
     if response.status_code >= 400:
         logger.warning(f"Error scraping Bundesbank rates: {response.text}")
-        return ScrappingResult(price=None, comment=response.text)
+        return ScrapingResult(price=None, comment=response.text)
     root = ET.fromstring(response.content)
 
     sdmx_namespaces = {
@@ -330,14 +328,14 @@ def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> Scrapping
             and obs_date.attrib.get("value") == target_date.isoformat()
         ):
             if obs_value is not None:
-                return ScrappingResult(
+                return ScrapingResult(
                     price=float(obs_value.attrib["value"]), comment=""
                 )
-    return ScrappingResult(price=None, comment="Bunds rate not found.")
+    return ScrapingResult(price=None, comment="Bunds rate not found.")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
+def _get_mutan_rate_from_boj(target_date: date) -> ScrapingResult:
     """Scrap BoJ website to get Mutan Rate.
 
     Source: https://www.boj.or.jp/statistics/market/short/mutan/index.htm
@@ -354,13 +352,13 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
         )
         if response.status_code >= 400:
             logger.warning(f"Error scraping BoJ rates: {response.text}")
-            return ScrappingResult(price=None, comment=response.text)
+            return ScrapingResult(price=None, comment=response.text)
 
     df = pd.read_excel(BytesIO(response.content))
     matches = df.map(lambda x: "Average" in str(x))
     match_locations = [(i, j) for i, j in zip(*matches.to_numpy().nonzero())]
     if len(match_locations) > 1:
-        return ScrappingResult(
+        return ScrapingResult(
             price=None, comment="BoJ file has likely changed. Review of code is needed."
         )
 
@@ -368,8 +366,8 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrappingResult:
     mutan_location_column = match_locations[0][1] + 1
     mutan_rate = df.iloc[mutan_location_row, mutan_location_column]
     if not pd.isna(df.iloc[mutan_location_row, mutan_location_column]):
-        return ScrappingResult(price=float(str(mutan_rate)), comment="")
-    return ScrappingResult(price=None, comment="Mutan rate not found.")
+        return ScrapingResult(price=float(str(mutan_rate)), comment="")
+    return ScrapingResult(price=None, comment="Mutan rate not found.")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
@@ -415,7 +413,7 @@ def _scrap_jgb_yield_curve_from_bb(target_date: date) -> dict:
     return target_yield_curves_df.iloc[0].to_dict()
 
 
-def _get_jgb_yield_from_bb(target_date: date, ticker: str) -> ScrappingResult:
+def _get_jgb_yield_from_bb(target_date: date, ticker: str) -> ScrapingResult:
     """Infer JGB yield from BB yield curve."""
     mapping = {
         "TDB3M": "TDB(3M)",
@@ -427,13 +425,13 @@ def _get_jgb_yield_from_bb(target_date: date, ticker: str) -> ScrappingResult:
         "JGB20Y": "20Y",
     }
     if ticker not in mapping.keys():
-        return ScrappingResult(price=None, comment="Ticker not found in mapping.")
+        return ScrapingResult(price=None, comment="Ticker not found in mapping.")
     curve = _scrap_jgb_yield_curve_from_bb(target_date)
     if not curve:
-        return ScrappingResult(price=None, comment="Yield curve not found.")
+        return ScrapingResult(price=None, comment="Yield curve not found.")
     if curve.get("error"):
-        return ScrappingResult(price=None, comment=curve.get("error"))
-    return ScrappingResult(price=curve.get(mapping[ticker]), comment="")
+        return ScrapingResult(price=None, comment=curve.get("error"))
+    return ScrapingResult(price=curve.get(mapping[ticker]), comment="")
 
 
 def _is_holiday_at_location(target_date: date, location: LocationChoices) -> bool:
@@ -445,7 +443,7 @@ def _get_market_data(
     asset: AssetModel,
     target_date: date,
 ) -> MarketData:
-    """Get price from scrapping function."""
+    """Get price from scraping function."""
     if _is_holiday_at_location(target_date, asset.location):
         logger.info(
             f"No price found for {asset.short_name} on {target_date} as it is a bank holiday."
@@ -456,19 +454,19 @@ def _get_market_data(
             date=target_date,
             comment=SpecialComment.BANK_HOLIDAY,
         )
-    scrapping_function = SOURCE_SCRAP_MAP.get(asset.source)
-    scrapping_result: ScrappingResult = (
-        scrapping_function(target_date, asset.ticker)
-        if scrapping_function
-        else ScrappingResult(price=None, comment="No scrapping function found.")
+    scraping_function = SOURCE_SCRAP_MAP.get(asset.source)
+    scraping_result: ScrapingResult = (
+        scraping_function(target_date, asset.ticker)
+        if scraping_function
+        else ScrapingResult(price=None, comment="No scraping function found.")
     )
-    if not scrapping_result.get("price"):
+    if not scraping_result.get("price"):
         logger.warning("No price found.")
     return MarketData(
         asset=asset,
-        price=scrapping_result.get("price"),
+        price=scraping_result.get("price"),
         date=target_date,
-        comment=scrapping_result.get("comment"),
+        comment=scraping_result.get("comment"),
     )
 
 
@@ -476,7 +474,7 @@ def get_market_data(target_date: date) -> List[MarketData]:
     """Get market data."""
     market_data = []
     for asset in AssetModel.objects.all():
-        logger.info(f"Scrapping asset: {asset.short_name}")
+        logger.info(f"Scraping asset: {asset.short_name}")
         market_data.append(_get_market_data(asset, target_date))
     return market_data
 
@@ -496,7 +494,7 @@ def get_specific_asset_market_data(
     ]
     market_data = []
     for target_date in date_range:
-        logger.info(f"Scrapping asset: {asset.short_name} for date: {target_date}")
+        logger.info(f"Scraping asset: {asset.short_name} for date: {target_date}")
         market_data.append(_get_market_data(asset, target_date))
     return market_data
 
@@ -514,7 +512,7 @@ def ingest_market_data(
             log_model=PriceUpdateLogModel,
             lookup_kwargs={"date": data["date"], "asset": data["asset"]},
             updates={
-                "logs": f"Automated price update on {data['asset'].short_name} to price: {data['price']}.",
+                "logs": f"Automated price update on {data['asset'].short_name}.",
                 "price": data["price"],
                 "comment": data["comment"],
             },

@@ -242,7 +242,7 @@ REST_FRAMEWORK = {
 # drf-spectacular Configuration
 SPECTACULAR_SETTINGS = {
     "TITLE": "Market Watch API",
-    "DESCRIPTION": "Personal API to monitor markets based on market data and economic indicators scrapping.",
+    "DESCRIPTION": "Personal API to monitor markets based on market data and economic indicators scraping.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/",

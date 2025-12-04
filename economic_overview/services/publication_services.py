@@ -30,6 +30,7 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
 
     Source: https://www.insee.fr/fr/agenda-diffusion
     """
+    default_df = pd.DataFrame(columns=["name", "publication_date"])
     INSEE_PUBLICATION_SCHEDULE_URL = "https://www.insee.fr/fr/agenda-diffusion"
     payload = {
         "q": "*:*",
@@ -42,9 +43,9 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
     response = requests.post(INSEE_PUBLICATION_SCHEDULE_URL, json=payload)
     if response.status_code >= 400:
         logger.warning(f"Error scraping INSEE publication schedule: {response.text}")
-        return pd.DataFrame()
+        return default_df
 
-    data = json.loads(response.content)["documents"]
+    data = json.loads(response.content).get("documents", [])
     records = []
     for item in data:
         record = {
@@ -56,6 +57,8 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
         records.append(record)
 
     df = pd.DataFrame(records)
+    if df.empty:
+        return default_df
     df["publication_date"] = pd.to_datetime(df["publication_date"], utc=True)
     df = df.sort_values("publication_date").reset_index(drop=True)
     return df
@@ -68,7 +71,10 @@ def _get_publication_dates_from_insee(name: str) -> List[datetime]:
     publication_dates = publication_schedule[publication_schedule["name"] == name][
         "publication_date"
     ]
-    return publication_dates.tolist()[:2]
+    return [
+        pd_timestamp.to_pydatetime().replace(tzinfo=None)
+        for pd_timestamp in publication_dates.tolist()[:2]
+    ]
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
@@ -96,9 +102,17 @@ def _update_publication_schedule(
         return publication_schedule
 
     publication_function = PUBLICATION_SOURCE_MAP.get(indicator.source)
+    if not publication_function:
+        raise ValueError(
+            f"Publication function not found for indicator: {indicator.name}"
+        )
     next_publication_dates = (
         publication_function(indicator.technical_name) if publication_function else []
     )
+    if not next_publication_dates:
+        logger.warning(f"No publication dates found for indicator: {indicator.name}")
+        return publication_schedule
+
     publication_schedule.previous_publication_date = (
         publication_schedule.current_publication_date
     )
@@ -114,12 +128,12 @@ def update_publication_schedules(
     ],
 ) -> List[str]:
     """Update publication schedules."""
-    schedule_not_updated = []
+    schedules_not_updated = []
     for indicator in indicators:
-        schedule = _update_publication_schedule(indicator)
-        if schedule:
-            schedule_not_updated.append(indicator.name)
-    return schedule_not_updated
+        schedule_not_updated = _update_publication_schedule(indicator)
+        if schedule_not_updated:
+            schedules_not_updated.append(indicator.name)
+    return schedules_not_updated
 
 
 def get_publication_schedules_for_dates(

@@ -25,8 +25,8 @@ SOURCE_SCRAP_MAP = {
 }
 
 
-class ScrappingResult(TypedDict):
-    """Scrapping result dictionnary."""
+class ScrapingResult(TypedDict):
+    """Scraping result dictionnary."""
 
     period: Optional[date]
     data_value: Optional[float]
@@ -45,7 +45,7 @@ class EconomicData(TypedDict):
 @ttl_cache(maxsize=128, ttl=10 * 60)
 def _get_data_from_insee(
     ticker: str, target_period: Optional[str] = None
-) -> ScrappingResult:
+) -> ScrapingResult:
     """Get data from INSEE.
 
     Note: The data given by INSEE is a zip file containing 2 files:
@@ -59,7 +59,7 @@ def _get_data_from_insee(
         "lang": "fr",
         "ordre": "antechronologique",
         "transposition": "donneescolonne",
-        "anneeDebut": "1977",
+        "anneeDebut": "2010",
         "anneeFin": str(date.today().year),
         "revision": "sansrevisions",
     }
@@ -67,13 +67,13 @@ def _get_data_from_insee(
     response = requests.get(INSEE_URL, params=params)
     if response.status_code >= 400:
         logger.warning(f"Error scraping INSEE data: {response.text}")
-        return ScrappingResult(period=None, data_value=None, comment=response.text)
+        return ScrapingResult(period=None, data_value=None, comment=response.text)
 
     try:
         with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
             csv_files = [n for n in zf.namelist() if "valeurs_mensuelles" in n.lower()]
             if not csv_files:
-                return ScrappingResult(
+                return ScrapingResult(
                     period=None,
                     data_value=None,
                     comment="No 'valeurs_mensuelles' CSV found in archive.",
@@ -81,7 +81,7 @@ def _get_data_from_insee(
             with zf.open(csv_files[0]) as f:
                 df = pd.read_csv(f, encoding="utf-8", sep=";")
     except Exception as exc:
-        return ScrappingResult(
+        return ScrapingResult(
             period=None, data_value=None, comment=f"Error reading ZIP content: {exc}"
         )
 
@@ -89,33 +89,33 @@ def _get_data_from_insee(
         "Libellé" not in df.columns
         or "Période" not in "Période" not in df["Libellé"].values
     ):
-        return ScrappingResult(
+        return ScrapingResult(
             period=None, data_value=None, comment="Data is not in the expected format."
         )
 
     header_row = df.index[df["Libellé"] == "Période"][0]
     if len(df) <= header_row + 1:
-        return ScrappingResult(period=None, data_value=None, comment="No data found.")
+        return ScrapingResult(period=None, data_value=None, comment="No data found.")
 
     if not target_period:
         target_row = header_row + 1
     else:
         target_row = df.index[df["Libellé"] == target_period]
         if target_row.empty:
-            return ScrappingResult(
+            return ScrapingResult(
                 period=None, data_value=None, comment="Target period not found."
             )
         target_row = target_row[0]
 
     period = datetime.strptime(str(df.iloc[target_row, 0]), "%Y-%m").date()
     data_value = float(str(df.iloc[target_row, 1]))
-    return ScrappingResult(period=period, data_value=data_value, comment="")
+    return ScrapingResult(period=period, data_value=data_value, comment="")
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
 def _get_data_from_japan_cabinet_office(
     ticker: str, target_period: Optional[str] = None
-) -> ScrappingResult:
+) -> ScrapingResult:
     """Get data from Japan Cabinet Office."""
     raise NotImplementedError("Not implemented.")
 
@@ -123,22 +123,22 @@ def _get_data_from_japan_cabinet_office(
 def _get_economic_data(
     indicator: EconomicIndicatorInformationModel, period: Optional[str] = None
 ) -> EconomicData:
-    """Get economic data from scrapping function."""
-    scrapping_function = SOURCE_SCRAP_MAP.get(indicator.source)
-    scrapping_result: ScrappingResult = (
-        scrapping_function(indicator.ticker, period)
-        if scrapping_function
-        else ScrappingResult(
-            period=None, data_value=None, comment="No scrapping function found."
+    """Get economic data from scraping function."""
+    scraping_function = SOURCE_SCRAP_MAP.get(indicator.source)
+    scraping_result: ScrapingResult = (
+        scraping_function(indicator.ticker, period)
+        if scraping_function
+        else ScrapingResult(
+            period=None, data_value=None, comment="No scraping function found."
         )
     )
-    if not scrapping_result.get("data_value"):
+    if not scraping_result.get("data_value"):
         logger.warning("No value found.")
     return EconomicData(
         indicator=indicator,
-        period=scrapping_result.get("period"),
-        data_value=scrapping_result.get("data_value"),
-        comment=scrapping_result.get("comment"),
+        period=scraping_result.get("period"),
+        data_value=scraping_result.get("data_value"),
+        comment=scraping_result.get("comment"),
     )
 
 
@@ -153,10 +153,11 @@ def _ingest_single_economic_data(
         log_model=EconomicDataUpdateLogModel,
         lookup_kwargs={"indicator": data["indicator"], "period": data["period"]},
         updates={
-            "logs": f"Automated data update on {data['indicator'].ticker} to data value: {data['data_value']}.",
+            "logs": f"Automated data update on {data['indicator'].ticker}.",
             "data_value": data["data_value"],
             "comment": data["comment"],
         },
+        none_skip_fields=["data_value"],
     )
     return is_success
 
