@@ -99,13 +99,30 @@ class TestMarketDataServices(TestCase):
             comparison_market_prices=comparison_market_prices,
         )
 
-        assert result == []
+        assert result == [
+            {
+                "asset_class": "STOCKS",
+                "asset_id": 1,
+                "asset_type": "EQUITY_INDEX",
+                "comment": None,
+                "comment_previous": "",
+                "full_name": "Test Asset",
+                "location": "US",
+                "maturity": None,
+                "price": None,
+                "price_change": None,
+                "price_change_pct": None,
+                "price_previous": 90.0,
+                "short_name": "TEST",
+                "source": "",
+            },
+        ]
 
     def test_calculate_price_change_no_previous_data(self):
         """
         GIVEN an existing asset and prices
         WHEN calculating price changes for a previous date without prices
-        THEN an empty list is returned
+        THEN reference data is returned with None for previous fields
         """
         not_existing_date = self.previous_date - timedelta(days=1)
         reference_market_prices = get_all_asset_prices_for_date(self.price_date)
@@ -116,7 +133,24 @@ class TestMarketDataServices(TestCase):
             comparison_market_prices=comparison_market_prices,
         )
 
-        assert result == []
+        assert result == [
+            {
+                "asset_class": AssetClassChoices.STOCKS,
+                "asset_id": 1,
+                "asset_type": AssetTypeChoices.EQUITY_INDEX,
+                "comment": "",
+                "comment_previous": None,
+                "full_name": "Test Asset",
+                "location": self.location,
+                "maturity": None,
+                "price": 100.0,
+                "price_change": None,
+                "price_change_pct": None,
+                "price_previous": None,
+                "short_name": "TEST",
+                "source": "",
+            },
+        ]
 
     def test_calculate_price_change_rates_asset_class(self):
         """

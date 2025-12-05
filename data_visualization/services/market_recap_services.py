@@ -90,6 +90,11 @@ def format_data_for_market_recap_display(
 ) -> List[DisplayData]:
     """Format market price data for structured display."""
     price_diff = calculate_price_change(reference_market_prices, previous_market_prices)
+    if not price_diff:
+        # If there is a price, there should always be a price diff (None)
+        # If no price diff, then there is no data to display
+        return []
+
     df = pd.DataFrame(price_diff).replace({float("nan"): None})
 
     # Map countries to location groups

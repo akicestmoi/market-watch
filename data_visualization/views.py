@@ -33,6 +33,8 @@ def market_recap_view(request):
     )
     previous_date = datetime.fromisoformat(previous_date).date()
 
+    errors = {}
+
     base_context = {
         "reference_date": reference_date.isoformat(),
         "previous_date": previous_date.isoformat(),
@@ -40,25 +42,22 @@ def market_recap_view(request):
         "default_previous_date": default_previous_date.isoformat(),
     }
     if reference_date >= date.today():
-        base_context["error_message"] = (
-            f"Reference date: {reference_date} must be before today: {date.today()}."
+        errors["reference_date"] = (
+            f"Reference date {reference_date} must be before today {date.today()}."
         )
-        return render(request, "data_visualization/market_recap.html", base_context)
 
     if reference_date <= previous_date:
-        base_context["error_message"] = (
-            f"Reference date: {reference_date} must be greater than the previous date: {previous_date}."
+        errors["previous_date"] = (
+            f"Reference date {reference_date} must be greater than the previous date {previous_date}."
         )
-        return render(request, "data_visualization/market_recap.html", base_context)
 
     reference_market_prices = market_data_services.get_all_asset_prices_for_date(
         reference_date
     )
     if not reference_market_prices:
-        base_context["error_message"] = (
-            f"No data found for reference date: {reference_date}."
+        errors["reference_market_prices"] = (
+            f"No data found for reference date {reference_date}."
         )
-        return render(request, "data_visualization/market_recap.html", base_context)
 
     previous_market_prices = (
         market_data_services.get_all_asset_prices_for_date_without_holidays(
@@ -66,10 +65,9 @@ def market_recap_view(request):
         )
     )
     if not previous_market_prices:
-        base_context["error_message"] = (
-            f"No data found for reference date: {previous_date}."
+        errors["previous_market_prices"] = (
+            f"No data found for reference date {previous_date}."
         )
-        return render(request, "data_visualization/market_recap.html", base_context)
 
     data_to_display = market_recap_services.format_data_for_market_recap_display(
         reference_market_prices, previous_market_prices
@@ -86,11 +84,13 @@ def market_recap_view(request):
         AssetClassChoices.RATES.label,
     ]
     context = {
+        **base_context,
         "data_to_display": data_to_display,
         "left_asset_classes": left_asset_classes,
         "right_asset_classes": right_asset_classes,
-        **base_context,
     }
+    if errors:
+        context["error_messages"] = json.dumps(errors)
     return render(request, "data_visualization/market_recap.html", context)
 
 
@@ -123,22 +123,21 @@ def market_charts_view(request):
         key: request.GET.get(key, default_values[key]) for key in default_values.keys()
     }
 
-    # Data Validation
-    error_message = {}
+    errors = {}
 
     reference_date = datetime.fromisoformat(front_data["reference_date"]).date()
     if reference_date >= date.today():
-        error_message = {
-            "error_message": f"Reference date: {reference_date} must be before today: {date.today()}."
-        }
+        errors["reference_date"] = (
+            f"Reference date {reference_date} must be before today {date.today()}."
+        )
 
     previous_curve_date = datetime.fromisoformat(
         front_data["previous_curve_date"]
     ).date()
     if reference_date <= previous_curve_date:
-        error_message = {
-            "error_message": f"Reference date: {reference_date} must be greater than the previous curve date: {previous_curve_date}."
-        }
+        errors["previous_curve_date"] = (
+            f"Reference date {reference_date} must be greater than the previous curve date {previous_curve_date}."
+        )
 
     # Return Selected Values for Front/Back Interaction
     selected_values = {
@@ -159,7 +158,6 @@ def market_charts_view(request):
         reference_date, previous_curve_date, MarketChartsFrontData(**front_data)
     )
 
-    # Return all to Front
     context = {
         "reference_date": reference_date.isoformat(),
         "previous_curve_date": previous_curve_date.isoformat(),
@@ -170,8 +168,8 @@ def market_charts_view(request):
         "labels": json.dumps(labels),
         "market_data": json.dumps(market_data, default=str),
     }
-    if error_message:
-        context.update(error_message)
+    if errors:
+        context["error_messages"] = json.dumps(errors)
     return render(request, "data_visualization/market_charts.html", context)
 
 
@@ -203,6 +201,8 @@ def central_banks_recap_view(request):
     )
     previous_date = datetime.fromisoformat(previous_date).date()
 
+    errors = {}
+
     base_context = {
         "reference_date": reference_date.isoformat(),
         "previous_date": previous_date.isoformat(),
@@ -210,15 +210,11 @@ def central_banks_recap_view(request):
         "default_previous_date": default_previous_date.isoformat(),
     }
     if reference_date >= date.today():
-        base_context["error_message"] = (
+        errors["reference_date"] = (
             f"Reference date: {reference_date} must be before today: {date.today()}."
-        )
-        return render(
-            request, "data_visualization/central_banks_recap.html", base_context
         )
 
     central_banks_data = {}
-    error_messages = []
     for central_bank in CentralBankChoices.ordered():
         cb_data_items = []
         probability_matrix = None
@@ -229,7 +225,7 @@ def central_banks_recap_view(request):
                 central_bank, reference_date
             )
         except Exception as e:
-            error_messages.append(
+            errors[f"{central_bank.value}_data_item"] = (
                 f"Error getting central bank data item for {central_bank.label}: {e}"
             )
 
@@ -238,7 +234,7 @@ def central_banks_recap_view(request):
                 central_bank, reference_date
             )
         except Exception as e:
-            error_messages.append(
+            errors[f"{central_bank.value}_probability_matrix"] = (
                 f"Error getting probability matrix for {central_bank.label}: {e}"
             )
 
@@ -252,7 +248,7 @@ def central_banks_recap_view(request):
                 )
             )
         except Exception as e:
-            error_messages.append(
+            errors[f"{central_bank.value}_probability_change_matrix"] = (
                 f"Error getting probability change matrix for {central_bank.label}: {e}"
             )
 
@@ -263,11 +259,10 @@ def central_banks_recap_view(request):
             "probability_change_matrix": probability_change_matrix,
         }
 
-    if error_messages:
-        base_context["error_message"] = "; ".join(error_messages)
-
     context = {
-        "central_banks_data": central_banks_data,
         **base_context,
+        "central_banks_data": central_banks_data,
     }
+    if errors:
+        context["error_messages"] = json.dumps(errors)
     return render(request, "data_visualization/central_banks_recap.html", context)

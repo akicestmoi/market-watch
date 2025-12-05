@@ -26,7 +26,9 @@ class EconomicRecapItem(TypedDict):
     period: Optional[str]
 
 
-def get_economic_recap_data(locations: List[str]) -> Dict[str, List[EconomicRecapItem]]:
+def get_economic_recap_data(
+    locations: List[str],
+) -> Dict[str, List[EconomicRecapItem]]:
     """Get economic recap data."""
     indicators = EconomicIndicatorInformationModel.objects.all().order_by("id")
     economic_data: Dict[str, List[EconomicRecapItem]] = {}
@@ -93,7 +95,9 @@ def _get_upcoming_events_from_publication_schedules(
     """Get upcoming events from publication schedules."""
     events_by_date: Dict[str, List[EconomicEvent]] = {}
     upcoming_schedules = (
-        PublicationScheduleModel.objects.filter(next_publication_date__gte=start_date)
+        PublicationScheduleModel.objects.filter(
+            current_publication_date__gte=start_date
+        )
         .select_related("indicator")
         .order_by("next_publication_date")[:100]
     )

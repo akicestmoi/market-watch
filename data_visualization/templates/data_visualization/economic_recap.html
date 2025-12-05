@@ -112,9 +112,9 @@
         </div>
     </div>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
-    {% if error_message %}
+    {% if error_messages %}
     <script>
-        window.errorMessage = "{{ error_message|escapejs }}";
+        window.errorMessages = {{ error_messages|safe }};
     </script>
     {% endif %}
 </body>

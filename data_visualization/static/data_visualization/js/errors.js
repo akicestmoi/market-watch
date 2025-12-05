@@ -30,7 +30,32 @@
     ensureModal();
     const overlay = document.getElementById('errModalOverlay');
     const body = document.getElementById('errModalBody');
-    body.textContent = message || 'An error occurred.';
+
+    // Handle dictionary of error messages (keys as subheaders, values as messages)
+    if (message && typeof message === 'object' && !Array.isArray(message)) {
+      body.innerHTML = '';
+      Object.entries(message).forEach(([key, value], index) => {
+        const errorSection = document.createElement('div');
+        errorSection.className = 'error-message-section';
+
+        const subheader = document.createElement('h4');
+        subheader.className = 'error-message-subheader';
+        // Format key: replace underscores with spaces and capitalize words
+        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        subheader.textContent = formattedKey;
+        errorSection.appendChild(subheader);
+
+        const errorText = document.createElement('p');
+        errorText.className = 'error-message-text';
+        errorText.textContent = value;
+        errorSection.appendChild(errorText);
+
+        body.appendChild(errorSection);
+      });
+    } else {
+      // Handle string message (backward compatibility)
+      body.textContent = message || 'An error occurred.';
+    }
     overlay.style.display = 'flex';
   }
 
@@ -51,7 +76,9 @@
       let msg = `Request failed (${resp.status})`;
       try {
         const data = await resp.json();
-        if(data && (data.error_message || data.message)){
+        if(data && data.error_messages){
+          msg = data.error_messages;
+        } else if(data && (data.error_message || data.message)){
           msg = data.error_message || data.message;
         }
       } catch(_){ /* ignore */ }
@@ -80,7 +107,11 @@
     });
 
     // If server rendered error, show it immediately without changing the screen
-    if(window.errorMessage){ showError(window.errorMessage); }
+    if(window.errorMessages){
+      showError(window.errorMessages);
+    } else if(window.errorMessage){
+      showError(window.errorMessage);
+    }
   });
 
   // expose in case manual call is needed

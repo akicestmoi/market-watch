@@ -119,38 +119,72 @@ def get_all_asset_prices_for_date_without_holidays(
     return market_prices_without_holidays
 
 
+def _convert_market_prices_to_data(
+    market_prices: List[MarketPriceModel],
+) -> List[dict]:
+    """Convert market prices to dictionary format."""
+    data_list = []
+    for market_price in market_prices:
+        asset = market_price.asset.convert_to_dict()
+        data = market_price.convert_to_dict(remove_foreign_key=True)
+        data.update(asset)
+        data_list.append(data)
+    return data_list
+
+
 def calculate_price_change(
     reference_market_prices: List[MarketPriceModel],
     comparison_market_prices: List[MarketPriceModel],
 ) -> List[PriceChange]:
     """Calculate price change between two dates."""
-    reference_data = []
-    for market_price in reference_market_prices:
-        asset = market_price.asset.convert_to_dict()
-        data = market_price.convert_to_dict(remove_foreign_key=True)
-        data.update(asset)
-        reference_data.append(data)
+    reference_data = _convert_market_prices_to_data(reference_market_prices)
+    comparison_data = _convert_market_prices_to_data(comparison_market_prices)
 
-    comparison_data = []
-    for market_price in comparison_market_prices:
-        asset = market_price.asset.convert_to_dict()
-        data = market_price.convert_to_dict(remove_foreign_key=True)
-        data.update(asset)
-        comparison_data.append(data)
-
-    if not reference_data or not comparison_data:
+    if not reference_data and not comparison_data:
         return []
 
-    reference_df = pd.DataFrame(reference_data)
-    comparison_df = pd.DataFrame(comparison_data)
+    reference_df = pd.DataFrame(reference_data) if reference_data else pd.DataFrame()
+    comparison_df = pd.DataFrame(comparison_data) if comparison_data else pd.DataFrame()
+    if not reference_df.empty and not comparison_df.empty:
+        # Outer merge to handle all cases uniformly
+        price_diff = pd.merge(
+            reference_df,
+            comparison_df,
+            on="short_name",
+            how="outer",
+            suffixes=("", "_previous"),
+        )
+    elif not reference_df.empty:
+        price_diff = reference_df.copy()
+        price_diff["price_previous"] = None
+        price_diff["comment_previous"] = None
+    else:
+        price_diff = comparison_df.rename(
+            columns={"price": "price_previous", "comment": "comment_previous"}
+        )
+        price_diff["price"] = None
+        price_diff["comment"] = None
 
-    price_diff = pd.merge(
-        reference_df,
-        comparison_df,
-        on="short_name",
-        how="left",
-        suffixes=("", "_previous"),
-    )
+    # For assets that only exist in comparison_data, copy _previous metadata fields
+    # to base fields (except price/comment which should remain None)
+    if not reference_df.empty and not comparison_df.empty:
+        previous_cols = [col for col in price_diff.columns if col.endswith("_previous")]
+        price_cols = {"price", "comment"}
+
+        for prev_col in previous_cols:
+            base_col = prev_col.replace("_previous", "")
+            if base_col in price_cols or base_col not in price_diff.columns:
+                continue
+
+            # Vectorized copy: only where base is NaN and _previous has value
+            mask = price_diff[base_col].isna() & price_diff[prev_col].notna()
+            if mask.any():
+                price_diff.loc[mask, base_col] = price_diff.loc[mask, prev_col]
+
+        # Ensure price/comment are None for assets without reference data
+        mask_no_ref = price_diff["price"].isna() & price_diff["price_previous"].notna()
+        if mask_no_ref.any():
+            price_diff.loc[mask_no_ref, ["price", "comment"]] = None
 
     # Calculate price changes
     price_diff["price_change"] = price_diff["price"] - price_diff["price_previous"]
@@ -158,14 +192,19 @@ def calculate_price_change(
         price_diff["price"] / price_diff["price_previous"] - 1
     ) * 100
 
-    # Adjusting price changes for Interest Rate classes
-    rates_row = price_diff["asset_class"].isin([AssetClassChoices.RATES])
-    price_diff.loc[rates_row, "price_change"] *= 100
-    price_diff.loc[rates_row, "price_change_pct"] = None
+    # Adjust price changes for Interest Rate classes
+    if "asset_class" in price_diff.columns:
+        rates_mask = price_diff["asset_class"].isin([AssetClassChoices.RATES])
+        if rates_mask.any():
+            price_diff.loc[rates_mask, "price_change"] *= 100
+            price_diff.loc[rates_mask, "price_change_pct"] = None
 
+    # Convert to PriceChange records
+    price_change_cols = list(PriceChange.__annotations__.keys())
+    available_cols = [col for col in price_change_cols if col in price_diff.columns]
     records = cast(
         List[PriceChange],
-        price_diff[list(PriceChange.__annotations__.keys())]
+        price_diff[available_cols]
         .replace({float("nan"): None})
         .to_dict(orient="records"),
     )

@@ -223,19 +223,25 @@ def get_market_charts_market_data(
                 spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
             )
         else:
+            if main_rate_historical_yield:
+                spread_rate_df = pd.DataFrame(main_rate_historical_yield)
+                spread_rate_df["price"] = spread_rate_df["price"] * 100
+                spread_rates = cast(
+                    List[HistoricalPrice],
+                    spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
+                )
+            else:
+                spread_rates = []
+    else:
+        if main_rate_historical_yield:
             spread_rate_df = pd.DataFrame(main_rate_historical_yield)
             spread_rate_df["price"] = spread_rate_df["price"] * 100
             spread_rates = cast(
                 List[HistoricalPrice],
                 spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
             )
-    else:
-        spread_rate_df = pd.DataFrame(main_rate_historical_yield)
-        spread_rate_df["price"] = spread_rate_df["price"] * 100
-        spread_rates = cast(
-            List[HistoricalPrice],
-            spread_rate_df[["price_date", "price"]].to_dict(orient="records"),
-        )
+        else:
+            spread_rates = []
     return {
         "stock_prices": market_data_services.get_historical_prices(
             front_data["stock_name"],

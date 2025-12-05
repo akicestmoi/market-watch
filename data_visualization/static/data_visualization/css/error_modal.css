@@ -50,6 +50,34 @@
   line-height:1.5;
   white-space:pre-wrap;
   word-break:break-word;
+  text-align:left;
+}
+
+.error-message-section{
+  margin-bottom:16px;
+}
+
+.error-message-section:last-child{
+  margin-bottom:0;
+}
+
+.error-message-subheader{
+  margin:0 0 8px 0;
+  font-size:14px;
+  font-weight:600;
+  color:#991b1b;
+  text-transform:capitalize;
+  border-bottom:1px solid #fde2e2;
+  padding-bottom:4px;
+  text-align:left;
+}
+
+.error-message-text{
+  margin:0;
+  color:#333;
+  line-height:1.5;
+  word-break:break-word;
+  text-align:left;
 }
 
 .err-modal-footer{
