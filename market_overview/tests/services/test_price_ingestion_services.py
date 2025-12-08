@@ -18,8 +18,8 @@ from market_overview.models import (
 from market_overview.services.price_ingestion_services import (
     MarketData,
     ScrapingResult,
+    _get_specific_asset_market_data,
     get_market_data,
-    get_specific_asset_market_data,
     ingest_market_data,
 )
 
@@ -212,7 +212,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
-        result = get_specific_asset_market_data(
+        result = _get_specific_asset_market_data(
             self.asset.short_name, self.start_date, self.end_date
         )
 
@@ -235,7 +235,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
-        result = get_specific_asset_market_data(
+        result = _get_specific_asset_market_data(
             self.asset.short_name, self.start_date, self.start_date
         )
 
@@ -251,7 +251,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         THEN a DoesNotExist exception is raised
         """
         with pytest.raises(AssetModel.DoesNotExist):
-            get_specific_asset_market_data(
+            _get_specific_asset_market_data(
                 "NONEXISTENT", self.start_date, self.end_date
             )
 
@@ -271,7 +271,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
-        result = get_specific_asset_market_data(self.asset.short_name, friday, monday)
+        result = _get_specific_asset_market_data(self.asset.short_name, friday, monday)
 
         assert result == [
             {
@@ -316,7 +316,7 @@ class GetSpecificAssetMarketDataTest(TestCase):
         mock_scraper = Mock(return_value=ScrapingResult(price=100.0, comment=""))
         mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
 
-        result = get_specific_asset_market_data(
+        result = _get_specific_asset_market_data(
             self.asset.short_name, self.start_date, self.end_date
         )
 

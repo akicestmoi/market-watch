@@ -10,6 +10,7 @@ import pandas as pd
 import requests
 import yfinance as yf
 from cachetools.func import ttl_cache
+from pandas.tseries.offsets import BDay
 
 import core.services as core_services
 from core.services import fetch_html, logger
@@ -21,6 +22,7 @@ from market_overview.models import (
     PriceSourceChoices,
     PriceUpdateLogModel,
 )
+from market_overview.services import market_data_services
 
 env = environ.Env()
 
@@ -67,6 +69,23 @@ class MarketData(TypedDict):
     price: Optional[float]
     date: date
     comment: Optional[str]
+
+
+class BatchPriceIngestionItem(TypedDict):
+    """Batch price ingestion item dictionnary."""
+
+    short_name: str
+    start_date: date
+    end_date: Optional[date]
+
+
+class BatchPriceIngestionResult(TypedDict):
+    """Batch price ingestion result dictionnary."""
+
+    short_name: str
+    status: str
+    error: Optional[str]
+    asset_not_updated: Optional[List[str]]
 
 
 def _parse_str_decimals_to_float(a: str) -> Optional[float]:
@@ -479,26 +498,6 @@ def get_market_data(target_date: date) -> List[MarketData]:
     return market_data
 
 
-def get_specific_asset_market_data(
-    short_name: str,
-    start_date: date,
-    end_date: date,
-) -> List[MarketData]:
-    """Get specific asset market data."""
-    asset = AssetModel.objects.get(short_name=short_name)
-    delta_days = (end_date - start_date).days
-    date_range = [
-        start_date + timedelta(days=i)
-        for i in range(delta_days + 1)
-        if (start_date + timedelta(days=i)).weekday() < 5
-    ]
-    market_data = []
-    for target_date in date_range:
-        logger.info(f"Scraping asset: {asset.short_name} for date: {target_date}")
-        market_data.append(_get_market_data(asset, target_date))
-    return market_data
-
-
 def ingest_market_data(
     market_data: List[MarketData],
 ) -> List[MarketData]:
@@ -520,3 +519,65 @@ def ingest_market_data(
             none_skip_fields=["price"],
         )
     return asset_not_updated
+
+
+def _get_specific_asset_market_data(
+    short_name: str,
+    start_date: date,
+    end_date: date,
+) -> List[MarketData]:
+    """Get specific asset market data."""
+    asset = AssetModel.objects.get(short_name=short_name)
+    delta_days = (end_date - start_date).days
+    date_range = [
+        start_date + timedelta(days=i)
+        for i in range(delta_days + 1)
+        if (start_date + timedelta(days=i)).weekday() < 5
+    ]
+    market_data = []
+    for target_date in date_range:
+        logger.info(f"Scraping asset: {asset.short_name} for date: {target_date}")
+        market_data.append(_get_market_data(asset, target_date))
+    return market_data
+
+
+def _ingest_specific_asset_market_prices(
+    short_name: str,
+    start_date: date,
+    end_date: Optional[date] = None,
+) -> BatchPriceIngestionResult:
+    """Ingest market prices for a specific asset over a date range."""
+    target_end_date = end_date if end_date else (date.today() - BDay(1)).date()
+    if not market_data_services.check_asset_existence(short_name):
+        return BatchPriceIngestionResult(
+            short_name=short_name,
+            status="error",
+            error=f"Asset: {short_name} does not exist in database.",
+            asset_not_updated=None,
+        )
+
+    market_data = _get_specific_asset_market_data(
+        short_name, start_date, target_end_date
+    )
+    asset_not_updated = ingest_market_data(market_data)
+
+    return BatchPriceIngestionResult(
+        short_name=short_name,
+        status="success",
+        error=None,
+        asset_not_updated=[data["date"].isoformat() for data in asset_not_updated],
+    )
+
+
+def batch_ingest_specific_asset_market_prices(
+    batch_ingestion_items: List[BatchPriceIngestionItem],
+) -> List[BatchPriceIngestionResult]:
+    """Batch ingest market prices for multiple assets."""
+    results = []
+    for item in batch_ingestion_items:
+        result = _ingest_specific_asset_market_prices(
+            item["short_name"], item["start_date"], item.get("end_date")
+        )
+        results.append(result)
+
+    return results

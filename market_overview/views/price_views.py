@@ -11,7 +11,6 @@ from core.open_api import (
     ApiTags,
     BadRequestOpenApiResponse,
     CreatedOpenApiResponse,
-    NotFoundOpenApiResponse,
     OkOpenApiResponse,
     open_api,
 )
@@ -19,21 +18,22 @@ from core.services import logger
 from core.views import BaseAPIView
 from market_overview.models import MarketPriceModel
 from market_overview.open_api.request_serializers import (
+    BatchPriceIngestionSerializer,
     BulkUpdateAssetsPricesSerializer,
     CsvBulkUpdateAssetsPricesSerializer,
     GetAssetsWithoutPricesSerializer,
     GetMarketPriceSerializer,
     ListMarketPricesSerializer,
     MarketPriceIngestionSerializer,
-    SpecificAssetMarketPriceIngestionSerializer,
 )
 from market_overview.open_api.response_serializers import (
+    BatchPriceIngestionResponseSerializer,
     GetAssetWithoutPriceResponseSerializer,
     MarketPriceIngestionResponseSerializer,
     MarketPriceResponseSerializer,
-    SpecificAssetMarketPriceIngestionResponseSerializer,
 )
 from market_overview.services.market_data_services import BulkUpdateAssetsPricesItem
+from market_overview.services.price_ingestion_services import BatchPriceIngestionItem
 
 
 class IngestMarketPricesView(BaseAPIView):
@@ -68,40 +68,29 @@ class IngestMarketPricesView(BaseAPIView):
         )
 
 
-class IngestSpecificAssetMarketPricesView(BaseAPIView):
-    """Ingest Specific Asset Market Prices APIView."""
+class BatchIngestMarketPricesView(BaseAPIView):
+    """Batch Ingest Market Prices APIView."""
 
     @open_api(
         tags=[ApiTags.ASSET_PRICES],
-        summary="Ingest Specific Asset Market Prices",
-        description="Ingest market prices for a specific asset over a target period. This endpoint scrapes historical data for a single asset.",
-        request_serializer=SpecificAssetMarketPriceIngestionSerializer,
-        response=CreatedOpenApiResponse(
-            SpecificAssetMarketPriceIngestionResponseSerializer
-        ),
-        error_responses=[NotFoundOpenApiResponse("Asset not found")],
+        summary="Batch Ingest Market Prices",
+        description="Ingest market prices for specific assets over target periods. This endpoint scrapes historical data for multiple assets.",
+        request_serializer=BatchPriceIngestionSerializer,
+        response=CreatedOpenApiResponse(BatchPriceIngestionResponseSerializer),
     )
-    def post(self, validated_data: dict) -> Response:
-        """Ingest market prices for a specific asset over a target period."""
-        short_name: str = validated_data["short_name"]
-        start_date: date = validated_data["start_date"]
-        end_date: date = validated_data["end_date"]
+    def post(self, validated_data: List[BatchPriceIngestionItem]) -> Response:
+        """Ingest market prices for specific assets over target periods."""
+        batch_ingestion_items: List[BatchPriceIngestionItem] = validated_data
 
-        if not market_data_services.check_asset_existence(short_name):
-            return Response(
-                {"error_message": f"Asset: {short_name} does not exist in database."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        market_data = price_ingestion_services.get_specific_asset_market_data(
-            short_name, start_date, end_date
+        results = price_ingestion_services.batch_ingest_specific_asset_market_prices(
+            batch_ingestion_items
         )
-        asset_not_updated = price_ingestion_services.ingest_market_data(market_data)
+
         return Response(
-            SpecificAssetMarketPriceIngestionResponseSerializer(
+            BatchPriceIngestionResponseSerializer(
                 {
-                    "message": "Asset prices successfully ingested",
-                    "asset_not_updated": [data["date"] for data in asset_not_updated],
+                    "message": "Asset prices ingestion completed",
+                    "results": results,
                 }
             ).data,
             status=status.HTTP_201_CREATED,

@@ -4,6 +4,7 @@ from typing import List
 from unittest.mock import patch
 
 from django.test import TestCase
+from pandas.tseries.offsets import BDay
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -23,7 +24,7 @@ class TestMarketPricesIngestionViews(TestCase):
     """Test cases for Market Prices Ingestion Views."""
 
     INGEST_MARKET_PRICES_URL = "/ingest"
-    INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL = "/ingest-specific"
+    INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL = "/batch-ingest"
 
     def setUp(self):
         """Set up test fixtures."""
@@ -149,7 +150,7 @@ class TestMarketPricesIngestionViews(TestCase):
         }
 
     @patch(
-        "market_overview.services.price_ingestion_services.get_specific_asset_market_data"
+        "market_overview.services.price_ingestion_services._get_specific_asset_market_data"
     )
     @patch("market_overview.services.price_ingestion_services.ingest_market_data")
     def test_ingest_specific_asset_prices_success(self, mock_ingest, mock_get_data):
@@ -163,45 +164,66 @@ class TestMarketPricesIngestionViews(TestCase):
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
-            {
-                "short_name": "TEST",
-                "start_date": self.start_date.isoformat(),
-                "end_date": self.end_date.isoformat(),
-            },
+            [
+                {
+                    "short_name": "TEST",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                }
+            ],
+            format="json",
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
-            "message": "Asset prices successfully ingested",
-            "asset_not_updated": [],
+            "message": "Asset prices ingestion completed",
+            "results": [
+                {
+                    "short_name": "TEST",
+                    "status": "success",
+                    "error": None,
+                    "asset_not_updated": [],
+                }
+            ],
         }
 
     def test_ingest_specific_asset_prices_asset_not_found(self):
         """
         GIVEN a non-existent asset short name
         WHEN ingesting specific asset market prices
-        THEN a 404 Not Found error is returned
+        THEN a 201 Created response is returned with error status in results
         """
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
-            {
-                "short_name": "NONEXISTENT",
-                "start_date": self.start_date.isoformat(),
-                "end_date": self.end_date.isoformat(),
-            },
+            [
+                {
+                    "short_name": "NONEXISTENT",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                }
+            ],
+            format="json",
         )
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
-            "error_message": "Asset: NONEXISTENT does not exist in database.",
+            "message": "Asset prices ingestion completed",
+            "results": [
+                {
+                    "short_name": "NONEXISTENT",
+                    "status": "error",
+                    "error": "Asset: NONEXISTENT does not exist in database.",
+                    "asset_not_updated": None,
+                }
+            ],
         }
 
     @patch(
-        "market_overview.services.price_ingestion_services.get_specific_asset_market_data"
+        "market_overview.services.price_ingestion_services._get_specific_asset_market_data"
     )
     @patch("market_overview.services.price_ingestion_services.ingest_market_data")
-    def test_ingest_specific_asset_prices_start_after_end(
-        self, mock_ingest, mock_get_data
+    def test_ingest_specific_asset_prices_start_date_after_end_date(
+        self, mock_get_data, mock_ingest
     ):
         """
         GIVEN a start date that is after the end date
@@ -213,18 +235,25 @@ class TestMarketPricesIngestionViews(TestCase):
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
-            {
-                "short_name": "TEST",
-                "start_date": self.end_date.isoformat(),
-                "end_date": self.start_date.isoformat(),
-            },
+            [
+                {
+                    "short_name": "TEST",
+                    "start_date": self.end_date.isoformat(),
+                    "end_date": self.start_date.isoformat(),
+                }
+            ],
+            format="json",
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {
-            "error_message": {
-                "non_field_errors": ["end_date must be greater than start_date."],
-            }
+            "error_message": [
+                {
+                    "non_field_errors": [
+                        "end_date must be greater than or equal to start_date."
+                    ],
+                }
+            ],
         }
 
     def test_ingest_specific_asset_prices_missing_parameters(self):
@@ -235,18 +264,27 @@ class TestMarketPricesIngestionViews(TestCase):
         """
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
-            {
-                "short_name": "TEST",
-            },
+            [
+                {
+                    "short_name": "TEST",
+                }
+            ],
+            format="json",
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {
-            "error_message": {"start_date": ["This field is required."]},
+            "error_message": [
+                {
+                    "start_date": [
+                        "This field is required.",
+                    ],
+                }
+            ],
         }
 
     @patch(
-        "market_overview.services.price_ingestion_services.get_specific_asset_market_data"
+        "market_overview.services.price_ingestion_services._get_specific_asset_market_data"
     )
     @patch("market_overview.services.price_ingestion_services.ingest_market_data")
     def test_ingest_specific_asset_prices_with_asset_not_updated(
@@ -276,17 +314,230 @@ class TestMarketPricesIngestionViews(TestCase):
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
-            {
-                "short_name": "TEST",
-                "start_date": self.start_date.isoformat(),
-                "end_date": self.end_date.isoformat(),
-            },
+            [
+                {
+                    "short_name": "TEST",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                }
+            ],
+            format="json",
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
-            "message": "Asset prices successfully ingested",
-            "asset_not_updated": [self.start_date.isoformat()],
+            "message": "Asset prices ingestion completed",
+            "results": [
+                {
+                    "short_name": "TEST",
+                    "status": "success",
+                    "error": None,
+                    "asset_not_updated": [self.start_date.isoformat()],
+                }
+            ],
+        }
+
+    @patch(
+        "market_overview.services.price_ingestion_services._get_specific_asset_market_data"
+    )
+    @patch("market_overview.services.price_ingestion_services.ingest_market_data")
+    def test_ingest_specific_asset_prices_multiple_assets(
+        self, mock_ingest, mock_get_data
+    ):
+        """
+        GIVEN multiple valid assets with date ranges
+        WHEN ingesting specific asset market prices
+        THEN all asset prices are successfully ingested
+        """
+        asset2 = AssetModel.objects.create(
+            short_name="TEST2",
+            full_name="Test Asset 2",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+        )
+
+        def mock_get_data_side_effect(short_name, start_date, end_date):
+            if short_name == "TEST":
+                return [
+                    MarketData(
+                        asset=self.asset,
+                        price=100.0,
+                        date=start_date,
+                        comment="",
+                    )
+                ]
+            else:
+                return [
+                    MarketData(
+                        asset=asset2,
+                        price=200.0,
+                        date=start_date,
+                        comment="",
+                    )
+                ]
+
+        mock_get_data.side_effect = mock_get_data_side_effect
+        mock_ingest.return_value = []
+
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
+            [
+                {
+                    "short_name": "TEST",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                },
+                {
+                    "short_name": "TEST2",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                },
+            ],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Asset prices ingestion completed",
+            "results": [
+                {
+                    "short_name": "TEST",
+                    "status": "success",
+                    "error": None,
+                    "asset_not_updated": [],
+                },
+                {
+                    "short_name": "TEST2",
+                    "status": "success",
+                    "error": None,
+                    "asset_not_updated": [],
+                },
+            ],
+        }
+        assert mock_get_data.call_count == 2
+
+    @patch(
+        "market_overview.services.price_ingestion_services._get_specific_asset_market_data"
+    )
+    @patch("market_overview.services.price_ingestion_services.ingest_market_data")
+    def test_ingest_specific_asset_prices_partial_failure(
+        self, mock_ingest, mock_get_data
+    ):
+        """
+        GIVEN multiple assets where one exists and one doesn't
+        WHEN ingesting specific asset market prices
+        THEN the existing asset is processed and the non-existent one returns an error
+        """
+        mock_get_data.return_value = []
+        mock_ingest.return_value = []
+
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
+            [
+                {
+                    "short_name": "TEST",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                },
+                {
+                    "short_name": "NONEXISTENT",
+                    "start_date": self.start_date.isoformat(),
+                    "end_date": self.end_date.isoformat(),
+                },
+            ],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Asset prices ingestion completed",
+            "results": [
+                {
+                    "short_name": "TEST",
+                    "status": "success",
+                    "error": None,
+                    "asset_not_updated": [],
+                },
+                {
+                    "short_name": "NONEXISTENT",
+                    "status": "error",
+                    "error": "Asset: NONEXISTENT does not exist in database.",
+                    "asset_not_updated": None,
+                },
+            ],
+        }
+
+    @patch(
+        "market_overview.services.price_ingestion_services._get_specific_asset_market_data"
+    )
+    @patch("market_overview.services.price_ingestion_services.ingest_market_data")
+    def test_ingest_specific_asset_prices_without_end_date(
+        self, mock_ingest, mock_get_data
+    ):
+        """
+        GIVEN a valid asset with only start_date (no end_date)
+        WHEN ingesting specific asset market prices
+        THEN the asset price is ingested for the start_date only
+        """
+        mock_get_data.return_value = [
+            MarketData(
+                asset=self.asset,
+                price=100.0,
+                date=self.start_date,
+                comment="",
+            )
+        ]
+        mock_ingest.return_value = []
+
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
+            [
+                {
+                    "short_name": "TEST",
+                    "start_date": self.start_date.isoformat(),
+                }
+            ],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Asset prices ingestion completed",
+            "results": [
+                {
+                    "short_name": "TEST",
+                    "status": "success",
+                    "error": None,
+                    "asset_not_updated": [],
+                }
+            ],
+        }
+        mock_get_data.assert_called_once()
+        call_args = mock_get_data.call_args
+        assert call_args[0][0] == "TEST"
+        assert call_args[0][1] == self.start_date
+        assert call_args[0][2] == (date.today() - BDay(1)).date()
+
+    def test_ingest_specific_asset_prices_empty_list(self):
+        """
+        GIVEN an empty list
+        WHEN ingesting specific asset market prices
+        THEN a 400 Bad Request error is returned
+        """
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
+            [],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {
+            "error_message": {
+                "non_field_errors": [
+                    "List cannot be empty.",
+                ],
+            },
         }
 
 

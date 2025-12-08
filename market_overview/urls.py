@@ -8,12 +8,12 @@ from market_overview.views.asset_views import (
 from market_overview.views.holiday_views import HolidaysDetailsView, IngestHolidaysView
 from market_overview.views.logs_views import GetPriceUpdateLogsView
 from market_overview.views.price_views import (
+    BatchIngestMarketPricesView,
     BulkUpdateAssetsPricesView,
     CsvBulkUpdateAssetsPricesView,
     GetAssetsWithoutPricesView,
     GetMarketPriceView,
     IngestMarketPricesView,
-    IngestSpecificAssetMarketPricesView,
     ListMarketPricesView,
 )
 
@@ -23,8 +23,8 @@ urlpatterns = [
     path("asset", AssetDetailsView.as_view()),
     path("prices/ingest", IngestMarketPricesView.as_view()),
     path(
-        "prices/ingest-specific",
-        IngestSpecificAssetMarketPricesView.as_view(),
+        "prices/batch-ingest",
+        BatchIngestMarketPricesView.as_view(),
     ),
     path("prices", GetMarketPriceView.as_view()),
     path("prices/list-all", ListMarketPricesView.as_view()),

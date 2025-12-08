@@ -49,8 +49,8 @@ class MarketPriceIngestionSerializer(serializers.Serializer):
     date = serializers.DateField()
 
 
-class SpecificAssetMarketPriceIngestionSerializer(serializers.Serializer):
-    """Specific Asset Market Price Ingestion Serializer."""
+class BatchPriceIngestionItemSerializer(serializers.Serializer):
+    """Batch Price Ingestion Item Serializer."""
 
     short_name = serializers.CharField()
     start_date = serializers.DateField()
@@ -58,10 +58,22 @@ class SpecificAssetMarketPriceIngestionSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         """Validate end_date is greater than start_date."""
-        if attrs.get("end_date") <= attrs.get("start_date"):
+        if attrs.get("end_date") and attrs.get("end_date") < attrs.get("start_date"):
             raise serializers.ValidationError(
-                "end_date must be greater than start_date."
+                "end_date must be greater than or equal to start_date."
             )
+        return attrs
+
+
+class BatchPriceIngestionSerializer(serializers.ListSerializer):
+    """Batch Price Ingestion Serializer."""
+
+    child = BatchPriceIngestionItemSerializer()
+
+    def validate(self, attrs):
+        """Validate list is not empty."""
+        if not attrs:
+            raise serializers.ValidationError("List cannot be empty.")
         return attrs
 
 

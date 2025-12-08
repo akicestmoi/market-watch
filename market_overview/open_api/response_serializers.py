@@ -29,11 +29,20 @@ class MarketPriceIngestionResponseSerializer(serializers.Serializer):
     date = serializers.DateField()
 
 
-class SpecificAssetMarketPriceIngestionResponseSerializer(serializers.Serializer):
-    """Market Price Ingestion Response Serializer."""
+class BatchPriceIngestionResponseSerializerItem(serializers.Serializer):
+    """Batch Price Ingestion Response Serializer Item."""
+
+    short_name = serializers.CharField()
+    status = serializers.CharField()
+    error = serializers.CharField()
+    asset_not_updated = serializers.ListField(child=serializers.CharField())
+
+
+class BatchPriceIngestionResponseSerializer(serializers.Serializer):
+    """Batch Price Ingestion Response Serializer."""
 
     message = serializers.CharField()
-    asset_not_updated = serializers.ListField(child=serializers.DateField())
+    results = serializers.ListField(child=BatchPriceIngestionResponseSerializerItem())
 
 
 class AssetResponseSerializer(serializers.ModelSerializer):
