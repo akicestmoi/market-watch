@@ -52,13 +52,13 @@ class CentralBankDataIngestionView(BaseAPIView):
         self, validated_data: List[CentralBankDataIngestionItemSerializer]
     ) -> Response:
         """Ingest central bank data."""
-        requested_central_bank_data_dates: List[CentralBankDataDates] = validated_data  # type: ignore[reportAssignmentType]
+        dates_to_ingest: List[CentralBankDataDates] = validated_data  # type: ignore[reportAssignmentType]
 
-        central_bank_data_dates = cb_data_services.get_all_central_bank_data_dates(
-            requested_central_bank_data_dates
+        dates_by_central_bank = cb_data_services.get_data_dates_to_ingest(
+            dates_to_ingest
         )
         central_bank_data_updated = cb_data_services.ingest_central_bank_data(
-            central_bank_data_dates
+            dates_by_central_bank
         )
         return Response(
             data=CentralBankDataIngestionResponseSerializer(

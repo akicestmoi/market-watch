@@ -516,6 +516,7 @@ def ingest_market_data(
                 "price": data["price"],
                 "comment": data["comment"],
             },
+            logging_on_fields=["price"],
             none_skip_fields=["price"],
         )
     return asset_not_updated

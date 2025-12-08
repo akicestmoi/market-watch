@@ -157,6 +157,7 @@ def _ingest_single_economic_data(
             "data_value": data["data_value"],
             "comment": data["comment"],
         },
+        logging_on_fields=["data_value"],
         none_skip_fields=["data_value"],
     )
     return is_success

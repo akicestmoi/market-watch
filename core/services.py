@@ -27,6 +27,7 @@ def update_with_logs(
     model_to_update: T,
     log_model: Type[L],
     updates: dict,
+    logging_on_fields: List[str] = [],
     none_skip_fields: List[str] = [],
     enable_none_updates: bool = False,
 ) -> T:
@@ -39,7 +40,7 @@ def update_with_logs(
         if not all(field in model_fields for field in none_skip_fields):
             raise ValueError(f"Fields to skip must be in model: {model_fields}")
 
-    update_logs = updates.pop("logs", None)
+    update_logs = updates.pop("logs", "")
     has_changes = False
 
     for field in none_skip_fields:
@@ -55,7 +56,8 @@ def update_with_logs(
             if enable_none_updates or new_value is not None:
                 setattr(model_to_update, field, new_value)
                 has_changes = True
-                update_logs += f"\nUpdated {field} from {old_value} to {new_value}."
+                if field in logging_on_fields:
+                    update_logs += f" Updated {field} from {old_value} to {new_value}."
 
     if has_changes:
         model_to_update.save()
@@ -71,6 +73,7 @@ def upsert_with_logs(
     log_model: Type[L],
     lookup_kwargs: dict,
     updates: dict,
+    logging_on_fields: List[str] = [],
     none_skip_fields: List[str] = [],
     enable_none_updates: bool = False,
 ) -> T:
@@ -78,7 +81,12 @@ def upsert_with_logs(
     try:
         model_to_update = model.objects.get(**lookup_kwargs)
         return update_with_logs(
-            model_to_update, log_model, updates, none_skip_fields, enable_none_updates
+            model_to_update=model_to_update,
+            log_model=log_model,
+            updates=updates,
+            logging_on_fields=logging_on_fields,
+            none_skip_fields=none_skip_fields,
+            enable_none_updates=enable_none_updates,
         )
     except ObjectDoesNotExist:
         create_data = {

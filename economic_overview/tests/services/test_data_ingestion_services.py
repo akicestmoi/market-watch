@@ -398,8 +398,7 @@ class TestDataIngestionServices(TestCase):
         logs = convert_query_to_dictionary_list(queryset, remove_foreign_key=True)
         assert logs == [
             {
-                "logs": "Automated data update on TEST.\n"
-                "Updated data_value from 90.0 to 100.0.",
+                "logs": "Automated data update on TEST. Updated data_value from 90.0 to 100.0.",
             },
         ]
 
@@ -441,7 +440,6 @@ class TestDataIngestionServices(TestCase):
         logs = convert_query_to_dictionary_list(queryset, remove_foreign_key=True)
         assert logs == [
             {
-                "logs": "Automated data update on TEST.\n"
-                "Updated data_value from 90.0 to 100.0.",
+                "logs": "Automated data update on TEST. Updated data_value from 90.0 to 100.0.",
             },
         ]

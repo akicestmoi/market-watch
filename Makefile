@@ -89,8 +89,10 @@ collectstatic:
 	$(DOCKER_COMPOSE) exec webapp python manage.py collectstatic --noinput
 
 # Run tests
+# $(DOCKER_COMPOSE) exec webapp python -m pytest central_banks_overview/tests/services/test_cb_data_services.py -vv --exitfirst
+# $(DOCKER_COMPOSE) exec webapp python -m pytest -vv
 test:
-	$(DOCKER_COMPOSE) exec webapp python -m pytest --exitfirst
+	$(DOCKER_COMPOSE) exec webapp python -m pytest -vv
 
 # Run tests with coverage report
 test-coverage:

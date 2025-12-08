@@ -65,35 +65,39 @@ def _get_central_bank_base_info() -> List[CentralBankBaseInfo]:
         return [CentralBankBaseInfo(**data) for data in json.load(f)]
 
 
-def get_all_central_bank_data_dates(
-    requested_central_banks: List[CentralBankDataDates],
+def get_data_dates_to_ingest(
+    dates_to_ingest: List[CentralBankDataDates],
 ) -> List[CentralBankDataDates]:
-    """Get all central bank data dates."""
-    central_bank_dates: List[CentralBankDataDates] = []
+    """Get data dates to ingest.
+
+    If no date is provided for a central bank, the next meeting date is returned.
+    """
+    dates_by_central_bank: List[CentralBankDataDates] = []
+    requested_dates_map = {
+        date_item["central_bank"]: date_item["date"] for date_item in dates_to_ingest
+    }
+
     for central_bank in CentralBankChoices:
-        for request in requested_central_banks:
-            if request["central_bank"] == central_bank:
-                central_bank_dates.append(
+        if central_bank in requested_dates_map:
+            dates_by_central_bank.append(
+                CentralBankDataDates(
+                    central_bank=central_bank,
+                    date=requested_dates_map[central_bank],
+                )
+            )
+        else:
+            next_meeting_date = get_central_bank_next_meeting_date(central_bank)
+            if next_meeting_date:
+                dates_by_central_bank.append(
                     CentralBankDataDates(
-                        central_bank=CentralBankChoices(central_bank),
-                        date=request["date"],
+                        central_bank=central_bank,
+                        date=next_meeting_date.date(),
                     )
                 )
-            else:
-                next_meeting_date = get_central_bank_next_meeting_date(
-                    CentralBankChoices(central_bank)
-                )
-                if next_meeting_date:
-                    central_bank_dates.append(
-                        CentralBankDataDates(
-                            central_bank=CentralBankChoices(central_bank),
-                            date=next_meeting_date.date(),
-                        )
-                    )
-    return central_bank_dates
+    return dates_by_central_bank
 
 
-def get_specific_central_bank_data(
+def _get_specific_central_bank_data(
     target_date: date, central_bank_data: CentralBankBaseInfo
 ) -> CentralBankData:
     """Ingest central bank data."""
@@ -144,7 +148,9 @@ def ingest_central_bank_data(
             )
             continue
 
-        data = get_specific_central_bank_data(central_bank_data_date, central_bank_data)
+        data = _get_specific_central_bank_data(
+            central_bank_data_date, central_bank_data
+        )
         CentralBankDataModel.objects.update_or_create(
             central_bank=data["central_bank"],
             short_name=data["short_name"],

@@ -330,15 +330,13 @@ def bulk_update_assets_prices(
         )
         updated_assets.append(
             core_services.update_with_logs(
-                market_price,
-                PriceUpdateLogModel,
-                {
-                    "logs": update.get(
-                        "logs",
-                        "Bulk update of assets prices.",
-                    ),
+                model_to_update=market_price,
+                log_model=PriceUpdateLogModel,
+                updates={
+                    "logs": update.get("logs", "Bulk update of assets prices."),
                     "price": update["price"],
                 },
+                logging_on_fields=["price"],
                 none_skip_fields=["price"],
             )
         )

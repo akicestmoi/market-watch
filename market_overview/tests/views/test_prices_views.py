@@ -745,7 +745,7 @@ class TestMarketPricesViews(TestCase):
         )
         assert (
             log.logs
-            == "Bulk update of assets prices.\nUpdated price from 100.0 to 150.0."
+            == "Bulk update of assets prices. Updated price from 100.0 to 150.0."
         )
 
     def test_bulk_update_assets_prices_with_custom_logs(self):
@@ -773,7 +773,7 @@ class TestMarketPricesViews(TestCase):
         log = PriceUpdateLogModel.objects.get(
             market_price__asset=self.asset, market_price__date=self.price_date
         )
-        assert log.logs == "Custom log message\nUpdated price from 100.0 to 150.0."
+        assert log.logs == "Custom log message Updated price from 100.0 to 150.0."
 
     def test_bulk_update_assets_prices_multiple_updates(self):
         """

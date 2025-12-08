@@ -442,6 +442,7 @@ def ingest_stir_futures_prices(stir_futures_prices: List[StirFutures]):
                 "price": price,
                 "comment": stir_future_price["comment"],
             },
+            logging_on_fields=["price"],
             none_skip_fields=["price"],
         )
         if price:
@@ -479,6 +480,7 @@ def bulk_update_futures_prices(
                     "logs": update["logs"],
                     "price": update["price"],
                 },
+                logging_on_fields=["price"],
                 none_skip_fields=["price"],
             )
         )

@@ -490,8 +490,7 @@ class IngestMarketDataTest(TestCase):
         logs = convert_query_to_dictionary_list(queryset, remove_foreign_key=True)
         assert logs == [
             {
-                "logs": "Automated price update on TEST.\n"
-                "Updated price from 90.0 to 100.0.",
+                "logs": "Automated price update on TEST. Updated price from 90.0 to 100.0.",
             },
         ]
 
