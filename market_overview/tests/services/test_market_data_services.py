@@ -413,7 +413,7 @@ class TestMarketDataServices(TestCase):
         """
         GIVEN a list of maturities
         WHEN getting the yield curve
-        THEN the maturities are sorted by maturity, None values last
+        THEN the maturities are sorted by maturity, None values converted to 0.0
         """
         maturities = [10.0, None, 2.0, 5.0]
         for maturity in maturities:
@@ -437,10 +437,10 @@ class TestMarketDataServices(TestCase):
         result = get_yield_curve(target_date=self.price_date, location=self.location)
 
         assert result == [
+            {"maturity": 0.0, "price": 2.0, "short_name": "USTNONE"},
             {"maturity": 2.0, "price": 2.2, "short_name": "UST2Y"},
             {"maturity": 5.0, "price": 2.5, "short_name": "UST5Y"},
             {"maturity": 10.0, "price": 3.0, "short_name": "UST10Y"},
-            {"maturity": None, "price": 2.0, "short_name": "USTNONE"},
         ]
 
     def test_get_yield_curve_multiple_asset_classes(self):
@@ -481,6 +481,219 @@ class TestMarketDataServices(TestCase):
 
         assert result == [
             {"maturity": 10.0, "price": 2.0, "short_name": "RATES"},
+        ]
+
+    def test_get_yield_curve_includes_interbank_rates(self):
+        """
+        GIVEN both government bond rates and interbank rates
+        WHEN getting the yield curve for US location with include_interbank_rates=True
+        THEN both types are included, but EFFR is excluded (only SOFR for interbank)
+        """
+        # Create government bond rate
+        gov_asset = AssetModel.objects.create(
+            short_name="UST2Y",
+            full_name="US Treasury 2 Year",
+            asset_id=2,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.GOVERNMENT_BOND_RATE,
+            location=self.location,
+            maturity=2.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=gov_asset,
+            date=self.price_date,
+            price=2.5,
+        )
+
+        # Create interbank rate EFFR (should be excluded for US)
+        interbank_asset_effr = AssetModel.objects.create(
+            short_name="EFFR",
+            full_name="Effective Fed Funds Rate",
+            asset_id=500,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=self.location,
+            maturity=0.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=interbank_asset_effr,
+            date=self.price_date,
+            price=2.0,
+        )
+
+        # Create interbank rate SOFR (should be included for US)
+        interbank_asset_sofr = AssetModel.objects.create(
+            short_name="SOFR",
+            full_name="Secured Overnight Financing Rate",
+            asset_id=520,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=self.location,
+            maturity=0.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=interbank_asset_sofr,
+            date=self.price_date,
+            price=2.1,
+        )
+
+        result = get_yield_curve(target_date=self.price_date, location=self.location)
+        assert result == [
+            {"maturity": 0.0, "price": 2.1, "short_name": "SOFR"},
+            {"maturity": 2.0, "price": 2.5, "short_name": "UST2Y"},
+        ]
+
+    def test_get_yield_curve_us_excludes_effr(self):
+        """
+        GIVEN EFFR and SOFR interbank rates for US location
+        WHEN getting the yield curve
+        THEN only SOFR is included, EFFR is excluded
+        """
+        effr_asset = AssetModel.objects.create(
+            short_name="EFFR",
+            full_name="Effective Fed Funds Rate",
+            asset_id=500,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=LocationChoices.US,
+            maturity=0.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=effr_asset,
+            date=self.price_date,
+            price=2.0,
+        )
+
+        sofr_asset = AssetModel.objects.create(
+            short_name="SOFR",
+            full_name="Secured Overnight Financing Rate",
+            asset_id=520,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=LocationChoices.US,
+            maturity=0.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=sofr_asset,
+            date=self.price_date,
+            price=2.1,
+        )
+
+        result = get_yield_curve(
+            target_date=self.price_date, location=LocationChoices.US
+        )
+        short_names = [point["short_name"] for point in result]
+        assert short_names == ["SOFR"]
+
+    def test_get_yield_curve_excludes_interbank_rates_when_false(self):
+        """
+        GIVEN both government bond rates and interbank rates
+        WHEN getting the yield curve with include_interbank_rates=False
+        THEN only government bond rates are included
+        """
+        # Create government bond rate
+        gov_asset = AssetModel.objects.create(
+            short_name="UST2Y",
+            full_name="US Treasury 2 Year",
+            asset_id=2,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.GOVERNMENT_BOND_RATE,
+            location=self.location,
+            maturity=2.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=gov_asset,
+            date=self.price_date,
+            price=2.5,
+        )
+
+        # Create interbank rate SOFR (should be excluded)
+        interbank_asset = AssetModel.objects.create(
+            short_name="SOFR",
+            full_name="Secured Overnight Financing Rate",
+            asset_id=520,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=self.location,
+            maturity=0.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=interbank_asset,
+            date=self.price_date,
+            price=2.1,
+        )
+
+        result = get_yield_curve(
+            target_date=self.price_date,
+            location=self.location,
+            include_interbank_rates=False,
+        )
+        assert result == [
+            {"maturity": 2.0, "price": 2.5, "short_name": "UST2Y"},
+        ]
+
+    def test_get_yield_curve_fr_includes_eu(self):
+        """
+        GIVEN assets for both FR and EU locations
+        WHEN getting the yield curve for FR location
+        THEN both FR and EU assets are included
+        """
+        # Create FR government bond
+        fr_asset = AssetModel.objects.create(
+            short_name="OAT2Y",
+            full_name="French Government Bond 2 Year",
+            asset_id=26,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.GOVERNMENT_BOND_RATE,
+            location=LocationChoices.FR,
+            maturity=2.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=fr_asset,
+            date=self.price_date,
+            price=2.5,
+        )
+
+        # Create EU interbank rate
+        eu_interbank_asset = AssetModel.objects.create(
+            short_name="ESTR",
+            full_name="Euro Short-Term Rate",
+            asset_id=19,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=LocationChoices.EU,
+            maturity=0.0,
+        )
+        MarketPriceModel.objects.create(
+            asset=eu_interbank_asset,
+            date=self.price_date,
+            price=2.0,
+        )
+
+        # Create EU government bond
+        eu_gov_asset = AssetModel.objects.create(
+            short_name="EURIBOR3M",
+            full_name="Euribor 3 Month",
+            asset_id=22,
+            asset_class=AssetClassChoices.RATES,
+            asset_type=AssetTypeChoices.INTERBANK_RATE,
+            location=LocationChoices.EU,
+            maturity=0.25,
+        )
+        MarketPriceModel.objects.create(
+            asset=eu_gov_asset,
+            date=self.price_date,
+            price=2.1,
+        )
+
+        result = get_yield_curve(
+            target_date=self.price_date, location=LocationChoices.FR
+        )
+
+        assert result == [
+            {"maturity": 0.0, "price": 2.0, "short_name": "ESTR"},
+            {"maturity": 0.25, "price": 2.1, "short_name": "EURIBOR3M"},
+            {"maturity": 2.0, "price": 2.5, "short_name": "OAT2Y"},
         ]
 
     def test_get_all_asset_prices_for_date_without_holidays_no_holidays(self):

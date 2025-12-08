@@ -250,22 +250,40 @@ def get_historical_prices(
 def get_yield_curve(
     target_date: date,
     location: LocationChoices,
-    asset_type: AssetTypeChoices = AssetTypeChoices.GOVERNMENT_BOND_RATE,
+    include_interbank_rates: bool = True,
 ) -> List[YieldCurvePoint]:
-    """Get yield curve for a specific date and location."""
+    """Get yield curve for a specific date and location.
+
+    Includes both GOVERNMENT_BOND_RATE and INTERBANK_RATE assets.
+    None maturity values are treated as 0 for interbank rates.
+
+    Special rules:
+    - Excludes EFFR, only includes SOFR among interbank rates
+    - For FR location: also includes EU location data
+    - None maturity values are treated as 0.0 for interbank rates
+    """
+    locations_to_query = [location]
+    asset_types_to_query = [AssetTypeChoices.GOVERNMENT_BOND_RATE]
+    if location == LocationChoices.FR:
+        locations_to_query.append(LocationChoices.EU)
+    if include_interbank_rates:
+        asset_types_to_query.append(AssetTypeChoices.INTERBANK_RATE)
     market_data_queryset = MarketPriceModel.objects.filter(
-        date=target_date, asset__location=location, asset__asset_type=asset_type
+        date=target_date,
+        asset__location__in=locations_to_query,
+        asset__asset_type__in=asset_types_to_query,
     )
     yield_curve = [
         YieldCurvePoint(
             short_name=data.asset.short_name,
-            maturity=data.asset.maturity,
+            maturity=0.0 if data.asset.maturity is None else data.asset.maturity,
             price=data.price,
         )
         for data in market_data_queryset
         if data.asset.asset_class == AssetClassChoices.RATES
+        and not data.asset.short_name == "EFFR"
     ]
-    return sorted(yield_curve, key=lambda x: (x["maturity"] is None, x["maturity"]))
+    return sorted(yield_curve, key=lambda x: x["maturity"] or 0)
 
 
 def get_price_update_logs(
