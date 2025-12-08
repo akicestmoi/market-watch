@@ -10,12 +10,16 @@ from core.services import logger
 
 
 @shared_task
-def scheduled_stir_prices_ingestion():
+def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
     """
     Celery task to ingest STIR Futures prices.
     This task will be scheduled to run twice a day.
     """
-    price_date = (date.today() - BDay(1)).date()
+    match two_bdays_ago:
+        case True:
+            price_date = (date.today() - BDay(2)).date()
+        case False:
+            price_date = (date.today() - BDay(1)).date()
     try:
         logger.info(f"Ingesting STIR Futures prices for {price_date}")
         stir_futures_prices = stir_futures_services.extract_all_stir_futures_prices(

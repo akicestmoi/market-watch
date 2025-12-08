@@ -11,12 +11,16 @@ from market_overview.services.holiday_services import HOLIDAY_COUNTRIES
 
 
 @shared_task
-def scheduled_market_data_ingestion():
+def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
     """
     Celery task to ingest market data.
     This task will be scheduled to run 3 times a day.
     """
-    price_date = (date.today() - BDay(1)).date()
+    match two_bdays_ago:
+        case True:
+            price_date = (date.today() - BDay(2)).date()
+        case False:
+            price_date = (date.today() - BDay(1)).date()
     try:
         logger.info(f"Ingesting market data for {price_date}")
         market_data = price_ingestion_services.get_market_data(price_date)

@@ -162,29 +162,35 @@ CELERY_BEAT_SCHEDULE = {
     # DATA INGESTION TASKS (Daily/Regular)
     # ========================================================================
     # These tasks fetch and ingest market data from external sources
-    # Market Data Ingestion - Runs 3 times daily on weekdays
+    # Market Data Ingestion - Runs 2 times daily on weekdays
+    # Note: ingestion tasks run every morning for previous 1 and 2 business days
     # Ingests asset prices (stocks, FX, crypto, commodities, rates)
     "scheduled-market-data-ingestion-morning": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+        "kwargs": {"two_bdays_ago": False},
+    },
+    "scheduled-market-data-ingestion-two-bdays-ago": {
+        "task": "market_overview.tasks.scheduled_market_data_ingestion",
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+        "kwargs": {"two_bdays_ago": True},
     },
     "scheduled-market-data-ingestion-afternoon": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="14", minute="0"),
     },
-    "scheduled-market-data-ingestion-evening": {
-        "task": "market_overview.tasks.scheduled_market_data_ingestion",
-        "schedule": crontab(day_of_week="1-5", hour="20", minute="0"),
-    },
-    # STIR Futures Prices Ingestion - Runs 2 times daily on weekdays
+    # STIR Futures Prices Ingestion - Runs every morning on weekdays
+    # Note: ingestion tasks run every morning for previous 1 and 2 business days
     # Ingests Short-Term Interest Rate futures prices (FedFunds, ESTR, TONA)
     "scheduled-stir-prices-ingestion-morning": {
         "task": "central_banks_overview.tasks.scheduled_stir_prices_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+        "kwargs": {"two_bdays_ago": False},
     },
-    "scheduled-stir-prices-ingestion-evening": {
+    "scheduled-stir-prices-ingestion-two-bdays-ago": {
         "task": "central_banks_overview.tasks.scheduled_stir_prices_ingestion",
-        "schedule": crontab(day_of_week="1-5", hour="20", minute="40"),
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+        "kwargs": {"two_bdays_ago": True},
     },
     # Economic Data and Schedule Update - Runs daily on weekdays
     # Ingests economic indicators and updates publication schedules
