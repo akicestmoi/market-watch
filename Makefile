@@ -16,6 +16,7 @@ help:
 	@echo "  collectstatic   - Collect static files"
 	@echo "  celery-beat     - View Celery beat scheduler logs"
 	@echo "  celery-worker   - View Celery worker logs"
+	@echo "  flower          - View Celery Flower monitoring logs"
 	@echo "  test            - Run all tests (pytest)"
 	@echo "  clean           - Clean up Docker resources"
 	@echo "  db-export       - Export database to SQL file"
@@ -120,6 +121,10 @@ celery-beat:
 celery-worker:
 	$(DOCKER_COMPOSE) logs -f celery-worker
 
+# View Celery Flower monitoring interface logs
+flower:
+	$(DOCKER_COMPOSE) logs -f flower
+
 # Export database
 db-export:
 	@if $(DOCKER_COMPOSE) ps webapp 2>/dev/null | grep -q "Up"; then \
@@ -144,4 +149,4 @@ trigger-task:
 	$(if $(TASK),,$(error TASK is required. Example: make trigger-task TASK=scheduled_market_data_ingestion))
 	@$(DOCKER_COMPOSE) exec webapp python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,) || $(RUN_TMP) python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,)
 
-.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test test-coverage test-app clean reset celery-beat celery-worker db-export db-import trigger-task
+.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test test-coverage test-app clean reset celery-beat celery-worker flower db-export db-import trigger-task

@@ -53,3 +53,22 @@ services:
       - redis
       - webapp
     restart: unless-stopped
+
+  flower:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/Dockerfile
+    command: celery -A core flower --port=5555
+    volumes:
+      - ../../:/app
+    env_file:
+      - ../../.env
+    environment:
+      - RUN_COLLECTSTATIC=0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+      - celery-beat
+    restart: unless-stopped

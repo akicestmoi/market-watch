@@ -62,6 +62,7 @@ A Django-based market monitoring application with comprehensive API documentatio
    - API: http://localhost:8000
    - API Documentation: http://localhost:8000/api/docs/
    - Admin Panel: http://localhost:8000/admin/ (admin/admin123)
+   - Celery Flower: http://localhost:5555 (Celery task monitoring)
 
 3. **Port conflicts:**
 
@@ -94,8 +95,9 @@ A Django-based market monitoring application with comprehensive API documentatio
    make makemigrations  # Prepare database migrations
    make migrate         # Run database migrations
    make collectstatic   # Collect static files
-   make celery-beat     # Start periodic tasks
-   make celery-worker   # Execute worker
+   make celery-beat     # View Celery beat scheduler logs
+   make celery-worker   # View Celery worker logs
+   make flower          # View Celery Flower monitoring logs
    make test            # Run all tests (pytest)
    make test-coverage   # Run tests with coverage report (HTML + terminal)
    make test-app        # Run tests for a specific app (requires APP=name, uses pytest)
