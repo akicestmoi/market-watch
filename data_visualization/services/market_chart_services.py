@@ -6,7 +6,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import market_overview.services.market_data_services as market_data_services
-from market_overview.models import AssetClassChoices, AssetTypeChoices, LocationChoices
+from market_overview.models import AssetClassChoices, LocationChoices
 from market_overview.services.market_data_services import (
     AssetNames,
     HistoricalPrice,
@@ -55,7 +55,7 @@ def get_market_charts_dropdown_values() -> MarketChartsDropdownValues:
         "fx": {"asset_class": AssetClassChoices.FX},
         "crypto": {"asset_class": AssetClassChoices.CRYPTO},
         "commodity": {"asset_class": AssetClassChoices.COMMODITIES},
-        "rates": {"asset_type": AssetTypeChoices.GOVERNMENT_BOND_RATE},
+        "rates": {"asset_class": AssetClassChoices.RATES},
     }
     dropdown_values = {
         name: market_data_services.get_asset_names(filters)

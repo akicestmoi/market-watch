@@ -8,6 +8,7 @@ from central_banks_overview.services.cb_data_services import get_central_bank_da
 from central_banks_overview.services.cb_inference_services import (
     CentralBankProbabilityMatrix,
 )
+from core.services import logger
 
 
 class CentralBankDataItem(TypedDict):
@@ -24,6 +25,13 @@ def get_central_bank_data_item(
     effective_rate = cb_inference_services.get_central_bank_effective_rate(
         central_bank, reference_date
     )
+    if not effective_rate:
+        logger.warning(
+            f"No effective rate found for {central_bank} on {reference_date}. Using fall back rate."
+        )
+        effective_rate = cb_inference_services.get_fall_back_rate(
+            central_bank, reference_date
+        )
     next_meeting_date = cb_meetings_services.get_central_bank_next_meeting_date(
         central_bank
     )
