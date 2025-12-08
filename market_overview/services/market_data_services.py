@@ -284,14 +284,20 @@ def get_price_update_logs(
 
 
 def get_assets_without_prices(
-    price_date: Optional[date] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    include_holidays: bool = False,
 ) -> List[AssetWithoutPrice]:
     """Get assets without prices."""
     assets_queryset = MarketPriceModel.objects.filter(
         price__isnull=True
     ).select_related("asset")
-    if price_date:
-        assets_queryset = assets_queryset.filter(date=price_date)
+    if not include_holidays:
+        assets_queryset = assets_queryset.exclude(comment=SpecialComment.BANK_HOLIDAY)
+    if start_date:
+        assets_queryset = assets_queryset.filter(date__gte=start_date)
+    if end_date:
+        assets_queryset = assets_queryset.filter(date__lte=end_date)
     assets_data = assets_queryset.values(
         "id",
         "comment",

@@ -88,7 +88,9 @@ class GetPriceUpdateLogsSerializer(serializers.Serializer):
 class GetAssetsWithoutPricesSerializer(serializers.Serializer):
     """Get Assets Without Prices Serializer."""
 
-    price_date = serializers.DateField(required=False)
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+    include_holidays = serializers.BooleanField(required=False)
 
 
 class BulkUpdateAssetsPricesItemSerializer(serializers.Serializer):

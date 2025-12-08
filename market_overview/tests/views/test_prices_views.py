@@ -16,7 +16,7 @@ from market_overview.models import (
     PriceUpdateLogModel,
 )
 from market_overview.services.market_data_services import BulkUpdateAssetsPricesItem
-from market_overview.services.price_ingestion_services import MarketData
+from market_overview.services.price_ingestion_services import MarketData, SpecialComment
 
 
 class TestMarketPricesIngestionViews(TestCase):
@@ -544,35 +544,248 @@ class TestMarketPricesViews(TestCase):
 
     def test_get_assets_without_prices_with_date_filter(self):
         """
-        GIVEN an asset without prices on different dates
-        WHEN getting the assets without prices with a date filter
-        THEN only the asset with missing prices for the given date is returned
+        GIVEN assets without prices on different dates
+        WHEN getting the assets without prices with start_date and end_date filters
+        THEN only assets within the date range are returned
+        """
+        none_price_date_1 = self.price_date - timedelta(days=5)
+        none_price_date_2 = none_price_date_1 + timedelta(days=1)
+        none_price_date_3 = none_price_date_1 + timedelta(days=3)
+
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_1,
+            price=None,
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_2,
+            price=None,
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_3,
+            price=None,
+        )
+
+        response = self.client.get(
+            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}?start_date={none_price_date_1.isoformat()}&end_date={none_price_date_2.isoformat()}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == [
+            {
+                "date": none_price_date_2.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": "",
+            },
+            {
+                "date": none_price_date_1.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": "",
+            },
+        ]
+
+    def test_get_assets_without_prices_excludes_holidays_by_default(self):
+        """
+        GIVEN assets without prices including bank holidays
+        WHEN getting the assets without prices without include_holidays parameter
+        THEN bank holidays are excluded from results
         """
         none_price_date = self.price_date - timedelta(days=5)
         MarketPriceModel.objects.create(
             asset=self.asset,
             date=none_price_date,
             price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
         )
         MarketPriceModel.objects.create(
             asset=self.asset,
             date=none_price_date + timedelta(days=1),
             price=None,
+            comment="",
         )
 
         response = self.client.get(
-            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}?price_date={none_price_date.isoformat()}"
+            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}"
         )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
-                "date": none_price_date.isoformat(),
-                "comment": "",
+                "date": (none_price_date + timedelta(days=1)).isoformat(),
                 "short_name": "TEST",
                 "full_name": "Test Asset",
                 "maturity": None,
+                "comment": "",
             }
+        ]
+
+    def test_get_assets_without_prices_includes_holidays_when_requested(self):
+        """
+        GIVEN assets without prices including bank holidays
+        WHEN getting the assets without prices with include_holidays=True
+        THEN bank holidays are included in results
+        """
+        none_price_date = self.price_date - timedelta(days=5)
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date + timedelta(days=1),
+            price=None,
+            comment="",
+        )
+
+        response = self.client.get(
+            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}?include_holidays=true"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == [
+            {
+                "date": (none_price_date + timedelta(days=1)).isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": "",
+            },
+            {
+                "date": none_price_date.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": SpecialComment.BANK_HOLIDAY,
+            },
+        ]
+
+    def test_get_assets_without_prices_with_start_date_only(self):
+        """
+        GIVEN assets without prices on different dates
+        WHEN getting the assets without prices with only start_date
+        THEN only assets on or after start_date are returned
+        """
+        none_price_date_1 = self.price_date - timedelta(days=5)
+        none_price_date_2 = none_price_date_1 + timedelta(days=3)
+
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_1,
+            price=None,
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_2,
+            price=None,
+        )
+
+        response = self.client.get(
+            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}?start_date={(none_price_date_1 + timedelta(days=1)).isoformat()}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == [
+            {
+                "date": none_price_date_2.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": "",
+            }
+        ]
+
+    def test_get_assets_without_prices_with_end_date_only(self):
+        """
+        GIVEN assets without prices on different dates
+        WHEN getting the assets without prices with only end_date
+        THEN only assets on or before end_date are returned
+        """
+        none_price_date_1 = self.price_date - timedelta(days=5)
+        none_price_date_2 = none_price_date_1 + timedelta(days=3)
+
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_1,
+            price=None,
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_2,
+            price=None,
+        )
+
+        response = self.client.get(
+            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}?end_date={(none_price_date_1 + timedelta(days=1)).isoformat()}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == [
+            {
+                "date": none_price_date_1.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": "",
+            }
+        ]
+
+    def test_get_assets_without_prices_with_combined_filters(self):
+        """
+        GIVEN assets without prices on different dates including holidays
+        WHEN getting the assets without prices with all filters
+        THEN only assets matching all criteria are returned
+        """
+        none_price_date_1 = self.price_date - timedelta(days=5)
+        none_price_date_2 = none_price_date_1 + timedelta(days=1)
+        none_price_date_3 = none_price_date_1 + timedelta(days=3)
+
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_1,
+            price=None,
+            comment=SpecialComment.BANK_HOLIDAY,
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_2,
+            price=None,
+            comment="",
+        )
+        MarketPriceModel.objects.create(
+            asset=self.asset,
+            date=none_price_date_3,
+            price=None,
+            comment="",
+        )
+
+        response = self.client.get(
+            f"{self.base_url}{self.GET_ASSETS_WITHOUT_PRICES_URL}?start_date={none_price_date_1.isoformat()}&end_date={none_price_date_2.isoformat()}&include_holidays=true"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == [
+            {
+                "date": none_price_date_2.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": "",
+            },
+            {
+                "date": none_price_date_1.isoformat(),
+                "short_name": "TEST",
+                "full_name": "Test Asset",
+                "maturity": None,
+                "comment": SpecialComment.BANK_HOLIDAY,
+            },
         ]
 
     def test_bulk_update_assets_prices_success(self):

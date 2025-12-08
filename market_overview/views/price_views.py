@@ -164,8 +164,12 @@ class GetAssetsWithoutPricesView(BaseAPIView):
     )
     def get(self, validated_data: dict) -> Response:
         """Get assets without prices."""
-        price_date: Optional[date] = validated_data.get("price_date")
-        assets_queryset = market_data_services.get_assets_without_prices(price_date)
+        start_date: Optional[date] = validated_data.get("start_date")
+        end_date: Optional[date] = validated_data.get("end_date")
+        include_holidays: bool = validated_data.get("include_holidays", False)
+        assets_queryset = market_data_services.get_assets_without_prices(
+            start_date, end_date, include_holidays
+        )
         return Response(
             data=GetAssetWithoutPriceResponseSerializer(
                 assets_queryset, many=True
