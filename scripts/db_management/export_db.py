@@ -9,7 +9,8 @@ Usage:
     python scripts/db_management/export_db.py [--output OUTPUT_PATH]
 
 Or via Docker:
-    docker compose -f scripts/docker-compose.yml exec webapp python scripts/db_management/export_db.py [--output OUTPUT_PATH]
+    docker compose -f scripts/docker-compose.yml exec webapp python
+    scripts/db_management/export_db.py [--output OUTPUT_PATH]
 """
 
 import argparse

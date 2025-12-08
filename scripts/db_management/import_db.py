@@ -11,10 +11,13 @@ This script will:
 6. Reset sequences to avoid duplicate key violations
 
 Usage:
-    python scripts/db_management/import_db.py <sql_file_path> [--no-confirm] [--skip-migrations]
+    python scripts/db_management/import_db.py <sql_file_path>
+    [--no-confirm] [--skip-migrations]
 
 Or via Docker:
-    docker compose -f scripts/docker-compose.yml exec webapp python scripts/db_management/import_db.py <sql_file_path> [--no-confirm] [--skip-migrations]
+    docker compose -f scripts/docker-compose.yml exec webapp python
+    scripts/db_management/import_db.py <sql_file_path>
+    [--no-confirm] [--skip-migrations]
 """
 
 import argparse

@@ -1,5 +1,18 @@
 [flake8]
-exclude = migrations
+exclude =
+    migrations,
+    __pycache__,
+    venv,
+    env,
+    .venv,
+    .env,
+    staticfiles,
+    htmlcov,
+    node_modules,
+    .git,
+    .idea,
+    *.pyc,
+    .pytest_cache
 max-line-length = 9999
 max-doc-length = 90
 extend-ignore = E203
