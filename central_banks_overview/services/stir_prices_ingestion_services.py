@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO, StringIO
 from typing import List, Optional, Tuple, TypedDict
 
@@ -19,7 +19,10 @@ from central_banks_overview.models import (
     StirFuturesPriceUpdateLogModel,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.cb_meetings_services import MONTH_ABBREVIATIONS
+from central_banks_overview.services.cb_meetings_services import (
+    MONTH_ABBREVIATIONS,
+    get_central_bank_next_meeting_date,
+)
 from core.services import logger
 from market_overview.services.price_ingestion_services import (
     get_yahoo_finance_closing_prices,
@@ -85,7 +88,12 @@ def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirF
     month_start = MonthBegin()
     month_end = MonthEnd()
 
-    ticker_date = datetime.now() + relativedelta(months=maturity_month)
+    next_meeting_date = get_central_bank_next_meeting_date(CentralBankChoices.FRB)
+    now = datetime.now(timezone.utc)
+    month_offset = maturity_month + (
+        1 if (next_meeting_date and next_meeting_date < now) else 0
+    )
+    ticker_date = now + relativedelta(months=month_offset)
     ticker_month = MONTH_CODE[ticker_date.strftime("%b")]
     ticker_year = ticker_date.strftime("%y")
     yfinance_ticker = (
@@ -126,7 +134,7 @@ def _get_fedfunds_futures_prices(target_date: date) -> List[StirFutures]:
     """Get the prices of the Fed Funds Futures contracts for a given date."""
     return [
         _get_fedfunds_futures_price(target_date, maturity_month)
-        for maturity_month in range(1, FED_FUNDS_FUTURES_MONTHS + 1)
+        for maturity_month in range(0, FED_FUNDS_FUTURES_MONTHS)
     ]
 
 
