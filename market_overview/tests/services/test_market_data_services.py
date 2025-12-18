@@ -10,6 +10,7 @@ from market_overview.models import (
     AssetTypeChoices,
     LocationChoices,
     MarketPriceModel,
+    SpecialComment,
 )
 from market_overview.services.market_data_services import (
     calculate_price_change,
@@ -18,7 +19,6 @@ from market_overview.services.market_data_services import (
     get_historical_prices,
     get_yield_curve,
 )
-from market_overview.services.price_ingestion_services import SpecialComment
 
 
 class TestMarketDataServices(TestCase):

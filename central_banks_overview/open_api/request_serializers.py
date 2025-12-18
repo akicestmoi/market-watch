@@ -47,17 +47,6 @@ class ListCentralBankDataSerializer(CentralBankBaseSerializer):
     date = serializers.DateField(required=False, allow_null=True)
     last_value = serializers.BooleanField(required=False, default=False)
 
-    def validate_central_bank(self, value: str) -> str:
-        """Validate central bank."""
-        if value:
-            for cb_value in value.split(","):
-                cb_value = cb_value.strip()
-                if cb_value not in CentralBankChoices.choices:
-                    raise serializers.ValidationError(
-                        f"Invalid central bank value: {value}"
-                    )
-        return value
-
 
 class GetCentralBankMeetingDatesSerializer(CentralBankBaseSerializer):
     """Get Central Bank Meeting Dates Serializer."""
@@ -82,17 +71,6 @@ class ListStirFuturesPricesSerializer(CentralBankBaseSerializer):
     """List Stir Futures Prices Serializer."""
 
     date = serializers.DateField(required=False, allow_null=True)
-
-    def validate_central_bank(self, value: str) -> str:
-        """Validate central bank."""
-        if value:
-            for cb_value in value.split(","):
-                cb_value = cb_value.strip()
-                if cb_value not in CentralBankChoices.choices:
-                    raise serializers.ValidationError(
-                        f"Invalid central bank value: {value}"
-                    )
-        return value
 
 
 class BulkUpdateStirFuturesPricesItemSerializer(serializers.Serializer):

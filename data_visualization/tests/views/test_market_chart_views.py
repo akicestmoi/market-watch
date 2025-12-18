@@ -1,8 +1,8 @@
 import json
-from datetime import date, timedelta
+from datetime import date
 
 from django.test import Client, TestCase
-from pandas.tseries.offsets import BDay
+from freezegun import freeze_time  # type: ignore[reportMissingImports]
 
 from market_overview.models import (
     AssetClassChoices,
@@ -12,6 +12,7 @@ from market_overview.models import (
 )
 
 
+@freeze_time("2025-12-16")
 class TestMarketChartsView(TestCase):
     """Test cases for market_charts_view."""
 
@@ -19,8 +20,8 @@ class TestMarketChartsView(TestCase):
         """Set up test fixtures."""
         self.client = Client()
         self.base_url = "/market-charts/"
-        self.reference_date = (date.today() - BDay(1)).date()
-        self.previous_curve_date = (self.reference_date - BDay(1)).date()
+        self.reference_date = date(2025, 12, 15)
+        self.previous_curve_date = date(2025, 12, 12)
         self.asset_stock = AssetModel.objects.create(
             short_name="DJIA",
             full_name="Dow Jones Industrial Average",
@@ -69,12 +70,15 @@ class TestMarketChartsView(TestCase):
         WHEN accessing market charts view
         THEN the view renders successfully with chart data
         """
-        query_params = f"reference_date={self.reference_date.isoformat()}&previous_curve_date={self.previous_curve_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_curve_date": self.previous_curve_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_curve_date = (date.today() - BDay(2)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_curve_date = date(2025, 12, 12)
         assert response.context.get("reference_date") == self.reference_date.isoformat()
         assert (
             response.context.get("previous_curve_date")
@@ -173,8 +177,8 @@ class TestMarketChartsView(TestCase):
         response = self.client.get(self.base_url)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_curve_date = (date.today() - BDay(2)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_curve_date = date(2025, 12, 12)
         assert (
             response.context.get("reference_date") == default_reference_date.isoformat()
         )
@@ -197,13 +201,16 @@ class TestMarketChartsView(TestCase):
         WHEN accessing market charts view
         THEN an error message is displayed
         """
-        future_date = date.today() + timedelta(days=1)
-        query_params = f"reference_date={future_date.isoformat()}&previous_curve_date={self.previous_curve_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        future_date = date(2025, 12, 17)
+        params = {
+            "reference_date": future_date.isoformat(),
+            "previous_curve_date": self.previous_curve_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_curve_date = (date.today() - BDay(2)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_curve_date = date(2025, 12, 12)
         assert response.context.get("reference_date") == future_date.isoformat()
         assert (
             response.context.get("previous_curve_date")
@@ -220,7 +227,7 @@ class TestMarketChartsView(TestCase):
         error_messages = response.context.get("error_messages")
         assert error_messages is not None
         assert json.loads(error_messages) == {
-            "reference_date": f"Reference date {future_date} must be before today {date.today()}."
+            "reference_date": "Reference date 2025-12-17 must be before today 2025-12-16."
         }
 
     def test_market_charts_view_reference_date_before_previous_curve_date(self):
@@ -229,12 +236,15 @@ class TestMarketChartsView(TestCase):
         WHEN accessing market charts view
         THEN an error message is displayed
         """
-        query_params = f"reference_date={self.previous_curve_date.isoformat()}&previous_curve_date={self.reference_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.previous_curve_date.isoformat(),
+            "previous_curve_date": self.reference_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_curve_date = (date.today() - BDay(2)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_curve_date = date(2025, 12, 12)
         assert (
             response.context.get("reference_date")
             == self.previous_curve_date.isoformat()

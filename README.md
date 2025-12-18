@@ -142,7 +142,7 @@ These tasks fetch and ingest data from external sources:
 4. **Central Bank Meetings and STIR Futures Cleanup** - Runs **daily** (8:00 AM)
    - Updates central bank meeting dates
    - Cleans up old STIR futures prices (keeps last 7 days)
-   - Task: `central_banks_overview.tasks.scheduled_update_cb_meetings_and_stir_futures_prices_cleanup`
+   - Task: `central_banks_overview.tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`
 
 #### **Maintenance Tasks** (Monthly - 1st of each month at 8:00 AM)
 
@@ -201,7 +201,7 @@ python manage.py trigger_task <task_name> --async
 - `scheduled_market_data_ingestion`
 - `scheduled_stir_prices_ingestion`
 - `scheduled_economic_data_and_schedule_update`
-- `scheduled_update_cb_meetings_and_stir_futures_prices_cleanup`
+- `scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`
 - `scheduled_price_update_logs_cleanup`
 - `scheduled_stir_futures_price_update_logs_cleanup`
 - `scheduled_economic_data_update_logs_cleanup`

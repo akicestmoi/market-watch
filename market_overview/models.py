@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, cast
 
 from django.db import models
@@ -72,6 +73,12 @@ class PriceSourceChoices(models.TextChoices):
     BB = "BB", _("Japan Bond Trading")
     GLOBAL_RATES = "GLOBAL_RATES", _("GlobalRates.com")
     YAHOO = "YAHOO", _("Yahoo Finance")
+
+
+class SpecialComment(str, Enum):
+    """Special comment enum."""
+
+    BANK_HOLIDAY = "Bank holiday"
 
 
 class AssetModel(BaseModel):

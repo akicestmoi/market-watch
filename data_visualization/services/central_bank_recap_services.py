@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional, TypedDict
 
 import central_banks_overview.services.cb_inference_services as cb_inference_services
@@ -73,11 +73,18 @@ def get_central_bank_data_item(
 def get_central_bank_formatted_probability_matrix(
     central_bank: CentralBankChoices,
     reference_date: date,
+    meeting_dates_override: List[datetime] = [],
 ) -> Optional[CentralBankProbabilityMatrix]:
     """Get formatted probability matrix for a central bank."""
+    meeting_dates_override_dict = (
+        {central_bank: meeting_dates_override} if meeting_dates_override else {}
+    )
+
     cb_probability_matrices = (
         cb_inference_services.get_central_bank_probability_matrices(
-            reference_date, [central_bank]
+            reference_date,
+            [central_bank],
+            meeting_dates_override=meeting_dates_override_dict,
         )
     )
     for prob_matrix in cb_probability_matrices:
@@ -93,12 +100,54 @@ def get_central_bank_formatted_probability_matrix(
             }
 
 
+def _recalculate_previous_probability_matrix(
+    central_bank: CentralBankChoices,
+    previous_date: date,
+    meeting_dates_override: List[date],
+) -> Optional[CentralBankProbabilityMatrix]:
+    """Recalculate previous probability matrix using meeting dates override."""
+    meeting_dates_as_datetime: List[datetime] = [
+        (
+            datetime.combine(md, datetime.min.time())
+            if isinstance(md, date) and not isinstance(md, datetime)
+            else md
+        )
+        for md in meeting_dates_override
+    ]
+    return get_central_bank_formatted_probability_matrix(
+        central_bank,
+        previous_date,
+        meeting_dates_override=meeting_dates_as_datetime,
+    )
+
+
 def get_formatted_probability_matrix_changes(
     probability_matrix: Optional[CentralBankProbabilityMatrix],
     previous_probability_matrix: Optional[CentralBankProbabilityMatrix],
+    previous_date: Optional[date] = None,
 ) -> Optional[CentralBankProbabilityMatrix]:
-    """Get formatted probability change matrix."""
+    """Get formatted probability change matrix.
+
+    When comparing matrices, the previous probability matrix is recalculated
+    using the current meeting dates to ensure proper alignment, especially
+    when a meeting has occurred and the meeting dates list has changed.
+
+    The 'previous_probability_matrix' may have old meeting dates,
+    in which case we need to recalculate it using the 'previous_date'.
+    """
     if not probability_matrix or not previous_probability_matrix:
+        return None
+
+    # Recalculate previous matrix using current meeting dates to ensure alignment
+    # This handles cases where meeting dates change after a meeting occurs
+    current_meeting_dates = probability_matrix["meeting_dates"]
+    central_bank = probability_matrix["central_bank"]
+    if previous_date and current_meeting_dates:
+        previous_probability_matrix = _recalculate_previous_probability_matrix(
+            central_bank, previous_date, current_meeting_dates
+        )
+
+    if not previous_probability_matrix:
         return None
 
     probability_change_matrix = cb_inference_services.calculate_probability_changes(

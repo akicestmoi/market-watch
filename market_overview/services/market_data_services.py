@@ -13,8 +13,8 @@ from market_overview.models import (
     MarketPriceModel,
     PriceSourceChoices,
     PriceUpdateLogModel,
+    SpecialComment,
 )
-from market_overview.services.price_ingestion_services import SpecialComment
 
 
 class PriceChange(TypedDict):

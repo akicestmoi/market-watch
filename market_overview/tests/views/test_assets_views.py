@@ -263,8 +263,10 @@ class TestAssetsViews(TestCase):
         WHEN the get asset details view is called
         THEN the asset details should be returned
         """
-        query_params = "?short_name=TEST"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "short_name": "TEST",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
@@ -285,8 +287,10 @@ class TestAssetsViews(TestCase):
         WHEN the get asset details view is called
         THEN a 404 Not Found error should be returned
         """
-        query_params = "?short_name=NONEXISTENT"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "short_name": "NONEXISTENT",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert (
@@ -300,8 +304,8 @@ class TestAssetsViews(TestCase):
         WHEN the delete asset view is called
         THEN the asset should be deleted
         """
-        query_params = "?short_name=TEST"
-        response = self.client.delete(f"{self.base_url}{query_params}")
+        query_params = "short_name=TEST"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
 
         assert response.status_code == status.HTTP_200_OK
         assert not AssetModel.objects.filter(short_name="TEST").exists()
@@ -312,8 +316,8 @@ class TestAssetsViews(TestCase):
         WHEN the delete asset view is called
         THEN a 404 Not Found error should be returned
         """
-        query_params = "?short_name=NONEXISTENT"
-        response = self.client.delete(f"{self.base_url}{query_params}")
+        query_params = "short_name=NONEXISTENT"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert (

@@ -190,8 +190,12 @@ class TestHolidaysViews(TestCase):
         WHEN listing holidays with filters
         THEN the holidays should be listed successfully for the specific filters
         """
-        query_params = f"location={LocationChoices.JP.value}&year=2026&months=5"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "location": LocationChoices.JP.value,
+            "year": 2026,
+            "months": 5,
+        }
+        response = self.client.get(self.base_url, params)
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
@@ -203,8 +207,10 @@ class TestHolidaysViews(TestCase):
 
     def test_list_holidays_with_location_only(self):
         """Test GET with location filter only."""
-        query_params = f"location={LocationChoices.JP.value}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "location": LocationChoices.JP.value,
+        }
+        response = self.client.get(self.base_url, params)
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
@@ -225,8 +231,10 @@ class TestHolidaysViews(TestCase):
         WHEN listing holidays with year filter only
         THEN the holidays should be listed successfully for the specific year
         """
-        query_params = "year=2025"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "year": 2025,
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
@@ -253,8 +261,10 @@ class TestHolidaysViews(TestCase):
         WHEN listing holidays with months filter only
         THEN the holidays should be listed successfully for the specific months
         """
-        query_params = "months=1,2,3,4,5"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "months": "1,2,3,4,5",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
@@ -276,8 +286,12 @@ class TestHolidaysViews(TestCase):
         WHEN listing holidays with filters
         THEN the holidays should be listed successfully for the specific filters
         """
-        query_params = f"location={LocationChoices.US.value}&year=2025&months=1,2,3"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "location": LocationChoices.US.value,
+            "year": 2025,
+            "months": "1,2,3",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
@@ -288,8 +302,10 @@ class TestHolidaysViews(TestCase):
         WHEN listing holidays with invalid months format
         THEN a 400 Bad Request should be returned
         """
-        query_params = "months=invalid,format"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "months": "invalid,format",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {"error_message": {"months": ["Invalid month."]}}
@@ -300,8 +316,10 @@ class TestHolidaysViews(TestCase):
         WHEN listing holidays with invalid location
         THEN a 400 Bad Request should be returned
         """
-        query_params = "location=INVALID"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "location": "INVALID",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {

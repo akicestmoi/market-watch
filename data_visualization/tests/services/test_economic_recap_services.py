@@ -23,6 +23,7 @@ from economic_overview.models import (
 from market_overview.models import HolidayModel, LocationChoices
 
 
+@freeze_time("2025-12-16")
 class TestEconomicRecapServices(TestCase):
     """Test cases for economic_recap_services functions."""
 
@@ -167,7 +168,6 @@ class TestEconomicRecapServices(TestCase):
             ]
         }
 
-    @freeze_time("2024-11-01")
     @patch(
         "data_visualization.services.economic_recap_services._get_upcoming_events_from_publication_schedules"
     )
@@ -202,8 +202,8 @@ class TestEconomicRecapServices(TestCase):
         result = get_economic_recap_upcoming_events()
         assert result == [
             {
-                "date": "2024-11-02",
-                "date_display": "2024-11-02",
+                "date": "2025-12-17",
+                "date_display": "2025-12-17",
                 "events": [
                     {
                         "name": "Test Indicator",
@@ -215,7 +215,6 @@ class TestEconomicRecapServices(TestCase):
             }
         ]
 
-    @freeze_time("2024-11-01")
     @patch(
         "data_visualization.services.economic_recap_services._get_upcoming_events_from_publication_schedules"
     )
@@ -269,8 +268,8 @@ class TestEconomicRecapServices(TestCase):
         result = get_economic_recap_upcoming_events()
         assert result == [
             {
-                "date": "2024-11-02",
-                "date_display": "2024-11-02",
+                "date": "2025-12-17",
+                "date_display": "2025-12-17",
                 "events": [
                     {
                         "name": "Test Indicator",
@@ -287,8 +286,8 @@ class TestEconomicRecapServices(TestCase):
                 ],
             },
             {
-                "date": "2024-11-03",
-                "date_display": "2024-11-03",
+                "date": "2025-12-18",
+                "date_display": "2025-12-18",
                 "events": [
                     {
                         "name": "Holiday",
@@ -300,14 +299,14 @@ class TestEconomicRecapServices(TestCase):
             },
         ]
 
-    @freeze_time("2024-11-01")
     def test_get_economic_recap_upcoming_events_from_publication_schedules(self):
         """
         GIVEN publication schedules with upcoming dates
         WHEN getting upcoming events from publication schedules
         THEN events are returned correctly
         """
-        future_date = datetime.combine(date.today(), time(10, 30, 0)).replace(
+        today = date(2025, 12, 16)
+        future_date = datetime.combine(today, time(10, 30, 0)).replace(
             tzinfo=timezone.utc
         ) + timedelta(days=5)
         PublicationScheduleModel.objects.create(
@@ -316,41 +315,41 @@ class TestEconomicRecapServices(TestCase):
             next_publication_date=future_date + timedelta(days=30),
         )
 
-        result = _get_upcoming_events_from_publication_schedules(date.today())
+        result = _get_upcoming_events_from_publication_schedules(today)
         assert result == {
-            "2024-11-06": [
+            "2025-12-21": [
                 {
                     "name": "Test Indicator",
                     "location": "France",
                     "publication_date": datetime(
-                        2024, 11, 6, 10, 30, 0, tzinfo=timezone.utc
+                        2025, 12, 21, 10, 30, 0, tzinfo=timezone.utc
                     ),
                     "time_str": "10:30",
                 }
             ]
         }
 
-    @freeze_time("2024-11-01")
     def test_get_upcoming_holidays_events(self):
         """
         GIVEN upcoming holidays
         WHEN getting upcoming holidays events
         THEN events are returned correctly
         """
+        today = date(2025, 12, 16)
         HolidayModel.objects.create(
             id=1,
             name="Holiday",
             date=django_timezone.now() + timedelta(days=2),
             location=LocationChoices.JP,
         )
-        result = _get_upcoming_holidays_events(date.today())
+        result = _get_upcoming_holidays_events(today)
         assert result == {
-            "2024-11-03": [
+            "2025-12-18": [
                 {
                     "name": "Holiday",
                     "location": "Japan",
                     "publication_date": datetime(
-                        2024, 11, 3, 0, 0, 0, tzinfo=timezone.utc
+                        2025, 12, 18, 0, 0, 0, tzinfo=timezone.utc
                     ),
                     "time_str": "HOLIDAYS",
                 }

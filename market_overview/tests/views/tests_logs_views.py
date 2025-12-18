@@ -105,9 +105,12 @@ class TestPriceUpdateLogsViews(TestCase):
         WHEN the GET price update logs endpoint is called with filters
         THEN the list of price update logs should be returned
         """
-        query_params = f"?price_date={self.price_date.isoformat()}&short_name=TEST"
+        params = {
+            "price_date": self.price_date.isoformat(),
+            "short_name": "TEST",
+        }
         response = self.client.get(
-            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}{query_params}"
+            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -128,9 +131,11 @@ class TestPriceUpdateLogsViews(TestCase):
         WHEN the GET price update logs endpoint is called with price_date filter only
         THEN the list of price update logs should be returned
         """
+        params = {
+            "price_date": self.price_date.isoformat(),
+        }
         response = self.client.get(
-            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}",
-            {"price_date": self.price_date.isoformat()},
+            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -155,9 +160,11 @@ class TestPriceUpdateLogsViews(TestCase):
         WHEN the GET price update logs endpoint is called with short_name filter only
         THEN the list of price update logs should be returned
         """
-        query_params = f"?short_name={self.asset.short_name}"
+        params = {
+            "short_name": self.asset.short_name,
+        }
         response = self.client.get(
-            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}{query_params}"
+            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -182,9 +189,11 @@ class TestPriceUpdateLogsViews(TestCase):
         WHEN the GET price update logs endpoint is called with a nonexistent asset
         THEN the response should be a 404 error
         """
-        query_params = "?short_name=NONEXISTENT"
+        params = {
+            "short_name": "NONEXISTENT",
+        }
         response = self.client.get(
-            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}{query_params}"
+            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}", params
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.json() == {
@@ -197,9 +206,12 @@ class TestPriceUpdateLogsViews(TestCase):
         WHEN the GET price update logs endpoint is called with a nonexistent date
         THEN the response should be a 200 OK and an empty list
         """
-        query_params = f"?price_date={(date.today() + timedelta(days=100)).isoformat()}&short_name={self.asset.short_name}"
+        params = {
+            "price_date": (date.today() + timedelta(days=100)).isoformat(),
+            "short_name": self.asset.short_name,
+        }
         response = self.client.get(
-            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}{query_params}"
+            f"{self.base_url}{self.GET_PRICE_UPDATE_LOGS_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK

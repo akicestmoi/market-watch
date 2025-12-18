@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 from celery import shared_task
 from pandas.tseries.offsets import BDay
 
+import central_banks_overview.services.cb_data_services as cb_data_services
 import central_banks_overview.services.cb_meetings_services as cb_meetings_services
 import central_banks_overview.services.stir_prices_ingestion_services as stir_futures_services
 from central_banks_overview.models import CentralBankChoices
@@ -79,7 +80,7 @@ def scheduled_stir_futures_price_update_logs_cleanup():
 
 
 @shared_task
-def scheduled_update_cb_meetings_and_stir_futures_prices_cleanup():
+def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
     """
     Celery task to update central bank meetings and stir futures prices.
     This task will be scheduled to run daily.
@@ -108,6 +109,10 @@ def scheduled_update_cb_meetings_and_stir_futures_prices_cleanup():
             )
 
         if results:
+            cb_data_services.ingest_central_bank_data(
+                central_bank=central_bank,
+                date_to_ingest=(date.today() - BDay(1)).date(),
+            )
             cb_meetings_services.ingest_central_bank_meeting_dates()
             message = f"Central bank meetings updated successfully for {results}"
         else:

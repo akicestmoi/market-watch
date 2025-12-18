@@ -1,8 +1,8 @@
 import json
-from datetime import date, timedelta
+from datetime import date
 
 from django.test import Client, TestCase
-from pandas.tseries.offsets import BDay
+from freezegun import freeze_time  # type: ignore[reportMissingImports]
 
 from market_overview.models import (
     AssetClassChoices,
@@ -13,6 +13,7 @@ from market_overview.models import (
 )
 
 
+@freeze_time("2025-12-16")
 class TestMarketRecapView(TestCase):
     """Test cases for market_recap_view."""
 
@@ -20,8 +21,8 @@ class TestMarketRecapView(TestCase):
         """Set up test fixtures."""
         self.client = Client()
         self.base_url = "/market-recap/"
-        self.reference_date = (date.today() - BDay(1)).date()
-        self.previous_date = (self.reference_date - BDay(1)).date()
+        self.reference_date = date(2025, 12, 15)
+        self.previous_date = date(2025, 12, 12)
 
         self.asset = AssetModel.objects.create(
             short_name="TEST",
@@ -48,8 +49,11 @@ class TestMarketRecapView(TestCase):
         WHEN accessing market recap view
         THEN the view renders successfully with market data
         """
-        query_params = f"reference_date={self.reference_date.isoformat()}&previous_date={self.previous_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
         assert response.status_code == 200
         assert response.context.get("data_to_display") == [
             {
@@ -101,8 +105,8 @@ class TestMarketRecapView(TestCase):
         response = self.client.get(self.base_url)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_date = (default_reference_date - BDay(1)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_date = date(2025, 12, 12)
         assert response.context.get("data_to_display") == [
             {
                 "asset_class": "Stocks",
@@ -154,13 +158,16 @@ class TestMarketRecapView(TestCase):
         WHEN accessing market recap view
         THEN an error message is displayed
         """
-        future_date = date.today() + timedelta(days=1)
-        query_params = f"reference_date={future_date.isoformat()}&previous_date={self.previous_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        future_date = date(2025, 12, 17)
+        params = {
+            "reference_date": future_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_date = (default_reference_date - BDay(1)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_date = date(2025, 12, 12)
         assert response.context.get("data_to_display") == [
             {
                 "asset_class": "Stocks",
@@ -204,7 +211,7 @@ class TestMarketRecapView(TestCase):
         error_messages = response.context.get("error_messages")
         assert error_messages is not None
         assert json.loads(error_messages) == {
-            "reference_date": f"Reference date {future_date} must be before today {date.today()}.",
+            "reference_date": "Reference date 2025-12-17 must be before today 2025-12-16.",
             "reference_market_prices": f"No data found for reference date {future_date}.",
         }
 
@@ -214,12 +221,15 @@ class TestMarketRecapView(TestCase):
         WHEN accessing market recap view
         THEN an error message is displayed
         """
-        query_params = f"reference_date={self.previous_date.isoformat()}&previous_date={self.reference_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.previous_date.isoformat(),
+            "previous_date": self.reference_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
-        default_reference_date = (date.today() - BDay(1)).date()
-        default_previous_date = (default_reference_date - BDay(1)).date()
+        default_reference_date = date(2025, 12, 15)
+        default_previous_date = date(2025, 12, 12)
         assert response.context.get("data_to_display") == [
             {
                 "asset_class": "Stocks",
@@ -273,8 +283,11 @@ class TestMarketRecapView(TestCase):
         THEN an error message is displayed
         """
         self.reference_price.delete()
-        query_params = f"reference_date={self.reference_date.isoformat()}&previous_date={self.previous_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
         assert response.context.get("data_to_display") == [
@@ -330,8 +343,11 @@ class TestMarketRecapView(TestCase):
         THEN reference data is displayed with None for previous fields
         """
         self.previous_price.delete()
-        query_params = f"reference_date={self.reference_date.isoformat()}&previous_date={self.previous_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
         assert response.context.get("data_to_display") == [
@@ -400,8 +416,11 @@ class TestMarketRecapView(TestCase):
             price=85.0,
         )
 
-        query_params = f"reference_date={self.reference_date.isoformat()}&previous_date={self.previous_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
         assert response.context.get("data_to_display") == [
@@ -475,8 +494,11 @@ class TestMarketRecapView(TestCase):
             price=95.0,
         )
 
-        query_params = f"reference_date={self.reference_date.isoformat()}&previous_date={self.previous_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}?{query_params}")
+        params = {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == 200
         assert response.context.get("data_to_display") == [

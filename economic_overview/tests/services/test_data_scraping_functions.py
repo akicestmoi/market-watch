@@ -4,6 +4,7 @@ from datetime import date
 from unittest.mock import patch
 
 from django.test import TestCase
+from freezegun import freeze_time  # type: ignore[reportMissingImports]
 
 from core.tests import MockResponse, read_file_content
 from economic_overview.services.data_ingestion_services import (
@@ -32,6 +33,7 @@ class TestInseeDataScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_data_from_insee.cache_clear()
 
+    @freeze_time("2025-12-16")
     @patch("economic_overview.services.data_ingestion_services.requests.get")
     def test_get_data_from_insee_success_no_target_period(self, mock_get):
         """
@@ -50,6 +52,7 @@ class TestInseeDataScraping(TestCase):
             comment="",
         )
 
+    @freeze_time("2025-12-16")
     @patch("economic_overview.services.data_ingestion_services.requests.get")
     def test_get_data_from_insee_success_with_target_period(self, mock_get):
         """

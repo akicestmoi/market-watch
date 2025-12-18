@@ -1,7 +1,6 @@
 import re
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
-from enum import Enum
 from io import BytesIO, StringIO
 from typing import List, Optional, TypedDict
 
@@ -21,6 +20,7 @@ from market_overview.models import (
     MarketPriceModel,
     PriceSourceChoices,
     PriceUpdateLogModel,
+    SpecialComment,
 )
 from market_overview.services import market_data_services
 
@@ -47,12 +47,6 @@ SOURCE_SCRAP_MAP = {
     PriceSourceChoices.GLOBAL_RATES: lambda d, t: scrap_from_global_rates(d, t),
     PriceSourceChoices.YAHOO: lambda d, t: get_yahoo_finance_closing_prices(d, t),
 }
-
-
-class SpecialComment(str, Enum):
-    """Special comment enum."""
-
-    BANK_HOLIDAY = "Bank holiday"
 
 
 class ScrapingResult(TypedDict):

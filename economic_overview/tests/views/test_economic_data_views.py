@@ -178,8 +178,10 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         WHEN getting economic data
         THEN the correct data is returned
         """
-        query_params = f"?indicator_names={self.indicator.name}"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "indicator_names": self.indicator.name,
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
@@ -221,8 +223,10 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         WHEN getting economic data detailed
         THEN the correct data for that period is returned
         """
-        query_params = f"?period={self.period.isoformat()}"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "period": self.period.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
@@ -264,10 +268,11 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         WHEN getting economic data detailed
         THEN the correct filtered data is returned
         """
-        query_params = (
-            f"?indicator_names={self.indicator.name}&period={self.period.isoformat()}"
-        )
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "indicator_names": self.indicator.name,
+            "period": self.period.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
@@ -294,8 +299,10 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         WHEN getting economic data detailed
         THEN a 404 error is returned
         """
-        query_params = "?indicator_names=NonExistent"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "indicator_names": "NonExistent",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -324,8 +331,8 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         WHEN deleting economic data
         THEN a 404 error is returned
         """
-        query_params = f"?indicator_name=NonExistent&period={self.period.isoformat()}"
-        response = self.client.delete(f"{self.base_url}{query_params}")
+        query_params = f"indicator_name=NonExistent&period={self.period.isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 

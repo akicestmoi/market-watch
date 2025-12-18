@@ -1048,7 +1048,6 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                     )
                 )
                 previous_rate = None
-
         return meeting_rate_info
 
     def _calculate_meeting_rate_changes(self) -> List[RateChangePerMeeting]:
@@ -1235,6 +1234,7 @@ def get_fall_back_rate(
 def get_central_bank_probability_matrices(
     target_date: date,
     central_banks: List[CentralBankChoices] = [],
+    meeting_dates_override: Dict[CentralBankChoices, List[datetime]] = {},
 ) -> List[CentralBankProbabilityMatrix]:
     """Get probability matrices for specified central banks."""
     logger.info(f"Getting probability matrices for {central_banks} on {target_date}")
@@ -1250,10 +1250,15 @@ def get_central_bank_probability_matrices(
     )
 
     # Create lookup dictionaries for efficient access
-    meeting_dates_lookup = {
+    # Note: meeting_dates from cb_meetings_services are List[datetime]
+    meeting_dates_lookup: Dict[CentralBankChoices, List[datetime]] = {
         meeting_data["central_bank"]: meeting_data["meeting_dates"]
         for meeting_data in all_meeting_dates
     }
+    # Override meeting dates if provided (used for recalculating previous matrices)
+    if meeting_dates_override:
+        for cb, dates in meeting_dates_override.items():
+            meeting_dates_lookup[cb] = dates
     future_prices_lookup = {
         cb: [fp for fp in all_future_prices if fp.central_bank == cb]
         for cb in central_banks_to_process
@@ -1274,7 +1279,7 @@ def get_central_bank_probability_matrices(
         # Get meeting dates
         meeting_dates = meeting_dates_lookup.get(central_bank)
         if not meeting_dates:
-            raise ValueError(f"No meeting dates found for {central_bank}. ")
+            raise ValueError(f"No meeting dates found for {central_bank}.")
 
         # Get future prices
         future_prices = future_prices_lookup.get(central_bank, [])
@@ -1310,23 +1315,50 @@ def calculate_probability_changes(
     probability_matrix: CentralBankProbabilityMatrix,
     previous_probability_matrix: CentralBankProbabilityMatrix,
 ) -> CentralBankProbabilityMatrix:
-    """Calculate probability change matrix."""
-    previous_by_step = {
-        entry["expected_rate_step"]: entry["probabilities"]
-        for entry in previous_probability_matrix["probability_matrix"]
-    }
+    """Calculate probability change matrix.
+
+    Aligns probabilities by meeting dates to handle cases where meeting dates
+    change between the current and previous matrices (e.g., after a meeting
+    occurs).
+    """
+    current_meeting_dates = probability_matrix["meeting_dates"]
+    previous_meeting_dates = previous_probability_matrix["meeting_dates"]
+
+    # Build previous probabilities indexed by rate_step and meeting_date
+    previous_by_step_and_date: Dict[int, Dict[date, float]] = {}
+    for entry in previous_probability_matrix["probability_matrix"]:
+        rate_step = entry["expected_rate_step"]
+        previous_by_step_and_date[rate_step] = {}
+        for meeting_idx, prob in enumerate(entry["probabilities"]):
+            if meeting_idx < len(previous_meeting_dates):
+                meeting_date = previous_meeting_dates[meeting_idx]
+                meeting_date_as_date = (
+                    meeting_date.date()
+                    if isinstance(meeting_date, datetime)
+                    else meeting_date
+                )
+                previous_by_step_and_date[rate_step][meeting_date_as_date] = prob
 
     probability_change_matrix: List[ProbabilitiesByStep] = []
     for current_entry in probability_matrix["probability_matrix"]:
         rate_step = current_entry["expected_rate_step"]
         current_probs = current_entry["probabilities"]
-        previous_probs = previous_by_step.get(rate_step, [])
+        previous_probs_map = previous_by_step_and_date.get(rate_step, {})
 
         differences = []
         for meeting_idx, current_prob in enumerate(current_probs):
-            previous_prob = previous_probs[meeting_idx]
-            difference = current_prob - previous_prob
-            differences.append(difference)
+            if meeting_idx < len(current_meeting_dates):
+                meeting_date = current_meeting_dates[meeting_idx]
+                # Convert to date for comparison (current_meeting_dates is List[date])
+                meeting_date_as_date = (
+                    meeting_date.date()
+                    if isinstance(meeting_date, datetime)
+                    else meeting_date
+                )
+                # Get previous probability for this meeting date, default to 0 if none
+                previous_prob = previous_probs_map.get(meeting_date_as_date, 0.0)
+                difference = round(current_prob - previous_prob, 8)
+                differences.append(difference)
 
         probability_change_matrix.append(
             ProbabilitiesByStep(

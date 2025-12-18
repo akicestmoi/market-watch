@@ -1,14 +1,15 @@
 from django.urls import path
 
-from .views import (
-    BulkUpdateStirFuturesPricesView,
-    CentralBankDataIngestionView,
+from .views.cb_data_views import CentralBankDataIngestionView, ListCentralBankDataView
+from .views.cb_meetings_views import (
     CentralBankMeetingDatesIngestionView,
+    GetCentralBankMeetingDatesView,
+)
+from .views.probability_matrix_views import GetCentralBankProbabilityMatrixView
+from .views.stir_futures_prices_views import (
+    BulkUpdateStirFuturesPricesView,
     CsvBulkUpdateStirFuturesPricesView,
     EstrPriceIngestionViaPdfView,
-    GetCentralBankMeetingDatesView,
-    GetCentralBankProbabilityMatrixView,
-    ListCentralBankDataView,
     ListStirFuturesPricesView,
     StirFuturesPriceIngestionView,
 )

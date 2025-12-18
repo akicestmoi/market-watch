@@ -14,7 +14,7 @@ def get_task_map():
     from central_banks_overview.tasks import (
         scheduled_stir_futures_price_update_logs_cleanup,
         scheduled_stir_prices_ingestion,
-        scheduled_update_cb_meetings_and_stir_futures_prices_cleanup,
+        scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings,
     )
     from economic_overview.tasks import (
         scheduled_economic_data_and_schedule_update,
@@ -33,8 +33,8 @@ def get_task_map():
         "scheduled_economic_data_and_schedule_update": (
             scheduled_economic_data_and_schedule_update
         ),
-        "scheduled_update_cb_meetings_and_stir_futures_prices_cleanup": (
-            scheduled_update_cb_meetings_and_stir_futures_prices_cleanup
+        "scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings": (
+            scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings
         ),
         "scheduled_price_update_logs_cleanup": scheduled_price_update_logs_cleanup,
         "scheduled_stir_futures_price_update_logs_cleanup": (

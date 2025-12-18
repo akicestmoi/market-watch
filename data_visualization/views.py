@@ -244,7 +244,9 @@ def central_banks_recap_view(request):
             )
             probability_change_matrix = (
                 central_bank_recap_services.get_formatted_probability_matrix_changes(
-                    probability_matrix, previous_probability_matrix
+                    probability_matrix,
+                    previous_probability_matrix,
+                    previous_date=previous_date,
                 )
             )
         except Exception as e:

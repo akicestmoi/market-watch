@@ -15,9 +15,10 @@ from market_overview.models import (
     LocationChoices,
     MarketPriceModel,
     PriceUpdateLogModel,
+    SpecialComment,
 )
 from market_overview.services.market_data_services import BulkUpdateAssetsPricesItem
-from market_overview.services.price_ingestion_services import MarketData, SpecialComment
+from market_overview.services.price_ingestion_services import MarketData
 
 
 class TestMarketPricesIngestionViews(TestCase):
@@ -580,8 +581,11 @@ class TestMarketPricesViews(TestCase):
         WHEN getting the market price
         THEN the market price is returned
         """
-        query_params = f"?date={self.price_date.isoformat()}&short_name=TEST"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "date": self.price_date.isoformat(),
+            "short_name": "TEST",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
@@ -607,8 +611,11 @@ class TestMarketPricesViews(TestCase):
         WHEN getting its market price
         THEN a 404 Not Found error is returned
         """
-        query_params = f"?date={self.price_date.isoformat()}&short_name=NONEXISTENT"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "date": self.price_date.isoformat(),
+            "short_name": "NONEXISTENT",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -618,16 +625,20 @@ class TestMarketPricesViews(TestCase):
         WHEN getting its market price without parameters
         THEN a 400 Bad Request error is returned
         """
-        query_params = "?short_name=TEST"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "short_name": "TEST",
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {
             "error_message": {"date": ["This field is required."]}
         }
 
-        query_params = f"?date={self.price_date.isoformat()}"
-        response = self.client.get(f"{self.base_url}{query_params}")
+        params = {
+            "date": self.price_date.isoformat(),
+        }
+        response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {
@@ -650,9 +661,11 @@ class TestMarketPricesViews(TestCase):
         WHEN listing the market prices
         THEN the market prices are returned
         """
-        query_params = f"?date={self.price_date.isoformat()}"
+        params = {
+            "date": self.price_date.isoformat(),
+        }
         response = self.client.get(
-            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}{query_params}"
+            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -681,9 +694,11 @@ class TestMarketPricesViews(TestCase):
         WHEN listing the market prices
         THEN an empty list is returned
         """
-        query_params = f"?date={(self.price_date + timedelta(days=1)).isoformat()}"
+        params = {
+            "date": (self.price_date + timedelta(days=1)).isoformat(),
+        }
         response = self.client.get(
-            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}{query_params}"
+            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -695,9 +710,11 @@ class TestMarketPricesViews(TestCase):
         WHEN listing the market prices without a date parameter
         THEN a 400 Bad Request error is returned
         """
-        query_params = "?short_name=TEST"
+        params = {
+            "short_name": "TEST",
+        }
         response = self.client.get(
-            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}{query_params}"
+            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}", params
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -724,9 +741,11 @@ class TestMarketPricesViews(TestCase):
             price=200.0,
         )
 
-        query_params = f"?date={self.price_date.isoformat()}"
+        params = {
+            "date": self.price_date.isoformat(),
+        }
         response = self.client.get(
-            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}{query_params}"
+            f"{self.base_url}{self.LIST_MARKET_PRICES_URL}", params
         )
 
         assert response.status_code == status.HTTP_200_OK

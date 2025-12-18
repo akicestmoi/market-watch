@@ -1,6 +1,11 @@
 import json
-from typing import Optional
+from datetime import datetime
+from typing import List, Optional
 from unittest.mock import MagicMock
+
+from django.db.models import QuerySet
+
+from core.services import convert_query_to_dictionary_list
 
 
 def load_json_mock(file_path: str) -> dict:
@@ -13,6 +18,29 @@ def read_file_content(file_path: str) -> bytes:
     """Read file content and return bytes."""
     with open(file_path, "rb") as f:
         return f.read()
+
+
+def parse_query_for_testing(
+    queryset: QuerySet,
+    sort_keys: List[str] = [],
+    date_format: str = "%Y-%m-%d %H:%M:%S%z",
+) -> List[dict]:
+    """
+    Convert queryset to dictionary list, normalize datetime objects, and sort."""
+    result = convert_query_to_dictionary_list(queryset)
+
+    parsed_result = []
+    for item in result:
+        parsed_item = item.copy()
+        for key, value in parsed_item.items():
+            if isinstance(value, datetime):
+                parsed_item[key] = datetime.strftime(value, date_format)
+        parsed_result.append(parsed_item)
+
+    if sort_keys:
+        parsed_result.sort(key=lambda x: tuple(x[key] for key in sort_keys))
+
+    return parsed_result
 
 
 class MockResponse:

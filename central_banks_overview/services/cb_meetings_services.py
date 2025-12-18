@@ -258,20 +258,48 @@ def _extract_boj_meeting_dates() -> List[datetime]:
     return sorted(meeting_dates)
 
 
-def ingest_specific_central_bank_meeting_dates(
+def _ingest_specific_central_bank_meeting_dates(
     central_bank: CentralBankChoices, meeting_dates: List[datetime]
 ):
-    """Ingest specific central bank meeting dates."""
+    """Ingest specific central bank meeting dates.
+
+    Updates or creates meeting dates in the database and deletes any past meetings.
+    """
     now = datetime.now(timezone.utc)
     meeting_dates = [date for date in meeting_dates if date >= now]
-    logger.info(f"Ingesting  meeting dates for {central_bank.label}")
+    meeting_dates = meeting_dates[:NB_MEETINGS_TO_INGEST]
+    logger.info(f"Ingesting meeting dates for {central_bank.label}")
+
+    existing_meetings = {
+        m.date: m
+        for m in CentralBankMeetingModel.objects.filter(central_bank=central_bank)
+    }
+    meetings_to_create = []
+    meetings_to_update = []
+
     for i, meeting_date in enumerate(meeting_dates):
-        if i < NB_MEETINGS_TO_INGEST:
-            CentralBankMeetingModel.objects.update_or_create(
-                central_bank=central_bank,
-                date=meeting_date,
-                defaults={"order": i + 1},
+        order = i + 1
+        if meeting_date in existing_meetings:
+            # Update existing meeting if order changed
+            existing_meeting = existing_meetings[meeting_date]
+            if existing_meeting.order != order:
+                existing_meeting.order = order
+                meetings_to_update.append(existing_meeting)
+        else:
+            # Create new meeting
+            meetings_to_create.append(
+                CentralBankMeetingModel(
+                    central_bank=central_bank, date=meeting_date, order=order
+                )
             )
+
+    if meetings_to_create:
+        CentralBankMeetingModel.objects.bulk_create(meetings_to_create)
+    if meetings_to_update:
+        CentralBankMeetingModel.objects.bulk_update(meetings_to_update, ["order"])
+    CentralBankMeetingModel.objects.filter(central_bank=central_bank).exclude(
+        date__in=set(meeting_dates)
+    ).delete()
 
 
 def ingest_central_bank_meeting_dates():
@@ -280,7 +308,7 @@ def ingest_central_bank_meeting_dates():
         if central_bank not in CB_MEETINGS_EXTRACT_MAP:
             continue
         meeting_dates = CB_MEETINGS_EXTRACT_MAP[central_bank]()
-        ingest_specific_central_bank_meeting_dates(central_bank, meeting_dates)
+        _ingest_specific_central_bank_meeting_dates(central_bank, meeting_dates)
 
 
 def get_central_bank_meeting_dates(
@@ -291,7 +319,9 @@ def get_central_bank_meeting_dates(
     if central_banks:
         query = query.filter(central_bank__in=[cb.value for cb in central_banks])
 
-    distinct_central_banks = query.values_list("central_bank", flat=True).distinct()
+    distinct_central_banks = (
+        query.values_list("central_bank", flat=True).distinct().order_by("central_bank")
+    )
     return [
         CentralBankMeetingDates(
             central_bank=central_bank,
@@ -309,4 +339,10 @@ def get_central_bank_next_meeting_date(
     central_bank: CentralBankChoices,
 ) -> Optional[datetime]:
     """Get central bank next meeting date."""
-    return get_central_bank_meeting_dates([central_bank])[0]["meeting_dates"][0]
+    meeting_dates_by_bank = get_central_bank_meeting_dates([central_bank])
+    if not meeting_dates_by_bank:
+        return None
+    meeting_dates = meeting_dates_by_bank[0]["meeting_dates"]
+    if not meeting_dates:
+        return None
+    return meeting_dates[0]

@@ -5,9 +5,6 @@ from typing import List, Optional, TypedDict
 from django.db.models import F, Max, OuterRef, QuerySet, Subquery
 
 from central_banks_overview.models import CentralBankChoices, CentralBankDataModel
-from central_banks_overview.services.cb_meetings_services import (
-    get_central_bank_next_meeting_date,
-)
 from core.services import logger
 from market_overview.models import PriceSourceChoices
 from market_overview.services.price_ingestion_services import (
@@ -22,14 +19,14 @@ CENTRAL_BANK_DATA_MAP = {
 }
 
 
-class CentralBankDataDates(TypedDict):
+class CentralBankDataDate(TypedDict):
     """Central Bank Data Dates."""
 
     central_bank: CentralBankChoices
     date: date
 
 
-class CentralBankBaseInfo(TypedDict):
+class CentralBankDataBaseInfo(TypedDict):
     """Central Bank Data Information."""
 
     cb_data_id: int
@@ -59,46 +56,14 @@ class CentralBankDataIngestionResponseItem(TypedDict):
     date: date
 
 
-def _get_central_bank_base_info() -> List[CentralBankBaseInfo]:
+def _get_central_bank_base_info() -> List[CentralBankDataBaseInfo]:
     """Get central bank base info."""
     with open("central_banks_overview/data_sources/central_banks_data.json") as f:
-        return [CentralBankBaseInfo(**data) for data in json.load(f)]
-
-
-def get_data_dates_to_ingest(
-    dates_to_ingest: List[CentralBankDataDates],
-) -> List[CentralBankDataDates]:
-    """Get data dates to ingest.
-
-    If no date is provided for a central bank, the next meeting date is returned.
-    """
-    dates_by_central_bank: List[CentralBankDataDates] = []
-    requested_dates_map = {
-        date_item["central_bank"]: date_item["date"] for date_item in dates_to_ingest
-    }
-
-    for central_bank in CentralBankChoices:
-        if central_bank in requested_dates_map:
-            dates_by_central_bank.append(
-                CentralBankDataDates(
-                    central_bank=central_bank,
-                    date=requested_dates_map[central_bank],
-                )
-            )
-        else:
-            next_meeting_date = get_central_bank_next_meeting_date(central_bank)
-            if next_meeting_date:
-                dates_by_central_bank.append(
-                    CentralBankDataDates(
-                        central_bank=central_bank,
-                        date=next_meeting_date.date(),
-                    )
-                )
-    return dates_by_central_bank
+        return [CentralBankDataBaseInfo(**data) for data in json.load(f)]
 
 
 def _get_specific_central_bank_data(
-    target_date: date, central_bank_data: CentralBankBaseInfo
+    target_date: date, central_bank_data: CentralBankDataBaseInfo
 ) -> CentralBankData:
     """Ingest central bank data."""
     logger.info(
@@ -126,46 +91,53 @@ def _get_specific_central_bank_data(
 
 
 def ingest_central_bank_data(
-    central_bank_data_dates: List[CentralBankDataDates],
+    central_bank: CentralBankChoices,
+    date_to_ingest: date,
+    all_data_info: List[CentralBankDataBaseInfo] = [],
+) -> List[CentralBankDataIngestionResponseItem]:
+    """Ingest central bank data.
+
+    The function can act as a standalone function or
+    as part of the ingest_all_central_bank_data function.
+    """
+    central_bank_data_updated = []
+    if not all_data_info:
+        all_data_info = _get_central_bank_base_info()
+    for data_info in all_data_info:
+        if data_info["central_bank"] == central_bank:
+            data = _get_specific_central_bank_data(date_to_ingest, data_info)
+            CentralBankDataModel.objects.update_or_create(
+                central_bank=data["central_bank"],
+                short_name=data["short_name"],
+                full_name=data["full_name"],
+                date=data["date"],
+                cb_data_id=data["cb_data_id"],
+                defaults={
+                    "value": data["value"],
+                    "comment": data["comment"],
+                },
+            )
+            central_bank_data_updated.append(
+                CentralBankDataIngestionResponseItem(
+                    data_name=data_info["full_name"], date=date_to_ingest
+                )
+            )
+    return central_bank_data_updated
+
+
+def ingest_requested_central_bank_data(
+    dates_to_ingest_by_central_bank: List[CentralBankDataDate],
 ) -> List[CentralBankDataIngestionResponseItem]:
     """Ingest central bank data."""
     central_bank_data_updated = []
     central_bank_base_info = _get_central_bank_base_info()
 
-    for central_bank_data in central_bank_base_info:
-        central_bank_data_date = next(
-            (
-                central_bank_data_date["date"]
-                for central_bank_data_date in central_bank_data_dates
-                if central_bank_data_date["central_bank"]
-                == central_bank_data["central_bank"]
-            ),
-            None,
-        )
-        if not central_bank_data_date:
-            logger.warning(
-                f"No central bank data date found for {central_bank_data['central_bank']}"
-            )
-            continue
-
-        data = _get_specific_central_bank_data(
-            central_bank_data_date, central_bank_data
-        )
-        CentralBankDataModel.objects.update_or_create(
-            central_bank=data["central_bank"],
-            short_name=data["short_name"],
-            full_name=data["full_name"],
-            date=data["date"],
-            cb_data_id=data["cb_data_id"],
-            defaults={
-                "value": data["value"],
-                "comment": data["comment"],
-            },
-        )
-
-        central_bank_data_updated.append(
-            CentralBankDataIngestionResponseItem(
-                data_name=central_bank_data["full_name"], date=central_bank_data_date
+    for central_bank_data_date in dates_to_ingest_by_central_bank:
+        central_bank = central_bank_data_date["central_bank"]
+        date_to_ingest = central_bank_data_date["date"]
+        central_bank_data_updated.extend(
+            ingest_central_bank_data(
+                central_bank, date_to_ingest, central_bank_base_info
             )
         )
     return central_bank_data_updated

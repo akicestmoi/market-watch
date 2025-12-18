@@ -201,7 +201,7 @@ CELERY_BEAT_SCHEDULE = {
     # Central Bank Meetings and STIR Futures Cleanup - Runs daily on weekdays
     # Updates central bank meeting dates and cleans up old STIR futures prices
     "scheduled-update-cb-meetings-and-stir-futures-prices-cleanup": {
-        "task": "central_banks_overview.tasks.scheduled_update_cb_meetings_and_stir_futures_prices_cleanup",
+        "task": "central_banks_overview.tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
     },
     # ========================================================================

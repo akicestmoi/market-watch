@@ -54,6 +54,13 @@ STIR_FUTURES_PRICES_MAP = {
 }
 
 
+class YFinanceTickerInfo(TypedDict):
+    """YFinance Ticker Information."""
+
+    ticker: str
+    date: datetime
+
+
 class StirFutures(TypedDict):
     """Stir Futures Information."""
 
@@ -79,15 +86,8 @@ class BulkUpdateFuturesPricesItem(TypedDict):
     logs: Optional[str]
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirFutures:
-    """Get the price of a Fed Funds Futures contract for a given date.
-
-    Yahoo uses CME prices (CBOT).
-    """
-    month_start = MonthBegin()
-    month_end = MonthEnd()
-
+def _get_ticker_info_from_maturity_month(maturity_month: int) -> YFinanceTickerInfo:
+    """Get the YFinance ticker and date from a maturity month."""
     next_meeting_date = get_central_bank_next_meeting_date(CentralBankChoices.FRB)
     now = datetime.now(timezone.utc)
     month_offset = maturity_month + (
@@ -99,6 +99,20 @@ def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirF
     yfinance_ticker = (
         f"{FF_FUTURES_PREFIX}{ticker_month}{ticker_year}{FF_FUTURES_SUFFIX}"
     )
+    return YFinanceTickerInfo(ticker=yfinance_ticker, date=ticker_date)
+
+
+@ttl_cache(maxsize=128, ttl=10 * 60)
+def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirFutures:
+    """Get the price of a Fed Funds Futures contract for a given date.
+
+    Yahoo uses CME prices (CBOT).
+    """
+    month_start = MonthBegin()
+    month_end = MonthEnd()
+    yfinance_ticker_info = _get_ticker_info_from_maturity_month(maturity_month)
+    yfinance_ticker = yfinance_ticker_info["ticker"]
+    ticker_date = yfinance_ticker_info["date"]
     maturity = ticker_date.strftime("%y.%m")
 
     price = get_yahoo_finance_closing_prices(target_date, yfinance_ticker).get("price")
@@ -171,7 +185,7 @@ def _get_mutan_futures_prices_from_tfx(target_date: date) -> pd.DataFrame:
             TFX_HISTORICAL_FUTURES_DATA_URL, params=params, timeout=30
         )
         response.raise_for_status()
-    except requests.RequestException as e:
+    except Exception as e:
         raise ValueError(f"Failed to fetch data from TFX: {e}") from e
 
     lines = response.text.splitlines()
@@ -204,8 +218,8 @@ def _parse_jp_date(date_str: str) -> Optional[date]:
 
 
 @ttl_cache(maxsize=128, ttl=10 * 60)
-def _get_mutan_futures_reference_dates() -> pd.DataFrame:
-    """Get reference dates of Mutan STIR Futures from TFX.
+def _get_mutan_futures_accrual_dates() -> pd.DataFrame:
+    """Get accrual dates of Mutan STIR Futures from TFX.
 
     Source: https://www.tfx.co.jp/
     """
@@ -215,7 +229,7 @@ def _get_mutan_futures_reference_dates() -> pd.DataFrame:
     try:
         response = requests.get(TFX_HISTORICAL_FUTURES_TRADING_CALENDAR_URL, timeout=30)
         response.raise_for_status()
-    except requests.RequestException as e:
+    except Exception as e:
         raise ValueError(f"Failed to fetch trading calendar from TFX: {e}") from e
 
     html = response.content.decode("utf-8")
@@ -276,9 +290,11 @@ def _get_mutan_futures_prices(target_date: date) -> List[StirFutures]:
     based on the actual column names in the CSV response.
     """
     future_prices = _get_mutan_futures_prices_from_tfx(target_date)
-    additional_info = _get_mutan_futures_reference_dates()
+    accrual_dates = _get_mutan_futures_accrual_dates()
 
-    combined_prices = pd.merge(future_prices, additional_info, on="限月", how="left")
+    combined_prices = pd.merge(
+        future_prices, accrual_dates, on="限月", how="left"
+    ).replace({float("nan"): None})
 
     return [
         StirFutures(
@@ -424,9 +440,11 @@ def extract_all_stir_futures_prices(price_date: date) -> List[StirFutures]:
     return stir_futures_prices
 
 
-def ingest_stir_futures_prices(stir_futures_prices: List[StirFutures]):
+def ingest_stir_futures_prices(
+    stir_futures_prices: List[StirFutures],
+) -> List[StirFutures]:
     """Ingest Stir Futures Prices."""
-    stir_futures_updated = []
+    stir_futures_updated: List[StirFutures] = []
     for stir_future_price in stir_futures_prices:
         date = stir_future_price["date"]
         maturity = stir_future_price["maturity"]
@@ -487,6 +505,7 @@ def bulk_update_futures_prices(
                 updates={
                     "logs": update["logs"],
                     "price": update["price"],
+                    "comment": update["logs"],
                 },
                 logging_on_fields=["price"],
                 none_skip_fields=["price"],
@@ -511,7 +530,7 @@ def bulk_update_futures_prices_from_csv(
     df = pd.read_csv(BytesIO(csv_file), dtype=EXPECTED_CSV_FORMAT)  # type: ignore[reportArgumentType]
     df.fillna("", inplace=True)
 
-    missing_columns = set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)
+    missing_columns = sorted(list(set(EXPECTED_CSV_FORMAT.keys()) - set(df.columns)))
     if missing_columns:
         raise ValueError(
             f"CSV file must have the following columns: {', '.join(missing_columns)}."
