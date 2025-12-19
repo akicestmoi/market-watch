@@ -13,10 +13,11 @@ The probabilities are derived directly from Short-Term Interest Rate Futures (or
    3. [3-Month TONA Futures](#3-month-tona-futures)
 3. [FRB Probability Matrix Methodology](#frb-probability-matrix-methodology)
     1. [General Framework](#general-framework)
-    2. [Step 1: Fill Start/End Prices For Periods Without Meeting](#step-1-fill-startend-prices-for-periods-without-meeting)
-    3. [Step 2: Infer Implied Rates At Meeting Date](#step-2-infer-implied-rates-at-meeting-date)
-    4. [Step 3: Linear Interpolation](#step-3-linear-interpolation)
-    5. [Step 4: Probability Convolution For Cumulative Probabilities](#step-4-probability-convolution-for-cumulative-probabilities)
+    2. [Step 0: Validation of Meeting Coverage by Futures](#step-0-validation-of-meeting-coverage-by-futures)
+    3. [Step 1: Fill Start/End Prices For Periods Without Meeting](#step-1-fill-startend-prices-for-periods-without-meeting)
+    4. [Step 2: Infer Implied Rates At Meeting Date](#step-2-infer-implied-rates-at-meeting-date)
+    5. [Step 3: Linear Interpolation](#step-3-linear-interpolation)
+    6. [Step 4: Probability Convolution For Cumulative Probabilities](#step-4-probability-convolution-for-cumulative-probabilities)
 4. [ECB and BOJ Probability Matrix Methodology](#ecb-and-boj-probability-matrix-methodology)
    1. [General Framework](#general-framework-1)
    2. [Step 1: Infer Single meeting implied rates](#step-1-infer-single-meeting-implied-rates)
@@ -114,29 +115,56 @@ These 2 rates, e.g.:
 
 These will be used later to calculate the rate differential which represents the market implied probability of central banks' decisions. Hence, the first step is to obtain these 2 rates.
 
+### Step 0: Validation of Meeting Coverage by Futures
+
+Before processing the probability matrix, we validate that all meeting dates are properly covered by futures contracts. This ensures that we have sufficient data to calculate the required rates.
+
+**Validation Requirements:**
+
+1. **Meeting Coverage**: All meeting dates must fall within at least one future contract's accrual period.
+
+2. **Last Meeting Requirement**: The last meeting must have a future contract **after** it. This is required to determine the `end_rate` for the last meeting.
+
+3. **Meeting Limit**: Only the first 8 meetings are processed to limit computational complexity. In addition, there is no real value in inferring prices that are too far away.
+
+If any of these requirements are not met, a `ValueError` is raised and the probability matrix calculation is aborted.
+
+Note that there is no requirement on the first meeting as current effective rate is used as a fallback.
+
 ### Step 1: Fill Start/End Prices For Periods Without Meeting
 
-To do so, we first propagate rates from futures which do not contain a central bank meeting over its lifetime. If a contract has no meeting, the implied rate represents the constant rate throughout the period as per our assumption **(2)**. This rate is used to:
-- **Propagate forward**: If this is the first contract, the implied rate becomes the base rate for subsequent contracts
-- **Propagate backward**: If this contract comes after contracts with meetings, the implied rate is used to fill in the "end rate" of the previous meeting period
+This step handles non-FOMC months (contracts without meetings). The key principle is that implied rates from non-FOMC anchor months propagate in specific directions to minimize discontinuities in the path of implied rates.
 
-The process works as follows:
+**Rules for Non-FOMC Months:**
 
-1. **Initialize**: For the first contract, if it has no meeting, set $r_{\text{previous}} = r_{\text{base}}$ (initial base rate). If it has a meeting, $r_{\text{start}}$ is set to $r_{\text{base}}$.
+For every non-FOMC month $T$ (contract without a meeting), the implied rate $r_{\text{implied}}(T)$ is used to populate:
+- **$r_{\text{end}}(T-1)$**: The end rate of the previous contract (if $T-1$ has a meeting)
+- **$r_{\text{start}}(T+1)$**: The start rate of the next contract (if $T+1$ has a meeting)
 
-2. **Propagate rates**: For each subsequent contract:
-   - If no meeting: The implied rate $r_{\text{implied}}$ is used to update the previous meeting's end rate (if exists), and becomes $r_{\text{previous}}$ for the next contract
-   - If meeting: $r_{\text{start}}$ is set to $r_{\text{previous}}$ (or $r_{\text{base}}$ if this is the first contract), and $r_{\text{end}}$ needs to be calculated
+**Implementation Process:**
 
-We should now be ready to calculate the missing rates: for contracts with meetings where either $r_{\text{start}}$ or $r_{\text{end}}$ is missing, we solve using the average rate formula.
+1. **Initialize**: For the first contract:
+   - If it has a meeting: $r_{\text{start}}$ is set to $r_{\text{base}}$ (initial base rate)
+
+2. **Direct Propagation**: For each non-FOMC month $T$:
+   - Set $r_{\text{end}}(T-1) = r_{\text{implied}}(T)$ if contract $T-1$ has a meeting
+   - Set $r_{\text{start}}(T+1) = r_{\text{implied}}(T)$ if contract $T+1$ has a meeting (only from immediately preceding non-FOMC month)
+
+**Important Notes:**
+- When multiple non-FOMC months precede a meeting, only the **immediately preceding** non-FOMC month sets the meeting's start rate
+- This step only does direct propagation from non-FOMC months. The calculation of missing rates and backward propagation of calculated rates happens in Step 2 (see below)
 
 ### Step 2: Infer Implied Rates At Meeting Date
 
-For each contract containing a meeting, we need to solve for the implied rate at the meeting date. This is done using the average rate formula for Fedfunds futures.
+This step consists of three sub-steps that calculate missing rates, propagate calculated rates backward, and compute rate differences.
+
+#### Step 2.1: Calculate Missing Rates Using Formulas
+
+For each contract containing a meeting, we calculate the missing rate (either $r_{\text{start}}$ or $r_{\text{end}}$) using the average rate formula for Fedfunds futures.
 
 Given:
 - $r_{\text{start}}$: Rate before the meeting (start rate)
-- $r_{\text{end}}$: Rate after the meeting (end rate) - this is what we're solving for
+- $r_{\text{end}}$: Rate after the meeting (end rate)
 - $r_{\text{implied}}$: Implied average rate from the futures price
 - $d_{\text{before}}$: Days before the meeting
 - $d_{\text{after}}$: Days after the meeting
@@ -154,7 +182,30 @@ $$r_{\text{end}} = \frac{T \times r_{\text{implied}} - d_{\text{before}} \times 
 
 $$r_{\text{start}} = \frac{T \times r_{\text{implied}} - d_{\text{after}} \times r_{\text{end}}}{d_{\text{before}}}$$
 
-The rate change in basis points at the meeting is:
+**For months immediately before/after non-FOMC month:**
+- If $r_{\text{end}}$ was set from a non-FOMC month: Calculate $r_{\text{start}}$ using $r_{\text{end}}$ and $r_{\text{implied}}$
+- If $r_{\text{start}}$ was set from a non-FOMC month: Calculate $r_{\text{end}}$ using $r_{\text{start}}$ and $r_{\text{implied}}$
+
+**Refining rates when both are available:**
+
+In some cases, both $r_{\text{start}}$ and $r_{\text{end}}$ may be initially set (e.g., from Step 1 propagation). However, to ensure accuracy, we recalculate $r_{\text{start}}$ using the actual futures implied rate and the known $r_{\text{end}}$. This refinement step ensures that the start rate is consistent with the futures contract pricing, as the futures price reflects the market's expectation and should be used to refine the start rate when both values are available.
+
+#### Step 2.2: Backward Propagation of Calculated Rates
+
+Calculated rates from non-FOMC months are propagated backward to ensure continuity:
+
+**Rule**: The calculated $r_{\text{start}}(T-1)$ (from non-FOMC month $T$) is copied to populate $r_{\text{end}}(T-2)$, continuing backward until another non-FOMC anchor month is reached.
+
+**Process:**
+1. For each meeting with a calculated $r_{\text{start}}$ (set from a non-FOMC month), propagate it backward as $r_{\text{end}}$ of the previous meeting
+2. Continue backward propagation until we hit a non-FOMC anchor month (a contract without a meeting between meetings)
+3. When propagating, if a previous meeting's $r_{\text{end}}$ is set, recalculate its $r_{\text{start}}$ using the formula above
+
+**Important**: Forward propagation is limited to one step only. The calculated $r_{\text{end}}(T+1)$ is **NOT** used to populate $r_{\text{start}}(T+2)$.
+
+#### Step 2.3: Calculate Rate Differences
+
+After all rates are calculated and propagated, the rate change in basis points at each meeting is:
 
 $$\Delta r_{\text{bps}} = (r_{\text{end}} - r_{\text{start}}) \times 100$$
 

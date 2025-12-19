@@ -205,10 +205,10 @@ class TestFedFundFuturesPricesIngestion(TestCase):
         result = _get_fedfunds_futures_prices(self.target_date)
         assert len(result) == 15
         assert result[0] == StirFutures(
-                central_bank=CentralBankChoices.FRB,
+            central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
             full_name="1 Month Fed Funds STIR Futures",
-                maturity="25.12",
+            maturity="25.12",
             first_accrual_date=date(2025, 12, 1),
             last_accrual_date=date(2025, 12, 31),
             date=self.target_date,
@@ -297,7 +297,7 @@ class TestFedFundFuturesPricesIngestion(TestCase):
         # ticker = ZQF26.CBT, maturity = 26.01
         assert len(result) == 15
         assert result[0] == StirFutures(
-                central_bank=CentralBankChoices.FRB,
+            central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
             full_name="1 Month Fed Funds STIR Futures",
             maturity="26.01",

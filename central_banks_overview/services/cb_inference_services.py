@@ -26,6 +26,8 @@ STANDARD_STEP_SCENARIOS = [
 PROBABILITY_EXTENSION_STEPS = 5
 # Threshold for probability removal
 PROBABILITY_THRESHOLD = 1.0
+# Number of meetings to cover with futures contracts
+MAX_MEETINGS_TO_COVER = 8
 
 
 @dataclass(frozen=True)
@@ -109,13 +111,6 @@ class FedMeetingRateInfo(TypedDict):
     start_rate: Optional[float]
     end_rate: Optional[float]
     rate_diff: Optional[float]
-
-
-class RateChangePerMeeting(TypedDict):
-    """Rate change information for a meeting."""
-
-    rate_diff: float
-    meeting_date: date
 
 
 class ProbabilityMatrixBaseService(ABC):
@@ -278,8 +273,17 @@ class ProbabilityMatrixBaseService(ABC):
         self,
         rate_change_bps: float,
         is_initial: bool = False,
+        apply_convolution: bool = True,
     ):
-        """Apply linear interpolation for probability calculation."""
+        """Apply linear interpolation for probability calculation.
+
+        Args:
+            rate_change_bps: Rate change in basis points
+            is_initial: Whether this is the first meeting
+            apply_convolution: Whether to apply convolution with previous probabilities.
+                If False and is_initial=False, probabilities are added directly
+                without convolution (useful for debugging).
+        """
         rate_change_per_step = self._calculate_rate_change_per_step(rate_change_bps)
         nb_steps = rate_change_per_step["nb_steps"]
         proportion = rate_change_per_step["proportion"]
@@ -297,24 +301,49 @@ class ProbabilityMatrixBaseService(ABC):
                 else:
                     meeting_probability["probabilities"].append(0.0)
         else:
-            self._extend_probability_support()
-            last_prob_idx = self._get_last_probability_index()
+            if apply_convolution:
+                # Apply convolution with previous probabilities
+                self._extend_probability_support()
+                last_prob_idx = self._get_last_probability_index()
 
-            for meeting_probability in self.probability_matrix:
-                step_key = meeting_probability["expected_rate_step"]
+                for meeting_probability in self.probability_matrix:
+                    step_key = meeting_probability["expected_rate_step"]
 
-                prev_step_key = step_key - nb_steps * STEP_SIZE
-                next_step_key = step_key - int((nb_steps + sign) * STEP_SIZE)
+                    prev_step_key = step_key - nb_steps * STEP_SIZE
+                    next_step_key = step_key - int((nb_steps + sign) * STEP_SIZE)
 
-                prev_prob = self._get_probability_value(prev_step_key, last_prob_idx)
-                next_prob = self._get_probability_value(next_step_key, last_prob_idx)
+                    prev_prob = self._get_probability_value(
+                        prev_step_key, last_prob_idx
+                    )
+                    next_prob = self._get_probability_value(
+                        next_step_key, last_prob_idx
+                    )
 
-                p_x = (1 - proportion) * prev_prob + proportion * next_prob
-                meeting_probability["probabilities"].append(p_x)
+                    p_x = (1 - proportion) * prev_prob + proportion * next_prob
+                    meeting_probability["probabilities"].append(p_x)
+            else:
+                # Add probabilities directly without convolution (for debugging)
+                step_current = int(nb_steps * STEP_SIZE)
+                step_up = int((nb_steps + sign) * STEP_SIZE)
+
+                for meeting_probability in self.probability_matrix:
+                    step_key = meeting_probability["expected_rate_step"]
+                    if step_key == step_up:
+                        meeting_probability["probabilities"].append(proportion)
+                    elif step_key == step_current:
+                        meeting_probability["probabilities"].append(1 - proportion)
+                    else:
+                        meeting_probability["probabilities"].append(0.0)
 
     @abstractmethod
-    def generate_probability_matrix(self):
-        """Generate probability matrix for the futures contracts."""
+    def generate_probability_matrix(self, apply_convolution: bool = True):
+        """Generate probability matrix for the futures contracts.
+
+        Args:
+            apply_convolution: If True, applies convolution with previous probabilities
+                              for subsequent meetings. If False, probabilities are added
+                              directly without convolution (useful for debugging).
+        """
         pass
 
 
@@ -650,6 +679,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         accrual_days: int,
         meeting_date: date,
         future_implied_rate: float,
+        apply_convolution: bool = True,
     ):
         """Calculate initial probabilities for single meeting case."""
         logger.info("Calculating initial probabilities for single meeting case.")
@@ -665,7 +695,9 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
 
         # Calculate rate change in basis points
         rate_change_bps = (meeting_implied_rate - base_rate) * 100
-        self._apply_linear_interpolation(rate_change_bps, is_initial=True)
+        self._apply_linear_interpolation(
+            rate_change_bps, is_initial=True, apply_convolution=apply_convolution
+        )
 
     def _calculate_initial_n_meetings_probabilities(
         self,
@@ -675,6 +707,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         accrual_end_date: date,
         accrual_days: int,
         meeting_dates: List[date],
+        apply_convolution: bool = True,
     ):
         """Calculate initial probabilities for n meetings case."""
         logger.info("Calculating initial probabilities for n meetings case.")
@@ -720,6 +753,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         accrual_days: int,
         first_meeting_date: date,
         future_implied_rate: float,
+        apply_convolution: bool = True,
     ):
         """Calculate probabilities for subsequent single meeting."""
         logger.info("Calculating probabilities for subsequent single meeting.")
@@ -734,7 +768,9 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         )
         # Calculate rate change in basis points
         rate_change_bps = (meeting_implied_rate - base_rate) * 100
-        self._apply_linear_interpolation(rate_change_bps, is_initial=False)
+        self._apply_linear_interpolation(
+            rate_change_bps, is_initial=False, apply_convolution=apply_convolution
+        )
 
     def _calculate_n_meetings_probabilities(
         self,
@@ -744,14 +780,12 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         accrual_end_date: date,
         accrual_days: int,
         meeting_dates: List[date],
+        apply_convolution: bool = True,
     ):
         """Calculate probabilities for subsequent n meetings case."""
         logger.info("Calculating probabilities for subsequent n meetings case.")
         if not self.probability_matrix:
             return
-
-        # Extend support
-        self._extend_probability_support()
 
         # Calculate new probabilities
         prob_df = self._calculate_reverse_distance_probabilities(
@@ -781,49 +815,68 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 "probability"
             ]
 
-        # Update probabilities for each step
-        last_prob_idx = self._get_last_probability_index()
-        n_meetings = len(meeting_dates)
+        if apply_convolution:
+            # Extend support
+            self._extend_probability_support()
 
-        # Determine the maximum step transition to consider
-        # For n meetings, we consider transitions up to ±n*STEP_SIZE
-        # but limit to available step keys in new_prob_lookup for efficiency
-        max_transition_steps = min(n_meetings, MAX_MEETINGS)
+            # Update probabilities for each step
+            last_prob_idx = self._get_last_probability_index()
+            n_meetings = len(meeting_dates)
 
-        for meeting_probability in self.probability_matrix:
-            step_key = meeting_probability["expected_rate_step"]
+            # Determine the maximum step transition to consider
+            # For n meetings, we consider transitions up to ±n*STEP_SIZE
+            # but limit to available step keys in new_prob_lookup for efficiency
+            max_transition_steps = min(n_meetings, MAX_MEETINGS)
 
-            # Calculate probabilities for each meeting
-            meeting_probabilities = []
-            for i in range(n_meetings):
-                # For meeting i, consider transitions up to ±(i+1)*STEP_SIZE
-                max_steps_for_meeting = min(i + 1, max_transition_steps)
-                meeting_transition_steps = [
-                    step * STEP_SIZE
-                    for step in range(-max_steps_for_meeting, max_steps_for_meeting + 1)
-                ]
+            for meeting_probability in self.probability_matrix:
+                step_key = meeting_probability["expected_rate_step"]
 
-                # Sum over all possible transitions
-                p_i = 0.0
-                for transition_step in meeting_transition_steps:
-                    # Get previous probability at step_key - transition_step
-                    prev_step = step_key - transition_step
-                    prev_prob = self._get_probability_value(prev_step, last_prob_idx)
+                # Calculate probabilities for each meeting
+                meeting_probabilities = []
+                for i in range(n_meetings):
+                    # For meeting i, consider transitions up to ±(i+1)*STEP_SIZE
+                    max_steps_for_meeting = min(i + 1, max_transition_steps)
+                    meeting_transition_steps = [
+                        step * STEP_SIZE
+                        for step in range(
+                            -max_steps_for_meeting, max_steps_for_meeting + 1
+                        )
+                    ]
 
-                    # Get new probability for meeting i at transition_step
-                    # Only use transition steps that exist in the lookup
-                    if transition_step in new_prob_lookup:
-                        new_prob_list = new_prob_lookup[transition_step]
-                        new_prob = new_prob_list[i] if i < len(new_prob_list) else 0.0
-                    else:
-                        new_prob = 0.0
+                    # Sum over all possible transitions
+                    p_i = 0.0
+                    for transition_step in meeting_transition_steps:
+                        # Get previous probability at step_key - transition_step
+                        prev_step = step_key - transition_step
+                        prev_prob = self._get_probability_value(
+                            prev_step, last_prob_idx
+                        )
 
-                    # Accumulate: P_new(step_key) = Σ P_prev(step_key - x) × P_new(x)[i]
-                    p_i += prev_prob * new_prob
+                        # Get new probability for meeting i at transition_step
+                        # Only use transition steps that exist in the lookup
+                        if transition_step in new_prob_lookup:
+                            new_prob_list = new_prob_lookup[transition_step]
+                            new_prob = (
+                                new_prob_list[i] if i < len(new_prob_list) else 0.0
+                            )
+                        else:
+                            new_prob = 0.0
 
-                meeting_probabilities.append(p_i)
+                        # Accumulate: P_new(step_key) = Σ P_prev(step_key - x) ×
+                        # P_new(x)[i]
+                        p_i += prev_prob * new_prob
 
-            meeting_probability["probabilities"].extend(meeting_probabilities)
+                    meeting_probabilities.append(p_i)
+
+                meeting_probability["probabilities"].extend(meeting_probabilities)
+        else:
+            # Add probabilities directly without convolution (for debugging)
+            n_meetings = len(meeting_dates)
+            for meeting_probability in self.probability_matrix:
+                step_key = meeting_probability["expected_rate_step"]
+                # Get probabilities for this step key, or use zeros
+                probabilities = new_prob_lookup.get(step_key, [0.0] * n_meetings)
+                meeting_probability["probabilities"].extend(probabilities)
 
     def _process_initial_meeting(
         self,
@@ -834,8 +887,13 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         accrual_end_date: date,
         accrual_days: int,
         meeting_dates: List[date],
+        apply_convolution: bool = True,
     ):
-        """Process initial meeting probabilities."""
+        """Process initial meeting probabilities.
+
+        Args:
+            apply_convolution: Whether to apply convolution (for consistency).
+        """
         if len(meeting_dates) == 1:
             if meeting_dates[0] is None:
                 raise ValueError("First meeting date is required")
@@ -846,6 +904,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 accrual_days,
                 meeting_dates[0],
                 future_implied_rate,
+                apply_convolution=apply_convolution,
             )
         elif len(meeting_dates) >= 2:
             if any(meeting_date is None for meeting_date in meeting_dates):
@@ -857,6 +916,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 accrual_end_date,
                 accrual_days,
                 meeting_dates,
+                apply_convolution=apply_convolution,
             )
 
     def _process_subsequent_meeting(
@@ -868,6 +928,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         accrual_end_date: date,
         accrual_days: int,
         meeting_dates: List[date],
+        apply_convolution: bool = True,
     ):
         """Process subsequent meeting probabilities."""
         if len(meeting_dates) == 1:
@@ -879,6 +940,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 accrual_days,
                 meeting_dates[0],
                 future_implied_rate,
+                apply_convolution=apply_convolution,
             )
         elif len(meeting_dates) >= 2:
             if any(meeting_date is None for meeting_date in meeting_dates):
@@ -890,13 +952,21 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 accrual_end_date,
                 accrual_days,
                 meeting_dates,
+                apply_convolution=apply_convolution,
             )
 
-    def generate_probability_matrix(self):
+    def generate_probability_matrix(
+        self, apply_convolution: bool = True, format_probabilities: bool = True
+    ):
         """Generate probability matrix for Three Month Futures interest rate changes.
 
         This function processes futures contracts and meeting dates to calculate
         probabilities of interest rate changes at each central bank meeting.
+
+        Args:
+            apply_convolution: If True, applies convolution with previous probabilities
+                              for subsequent meetings. If False, probabilities are added
+                              directly without convolution (useful for debugging).
         """
         logger.info("Generating probability matrix for Three Month Futures.")
         is_initial = True
@@ -926,6 +996,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                     accrual_end_date,
                     accrual_days,
                     meeting_dates,
+                    apply_convolution=apply_convolution,
                 )
                 is_initial = False
             else:
@@ -937,11 +1008,13 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                     accrual_end_date,
                     accrual_days,
                     meeting_dates,
+                    apply_convolution=apply_convolution,
                 )
 
             base_rate = future_implied_rate
 
-        self._format_probabilities()
+        if format_probabilities:
+            self._format_probabilities()
 
 
 class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
@@ -956,9 +1029,58 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         super().__init__(
             initial_base_rate,
             future_prices=future_prices,
-            meeting_dates=meeting_dates,
+            meeting_dates=meeting_dates[:MAX_MEETINGS_TO_COVER],
             remove_na=False,
         )
+        self.meeting_rate_info: List[FedMeetingRateInfo] = []
+        # Validate that all meetings are covered by futures
+        self._validate_meetings_covered_by_futures()
+
+    # __________________________________________________________
+    # 0. VALIDATION
+    # __________________________________________________________
+
+    def _validate_meetings_covered_by_futures(self):
+        """Validate that the all meeting dates are covered by futures contracts.
+
+        Requirements:
+        1. The all meetings date must fall within one future's accrual period
+        2. The last meeting must have a future after it (on the next month)
+        """
+        if not self.meeting_dates:
+            logger.warning("No meetings to validate.")
+            return
+
+        meeting_dates_as_dates = [md.date() for md in self.meeting_dates]
+        sorted_meeting_dates = sorted(meeting_dates_as_dates)
+
+        # Check that each meeting is covered by at least one future
+        for meeting_date in sorted_meeting_dates:
+            covered = False
+            for future_price in self.future_prices:
+                if (
+                    future_price.first_accrual_date
+                    <= meeting_date
+                    < future_price.last_accrual_date
+                ):
+                    covered = True
+                    break
+            if not covered:
+                raise ValueError(
+                    f"Meeting date {meeting_date} is not covered by any future contract."
+                )
+
+        # Check that last meeting has a future after it
+        last_meeting = sorted_meeting_dates[-1]
+        has_future_after = False
+        for future_price in self.future_prices:
+            if future_price.first_accrual_date > last_meeting:
+                has_future_after = True
+                break
+        if not has_future_after:
+            raise ValueError(
+                f"Last meeting date {last_meeting} requires a future contract after it to determine end_rate."
+            )
 
     # __________________________________________________________
     # 1. IMPLIED RATE / PRICE CALCULATION
@@ -1002,36 +1124,25 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
     # 2. MEETING RATE CHANGE CALCULATION
     # __________________________________________________________
 
-    def _infer_period_rates_from_period_without_meetings(
-        self,
-    ) -> List[FedMeetingRateInfo]:
+    def _infer_period_rates_from_period_without_meetings(self):
         """Infer period rates from period without meetings."""
         logger.info("Inferring period rates from period without meetings.")
-        meeting_rate_info: List[FedMeetingRateInfo] = []
         previous_rate: Optional[float] = None
         for idx, meeting_by_future in enumerate(self.meetings_by_futures):
             implied_rate = meeting_by_future["futures_implied_rate"]
             meeting_dates = meeting_by_future["meeting_dates"]
             assert len(meeting_dates) <= 1, "Only one meeting date is supported"
-            first_meeting_date = meeting_dates[0] if meeting_dates else None
-            has_meeting = first_meeting_date is not None
+            meeting_date = meeting_dates[0] if meeting_dates else None
+            has_meeting = meeting_date is not None
 
             if not has_meeting:
                 # No meeting: propagate the implied rate
-                if idx == 0:
-                    # First contract without meeting: use initial base rate
-                    previous_rate = self.initial_base_rate
-                else:
-                    # Update previous meeting's end rate if exists,
-                    # then set new previous_rate
-                    if meeting_rate_info:
-                        meeting_rate_info[-1]["end_rate"] = implied_rate
-                    previous_rate = implied_rate
-
-                # For last contract, also update end rate
-                if idx == len(self.meetings_by_futures) - 1:
-                    if meeting_rate_info:
-                        meeting_rate_info[-1]["end_rate"] = implied_rate
+                previous_rate = implied_rate
+                if (
+                    self.meeting_rate_info
+                    and self.meeting_rate_info[-1]["end_rate"] is None
+                ):
+                    self.meeting_rate_info[-1]["end_rate"] = implied_rate
             else:
                 # Has meeting: start rate is previous rate (or initial if first)
                 start_rate = (
@@ -1039,101 +1150,214 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                     if previous_rate is not None
                     else (self.initial_base_rate if idx == 0 else None)
                 )
-                meeting_rate_info.append(
+                self.meeting_rate_info.append(
                     FedMeetingRateInfo(
-                        meeting_date=first_meeting_date,
+                        meeting_date=meeting_date,
                         start_rate=start_rate,
-                        end_rate=None,
+                        end_rate=None,  # end_rates are calculated within the loop
                         rate_diff=None,
                     )
                 )
                 previous_rate = None
-        return meeting_rate_info
 
-    def _calculate_meeting_rate_changes(self) -> List[RateChangePerMeeting]:
+    def _calculate_missing_rate(
+        self,
+        rate_info: FedMeetingRateInfo,
+        meeting_by_future: MeetingsByFutures,
+    ):
+        """Calculate missing start_rate or end_rate using formulas."""
+        accrual_end_date = meeting_by_future["accrual_end_date"]
+        accrual_days = meeting_by_future["accrual_days"]
+        future_implied_rate = meeting_by_future["futures_implied_rate"]
+        meeting_date = rate_info["meeting_date"]
+
+        if rate_info["start_rate"] is None and rate_info["end_rate"] is not None:
+            # Calculate start_rate from end_rate
+            rate_info["start_rate"] = self._calculate_fedfunds_futures_rate(
+                accrual_end_date,
+                accrual_days,
+                meeting_date,
+                future_implied_rate,
+                rate_info["end_rate"],
+                FedFuturesRateType.START,
+            )
+        elif rate_info["end_rate"] is None and rate_info["start_rate"] is not None:
+            # Calculate end_rate from start_rate
+            rate_info["end_rate"] = self._calculate_fedfunds_futures_rate(
+                accrual_end_date,
+                accrual_days,
+                meeting_date,
+                future_implied_rate,
+                rate_info["start_rate"],
+                FedFuturesRateType.END,
+            )
+        elif rate_info["end_rate"] and rate_info["start_rate"]:
+            # Both rates available: recalculate start_rate from end_rate
+            # This ensures start_rate is consistent with futures implied rate
+            rate_info["start_rate"] = self._calculate_fedfunds_futures_rate(
+                accrual_end_date,
+                accrual_days,
+                meeting_date,
+                future_implied_rate,
+                rate_info["end_rate"],
+                FedFuturesRateType.START,
+            )
+
+    def _build_contract_to_meeting_mapping(
+        self,
+    ) -> Dict[int, int]:
+        """Build mapping from contract index to meeting index."""
+        contract_to_meeting_idx: Dict[int, int] = {}
+        meeting_idx = 0
+        for idx, meeting_by_future in enumerate(self.meetings_by_futures):
+            meeting_dates = meeting_by_future["meeting_dates"]
+            meeting_date = meeting_dates[0] if meeting_dates else None
+            if meeting_date is not None:
+                contract_to_meeting_idx[idx] = meeting_idx
+                meeting_idx += 1
+        return contract_to_meeting_idx
+
+    def _has_non_fomc_anchor_between(
+        self,
+        contract_idx1: int,
+        contract_idx2: int,
+        contract_to_meeting_idx: Dict[int, int],
+    ) -> bool:
+        """Check if there's a non-FOMC anchor month between two contract indices."""
+        for check_idx in range(contract_idx1 + 1, contract_idx2):
+            if check_idx not in contract_to_meeting_idx:
+                return True
+        return False
+
+    def _propagate_rate_backward(
+        self,
+        contract_to_meeting_idx: Dict[int, int],
+        meeting_lookup: Dict[date, MeetingsByFutures],
+    ):
+        """Propagate calculated start_rate backward as end_rate until non-FOMC anchor."""
+        for meeting_idx in range(len(self.meeting_rate_info) - 1, 0, -1):
+            current_start_rate = self.meeting_rate_info[meeting_idx]["start_rate"]
+            if current_start_rate is None:
+                continue
+
+            # Find contract index for this meeting
+            current_contract_idx = None
+            for contract_idx, mapped_meeting_idx in contract_to_meeting_idx.items():
+                if mapped_meeting_idx == meeting_idx:
+                    current_contract_idx = contract_idx
+                    break
+
+            if current_contract_idx is None:
+                continue
+
+            # Propagate backward until we hit a non-FOMC anchor
+            for prev_contract_idx in range(current_contract_idx - 1, -1, -1):
+                if prev_contract_idx not in contract_to_meeting_idx:
+                    # Hit a non-FOMC anchor, stop
+                    break
+
+                prev_meeting_idx = contract_to_meeting_idx[prev_contract_idx]
+
+                # Check if there's a non-FOMC anchor between contracts
+                if self._has_non_fomc_anchor_between(
+                    prev_contract_idx, current_contract_idx, contract_to_meeting_idx
+                ):
+                    break
+
+                # Propagate start_rate as end_rate
+                if self.meeting_rate_info[prev_meeting_idx]["end_rate"] is None:
+                    self.meeting_rate_info[prev_meeting_idx][
+                        "end_rate"
+                    ] = current_start_rate
+
+                    # Recalculate start_rate for previous meeting
+                    prev_meeting_date = self.meeting_rate_info[prev_meeting_idx][
+                        "meeting_date"
+                    ]
+                    prev_meeting_by_future = meeting_lookup.get(prev_meeting_date)
+                    if prev_meeting_by_future:
+                        self._calculate_missing_rate(
+                            self.meeting_rate_info[prev_meeting_idx],
+                            prev_meeting_by_future,
+                        )
+
+                current_contract_idx = prev_contract_idx
+
+    def _calculate_meeting_rate_changes(self):
         """Calculate rate changes for each meeting from futures data."""
         logger.info("Calculating rate changes for each meeting from futures data.")
-        rate_changes: List[RateChangePerMeeting] = []
-        meeting_rate_info = self._infer_period_rates_from_period_without_meetings()
+        self._infer_period_rates_from_period_without_meetings()
 
-        # Create lookup for faster access
-        # Map each meeting_date to its corresponding meeting_by_future
+        # Build lookup: meeting_date -> meeting_by_future
         meeting_lookup: Dict[date, MeetingsByFutures] = {}
         for mbf in self.meetings_by_futures:
-            meeting_dates = mbf.get("meeting_dates", [])
-            for meeting_date in meeting_dates:
+            for meeting_date in mbf.get("meeting_dates", []):
                 if meeting_date is not None:
                     meeting_lookup[meeting_date] = mbf
 
-        for rate_info in meeting_rate_info:
+        # Step 1: Calculate missing rates using formulas
+        for rate_info in self.meeting_rate_info:
             meeting_by_future = meeting_lookup.get(rate_info["meeting_date"])
-
-            if meeting_by_future is None:
-                continue
-
-            accrual_end_date = meeting_by_future["accrual_end_date"]
-            accrual_days = meeting_by_future["accrual_days"]
-            future_implied_rate = meeting_by_future["futures_implied_rate"]
-            meeting_date = rate_info["meeting_date"]
-
-            logger.info(f"Calculating missing rates for: {meeting_date}.")
-            # Calculate missing rates
-            if rate_info["start_rate"] is None and rate_info["end_rate"] is not None:
-                calculated_rate = self._calculate_fedfunds_futures_rate(
-                    accrual_end_date,
-                    accrual_days,
-                    meeting_date,
-                    future_implied_rate,
-                    rate_info["end_rate"],
-                    FedFuturesRateType.START,
+            if meeting_by_future:
+                logger.info(
+                    f"Calculating missing rates for: {rate_info['meeting_date']}."
                 )
-                rate_info["start_rate"] = calculated_rate
-            elif rate_info["end_rate"] is None and rate_info["start_rate"] is not None:
-                calculated_rate = self._calculate_fedfunds_futures_rate(
-                    accrual_end_date,
-                    accrual_days,
-                    meeting_date,
-                    future_implied_rate,
-                    rate_info["start_rate"],
-                    FedFuturesRateType.END,
-                )
-                rate_info["end_rate"] = calculated_rate
+                self._calculate_missing_rate(rate_info, meeting_by_future)
 
-            # Calculate rate difference
-            if (
-                rate_info["start_rate"] is not None
-                and rate_info["end_rate"] is not None
-            ):
-                rate_diff = rate_info["end_rate"] - rate_info["start_rate"]
-                rate_changes.append(
-                    RateChangePerMeeting(rate_diff=rate_diff, meeting_date=meeting_date)
+        # Step 2: Backward propagation of calculated rates
+        contract_to_meeting_idx = self._build_contract_to_meeting_mapping()
+        self._propagate_rate_backward(contract_to_meeting_idx, meeting_lookup)
+
+        # Step 3: Calculate rate differences
+        for rate_info in self.meeting_rate_info:
+            if rate_info["start_rate"] is None or rate_info["end_rate"] is None:
+                raise ValueError(
+                    f"Start rate or end rate is missing for {rate_info['meeting_date']}"
                 )
-        return rate_changes
+            rate_info["rate_diff"] = rate_info["end_rate"] - rate_info["start_rate"]
 
     # __________________________________________________________
     # 3. FINAL PROBABILITY MATRIX CALCULATION
     # __________________________________________________________
 
-    def generate_probability_matrix(self):
+    def generate_probability_matrix(
+        self, apply_convolution: bool = True, format_probabilities: bool = True
+    ):
         """Generate probability matrix for Fed interest rate changes from futures prices.
 
         This function processes futures contracts with rate changes to calculate
         probabilities of interest rate changes at each central bank meeting.
+
+        Args:
+            apply_convolution: If True, applies convolution with previous probabilities
+                              for subsequent meetings. If False, probabilities are added
+                              directly without convolution (useful for debugging).
+            format_probabilities: If True, formats probabilities to 2 decimal places and
+                              filters out entries below PROBABILITY_THRESHOLD.
+                              This is useful for debugging.
         """
         logger.info(
             "Generating probability matrix for Fed interest rate changes from futures prices."
         )
-        rate_changes = self._calculate_meeting_rate_changes()
+        self._calculate_meeting_rate_changes()
         is_initial = True
 
         logger.info("Applying linear interpolation for probability calculation.")
-        for rate_change in rate_changes:
-            rate_diff_bps = rate_change["rate_diff"] * 100
-            self._apply_linear_interpolation(rate_diff_bps, is_initial=is_initial)
+        for rate_info in self.meeting_rate_info:
+            if rate_info["rate_diff"] is None:
+                raise ValueError(
+                    f"Rate difference is missing for {rate_info['meeting_date']}"
+                )
+            rate_diff_bps = rate_info["rate_diff"] * 100
+            self._apply_linear_interpolation(
+                rate_diff_bps,
+                is_initial=is_initial,
+                apply_convolution=apply_convolution,
+            )
             is_initial = False
 
-        logger.info("Formatting probabilities.")
-        self._format_probabilities()
+        if format_probabilities:
+            self._format_probabilities()
 
 
 class EstrFuturesProbabilityMatrixService(ThreeMonthFuturesProbabilityMatrixService):
