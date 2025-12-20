@@ -323,11 +323,11 @@ class TestCentralBankRecapServices(TestCase):
             "probability_matrix": [
                 {
                     "expected_rate_step": 0,
-                    "probabilities": [0.050000000000000044, 0.050000000000000044],
+                    "probabilities": [0.05, 0.05],
                 },
                 {
                     "expected_rate_step": 25,
-                    "probabilities": [-0.04999999999999999, -0.04999999999999999],
+                    "probabilities": [-0.05, -0.05],
                 },
             ],
         }
@@ -459,11 +459,11 @@ class TestCentralBankRecapServices(TestCase):
             "probability_matrix": [
                 {
                     "expected_rate_step": 0,
-                    "probabilities": [0.050000000000000044, 0.050000000000000044],
+                    "probabilities": [0.05, 0.05],
                 },
                 {
                     "expected_rate_step": 25,
-                    "probabilities": [-0.04999999999999999, -0.04999999999999999],
+                    "probabilities": [-0.05, -0.05],
                 },
             ],
         }
