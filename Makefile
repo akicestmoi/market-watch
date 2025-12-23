@@ -27,9 +27,6 @@ help:
 
 DOCKER_COMPOSE = docker compose -f scripts/docker/docker-compose.yml
 
-# Helper variable to run commands in temporary container
-RUN_TMP = $(DOCKER_COMPOSE) run --rm --no-deps webapp
-
 # Install dependencies
 install:
 	$(DOCKER_COMPOSE) exec webapp pip install -r requirements.txt
@@ -90,10 +87,8 @@ collectstatic:
 	$(DOCKER_COMPOSE) exec webapp python manage.py collectstatic --noinput
 
 # Run tests
-# $(DOCKER_COMPOSE) exec webapp python -m pytest central_banks_overview/tests/services/test_cb_data_services.py -vv --exitfirst
-# $(DOCKER_COMPOSE) exec webapp python -m pytest -vv
 test:
-	$(DOCKER_COMPOSE) exec webapp python -m pytest -vv
+	$(DOCKER_COMPOSE) exec webapp python -m pytest -vv --exitfirst
 
 # Run tests with coverage report
 test-coverage:
@@ -127,22 +122,12 @@ flower:
 
 # Export database
 db-export:
-	@if $(DOCKER_COMPOSE) ps webapp 2>/dev/null | grep -q "Up"; then \
-		$(DOCKER_COMPOSE) exec webapp python scripts/db_management/export_db.py; \
-	else \
-		echo "Container not running, starting temporary container..."; \
-		$(RUN_TMP) python scripts/db_management/export_db.py; \
-	fi
+	$(DOCKER_COMPOSE) exec webapp python scripts/db_management/export_db.py
 
 # Import database
 db-import:
 	$(if $(SQL_FILE),,$(error SQL_FILE is required. Example: make db-import SQL_FILE=db_backup.sql))
-	@if $(DOCKER_COMPOSE) ps webapp 2>/dev/null | grep -q "Up"; then \
-		$(DOCKER_COMPOSE) exec webapp python scripts/db_management/import_db.py $(SQL_FILE) --no-confirm; \
-	else \
-		echo "Container not running, starting temporary container..."; \
-		$(RUN_TMP) python scripts/db_management/import_db.py $(SQL_FILE) --no-confirm; \
-	fi
+	$(DOCKER_COMPOSE) exec webapp python scripts/db_management/import_db.py $(SQL_FILE) --no-confirm
 
 # Trigger a scheduled Celery task
 trigger-task:
