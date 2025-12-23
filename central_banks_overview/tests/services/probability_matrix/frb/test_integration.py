@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 from unittest.mock import patch
 
+import pytest  # type: ignore[reportMissingImports]
 from django.test import TestCase
 
 from central_banks_overview.models import (
@@ -25,8 +26,14 @@ from market_overview.models import (
 class TestFRBIntegrationScenarios(TestCase):
     """
     Integration tests for FRB probability matrix generation.
-    Tests all possible scenarios: first contract with/without meeting,
-    multiple meetings, rate hikes/cuts, etc.
+
+    These tests verify end-to-end integration with mocked external services
+    (meeting dates and futures prices). They focus on:
+    - Real-world scenarios (rate hikes, cuts, mixed paths)
+    - Integration with the full service stack
+
+    Note: Detailed methodology tests (all combinations, exact steps, fractional steps,
+    convolution formulas) are covered in test_methodology.py
     """
 
     def setUp(self):
@@ -58,12 +65,13 @@ class TestFRBIntegrationScenarios(TestCase):
     @patch(
         "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
     )
-    def test_frb_scenario_1_first_contract_with_meeting_single_meeting(
-        self, mock_get_futures, mock_get_meetings
-    ):
+    def test_single_meeting_rate_cut(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 1: First contract has meeting, single meeting total
-        Expected: start_rate = base_rate, probabilities calculated correctly
+        GIVEN a single meeting with futures prices implying a rate cut
+        WHEN generating probability matrix
+        THEN probabilities reflect the expected rate cut
+
+        This tests the basic end-to-end flow for a single meeting scenario.
         """
         meeting_date = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
@@ -72,54 +80,8 @@ class TestFRBIntegrationScenarios(TestCase):
                 meeting_dates=[meeting_date],
             )
         ]
-        future = StirFuturesModel.objects.create(
-            central_bank=CentralBankChoices.FRB,
-            short_name=StirFuturesNameChoices.FF1M,
-            full_name="1 Month Fed Funds STIR Futures",
-            maturity="26.01",
-            first_accrual_date=date(2026, 1, 1),
-            last_accrual_date=date(2026, 1, 31),
-            date=self.test_date,
-            price=96.36,  # Implied rate = 3.64%
-            source=StirFuturesSourceChoices.YAHOO,
-            comment="",
-        )
-        mock_get_futures.return_value = [future]
 
-        result = get_central_bank_probability_matrices(
-            target_date=self.test_date, central_banks=[CentralBankChoices.FRB]
-        )
-        assert result == [
-            {
-                "expected_rate_step": -50,
-                "probabilities": [0.0, 57.6],
-            },
-            {
-                "expected_rate_step": -25,
-                "probabilities": [0.0, 42.39],
-            },
-        ]
-
-    @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
-    )
-    @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
-    )
-    def test_frb_scenario_2_first_contract_without_meeting_then_meeting(
-        self, mock_get_futures, mock_get_meetings
-    ):
-        """
-        Scenario 2: First contract has no meeting, second has meeting
-        Expected: start_rate for meeting = first contract's implied_rate
-        """
-        meeting_date = datetime(2026, 2, 15, 13, 0, tzinfo=timezone.utc)
-        mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
-                central_bank=CentralBankChoices.FRB,
-                meeting_dates=[meeting_date],
-            )
-        ]
+        # Futures prices imply a small rate cut
         future_1 = StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -128,7 +90,7 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 1, 1),
             last_accrual_date=date(2026, 1, 31),
             date=self.test_date,
-            price=96.36,  # Implied rate = 3.64%
+            price=96.365,  # Implied rate = 3.635%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -140,7 +102,7 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 2, 1),
             last_accrual_date=date(2026, 2, 28),
             date=self.test_date,
-            price=96.425,  # Implied rate = 3.575%
+            price=96.42,  # Implied rate = 3.58%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -151,12 +113,24 @@ class TestFRBIntegrationScenarios(TestCase):
         )
         assert result == [
             {
-                "expected_rate_step": -50,
-                "probabilities": [0.0, 57.6],
-            },
-            {
-                "expected_rate_step": -25,
-                "probabilities": [0.0, 42.39],
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [
+                    date(2026, 1, 15),
+                ],
+                "probability_matrix": [
+                    {
+                        "expected_rate_step": -25,
+                        "probabilities": [
+                            45.47,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": 0,
+                        "probabilities": [
+                            54.53,
+                        ],
+                    },
+                ],
             },
         ]
 
@@ -166,21 +140,26 @@ class TestFRBIntegrationScenarios(TestCase):
     @patch(
         "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
     )
-    def test_frb_scenario_3_multiple_meetings_with_intervening_contracts(
+    def test_two_meetings_consecutive_rate_cuts(
         self, mock_get_futures, mock_get_meetings
     ):
         """
-        Scenario 3: Multiple meetings with contracts without meetings in between
-        Expected: Each meeting gets correct start_rate and end_rate
+        GIVEN two consecutive meetings with futures prices implying rate cuts
+        WHEN generating probability matrix
+        THEN probabilities reflect cumulative rate cuts with convolution
+
+        This tests the convolution logic in a real-world scenario.
         """
         meeting_date_1 = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
-        meeting_date_2 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
+        meeting_date_2 = datetime(2026, 2, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
             CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )
         ]
+
+        # Futures prices imply consecutive rate cuts
         future_1 = StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -189,7 +168,7 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 1, 1),
             last_accrual_date=date(2026, 1, 31),
             date=self.test_date,
-            price=96.36,
+            price=96.365,  # Implied rate = 3.635%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -201,7 +180,7 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 2, 1),
             last_accrual_date=date(2026, 2, 28),
             date=self.test_date,
-            price=96.425,
+            price=96.42,  # Implied rate = 3.58%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -213,7 +192,7 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 3, 1),
             last_accrual_date=date(2026, 3, 31),
             date=self.test_date,
-            price=96.455,
+            price=96.455,  # Implied rate = 3.545%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -224,12 +203,34 @@ class TestFRBIntegrationScenarios(TestCase):
         )
         assert result == [
             {
-                "expected_rate_step": -50,
-                "probabilities": [0.0, 57.6],
-            },
-            {
-                "expected_rate_step": -25,
-                "probabilities": [0.0, 42.39],
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [
+                    date(2026, 1, 15),
+                    date(2026, 2, 15),
+                ],
+                "probability_matrix": [
+                    {
+                        "expected_rate_step": -50,
+                        "probabilities": [
+                            0.0,
+                            1.01,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": -25,
+                        "probabilities": [
+                            3.88,
+                            27.98,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": 0,
+                        "probabilities": [
+                            96.12,
+                            71.0,
+                        ],
+                    },
+                ],
             },
         ]
 
@@ -239,21 +240,28 @@ class TestFRBIntegrationScenarios(TestCase):
     @patch(
         "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
     )
-    def test_frb_scenario_4_rate_hike_path(self, mock_get_futures, mock_get_meetings):
+    def test_three_meetings_mixed_rate_path(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 4: Multiple meetings showing rate hike path
-        Expected: Probabilities reflect cumulative hikes
+        GIVEN three meetings with futures prices implying a mixed rate path
+        WHEN generating probability matrix
+        THEN probabilities reflect cumulative changes with proper convolution
+
+        This tests a complex real-world scenario with multiple meetings.
+        Note that although this could happen in the real world, the probability
+        calculation rigidity assumption explicity excludes mixed rate paths,
+        hence the probabilities are calculated without any consideration of this scenario.
         """
         meeting_date_1 = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 2, 15, 13, 0, tzinfo=timezone.utc)
+        meeting_date_3 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
             CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
-                meeting_dates=[meeting_date_1, meeting_date_2],
+                meeting_dates=[meeting_date_1, meeting_date_2, meeting_date_3],
             )
         ]
 
-        # Prices imply rate hikes
+        # Futures prices imply a mixed path (cut, then cut, then cut)
         future_1 = StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -262,7 +270,7 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 1, 1),
             last_accrual_date=date(2026, 1, 31),
             date=self.test_date,
-            price=96.25,  # Implies rate hike
+            price=96.365,  # Implied rate = 3.635%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -274,23 +282,81 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 2, 1),
             last_accrual_date=date(2026, 2, 28),
             date=self.test_date,
-            price=96.0,  # Implies further rate hike
+            price=96.42,  # Implied rate = 3.58%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
-        mock_get_futures.return_value = [future_1, future_2]
+        future_3 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.03",
+            first_accrual_date=date(2026, 3, 1),
+            last_accrual_date=date(2026, 3, 31),
+            date=self.test_date,
+            price=96.455,  # Implied rate = 3.545%
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        future_4 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.04",
+            first_accrual_date=date(2026, 4, 1),
+            last_accrual_date=date(2026, 4, 30),
+            date=self.test_date,
+            price=96.50,  # Implied rate = 3.50%
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        mock_get_futures.return_value = [future_1, future_2, future_3, future_4]
 
         result = get_central_bank_probability_matrices(
             target_date=self.test_date, central_banks=[CentralBankChoices.FRB]
         )
         assert result == [
             {
-                "expected_rate_step": -50,
-                "probabilities": [0.0, 57.6],
-            },
-            {
-                "expected_rate_step": -25,
-                "probabilities": [0.0, 42.39],
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [
+                    date(2026, 1, 15),
+                    date(2026, 2, 15),
+                    date(2026, 3, 15),
+                ],
+                "probability_matrix": [
+                    {
+                        "expected_rate_step": -50,
+                        "probabilities": [
+                            0.0,
+                            0.0,
+                            1.3,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": -25,
+                        "probabilities": [
+                            3.88,
+                            3.5,
+                            34.62,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": 0,
+                        "probabilities": [
+                            96.12,
+                            87.17,
+                            58.21,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": 25,
+                        "probabilities": [
+                            0.0,
+                            9.33,
+                            5.86,
+                        ],
+                    },
+                ],
             },
         ]
 
@@ -300,21 +366,22 @@ class TestFRBIntegrationScenarios(TestCase):
     @patch(
         "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
     )
-    def test_frb_scenario_5_rate_cut_path(self, mock_get_futures, mock_get_meetings):
+    def test_no_meetings_raises_error(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 5: Multiple meetings showing rate cut path
-        Expected: Probabilities reflect cumulative cuts
+        GIVEN no meetings scheduled
+        WHEN generating probability matrix
+        THEN ValueError is raised
+
+        This tests the edge case where there are no meetings.
+        The function should raise an error as meetings are required.
         """
-        meeting_date_1 = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
-        meeting_date_2 = datetime(2026, 2, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
             CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
-                meeting_dates=[meeting_date_1, meeting_date_2],
+                meeting_dates=[],
             )
         ]
 
-        # Prices imply rate cuts
         future_1 = StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -323,7 +390,53 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 1, 1),
             last_accrual_date=date(2026, 1, 31),
             date=self.test_date,
-            price=96.75,  # Implies rate cut
+            price=96.365,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        mock_get_futures.return_value = [future_1]
+
+        with pytest.raises(ValueError) as exc_info:
+            get_central_bank_probability_matrices(
+                target_date=self.test_date, central_banks=[CentralBankChoices.FRB]
+            )
+        assert "No meeting dates found for FRB" in str(exc_info.value)
+
+    @patch(
+        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+    )
+    def test_meeting_with_intervening_contract(
+        self, mock_get_futures, mock_get_meetings
+    ):
+        """
+        GIVEN a meeting with a contract without a meeting in between
+        WHEN generating probability matrix
+        THEN probabilities are calculated correctly using inferred rates
+
+        This tests the rate inference logic for periods without meetings.
+        """
+        meeting_date_1 = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
+        meeting_date_2 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
+        mock_get_meetings.return_value = [
+            CentralBankMeetingDates(
+                central_bank=CentralBankChoices.FRB,
+                meeting_dates=[meeting_date_1, meeting_date_2],
+            )
+        ]
+
+        # First contract has meeting, second has no meeting, third has meeting
+        future_1 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.01",
+            first_accrual_date=date(2026, 1, 1),
+            last_accrual_date=date(2026, 1, 31),
+            date=self.test_date,
+            price=96.365,  # Implied rate = 3.635%
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -335,22 +448,68 @@ class TestFRBIntegrationScenarios(TestCase):
             first_accrual_date=date(2026, 2, 1),
             last_accrual_date=date(2026, 2, 28),
             date=self.test_date,
-            price=97.0,  # Implies further rate cut
+            price=96.42,  # Implied rate = 3.58% (no meeting in this contract)
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
-        mock_get_futures.return_value = [future_1, future_2]
+        future_3 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.03",
+            first_accrual_date=date(2026, 3, 1),
+            last_accrual_date=date(2026, 3, 31),
+            date=self.test_date,
+            price=96.455,  # Implied rate = 3.545%
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        future_4 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.04",
+            first_accrual_date=date(2026, 4, 1),
+            last_accrual_date=date(2026, 4, 30),
+            date=self.test_date,
+            price=96.50,  # Implied rate = 3.50%
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        mock_get_futures.return_value = [future_1, future_2, future_3, future_4]
 
         result = get_central_bank_probability_matrices(
             target_date=self.test_date, central_banks=[CentralBankChoices.FRB]
         )
         assert result == [
             {
-                "expected_rate_step": -50,
-                "probabilities": [0.0, 57.6],
-            },
-            {
-                "expected_rate_step": -25,
-                "probabilities": [0.0, 42.39],
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [
+                    date(2026, 1, 15),
+                    date(2026, 3, 15),
+                ],
+                "probability_matrix": [
+                    {
+                        "expected_rate_step": -50,
+                        "probabilities": [
+                            0.0,
+                            16.91,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": -25,
+                        "probabilities": [
+                            45.47,
+                            48.84,
+                        ],
+                    },
+                    {
+                        "expected_rate_step": 0,
+                        "probabilities": [
+                            54.53,
+                            34.25,
+                        ],
+                    },
+                ],
             },
         ]
