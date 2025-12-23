@@ -23,7 +23,7 @@ from central_banks_overview.services.cb_meetings_services import (
     MONTH_ABBREVIATIONS,
     get_central_bank_next_meeting_date,
 )
-from core.services import logger
+from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, logger
 from market_overview.services.price_ingestion_services import (
     get_yahoo_finance_closing_prices,
 )
@@ -102,7 +102,7 @@ def _get_ticker_info_from_maturity_month(maturity_month: int) -> YFinanceTickerI
     return YFinanceTickerInfo(ticker=yfinance_ticker, date=ticker_date)
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_fedfunds_futures_price(target_date: date, maturity_month: int) -> StirFutures:
     """Get the price of a Fed Funds Futures contract for a given date.
 
@@ -152,7 +152,7 @@ def _get_fedfunds_futures_prices(target_date: date) -> List[StirFutures]:
     ]
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_mutan_futures_prices_from_tfx(target_date: date) -> pd.DataFrame:
     """Get prices of Mutan STIR Futures from TFX.
 
@@ -217,7 +217,7 @@ def _parse_jp_date(date_str: str) -> Optional[date]:
         return datetime(year, month, day).date()
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_mutan_futures_accrual_dates() -> pd.DataFrame:
     """Get accrual dates of Mutan STIR Futures from TFX.
 

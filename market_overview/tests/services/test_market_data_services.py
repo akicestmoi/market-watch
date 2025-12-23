@@ -1,19 +1,22 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest  # type: ignore[reportMissingImports]
 from django.test import TestCase
 
 import core.services as core_services
+from core.tests import parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
     LocationChoices,
     MarketPriceModel,
+    PriceUpdateLogModel,
     SpecialComment,
 )
 from market_overview.services.market_data_services import (
     calculate_price_change,
+    delete_price_update_logs_before_date,
     get_all_asset_prices_for_date,
     get_all_asset_prices_for_date_without_holidays,
     get_historical_prices,
@@ -39,7 +42,7 @@ class TestMarketDataServices(TestCase):
             location=self.location,
         )
 
-        MarketPriceModel.objects.create(
+        self.market_price = MarketPriceModel.objects.create(
             asset=self.asset,
             date=self.price_date,
             price=100.0,
@@ -960,3 +963,49 @@ class TestMarketDataServices(TestCase):
                 "comment": "",
             },
         ]
+
+    def test_delete_price_update_logs_before_date(self):
+        """
+        GIVEN price update logs with different dates
+        WHEN delete_price_update_logs_before_date is called with a cutoff date
+        THEN logs before the cutoff date should be deleted
+        """
+        cutoff_date = date(2024, 1, 10)
+
+        # Create logs with different dates
+        log_before = PriceUpdateLogModel.objects.create(
+            market_price=self.market_price,
+            logs="Log before cutoff",
+        )
+        log_before.date_added = datetime(2024, 1, 5, 12, 0, 0)
+        log_before.save()
+
+        log_after = PriceUpdateLogModel.objects.create(
+            market_price=self.market_price,
+            logs="Log after cutoff",
+        )
+        log_after.date_added = datetime(2024, 1, 15, 12, 0, 0)
+        log_after.save()
+
+        delete_price_update_logs_before_date(cutoff_date)
+
+        result = parse_query_for_testing(PriceUpdateLogModel.objects.all())
+        assert result == [
+            {
+                "market_price_id": self.market_price.pk,
+                "logs": "Log after cutoff",
+            },
+        ]
+
+    def test_delete_price_update_logs_before_date_no_logs(self):
+        """
+        GIVEN no price update logs exist
+        WHEN delete_price_update_logs_before_date is called
+        THEN no error should occur
+        """
+        cutoff_date = date(2024, 1, 10)
+        PriceUpdateLogModel.objects.all().delete()
+
+        delete_price_update_logs_before_date(cutoff_date)
+
+        assert PriceUpdateLogModel.objects.count() == 0

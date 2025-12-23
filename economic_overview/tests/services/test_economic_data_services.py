@@ -1,13 +1,15 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from django.test import TestCase
 
 from core.services import convert_query_to_dictionary_list
+from core.tests import parse_query_for_testing
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
     EconomicDataModel,
     EconomicDataSourceChoices,
+    EconomicDataUpdateLogModel,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
     PublicationScheduleModel,
@@ -15,6 +17,7 @@ from economic_overview.models import (
 from economic_overview.services.economic_data_services import (
     check_economic_indicator_existence,
     delete_economic_data,
+    delete_economic_data_update_logs_before_date,
     get_economic_data,
     get_economic_indicators_by_names,
     get_economic_indicators_to_update,
@@ -418,3 +421,49 @@ class TestEconomicDataServices(TestCase):
         result = get_economic_data(indicator_names=[self.indicator.name])
         result_dict = convert_query_to_dictionary_list(result)
         assert result_dict == []
+
+    def test_delete_economic_data_update_logs_before_date(self):
+        """
+        GIVEN economic data update logs with different dates
+        WHEN delete_economic_data_update_logs_before_date is called with a cutoff date
+        THEN logs before the cutoff date should be deleted
+        """
+        cutoff_date = date(2024, 1, 10)
+
+        # Create logs with different dates
+        log_before = EconomicDataUpdateLogModel.objects.create(
+            economic_data=self.economic_data,
+            logs="Log before cutoff",
+        )
+        log_before.date_added = datetime(2024, 1, 5, 12, 0, 0)
+        log_before.save()
+
+        log_after = EconomicDataUpdateLogModel.objects.create(
+            economic_data=self.economic_data,
+            logs="Log after cutoff",
+        )
+        log_after.date_added = datetime(2024, 1, 15, 12, 0, 0)
+        log_after.save()
+
+        delete_economic_data_update_logs_before_date(cutoff_date)
+
+        result = EconomicDataUpdateLogModel.objects.all()
+        assert parse_query_for_testing(result) == [
+            {
+                "economic_data_id": self.economic_data.pk,
+                "logs": "Log after cutoff",
+            }
+        ]
+
+    def test_delete_economic_data_update_logs_before_date_no_logs(self):
+        """
+        GIVEN no economic data update logs exist
+        WHEN delete_economic_data_update_logs_before_date is called
+        THEN no error should occur
+        """
+        cutoff_date = date(2024, 1, 10)
+        EconomicDataUpdateLogModel.objects.all().delete()
+
+        delete_economic_data_update_logs_before_date(cutoff_date)
+
+        assert EconomicDataUpdateLogModel.objects.count() == 0

@@ -9,7 +9,7 @@ from cachetools.func import ttl_cache
 from django.db.models import QuerySet
 
 import core.services as core_services
-from core.services import logger
+from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, logger
 from economic_overview.models import (
     EconomicDataModel,
     EconomicDataSourceChoices,
@@ -42,7 +42,7 @@ class EconomicData(TypedDict):
     comment: Optional[str]
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_data_from_insee(
     ticker: str, target_period: Optional[str] = None
 ) -> ScrapingResult:
@@ -112,7 +112,7 @@ def _get_data_from_insee(
     return ScrapingResult(period=period, data_value=data_value, comment="")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_data_from_japan_cabinet_office(
     ticker: str, target_period: Optional[str] = None
 ) -> ScrapingResult:

@@ -88,7 +88,7 @@ collectstatic:
 
 # Run tests
 test:
-	$(DOCKER_COMPOSE) exec webapp python -m pytest -vv --exitfirst
+	$(DOCKER_COMPOSE) exec webapp python -m pytest -vv
 
 # Run tests with coverage report
 test-coverage:

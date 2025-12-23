@@ -9,7 +9,7 @@ from django.db.models import QuerySet
 from django.utils import timezone
 
 import core.services as core_services
-from core.services import logger
+from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, logger
 from economic_overview.models import (
     EconomicDataSourceChoices,
     EconomicIndicatorInformationModel,
@@ -24,7 +24,7 @@ PUBLICATION_SOURCE_MAP = {
 }
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_insee_publication_schedule() -> pd.DataFrame:
     """Get INSEE publication schedule.
 
@@ -64,7 +64,7 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
     return df
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_publication_dates_from_insee(name: str) -> List[datetime]:
     """Get publication dates from INSEE."""
     publication_schedule = _get_insee_publication_schedule()
@@ -77,7 +77,7 @@ def _get_publication_dates_from_insee(name: str) -> List[datetime]:
     ]
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_publication_dates_from_japan_cabinet_office(name: str) -> List[datetime]:
     """Get publication dates from Japan Cabinet Office."""
     raise NotImplementedError("Not implemented.")

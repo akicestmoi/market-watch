@@ -12,7 +12,7 @@ from cachetools.func import ttl_cache
 from pandas.tseries.offsets import BDay
 
 import core.services as core_services
-from core.services import fetch_html, logger
+from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, fetch_html, logger
 from market_overview.models import (
     AssetModel,
     HolidayModel,
@@ -87,7 +87,7 @@ def _parse_str_decimals_to_float(a: str) -> Optional[float]:
     return float(str(a).replace(",", ".")) if pd.notna(a) else None
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def get_yahoo_finance_closing_prices(target_date: date, ticker: str) -> ScrapingResult:
     """Get closing prices from Yahoo Finance.
 
@@ -171,7 +171,7 @@ def _parse_central_bank_rate_from_table(table) -> ScrapingResult:
         )
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def scrap_from_global_rates(target_date: Optional[date], ticker: str) -> ScrapingResult:
     """Scrap rates from GlobalRates.
 
@@ -202,7 +202,7 @@ def scrap_from_global_rates(target_date: Optional[date], ticker: str) -> Scrapin
     return result
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrapingResult:
     """Scrap rate from NY Fed XML.
 
@@ -223,7 +223,7 @@ def _scrap_rate_from_nyfed_xml(target_date: date, ticker: str) -> ScrapingResult
     return ScrapingResult(price=None, comment="Rate not found.")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_treasury_yield_curve_from_dep_treasury(target_date: date) -> dict:
     """
     Scrap entire UST yield curves from Treasury department.
@@ -288,7 +288,7 @@ def _get_treasury_yield_from_dep_treasury(
     return ScrapingResult(price=curve.get(mapping[ticker]), comment="")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def get_webstat_rates(target_date: date, ticker: str) -> ScrapingResult:
     """Get Webstat data.
 
@@ -318,7 +318,7 @@ def get_webstat_rates(target_date: date, ticker: str) -> ScrapingResult:
     return ScrapingResult(price=None, comment="Webstat rate not found.")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> ScrapingResult:
     """Extract Bunds yield from Bundesbank database.
 
@@ -347,7 +347,7 @@ def _get_bund_yield_from_bundesbank(target_date: date, ticker: str) -> ScrapingR
     return ScrapingResult(price=None, comment="Bunds rate not found.")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _get_mutan_rate_from_boj(target_date: date) -> ScrapingResult:
     """Scrap BoJ website to get Mutan Rate.
 
@@ -383,7 +383,7 @@ def _get_mutan_rate_from_boj(target_date: date) -> ScrapingResult:
     return ScrapingResult(price=None, comment="Mutan rate not found.")
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _scrap_jgb_yield_curve_from_bb(target_date: date) -> dict:
     """Scrap entire UST yield curves from Treasury department.
 
@@ -468,13 +468,18 @@ def _get_market_data(
             comment=SpecialComment.BANK_HOLIDAY,
         )
     scraping_function = SOURCE_SCRAP_MAP.get(asset.source)
-    scraping_result: ScrapingResult = (
-        scraping_function(target_date, asset.ticker)
-        if scraping_function
-        else ScrapingResult(price=None, comment="No scraping function found.")
-    )
-    if not scraping_result.get("price"):
-        logger.warning("No price found.")
+    try:
+        scraping_result: ScrapingResult = (
+            scraping_function(target_date, asset.ticker)
+            if scraping_function
+            else ScrapingResult(price=None, comment="No scraping function found.")
+        )
+        if not scraping_result.get("price"):
+            logger.warning("No price found.")
+    except Exception as e:
+        scraping_result = ScrapingResult(
+            price=None, comment=f"Error getting market data: {str(e)}"
+        )
     return MarketData(
         asset=asset,
         price=scraping_result.get("price"),

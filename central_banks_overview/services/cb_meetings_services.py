@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, TypedDict
 from cachetools.func import ttl_cache
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
-from core.services import fetch_html, logger
+from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, fetch_html, logger
 
 FOMC_MEETING_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 BOJ_MPM_URL = "https://www.boj.or.jp/mopo/mpmsche_minu/index.htm"
@@ -50,7 +50,7 @@ class CentralBankMeetingDates(TypedDict):
     meeting_dates: List[datetime]
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _extract_fomc_meeting_dates() -> List[datetime]:
     """Extract FOMC meeting dates from the Federal Reserve website.
 
@@ -130,7 +130,7 @@ def _extract_fomc_meeting_dates() -> List[datetime]:
     return sorted(meeting_dates)
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _extract_ecb_meeting_dates() -> List[datetime]:
     """Extract ECB meeting dates from the ECB website.
 
@@ -219,7 +219,7 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> Optional[datetime]:
         return None
 
 
-@ttl_cache(maxsize=128, ttl=10 * 60)
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def _extract_boj_meeting_dates() -> List[datetime]:
     """Extract BoJ MPM (Monetary Policy Meeting) dates from the BoJ website.
 

@@ -180,6 +180,96 @@ class TestGetMarketData(TestCase):
             },
         ]
 
+    @patch(
+        "market_overview.services.price_ingestion_services.SOURCE_SCRAP_MAP",
+        new_callable=dict,
+    )
+    def test_get_market_data_scraping_function_raises_exception(self, mock_source_map):
+        """
+        GIVEN an asset with a scraping function that raises an exception
+        WHEN getting market data
+        THEN the exception is caught and the asset is returned with None price
+        """
+        AssetModel.objects.all().delete()
+        network_error_asset = AssetModel.objects.create(
+            short_name="NETWORK_ERROR_ASSET",
+            full_name="Network Error Asset",
+            asset_id=4,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=LocationChoices.US,
+            ticker="NETWORK_ERROR",
+            source=PriceSourceChoices.YAHOO,
+        )
+        mock_scraper_success = Mock(
+            return_value=ScrapingResult(price=100.0, comment="")
+        )
+        mock_scraper_error = Mock(side_effect=Exception("Network error"))
+        mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper_success
+
+        # Create a separate asset with error-prone scraper
+        source_error_asset = AssetModel.objects.create(
+            short_name="SOURCE_ERROR_ASSET",
+            full_name="Source Error Asset",
+            asset_id=5,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=LocationChoices.US,
+            ticker="SOURCE_ERROR",
+            source=PriceSourceChoices.GOV_TREASURY_DEPT,
+        )
+        mock_source_map[PriceSourceChoices.GOV_TREASURY_DEPT] = mock_scraper_error
+
+        result = get_market_data(self.target_date)
+        assert result == [
+            {
+                "asset": network_error_asset,
+                "price": 100.0,
+                "date": self.target_date,
+                "comment": "",
+            },
+            {
+                "asset": source_error_asset,
+                "price": None,
+                "date": self.target_date,
+                "comment": "Error getting market data: Network error",
+            },
+        ]
+
+    @patch(
+        "market_overview.services.price_ingestion_services.SOURCE_SCRAP_MAP",
+        new_callable=dict,
+    )
+    def test_get_market_data_no_price_found(self, mock_source_map):
+        """
+        GIVEN an asset with a scraping function that returns no price
+        WHEN getting market data
+        THEN a warning is logged and the asset is returned with None price
+        """
+        AssetModel.objects.all().delete()
+        no_price_asset = AssetModel.objects.create(
+            short_name="NO_PRICE",
+            full_name="No Price Asset",
+            asset_id=6,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+            location=LocationChoices.US,
+            ticker="NO_PRICE",
+            source=PriceSourceChoices.YAHOO,
+        )
+        mock_scraper = Mock(return_value=ScrapingResult(price=None, comment="No price"))
+        mock_source_map[PriceSourceChoices.YAHOO] = mock_scraper
+
+        result = get_market_data(self.target_date)
+        assert result == [
+            {
+                "asset": no_price_asset,
+                "price": None,
+                "date": self.target_date,
+                "comment": "No price",
+            },
+        ]
+
 
 class GetSpecificAssetMarketDataTest(TestCase):
     """Test cases for get_specific_asset_market_data function."""

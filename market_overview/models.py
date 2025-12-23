@@ -134,7 +134,7 @@ class MarketPriceModel(BaseModel):
             remove_specific_fields=remove_specific_fields,
         )
         asset = getattr(self, "asset", None)
-        if asset:
+        if asset and not remove_foreign_key:
             data["asset_id"] = asset.asset_id
             data["asset_short_name"] = asset.short_name
         return data

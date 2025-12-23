@@ -140,6 +140,19 @@ class TestCentralBanksRecapView(TestCase):
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
+        # Add future after meeting date (required for validation)
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.04",
+            first_accrual_date=date(2026, 4, 1),
+            last_accrual_date=date(2026, 4, 30),
+            date=self.reference_date,
+            price=95.40,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
         # Also create for previous_date to enable probability_change_matrix
         StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
@@ -150,6 +163,42 @@ class TestCentralBanksRecapView(TestCase):
             last_accrual_date=date(2026, 1, 31),
             date=self.previous_date,
             price=95.20,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.02",
+            first_accrual_date=date(2026, 2, 1),
+            last_accrual_date=date(2026, 2, 28),
+            date=self.previous_date,
+            price=95.25,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.03",
+            first_accrual_date=date(2026, 3, 1),
+            last_accrual_date=date(2026, 3, 31),
+            date=self.previous_date,
+            price=95.30,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.04",
+            first_accrual_date=date(2026, 4, 1),
+            last_accrual_date=date(2026, 4, 30),
+            date=self.previous_date,
+            price=95.35,
             source=StirFuturesSourceChoices.YAHOO,
             comment="",
         )
@@ -208,8 +257,8 @@ class TestCentralBanksRecapView(TestCase):
                     "central_bank": CentralBankChoices.FRB,
                     "meeting_dates": [date(2026, 3, 20)],
                     "probability_matrix": [
-                        {"expected_rate_step": -25, "probabilities": [56.36]},
-                        {"expected_rate_step": 0, "probabilities": [43.64]},
+                        {"expected_rate_step": -25, "probabilities": [31.0]},
+                        {"expected_rate_step": 0, "probabilities": [69.0]},
                     ],
                 },
             },
@@ -239,8 +288,8 @@ class TestCentralBanksRecapView(TestCase):
             "central_bank": CentralBankChoices.FRB,
             "meeting_dates": [date(2026, 3, 20)],
             "probability_matrix": [
-                {"expected_rate_step": -25, "probabilities": [56.36]},
-                {"expected_rate_step": 0, "probabilities": [43.64]},
+                {"expected_rate_step": -25, "probabilities": [31.0]},
+                {"expected_rate_step": 0, "probabilities": [69.0]},
             ],
         }
 
@@ -381,8 +430,8 @@ class TestCentralBanksRecapView(TestCase):
                     "central_bank": CentralBankChoices.FRB,
                     "meeting_dates": [date(2026, 3, 20)],
                     "probability_matrix": [
-                        {"expected_rate_step": -25, "probabilities": [56.36]},
-                        {"expected_rate_step": 0, "probabilities": [43.64]},
+                        {"expected_rate_step": -25, "probabilities": [31.0]},
+                        {"expected_rate_step": 0, "probabilities": [69.0]},
                     ],
                 },
             },

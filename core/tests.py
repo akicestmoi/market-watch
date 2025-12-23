@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 from unittest.mock import MagicMock
 
 from django.db.models import QuerySet
@@ -46,16 +46,30 @@ def parse_query_for_testing(
 class MockResponse:
     """Mock response object."""
 
-    def __init__(self, status_code: int, content: bytes, text: Optional[str] = None):
+    def __init__(
+        self,
+        status_code: int,
+        content: Optional[bytes] = None,
+        text: Optional[str] = None,
+        json_data: Optional[Union[dict, list]] = None,
+    ):
         self.mock = MagicMock()
         self.mock.status_code = status_code
-        self.mock.content = content
-        # If text is not provided, decode content to string
+        if content is not None:
+            self.mock.content = content
+
+        # If text is not provided and content is provided, decode content to string
         # Used for mocking HTML responses
-        if text is None:
+        if text is None and content is not None:
             self.mock.text = content.decode("utf-8")
-        else:
+        elif text is not None:
             self.mock.text = text
+
+        # Support for JSON responses
+        if json_data is not None:
+            self.mock.json = MagicMock(return_value=json_data)
+        else:
+            self.mock.json = MagicMock()
 
     def __getattr__(self, name: str):
         return getattr(self.mock, name)

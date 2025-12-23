@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 L = TypeVar("L", bound=BaseLogModel)
 
+# Cache configuration constants
+# Used by @ttl_cache decorators across the codebase for consistent caching behavior
+CACHE_MAXSIZE = 128  # Maximum number of cached entries per function
+CACHE_TTL_SECONDS = 10 * 60  # Time-to-live: 10 minutes (600 seconds)
+
 
 def get(model: Type[T], *args, **kwargs) -> T:
     """Get entity from database."""

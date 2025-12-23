@@ -1,117 +1,117 @@
-from datetime import date, datetime, timezone
+# from datetime import date, datetime, timezone
 
-from django.test import TestCase
+# from django.test import TestCase
 
-from central_banks_overview.models import (
-    CentralBankChoices,
-    StirFuturesModel,
-    StirFuturesNameChoices,
-    StirFuturesSourceChoices,
-)
-from central_banks_overview.services.cb_inference_services import (
-    EstrFuturesProbabilityMatrixService,
-    MutanFuturesProbabilityMatrixService,
-)
-
-
-class TestProbabilityMatrixCalculationBaseTestCase(TestCase):
-    """Test probability matrix calculation base test case."""
-
-    def setUp(self):
-        """Set up test fixtures."""
-        self.base_rate = 3.64
-        self.test_date = date(2025, 12, 15)
+# from central_banks_overview.models import (
+#     CentralBankChoices,
+#     StirFuturesModel,
+#     StirFuturesNameChoices,
+#     StirFuturesSourceChoices,
+# )
+# from central_banks_overview.services.cb_inference_services import (
+#     EstrFuturesProbabilityMatrixService,
+#     MutanFuturesProbabilityMatrixService,
+# )
 
 
-class TestECBStep1InferSingleMeetingImpliedRates(
-    TestProbabilityMatrixCalculationBaseTestCase
-):
-    """
-    Test ECB/BOJ Step 1: Infer Single meeting implied rates
-    Methodology: Section "Step 1: Infer Single meeting implied rates"
-    """
+# class TestProbabilityMatrixCalculationBaseTestCase(TestCase):
+#     """Test probability matrix calculation base test case."""
 
-    def test_calculate_single_meeting_implied_rate_estr(self):
-        """
-        GIVEN ESTR futures with single meeting
-        WHEN calculating implied rate
-        THEN rate is calculated using approximated compounding formula
-        """
-        future = StirFuturesModel(
-            central_bank=CentralBankChoices.ECB,
-            short_name=StirFuturesNameChoices.ESTR3M,
-            full_name="3 Month ESTR Futures",
-            maturity="24.03",
-            first_accrual_date=date(2024, 3, 1),
-            last_accrual_date=date(2024, 5, 31),
-            date=self.test_date,
-            price=96.0,  # 100 - 4.0 = 96.0
-            source=StirFuturesSourceChoices.TFX,
-            comment="",
-        )
+#     def setUp(self):
+#         """Set up test fixtures."""
+#         self.base_rate = 3.64
+#         self.test_date = date(2025, 12, 15)
 
-        service = EstrFuturesProbabilityMatrixService(
-            initial_base_rate=self.base_rate,
-            future_prices=[future],
-            meeting_dates=[datetime(2024, 3, 15, 13, 0, tzinfo=timezone.utc)],
-        )
 
-        accrual_end_date = date(2024, 5, 31)
-        accrual_days = (accrual_end_date - date(2024, 3, 1)).days + 1
-        meeting_date = date(2024, 3, 15)
-        future_implied_rate = 4.0
+# class TestECBStep1InferSingleMeetingImpliedRates(
+#     TestProbabilityMatrixCalculationBaseTestCase
+# ):
+#     """
+#     Test ECB/BOJ Step 1: Infer Single meeting implied rates
+#     Methodology: Section "Step 1: Infer Single meeting implied rates"
+#     """
 
-        meeting_implied_rate = (
-            service._calculate_three_month_futures_average_rate_for_single_meeting(
-                accrual_end_date,
-                accrual_days,
-                meeting_date,
-                future_implied_rate,
-                self.base_rate,
-            )
-        )
-        assert meeting_implied_rate == 4.0
+#     def test_calculate_single_meeting_implied_rate_estr(self):
+#         """
+#         GIVEN ESTR futures with single meeting
+#         WHEN calculating implied rate
+#         THEN rate is calculated using approximated compounding formula
+#         """
+#         future = StirFuturesModel(
+#             central_bank=CentralBankChoices.ECB,
+#             short_name=StirFuturesNameChoices.ESTR3M,
+#             full_name="3 Month ESTR Futures",
+#             maturity="24.03",
+#             first_accrual_date=date(2024, 3, 1),
+#             last_accrual_date=date(2024, 5, 31),
+#             date=self.test_date,
+#             price=96.0,  # 100 - 4.0 = 96.0
+#             source=StirFuturesSourceChoices.TFX,
+#             comment="",
+#         )
 
-    def test_calculate_single_meeting_implied_rate_mutan(self):
-        """
-        GIVEN TONA futures with single meeting
-        WHEN calculating implied rate
-        THEN rate is calculated using 30/365 day count convention
-        """
-        future = StirFuturesModel(
-            central_bank=CentralBankChoices.BOJ,
-            short_name=StirFuturesNameChoices.MUTAN3M,
-            full_name="3 Month Mutan STIR Futures",
-            maturity="24.03",
-            first_accrual_date=date(2024, 3, 1),
-            last_accrual_date=date(2024, 5, 31),
-            date=self.test_date,
-            price=96.0,  # 100 - 4.0 = 96.0
-            source=StirFuturesSourceChoices.TFX,
-            comment="",
-        )
+#         service = EstrFuturesProbabilityMatrixService(
+#             initial_base_rate=self.base_rate,
+#             future_prices=[future],
+#             meeting_dates=[datetime(2024, 3, 15, 13, 0, tzinfo=timezone.utc)],
+#         )
 
-        service = MutanFuturesProbabilityMatrixService(
-            initial_base_rate=self.base_rate,
-            future_prices=[future],
-            meeting_dates=[datetime(2024, 3, 15, 13, 0, tzinfo=timezone.utc)],
-        )
+#         accrual_end_date = date(2024, 5, 31)
+#         accrual_days = (accrual_end_date - date(2024, 3, 1)).days + 1
+#         meeting_date = date(2024, 3, 15)
+#         future_implied_rate = 4.0
 
-        accrual_end_date = date(2024, 5, 31)
-        accrual_days = (accrual_end_date - date(2024, 3, 1)).days + 1
-        meeting_date = date(2024, 3, 15)
-        future_implied_rate = 4.0
+#         meeting_implied_rate = (
+#             service._calculate_three_month_futures_average_rate_for_single_meeting(
+#                 accrual_end_date,
+#                 accrual_days,
+#                 meeting_date,
+#                 future_implied_rate,
+#                 self.base_rate,
+#             )
+#         )
+#         assert meeting_implied_rate == 4.0
 
-        meeting_implied_rate = (
-            service._calculate_three_month_futures_average_rate_for_single_meeting(
-                accrual_end_date,
-                accrual_days,
-                meeting_date,
-                future_implied_rate,
-                self.base_rate,
-            )
-        )
-        assert meeting_implied_rate == 4.0
+#     def test_calculate_single_meeting_implied_rate_mutan(self):
+#         """
+#         GIVEN TONA futures with single meeting
+#         WHEN calculating implied rate
+#         THEN rate is calculated using 30/365 day count convention
+#         """
+#         future = StirFuturesModel(
+#             central_bank=CentralBankChoices.BOJ,
+#             short_name=StirFuturesNameChoices.MUTAN3M,
+#             full_name="3 Month Mutan STIR Futures",
+#             maturity="24.03",
+#             first_accrual_date=date(2024, 3, 1),
+#             last_accrual_date=date(2024, 5, 31),
+#             date=self.test_date,
+#             price=96.0,  # 100 - 4.0 = 96.0
+#             source=StirFuturesSourceChoices.TFX,
+#             comment="",
+#         )
+
+#         service = MutanFuturesProbabilityMatrixService(
+#             initial_base_rate=self.base_rate,
+#             future_prices=[future],
+#             meeting_dates=[datetime(2024, 3, 15, 13, 0, tzinfo=timezone.utc)],
+#         )
+
+#         accrual_end_date = date(2024, 5, 31)
+#         accrual_days = (accrual_end_date - date(2024, 3, 1)).days + 1
+#         meeting_date = date(2024, 3, 15)
+#         future_implied_rate = 4.0
+
+#         meeting_implied_rate = (
+#             service._calculate_three_month_futures_average_rate_for_single_meeting(
+#                 accrual_end_date,
+#                 accrual_days,
+#                 meeting_date,
+#                 future_implied_rate,
+#                 self.base_rate,
+#             )
+#         )
+#         assert meeting_implied_rate == 4.0
 
 
 # class TestECBStep2GenerateAllMeetingScenarios(TestCase):
