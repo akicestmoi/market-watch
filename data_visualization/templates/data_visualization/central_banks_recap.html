@@ -55,7 +55,7 @@
             <!-- Probability Matrix Section (Middle) -->
             <div class="probability-matrix-section">
                 <h3>Probability Matrix</h3>
-                {% if cb_data.probability_matrix and cb_data.probability_matrix.meeting_dates %}
+                {% if cb_data.probability_matrix and cb_data.probability_matrix.meeting_dates and cb_data.probability_matrix.probability_matrix %}
                     {% with prob_matrix=cb_data.probability_matrix %}
                     {% with limited_entries=prob_matrix.probability_matrix|slice:":8" %}
                     <div class="matrix-container">
@@ -106,7 +106,7 @@
             <!-- Probability Matrix Diff Section (Bottom) -->
             <div class="probability-matrix-diff-section">
                 <h3>Probability Changes</h3>
-                {% if cb_data.probability_change_matrix and cb_data.probability_change_matrix.meeting_dates %}
+                {% if cb_data.probability_change_matrix and cb_data.probability_change_matrix.meeting_dates and cb_data.probability_change_matrix.probability_matrix %}
                     {% with change_matrix=cb_data.probability_change_matrix %}
                     {% with limited_entries=change_matrix.probability_matrix|slice:":8" %}
                     <div class="matrix-container">

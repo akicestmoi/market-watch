@@ -138,6 +138,27 @@ class ProbabilityMatrixBaseService(ABC):
             for step_key in STANDARD_STEP_SCENARIOS
         ]
 
+    def _validate_future_prices(self) -> bool:
+        """Validate future prices for probability matrix calculation."""
+        if not self.future_prices:
+            logger.warning("No future prices provided for validation.")
+            return False
+
+        invalid_prices = [
+            future_price
+            for future_price in self.future_prices
+            if future_price.price is None or future_price.price <= 0
+        ]
+
+        if invalid_prices:
+            logger.warning(
+                f"Found {len(invalid_prices)} invalid future price(s) out of {len(self.future_prices)} total. "
+                f"Invalid prices: {[fp.short_name for fp in invalid_prices]}"
+            )
+            return False
+
+        return True
+
     def _merge_future_prices_information_with_meeting_dates(
         self, remove_na: bool
     ) -> List[MeetingsByFutures]:
@@ -169,7 +190,11 @@ class ProbabilityMatrixBaseService(ABC):
                         accrual_end_date=period_end,
                         accrual_days=(period_end - period_start).days + 1,
                         futures_price=future_price.price,
-                        futures_implied_rate=round(100 - future_price.price, 8),
+                        futures_implied_rate=(
+                            round(100 - future_price.price, 8)
+                            if future_price.price
+                            else 0.0
+                        ),
                         nb_meetings=len(meetings_in_period),
                         meeting_dates=sorted(meetings_in_period),
                     )
@@ -968,6 +993,12 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                               for subsequent meetings. If False, probabilities are added
                               directly without convolution (useful for debugging).
         """
+        if not self._validate_future_prices():
+            logger.warning(
+                "Invalid future prices. Skipping probability matrix generation."
+            )
+            return
+
         logger.info("Generating probability matrix for Three Month Futures.")
         is_initial = True
         base_rate = self.initial_base_rate
@@ -1336,6 +1367,12 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                               filters out entries below PROBABILITY_THRESHOLD.
                               This is useful for debugging.
         """
+        if not self._validate_future_prices():
+            logger.warning(
+                "Invalid future prices. Skipping probability matrix generation."
+            )
+            return
+
         logger.info(
             "Generating probability matrix for Fed interest rate changes from futures prices."
         )
@@ -1517,11 +1554,18 @@ def get_central_bank_probability_matrices(
             calculation_service = _initiate_central_bank_probability_matrix_calculation(
                 central_bank, initial_base_rate, future_prices, meeting_dates
             )
+            # Check if probability matrix is empty (all probabilities are empty)
+            probability_matrix = calculation_service.probability_matrix
+            is_empty = not probability_matrix or all(
+                not probabilities_by_step.get("probabilities", [])
+                for probabilities_by_step in probability_matrix
+            )
+
             cb_probability_matrices.append(
                 CentralBankProbabilityMatrix(
                     central_bank=central_bank,
                     meeting_dates=calculation_service.meetings_in_period,
-                    probability_matrix=calculation_service.probability_matrix,
+                    probability_matrix=[] if is_empty else probability_matrix,
                 )
             )
             logger.info(f"Successfully generated probability matrix for {central_bank}")
@@ -1548,9 +1592,19 @@ def calculate_probability_changes(
     current_meeting_dates = probability_matrix["meeting_dates"]
     previous_meeting_dates = previous_probability_matrix["meeting_dates"]
 
+    current_prob_matrix = probability_matrix.get("probability_matrix", [])
+    previous_prob_matrix = previous_probability_matrix.get("probability_matrix", [])
+
+    if not current_prob_matrix or not previous_prob_matrix:
+        return CentralBankProbabilityMatrix(
+            central_bank=probability_matrix["central_bank"],
+            meeting_dates=probability_matrix["meeting_dates"],
+            probability_matrix=[],
+        )
+
     # Build previous probabilities indexed by rate_step and meeting_date
     previous_by_step_and_date: Dict[int, Dict[date, float]] = {}
-    for entry in previous_probability_matrix["probability_matrix"]:
+    for entry in previous_prob_matrix:
         rate_step = entry["expected_rate_step"]
         previous_by_step_and_date[rate_step] = {}
         for meeting_idx, prob in enumerate(entry["probabilities"]):
@@ -1564,7 +1618,7 @@ def calculate_probability_changes(
                 previous_by_step_and_date[rate_step][meeting_date_as_date] = prob
 
     probability_change_matrix: List[ProbabilitiesByStep] = []
-    for current_entry in probability_matrix["probability_matrix"]:
+    for current_entry in current_prob_matrix:
         rate_step = current_entry["expected_rate_step"]
         current_probs = current_entry["probabilities"]
         previous_probs_map = previous_by_step_and_date.get(rate_step, {})

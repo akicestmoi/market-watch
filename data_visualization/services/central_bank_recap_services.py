@@ -89,8 +89,18 @@ def get_central_bank_formatted_probability_matrix(
     )
     for prob_matrix in cb_probability_matrices:
         if prob_matrix["central_bank"] == central_bank:
+            probability_matrix = prob_matrix["probability_matrix"]
+            is_empty = not probability_matrix or all(
+                not entry.get("probabilities", []) for entry in probability_matrix
+            )
+            if is_empty:
+                return {
+                    "central_bank": prob_matrix["central_bank"],
+                    "meeting_dates": prob_matrix["meeting_dates"],
+                    "probability_matrix": [],
+                }
             sorted_probability_matrix = sorted(
-                prob_matrix["probability_matrix"],
+                probability_matrix,
                 key=lambda x: x["expected_rate_step"],
             )
             return {
@@ -138,6 +148,15 @@ def get_formatted_probability_matrix_changes(
     if not probability_matrix or not previous_probability_matrix:
         return None
 
+    current_is_empty = (
+        not probability_matrix.get("probability_matrix")
+        or len(probability_matrix.get("probability_matrix", [])) == 0
+    )
+    previous_is_empty = (
+        not previous_probability_matrix.get("probability_matrix")
+        or len(previous_probability_matrix.get("probability_matrix", [])) == 0
+    )
+
     # Recalculate previous matrix using current meeting dates to ensure alignment
     # This handles cases where meeting dates change after a meeting occurs
     current_meeting_dates = probability_matrix["meeting_dates"]
@@ -149,6 +168,13 @@ def get_formatted_probability_matrix_changes(
 
     if not previous_probability_matrix:
         return None
+
+    if current_is_empty or previous_is_empty:
+        return {
+            "central_bank": probability_matrix["central_bank"],
+            "meeting_dates": probability_matrix["meeting_dates"],
+            "probability_matrix": [],
+        }
 
     probability_change_matrix = cb_inference_services.calculate_probability_changes(
         probability_matrix, previous_probability_matrix

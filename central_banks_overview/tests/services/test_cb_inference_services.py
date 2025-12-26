@@ -1,15 +1,24 @@
-from datetime import date
+from datetime import date, datetime, timezone
+from unittest.mock import patch
 
 import pytest  # type: ignore[reportMissingImports]
 from django.test import TestCase
 
-from central_banks_overview.models import CentralBankChoices
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankMeetingModel,
+    StirFuturesModel,
+    StirFuturesNameChoices,
+    StirFuturesSourceChoices,
+)
 from central_banks_overview.services.cb_inference_services import (
     CentralBankProbabilityMatrix,
     calculate_probability_changes,
     get_central_bank_effective_rate,
+    get_central_bank_probability_matrices,
     get_fall_back_rate,
 )
+from central_banks_overview.services.cb_meetings_services import CentralBankMeetingDates
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -414,4 +423,180 @@ class TestCentralBankInferenceServices(TestCase):
                     "probabilities": [0.2],
                 },
             ],
+        }
+
+    @patch(
+        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+    )
+    @patch(
+        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+    )
+    def test_get_central_bank_probability_matrices_empty_list_invalid_prices(
+        self,
+        mock_meetings,
+        mock_futures,
+    ):
+        """
+        GIVEN futures prices with None or <= 0 values
+        WHEN getting central bank probability matrices
+        THEN empty probability_matrix list is returned
+        """
+        # Create meeting date
+        meeting = CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            order=1,
+            date=datetime(2026, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
+        )
+
+        # Create futures with invalid prices (None) but that cover the meeting date
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.03",
+            first_accrual_date=date(2026, 3, 1),
+            last_accrual_date=date(2026, 3, 31),
+            date=self.test_date,
+            price=None,  # Invalid price
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        # Add future after meeting date (required for validation)
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.04",
+            first_accrual_date=date(2026, 4, 1),
+            last_accrual_date=date(2026, 4, 30),
+            date=self.test_date,
+            price=None,  # Invalid price
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+
+        meeting_dates_list = [
+            CentralBankMeetingDates(
+                central_bank=CentralBankChoices.FRB,
+                meeting_dates=[meeting.date],
+            )
+        ]
+        futures_list = list(
+            StirFuturesModel.objects.filter(
+                central_bank=CentralBankChoices.FRB, date=self.test_date
+            )
+        )
+
+        mock_meetings.return_value = meeting_dates_list
+        mock_futures.return_value = futures_list
+
+        result = get_central_bank_probability_matrices(
+            target_date=self.test_date, central_banks=[CentralBankChoices.FRB]
+        )
+        assert result == [
+            {
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [date(2026, 3, 20)],
+                "probability_matrix": [],
+            },
+        ]
+
+    @patch(
+        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+    )
+    @patch(
+        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+    )
+    def test_get_central_bank_probability_matrices_empty_list_zero_prices(
+        self,
+        mock_meetings,
+        mock_futures,
+    ):
+        """
+        GIVEN futures prices with 0 or negative values
+        WHEN getting central bank probability matrices
+        THEN empty probability_matrix list is returned
+        """
+        # Create meeting date
+        meeting = CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            order=1,
+            date=datetime(2026, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
+        )
+
+        # Create futures with invalid prices (0.0) but that cover the meeting date
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.03",
+            first_accrual_date=date(2026, 3, 1),
+            last_accrual_date=date(2026, 3, 31),
+            date=self.test_date,
+            price=0.0,  # Invalid price
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        # Add future after meeting date (required for validation)
+        StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="26.04",
+            first_accrual_date=date(2026, 4, 1),
+            last_accrual_date=date(2026, 4, 30),
+            date=self.test_date,
+            price=0.0,  # Invalid price
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+
+        meeting_dates_list = [
+            CentralBankMeetingDates(
+                central_bank=CentralBankChoices.FRB,
+                meeting_dates=[meeting.date],
+            )
+        ]
+        futures_list = list(
+            StirFuturesModel.objects.filter(
+                central_bank=CentralBankChoices.FRB, date=self.test_date
+            )
+        )
+
+        mock_meetings.return_value = meeting_dates_list
+        mock_futures.return_value = futures_list
+
+        result = get_central_bank_probability_matrices(
+            target_date=self.test_date, central_banks=[CentralBankChoices.FRB]
+        )
+        assert result == [
+            {
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [date(2026, 3, 20)],
+                "probability_matrix": [],
+            },
+        ]
+
+    def test_calculate_probability_changes_empty_matrices(self):
+        """
+        GIVEN probability matrices with empty probability_matrix lists
+        WHEN calculating probability changes
+        THEN empty probability_matrix list is returned
+        """
+        current_matrix: CentralBankProbabilityMatrix = {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2026, 3, 20)],
+            "probability_matrix": [],
+        }
+        previous_matrix: CentralBankProbabilityMatrix = {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2026, 3, 20)],
+            "probability_matrix": [],
+        }
+
+        result = calculate_probability_changes(current_matrix, previous_matrix)
+        assert result == {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2026, 3, 20)],
+            "probability_matrix": [],
         }
