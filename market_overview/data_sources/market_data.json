@@ -562,6 +562,171 @@
   },
   {
     "id": 52,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "EURGBP",
+    "full_name": "EUR-GBP Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "EURGBP=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 53,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "EURCHF",
+    "full_name": "EUR-CHF Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "EURCHF=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 54,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "EURAUD",
+    "full_name": "EUR-AUD Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "EURAUD=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 55,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "EURCNY",
+    "full_name": "EUR-CNY Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "EURCNY=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 56,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "USDCHF",
+    "full_name": "USD-CHF Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "CHF=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 57,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "GBPJPY",
+    "full_name": "GBP-JPY Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "GBPJPY=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 58,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "GBPCHF",
+    "full_name": "GBP-CHF Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "GBPCHF=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 59,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "GBPAUD",
+    "full_name": "GBP-AUD Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "GBPAUD=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 60,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "GBPCNY",
+    "full_name": "GBP-CNY Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "GBPCNY=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 61,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "JPYCHF",
+    "full_name": "JPY-CHF Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "JPYCHF=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 62,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "JPYAUD",
+    "full_name": "JPY-AUD Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "JPYAUD=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 63,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "JPYCNY",
+    "full_name": "JPY-CNY Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "JPYCNY=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 64,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "CHFAUD",
+    "full_name": "CHF-AUD Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "CHFAUD=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 65,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "CHFCNY",
+    "full_name": "CHF-CNY Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "CHFCNY=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 66,
+    "asset_class": "FX",
+    "location": null,
+    "short_name": "AUDCNY",
+    "full_name": "AUD-CNY Exchange Rate",
+    "maturity": null,
+    "asset_type": "FX_SPOT_RATE",
+    "ticker": "AUDCNY=X",
+    "source": "YAHOO"
+  },
+  {
+    "id": 67,
     "asset_class": "CRYPTO",
     "location": null,
     "short_name": "BTC",
@@ -572,7 +737,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 53,
+    "id": 68,
     "asset_class": "CRYPTO",
     "location": null,
     "short_name": "ETH",
@@ -583,7 +748,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 54,
+    "id": 69,
     "asset_class": "CRYPTO",
     "location": null,
     "short_name": "XRP",
@@ -594,7 +759,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 55,
+    "id": 70,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Gold",
@@ -605,7 +770,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 56,
+    "id": 71,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "WTI Oil",
@@ -616,7 +781,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 57,
+    "id": 72,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Brent Oil",
@@ -627,7 +792,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 58,
+    "id": 73,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Natural Gas",
@@ -638,7 +803,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 59,
+    "id": 74,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Corn",
@@ -649,7 +814,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 60,
+    "id": 75,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Wheat",
@@ -660,7 +825,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 61,
+    "id": 76,
     "asset_class": "COMMODITIES",
     "location": null,
     "short_name": "Rice",
@@ -671,7 +836,7 @@
     "source": "YAHOO"
   },
   {
-    "id": 62,
+    "id": 77,
     "asset_class": "OTHERS",
     "location": null,
     "short_name": "Volatility",

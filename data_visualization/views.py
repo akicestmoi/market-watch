@@ -83,11 +83,18 @@ def market_recap_view(request):
     right_asset_classes = [
         AssetClassChoices.RATES.label,
     ]
+
+    fx_matrix = market_recap_services.get_fx_prices_matrix(
+        reference_date, previous_date
+    )
+
     context = {
         **base_context,
         "data_to_display": data_to_display,
         "left_asset_classes": left_asset_classes,
         "right_asset_classes": right_asset_classes,
+        "fx_matrix": fx_matrix,
+        "fx_matrix_order": market_recap_services.FX_MATRIX_ORDER,
     }
     if errors:
         context["error_messages"] = json.dumps(errors)

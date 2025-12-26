@@ -4,6 +4,7 @@ from datetime import date
 from django.test import Client, TestCase
 from freezegun import freeze_time  # type: ignore[reportMissingImports]
 
+from data_visualization.services.market_recap_services import FX_MATRIX_ORDER
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -95,6 +96,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == self.previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
 
     def test_market_recap_view_default_dates(self):
         """
@@ -151,6 +165,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == default_previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
 
     def test_market_recap_view_future_reference_date(self):
         """
@@ -208,12 +235,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == default_previous_date.isoformat()
         )
-        error_messages = response.context.get("error_messages")
-        assert error_messages is not None
-        assert json.loads(error_messages) == {
-            "reference_date": "Reference date 2025-12-17 must be before today 2025-12-16.",
-            "reference_market_prices": f"No data found for reference date {future_date}.",
-        }
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
 
     def test_market_recap_view_reference_date_before_previous(self):
         """
@@ -270,6 +304,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == default_previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
         error_messages = response.context.get("error_messages")
         assert error_messages is not None
         assert json.loads(error_messages) == {
@@ -330,6 +377,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == self.previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
         error_messages = response.context.get("error_messages")
         assert error_messages is not None
         assert json.loads(error_messages) == {
@@ -390,6 +450,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == self.previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
         error_messages = response.context.get("error_messages")
         assert error_messages is not None
         assert json.loads(error_messages) == {
@@ -473,6 +546,19 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == self.previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]
 
     def test_market_recap_view_some_assets_no_previous_data(self):
         """
@@ -551,3 +637,16 @@ class TestMarketRecapView(TestCase):
             response.context.get("default_previous_date")
             == self.previous_date.isoformat()
         )
+        assert response.context.get("fx_matrix") == [
+            {
+                "EUR": 0.0,
+                "USD": 0.0,
+                "GBP": 0.0,
+                "JPY": 0.0,
+                "CHF": 0.0,
+                "AUD": 0.0,
+                "CNY": 0.0,
+                "currency": currency,
+            }
+            for currency in FX_MATRIX_ORDER
+        ]

@@ -50,14 +50,33 @@
         </div>
     </div>
 
+    <!-- FX Matrix Section -->
+    <div class="fx-matrix-container" id="fxMatrixContainer" style="display: none;">
+        <div class="asset-class-card">
+            <h2>FX Heatmap</h2>
+            <div class="location-card">
+                <table class="fx-matrix-table" id="fxMatrixTable">
+                    <thead id="fxMatrixHeader"></thead>
+                    <tbody id="fxMatrixBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.defaultReferenceDate = "{{ default_reference_date }}";
         window.defaultPreviousDate = "{{ default_previous_date }}";
+        window.fxMatrixOrder = {{ fx_matrix_order | safe }};
+        {% if fx_matrix %}
+        window.fxMatrix = {{ fx_matrix | safe }};
+        {% else %}
+        window.fxMatrix = null;
+        {% endif %}
     </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
     {% if error_messages %}
     <script>
-        window.errorMessages = {{ error_messages|safe }};
+        window.errorMessages = {{ error_messages | safe }};
     </script>
     {% endif %}
     <script src="{% static 'data_visualization/js/market_recap.js' %}"></script>

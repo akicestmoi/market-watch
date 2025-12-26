@@ -131,6 +131,43 @@ table thead {
     color: #fcdddd;
 }
 
+/* FX Matrix */
+.fx-matrix-container {
+    margin-top: 2rem;
+    width: 100%;
+}
+
+.fx-matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.fx-matrix-table th {
+    background-color: #bfdbfe;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid #bae6fd;
+}
+
+.fx-matrix-table th:first-child {
+    background-color: #bfdbfe;
+    font-weight: 600;
+}
+
+.fx-matrix-table td {
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid #bae6fd;
+    font-weight: 500;
+}
+
+.fx-matrix-table tbody th {
+    background-color: #bfdbfe;
+    font-weight: 600;
+}
+
 /* Error modal */
 #errorModal {
     position: fixed;
