@@ -279,6 +279,42 @@ class TestCentralBankRecapServices(TestCase):
         )
         assert result is None
 
+    @patch(
+        "data_visualization.services.central_bank_recap_services.cb_inference_services.get_central_bank_probability_matrices"
+    )
+    def test_get_central_bank_formatted_probability_matrix_all_empty_probabilities(
+        self, mock_get_matrices
+    ):
+        """
+        GIVEN probability matrix with all probabilities empty
+        WHEN getting formatted probability matrix
+        THEN None is returned (empty probabilities are treated as no matrix)
+        """
+        mock_get_matrices.return_value = [
+            {
+                "central_bank": CentralBankChoices.FRB,
+                "meeting_dates": [date(2024, 3, 20)],
+                "probability_matrix": [
+                    {
+                        "expected_rate_step": 0,
+                        "probabilities": [],
+                    },
+                    {
+                        "expected_rate_step": 25,
+                        "probabilities": [],
+                    },
+                ],
+            }
+        ]
+        result = get_central_bank_formatted_probability_matrix(
+            CentralBankChoices.FRB, self.test_date
+        )
+        assert result == {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [],
+        }
+
     def test_get_formatted_probability_matrix_changes_success(self):
         """
         GIVEN current and previous probability matrices
@@ -371,6 +407,68 @@ class TestCentralBankRecapServices(TestCase):
 
         result = get_formatted_probability_matrix_changes(current_matrix, None)
         assert result is None
+
+    def test_get_formatted_probability_matrix_changes_empty_current(self):
+        """
+        GIVEN current probability matrix with empty probability_matrix list
+        WHEN getting formatted probability matrix changes
+        THEN the empty probability_matrix list is returned
+        """
+        current_matrix: CentralBankProbabilityMatrix = {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [],
+        }
+        previous_matrix: CentralBankProbabilityMatrix = {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [
+                {
+                    "expected_rate_step": 0,
+                    "probabilities": [0.7],
+                },
+            ],
+        }
+
+        result = get_formatted_probability_matrix_changes(
+            current_matrix, previous_matrix
+        )
+        assert result == {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [],
+        }
+
+    def test_get_formatted_probability_matrix_changes_empty_previous(self):
+        """
+        GIVEN previous probability matrix with empty probability_matrix list
+        WHEN getting formatted probability matrix changes
+        THEN the empty probability_matrix list is returned
+        """
+        current_matrix: CentralBankProbabilityMatrix = {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [
+                {
+                    "expected_rate_step": 0,
+                    "probabilities": [0.75],
+                },
+            ],
+        }
+        previous_matrix: CentralBankProbabilityMatrix = {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [],
+        }
+
+        result = get_formatted_probability_matrix_changes(
+            current_matrix, previous_matrix
+        )
+        assert result == {
+            "central_bank": CentralBankChoices.FRB,
+            "meeting_dates": [date(2024, 3, 20)],
+            "probability_matrix": [],
+        }
 
     def test_get_formatted_probability_matrix_changes_no_changes(self):
         """
