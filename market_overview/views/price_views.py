@@ -21,6 +21,7 @@ from market_overview.open_api.request_serializers import (
     BatchPriceIngestionSerializer,
     BulkUpdateAssetsPricesSerializer,
     CsvBulkUpdateAssetsPricesSerializer,
+    DeleteMarketPricesSerializer,
     GetAssetsWithoutPricesSerializer,
     GetMarketPriceSerializer,
     ListMarketPricesSerializer,
@@ -28,6 +29,7 @@ from market_overview.open_api.request_serializers import (
 )
 from market_overview.open_api.response_serializers import (
     BatchPriceIngestionResponseSerializer,
+    DeleteMarketPricesResponseSerializer,
     GetAssetWithoutPriceResponseSerializer,
     MarketPriceIngestionResponseSerializer,
     MarketPriceResponseSerializer,
@@ -117,6 +119,37 @@ class GetMarketPriceView(BaseAPIView):
         )
         return Response(
             data=MarketPriceResponseSerializer(asset).data, status=status.HTTP_200_OK
+        )
+
+    @open_api(
+        tags=[ApiTags.ASSET_PRICES],
+        summary="Delete Market Prices",
+        description="Delete market prices based on optional filters. At least one of 'start_date', 'end_date', or 'short_names' must be provided.",
+        request_serializer=DeleteMarketPricesSerializer,
+        response=OkOpenApiResponse(DeleteMarketPricesResponseSerializer),
+        error_responses=[
+            BadRequestOpenApiResponse(
+                "At least one of 'start_date', 'end_date', or 'short_names' must be provided."
+            )
+        ],
+    )
+    def delete(self, validated_data: dict) -> Response:
+        """Delete market prices based on optional filters."""
+        start_date: Optional[date] = validated_data.get("start_date")
+        end_date: Optional[date] = validated_data.get("end_date")
+        short_names: Optional[List[str]] = validated_data.get("short_names")
+
+        deleted_count = market_data_services.delete_market_prices(
+            start_date, end_date, short_names
+        )
+        return Response(
+            data=DeleteMarketPricesResponseSerializer(
+                {
+                    "message": "Market prices successfully deleted.",
+                    "deleted_count": deleted_count,
+                }
+            ).data,
+            status=status.HTTP_200_OK,
         )
 
 

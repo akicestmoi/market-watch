@@ -109,3 +109,10 @@ class HolidayResponseSerializer(serializers.ModelSerializer):
             "name",
             "location",
         ]
+
+
+class DeleteMarketPricesResponseSerializer(serializers.Serializer):
+    """Delete Market Prices Response Serializer."""
+
+    message = serializers.CharField()
+    deleted_count = serializers.IntegerField()

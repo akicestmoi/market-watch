@@ -1386,3 +1386,190 @@ class TestMarketPricesViews(TestCase):
                 ],
             }
         }
+
+
+class TestDeleteMarketPricesView(TestCase):
+    """Test cases for Delete Market Prices View."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        self.base_url = "/markets/prices"
+        self.asset1 = AssetModel.objects.create(
+            short_name="TEST1",
+            full_name="Test Asset 1",
+            asset_id=1,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+        )
+        self.asset2 = AssetModel.objects.create(
+            short_name="TEST2",
+            full_name="Test Asset 2",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+        )
+        self.date1 = date(2025, 1, 15)
+        self.date2 = date(2025, 2, 15)
+        self.date3 = date(2025, 3, 15)
+
+        # Create market prices
+        self.price1 = MarketPriceModel.objects.create(
+            asset=self.asset1,
+            date=self.date1,
+            price=100.0,
+        )
+        self.price2 = MarketPriceModel.objects.create(
+            asset=self.asset1,
+            date=self.date2,
+            price=110.0,
+        )
+        self.price3 = MarketPriceModel.objects.create(
+            asset=self.asset1,
+            date=self.date3,
+            price=120.0,
+        )
+        self.price4 = MarketPriceModel.objects.create(
+            asset=self.asset2,
+            date=self.date1,
+            price=200.0,
+        )
+        self.price5 = MarketPriceModel.objects.create(
+            asset=self.asset2,
+            date=self.date2,
+            price=210.0,
+        )
+
+    def test_delete_market_prices_by_start_date(self):
+        """
+        GIVEN market prices exist
+        WHEN deleting prices with start_date filter
+        THEN prices from that date onwards are deleted
+        """
+        query_params = f"start_date={self.date2.isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 3,
+        }
+        assert MarketPriceModel.objects.filter(id=self.price1.id).exists()
+        assert MarketPriceModel.objects.filter(id=self.price4.id).exists()
+        assert MarketPriceModel.objects.count() == 2
+
+    def test_delete_market_prices_by_end_date(self):
+        """
+        GIVEN market prices exist
+        WHEN deleting prices with end_date filter
+        THEN prices up to that date are deleted
+        """
+        query_params = f"end_date={self.date2.isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 4,
+        }
+        assert MarketPriceModel.objects.filter(id=self.price3.id).exists()
+        assert MarketPriceModel.objects.count() == 1
+
+    def test_delete_market_prices_by_short_names(self):
+        """
+        GIVEN market prices exist for multiple assets
+        WHEN deleting prices with short_names filter
+        THEN prices for those assets are deleted
+        """
+        query_params = "short_names=TEST1"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 3,
+        }
+        assert MarketPriceModel.objects.filter(id=self.price4.id).exists()
+        assert MarketPriceModel.objects.filter(id=self.price5.id).exists()
+        assert MarketPriceModel.objects.count() == 2
+
+    def test_delete_market_prices_by_multiple_short_names(self):
+        """
+        GIVEN market prices exist for multiple assets
+        WHEN deleting prices with multiple short_names
+        THEN prices for all specified assets are deleted
+        """
+        query_params = "short_names=TEST1,TEST2"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 5,
+        }
+        assert MarketPriceModel.objects.count() == 0
+
+    def test_delete_market_prices_by_date_range(self):
+        """
+        GIVEN market prices exist
+        WHEN deleting prices with start_date and end_date filters
+        THEN prices within the date range are deleted
+        """
+        query_params = (
+            f"start_date={self.date1.isoformat()}&end_date={self.date2.isoformat()}"
+        )
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 4,
+        }
+        assert MarketPriceModel.objects.filter(id=self.price3.id).exists()
+        assert MarketPriceModel.objects.count() == 1
+
+    def test_delete_market_prices_by_all_filters(self):
+        """
+        GIVEN market prices exist
+        WHEN deleting prices with all filters combined
+        THEN prices matching all criteria are deleted
+        """
+        query_params = f"start_date={self.date1.isoformat()}&end_date={self.date2.isoformat()}&short_names=TEST1"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 2,
+        }
+        assert MarketPriceModel.objects.filter(id=self.price3.id).exists()
+        assert MarketPriceModel.objects.filter(id=self.price4.id).exists()
+        assert MarketPriceModel.objects.filter(id=self.price5.id).exists()
+        assert MarketPriceModel.objects.count() == 3
+
+    def test_delete_market_prices_no_parameters(self):
+        """
+        GIVEN a delete request
+        WHEN no parameters are provided
+        THEN a 400 Bad Request error is returned
+        """
+        response = self.client.delete(f"{self.base_url}")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "At least one of" in str(response.json().get("error_message", ""))
+
+    def test_delete_market_prices_no_matching_records(self):
+        """
+        GIVEN a delete request
+        WHEN no prices match the criteria
+        THEN 0 records are deleted and success response is returned
+        """
+        query_params = f"start_date={date(2026, 1, 1).isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 0,
+        }
+        assert MarketPriceModel.objects.count() == 5

@@ -404,6 +404,26 @@ def bulk_update_assets_prices_from_csv(
     return bulk_update_assets_prices(updates)
 
 
+def delete_market_prices(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    short_names: Optional[List[str]] = None,
+) -> int:
+    """Delete market prices based on optional filters."""
+    market_prices_queryset = MarketPriceModel.objects.all()
+    if start_date:
+        market_prices_queryset = market_prices_queryset.filter(date__gte=start_date)
+    if end_date:
+        market_prices_queryset = market_prices_queryset.filter(date__lte=end_date)
+    if short_names:
+        market_prices_queryset = market_prices_queryset.filter(
+            asset__short_name__in=short_names
+        )
+    deleted_count = market_prices_queryset.count()
+    market_prices_queryset.delete()
+    return deleted_count
+
+
 def delete_price_update_logs_before_date(logs_date: date):
     """Delete price update logs before a given date."""
     PriceUpdateLogModel.objects.filter(date_added__lt=logs_date).delete()
