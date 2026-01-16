@@ -9,18 +9,26 @@ from central_banks_overview.models import CentralBankChoices
 from central_banks_overview.open_api.request_serializers import (
     BulkUpdateStirFuturesPricesSerializer,
     CsvBulkUpdateStirFuturesPricesSerializer,
+    DeleteStirFuturesPricesSerializer,
     EstrPriceIngestionViaPdfSerializer,
     ListStirFuturesPricesSerializer,
     StirFuturesPriceIngestionSerializer,
 )
 from central_banks_overview.open_api.response_serializers import (
+    DeleteStirFuturesPricesResponseSerializer,
     StirFuturesPriceIngestionResponseSerializer,
     StirFuturesPriceResponseSerializer,
 )
 from central_banks_overview.services.stir_prices_ingestion_services import (
     BulkUpdateFuturesPricesItem,
 )
-from core.open_api import ApiTags, CreatedOpenApiResponse, OkOpenApiResponse, open_api
+from core.open_api import (
+    ApiTags,
+    BadRequestOpenApiResponse,
+    CreatedOpenApiResponse,
+    OkOpenApiResponse,
+    open_api,
+)
 from core.services import logger
 from core.views import BaseAPIView
 
@@ -120,6 +128,42 @@ class ListStirFuturesPricesView(BaseAPIView):
         prices = stir_futures_services.get_futures_prices(price_date, central_banks)
         return Response(
             data=StirFuturesPriceResponseSerializer(prices, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="Delete STIR Futures Prices",
+        description="Delete STIR futures prices based on optional filters. At least one of 'start_date', 'end_date', or 'central_banks' must be provided.",
+        request_serializer=DeleteStirFuturesPricesSerializer,
+        response=OkOpenApiResponse(DeleteStirFuturesPricesResponseSerializer),
+        error_responses=[
+            BadRequestOpenApiResponse(
+                "At least one of 'start_date', 'end_date', or 'central_banks' must be provided."
+            )
+        ],
+    )
+    def delete(self, validated_data: dict) -> Response:
+        """Delete STIR futures prices based on optional filters."""
+        start_date: Optional[date] = validated_data.get("start_date")
+        end_date: Optional[date] = validated_data.get("end_date")
+        central_banks_str: Optional[str] = validated_data.get("central_banks")
+        central_banks = (
+            [CentralBankChoices(cb) for cb in central_banks_str.split(",")]
+            if central_banks_str
+            else None
+        )
+
+        deleted_count = stir_futures_services.delete_stir_futures_prices(
+            start_date, end_date, central_banks
+        )
+        return Response(
+            data=DeleteStirFuturesPricesResponseSerializer(
+                {
+                    "message": "STIR futures prices successfully deleted.",
+                    "deleted_count": deleted_count,
+                }
+            ).data,
             status=status.HTTP_200_OK,
         )
 

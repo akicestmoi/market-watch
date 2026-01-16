@@ -86,3 +86,10 @@ class CentralBankProbabilityMatrixResponseSerializer(serializers.Serializer):
     probability_matrix = serializers.ListField(
         child=MeetingProbabilitiesResponseSerializer()
     )
+
+
+class DeleteStirFuturesPricesResponseSerializer(serializers.Serializer):
+    """Delete STIR Futures Prices Response Serializer."""
+
+    message = serializers.CharField()
+    deleted_count = serializers.IntegerField()

@@ -779,3 +779,202 @@ class TestBulkUpdateStirFuturesViews(TestCase):
         assert response.json() == {
             "error_message": {"csv_file": ["No file was submitted."]},
         }
+
+
+class TestDeleteStirFuturesPricesView(TestCase):
+    """Test cases for Delete STIR Futures Prices View."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        self.base_url = "/central-banks/stir-futures"
+        self.date1 = date(2025, 1, 15)
+        self.date2 = date(2025, 2, 15)
+        self.date3 = date(2025, 3, 15)
+
+        # Create STIR futures prices
+        self.future1 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="25.01",
+            first_accrual_date=date(2025, 1, 1),
+            last_accrual_date=date(2025, 1, 31),
+            date=self.date1,
+            price=95.25,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        self.future2 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="25.02",
+            first_accrual_date=date(2025, 2, 1),
+            last_accrual_date=date(2025, 2, 28),
+            date=self.date2,
+            price=95.50,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        self.future3 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.FRB,
+            short_name=StirFuturesNameChoices.FF1M,
+            full_name="1 Month Fed Funds STIR Futures",
+            maturity="25.03",
+            first_accrual_date=date(2025, 3, 1),
+            last_accrual_date=date(2025, 3, 31),
+            date=self.date3,
+            price=95.75,
+            source=StirFuturesSourceChoices.YAHOO,
+            comment="",
+        )
+        self.future4 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            short_name=StirFuturesNameChoices.ESTR3M,
+            full_name="3 Month ESTR Futures",
+            maturity="25.01",
+            first_accrual_date=date(2025, 1, 1),
+            last_accrual_date=date(2025, 3, 31),
+            date=self.date1,
+            price=96.50,
+            source=StirFuturesSourceChoices.TFX,
+            comment="",
+        )
+        self.future5 = StirFuturesModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            short_name=StirFuturesNameChoices.ESTR3M,
+            full_name="3 Month ESTR Futures",
+            maturity="25.02",
+            first_accrual_date=date(2025, 2, 1),
+            last_accrual_date=date(2025, 4, 30),
+            date=self.date2,
+            price=96.75,
+            source=StirFuturesSourceChoices.TFX,
+            comment="",
+        )
+
+    def test_delete_stir_futures_prices_by_start_date(self):
+        """
+        GIVEN STIR futures prices exist
+        WHEN deleting prices with start_date filter
+        THEN prices from that date onwards are deleted
+        """
+        query_params = f"start_date={self.date2.isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 3,
+        }
+        assert StirFuturesModel.objects.count() == 2
+
+    def test_delete_stir_futures_prices_by_end_date(self):
+        """
+        GIVEN STIR futures prices exist
+        WHEN deleting prices with end_date filter
+        THEN prices up to that date are deleted
+        """
+        query_params = f"end_date={self.date2.isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 4,
+        }
+        assert StirFuturesModel.objects.count() == 1
+
+    def test_delete_stir_futures_prices_by_central_banks(self):
+        """
+        GIVEN STIR futures prices exist for multiple central banks
+        WHEN deleting prices with central_banks filter
+        THEN prices for those central banks are deleted
+        """
+        query_params = f"central_banks={CentralBankChoices.FRB.value}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 3,
+        }
+        assert StirFuturesModel.objects.count() == 2
+
+    def test_delete_stir_futures_prices_by_multiple_central_banks(self):
+        """
+        GIVEN STIR futures prices exist for multiple central banks
+        WHEN deleting prices with multiple central_banks
+        THEN prices for all specified central banks are deleted
+        """
+        query_params = f"central_banks={CentralBankChoices.FRB.value},{CentralBankChoices.ECB.value}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 5,
+        }
+        assert StirFuturesModel.objects.count() == 0
+
+    def test_delete_stir_futures_prices_by_date_range(self):
+        """
+        GIVEN STIR futures prices exist
+        WHEN deleting prices with start_date and end_date filters
+        THEN prices within the date range are deleted
+        """
+        query_params = (
+            f"start_date={self.date1.isoformat()}&end_date={self.date2.isoformat()}"
+        )
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 4,
+        }
+        assert StirFuturesModel.objects.count() == 1
+
+    def test_delete_stir_futures_prices_by_all_filters(self):
+        """
+        GIVEN STIR futures prices exist
+        WHEN deleting prices with all filters combined
+        THEN prices matching all criteria are deleted
+        """
+        query_params = f"start_date={self.date1.isoformat()}&end_date={self.date2.isoformat()}&central_banks={CentralBankChoices.FRB.value}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 2,
+        }
+        assert StirFuturesModel.objects.count() == 3
+
+    def test_delete_stir_futures_prices_no_parameters(self):
+        """
+        GIVEN a delete request
+        WHEN no parameters are provided
+        THEN a 400 Bad Request error is returned
+        """
+        response = self.client.delete(f"{self.base_url}")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "At least one of" in str(response.json().get("error_message", ""))
+
+    def test_delete_stir_futures_prices_no_matching_records(self):
+        """
+        GIVEN a delete request
+        WHEN no prices match the criteria
+        THEN 0 records are deleted and success response is returned
+        """
+        query_params = f"start_date={date(2026, 1, 1).isoformat()}"
+        response = self.client.delete(f"{self.base_url}?{query_params}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "STIR futures prices successfully deleted.",
+            "deleted_count": 0,
+        }
+        assert StirFuturesModel.objects.count() == 5

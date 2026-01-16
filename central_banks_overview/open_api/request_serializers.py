@@ -99,3 +99,27 @@ class GetCentralBankProbabilityMatrixSerializer(CentralBankBaseSerializer):
     """Get Central Bank Probability Matrix Serializer."""
 
     date = serializers.DateField()
+
+
+class DeleteStirFuturesPricesSerializer(CentralBankBaseSerializer):
+    """Delete STIR Futures Prices Serializer."""
+
+    start_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        """Validate that at least one parameter is provided."""
+        central_banks = attrs.get("central_banks")
+        if central_banks and not central_banks.strip():
+            central_banks = None
+        if not any(
+            [
+                attrs.get("start_date"),
+                attrs.get("end_date"),
+                central_banks,
+            ]
+        ):
+            raise serializers.ValidationError(
+                "At least one of 'start_date', 'end_date', or 'central_banks' must be provided."
+            )
+        return attrs

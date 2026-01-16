@@ -486,6 +486,24 @@ def get_futures_prices(
     return list(query.order_by("central_bank", "maturity"))
 
 
+def delete_stir_futures_prices(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    central_banks: Optional[List[CentralBankChoices]] = None,
+) -> int:
+    """Delete STIR futures prices based on optional filters."""
+    futures_queryset = StirFuturesModel.objects.all()
+    if start_date:
+        futures_queryset = futures_queryset.filter(date__gte=start_date)
+    if end_date:
+        futures_queryset = futures_queryset.filter(date__lte=end_date)
+    if central_banks:
+        futures_queryset = futures_queryset.filter(central_bank__in=central_banks)
+    deleted_count = futures_queryset.count()
+    futures_queryset.delete()
+    return deleted_count
+
+
 def bulk_update_futures_prices(
     updates: List[BulkUpdateFuturesPricesItem],
 ) -> List[StirFuturesModel]:
