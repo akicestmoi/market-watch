@@ -25,6 +25,11 @@
                     Central Banks
                 </a>
             </li>
+            <li class="navbar-item">
+                <a href="{% url 'management' %}" class="navbar-link {% if request.resolver_match.url_name == 'management' %}active{% endif %}">
+                    Management
+                </a>
+            </li>
         </ul>
     </div>
 </nav>

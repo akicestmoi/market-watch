@@ -124,7 +124,7 @@ class GetMarketPriceView(BaseAPIView):
     @open_api(
         tags=[ApiTags.ASSET_PRICES],
         summary="Delete Market Prices",
-        description="Delete market prices based on optional filters. At least one of 'start_date', 'end_date', or 'short_names' must be provided.",
+        description="Delete market prices based on optional filters.",
         request_serializer=DeleteMarketPricesSerializer,
         response=OkOpenApiResponse(DeleteMarketPricesResponseSerializer),
         error_responses=[

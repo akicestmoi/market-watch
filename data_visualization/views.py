@@ -275,3 +275,8 @@ def central_banks_recap_view(request):
     if errors:
         context["error_messages"] = json.dumps(errors)
     return render(request, "data_visualization/central_banks_recap.html", context)
+
+
+def management_view(request):
+    """Management View."""
+    return render(request, "data_visualization/management.html")

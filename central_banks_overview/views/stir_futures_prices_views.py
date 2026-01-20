@@ -134,7 +134,7 @@ class ListStirFuturesPricesView(BaseAPIView):
     @open_api(
         tags=[ApiTags.CENTRAL_BANKS],
         summary="Delete STIR Futures Prices",
-        description="Delete STIR futures prices based on optional filters. At least one of 'start_date', 'end_date', or 'central_banks' must be provided.",
+        description="Delete STIR futures prices based on optional filters.",
         request_serializer=DeleteStirFuturesPricesSerializer,
         response=OkOpenApiResponse(DeleteStirFuturesPricesResponseSerializer),
         error_responses=[

@@ -58,7 +58,6 @@ def _get_data_from_insee(
     params = {
         "lang": "fr",
         "ordre": "antechronologique",
-        "transposition": "donneescolonne",
         "anneeDebut": "2010",
         "anneeFin": str(date.today().year),
         "revision": "sansrevisions",
@@ -85,10 +84,7 @@ def _get_data_from_insee(
             period=None, data_value=None, comment=f"Error reading ZIP content: {exc}"
         )
 
-    if (
-        "Libellé" not in df.columns
-        or "Période" not in "Période" not in df["Libellé"].values
-    ):
+    if "Libellé" not in df.columns or "Période" not in df["Libellé"].values:
         return ScrapingResult(
             period=None, data_value=None, comment="Data is not in the expected format."
         )

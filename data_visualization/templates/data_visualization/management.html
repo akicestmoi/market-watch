@@ -1,0 +1,108 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Management — API Endpoint Manager</title>
+    <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/management.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    {% include "data_visualization/_navbar.html" %}
+
+    <div class="management-container">
+        <div class="management-categories">
+            <!-- Market Data Section -->
+            <div class="category-section">
+                <h2 class="category-title">Market Data</h2>
+                <div class="endpoints-grid" id="market-data-endpoints">
+                    <!-- Endpoints will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Economic Data Section -->
+            <div class="category-section">
+                <h2 class="category-title">Economic Data</h2>
+                <div class="endpoints-grid" id="economic-data-endpoints">
+                    <!-- Endpoints will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Central Bank Data Section -->
+            <div class="category-section">
+                <h2 class="category-title">Central Bank Data</h2>
+                <div class="endpoints-grid" id="central-bank-data-endpoints">
+                    <!-- Endpoints will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Modal -->
+    <div class="modal-overlay" id="form-modal-overlay">
+        <div class="modal" id="form-modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="form-modal-title"></h3>
+                <button class="modal-close" onclick="closeFormModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="form-modal-body">
+                <!-- Form fields will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeFormModal()">Cancel</button>
+                <button class="btn-submit" onclick="confirmRequest()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="result-modal-overlay" id="result-modal-overlay">
+        <div class="result-modal" id="result-modal">
+            <div class="result-modal-header" id="result-modal-header">
+                <h3 class="result-modal-title" id="result-modal-title"></h3>
+                <button class="modal-close" onclick="closeResultModal()">&times;</button>
+            </div>
+            <div class="result-modal-body" id="result-modal-body">
+                <div class="result-modal-content" id="result-modal-content"></div>
+            </div>
+            <div class="result-modal-footer">
+                <button class="result-modal-btn" onclick="closeResultModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="loading-modal-overlay" id="loading-modal-overlay">
+        <div class="loading-modal">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Processing request...</p>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="delete-confirmation-modal-overlay" id="delete-confirmation-modal-overlay">
+        <div class="delete-confirmation-modal">
+            <div class="delete-confirmation-modal-header">
+                <h3 class="delete-confirmation-modal-title">⚠️ Confirm Delete Operation</h3>
+                <button class="modal-close" onclick="closeDeleteConfirmationModal()">&times;</button>
+            </div>
+            <div class="delete-confirmation-modal-body">
+                <p class="delete-warning-text">You are about to delete data. This action cannot be undone.</p>
+                <div class="delete-conditions" id="delete-conditions">
+                    <!-- Delete conditions will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="delete-confirmation-modal-footer">
+                <button class="btn-cancel" onclick="closeDeleteConfirmationModal()">Cancel</button>
+                <button class="btn-delete" onclick="executeDeleteRequest()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'data_visualization/js/management.js' %}"></script>
+</body>
+
+</html>
