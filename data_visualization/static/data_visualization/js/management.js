@@ -27,6 +27,53 @@ function sortEndpointsByMethod(endpoints) {
 
 // Management API Endpoint Configuration
 const ENDPOINTS = {
+    quickActions: {
+        "Common Operations": [
+            {
+                name: "Ingest Market Prices",
+                description: "Ingest market prices gathered from various sources for a specific date. This endpoint scrapes data from multiple sources and stores it in the database.",
+                method: "POST",
+                path: "/markets/prices/ingest",
+                body: [
+                    { name: "date", type: "date", required: true },
+                ],
+                query: null,
+            },
+            {
+                name: "Get Assets Without Prices",
+                description: "Get assets without prices.",
+                method: "GET",
+                path: "/markets/prices/get-assets-without-prices",
+                body: null,
+                query: [
+                    { name: "start_date", type: "date", required: false },
+                    { name: "end_date", type: "date", required: false },
+                    { name: "include_holidays", type: "checkbox", required: false },
+                ],
+            },
+            {
+                name: "Ingest STIR Futures Prices",
+                description: "Ingest STIR futures prices.",
+                method: "POST",
+                path: "/central-banks/stir-futures/ingest",
+                body: [
+                    { name: "date", type: "date", required: true },
+                ],
+                query: null,
+            },
+            {
+                name: "Ingest ESTR Price via PDF",
+                description: "Ingest ESTR price via PDF.",
+                method: "POST",
+                path: "/central-banks/stir-futures/ingest-estr-pdf",
+                body: [
+                    { name: "pdf_file", type: "file", required: true },
+                    { name: "date", type: "date", required: true },
+                ],
+                query: null,
+            },
+        ],
+    },
     marketData: {
         Asset: [
             {
@@ -63,16 +110,6 @@ const ENDPOINTS = {
         ],
         Prices: [
             {
-                name: "Ingest Market Prices",
-                description: "Ingest market prices gathered from various sources for a specific date. This endpoint scrapes data from multiple sources and stores it in the database.",
-                method: "POST",
-                path: "/markets/prices/ingest",
-                body: [
-                    { name: "date", type: "date", required: true },
-                ],
-                query: null,
-            },
-            {
                 name: "Batch Ingest Market Prices",
                 description: "Ingest market prices for specific assets over target periods. This endpoint scrapes historical data for multiple assets.",
                 method: "POST",
@@ -101,18 +138,6 @@ const ENDPOINTS = {
                 body: null,
                 query: [
                     { name: "date", type: "date", required: true },
-                ],
-            },
-            {
-                name: "Get Assets Without Prices",
-                description: "Get assets without prices.",
-                method: "GET",
-                path: "/markets/prices/get-assets-without-prices",
-                body: null,
-                query: [
-                    { name: "start_date", type: "date", required: false },
-                    { name: "end_date", type: "date", required: false },
-                    { name: "include_holidays", type: "checkbox", required: false },
                 ],
             },
             {
@@ -280,27 +305,6 @@ const ENDPOINTS = {
                 ],
             },
             {
-                name: "Ingest STIR Futures Prices",
-                description: "Ingest STIR futures prices.",
-                method: "POST",
-                path: "/central-banks/stir-futures/ingest",
-                body: [
-                    { name: "date", type: "date", required: true },
-                ],
-                query: null,
-            },
-            {
-                name: "Ingest ESTR Price via PDF",
-                description: "Ingest ESTR price via PDF.",
-                method: "POST",
-                path: "/central-banks/stir-futures/ingest-estr-pdf",
-                body: [
-                    { name: "pdf_file", type: "file", required: true },
-                    { name: "date", type: "date", required: true },
-                ],
-                query: null,
-            },
-            {
                 name: "Bulk Update STIR Futures Prices",
                 description: "Bulk update stir futures prices.",
                 method: "PATCH",
@@ -372,9 +376,43 @@ const endpointMap = new Map();
 let currentEndpointIndex = null;
 let pendingDeleteRequest = null; // Store delete request data for confirmation
 
+// Add Escape key listener to close modals
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape" || event.keyCode === 27) {
+        const formModal = document.getElementById("form-modal-overlay");
+        const resultModal = document.getElementById("result-modal-overlay");
+        const deleteConfirmationModal = document.getElementById("delete-confirmation-modal-overlay");
+        const loadingModal = document.getElementById("loading-modal-overlay");
+
+        // Close modals in order of priority (most specific first)
+        if (deleteConfirmationModal && deleteConfirmationModal.classList.contains("active")) {
+            closeDeleteConfirmationModal();
+        } else if (formModal && formModal.classList.contains("active")) {
+            closeFormModal();
+        } else if (resultModal && resultModal.classList.contains("active")) {
+            closeResultModal();
+        }
+        // Note: Loading modal is intentionally not closable with Escape
+    }
+});
+
 // Initialize the management interface
 document.addEventListener("DOMContentLoaded", function () {
     let globalIndex = 0;
+
+    // Render quick actions endpoints
+    const quickActionsContainer = document.getElementById("quick-actions-endpoints");
+    Object.entries(ENDPOINTS.quickActions).forEach(([subcategory, endpoints]) => {
+        const sortedEndpoints = sortEndpointsByMethod(endpoints);
+        const subcategorySection = createSubcategorySection(subcategory, sortedEndpoints, globalIndex, "quickActions");
+        quickActionsContainer.appendChild(subcategorySection.container);
+        sortedEndpoints.forEach((endpoint) => {
+            const card = createEndpointCard(endpoint, globalIndex, "quickActions");
+            subcategorySection.grid.appendChild(card);
+            endpointMap.set(globalIndex, { category: "quickActions", subcategory, endpoint });
+            globalIndex++;
+        });
+    });
 
     // Render market data endpoints
     const marketContainer = document.getElementById("market-data-endpoints");
@@ -464,6 +502,18 @@ function openFormModal(index) {
     modalTitle.textContent = endpoint.name;
     modalBody.innerHTML = createFormFields(endpoint, index);
 
+    // Attach event listeners to "Add" buttons after modal is populated
+    modalBody.querySelectorAll('.btn-add-element').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const fieldId = this.getAttribute('data-field-id');
+            const fieldName = this.getAttribute('data-field-name');
+            const elementStructureJson = this.getAttribute('data-element-structure');
+            const prefix = this.getAttribute('data-prefix');
+            const elementTitle = this.getAttribute('data-element-title') || 'Item';
+            addArrayElement(fieldId, fieldName, elementStructureJson, prefix, elementTitle);
+        });
+    });
+
     modal.classList.add("active");
 }
 
@@ -479,21 +529,21 @@ function createFormFields(endpoint, index) {
     // Query parameters
     if (endpoint.query && endpoint.query.length > 0) {
         endpoint.query.forEach((param) => {
-            html += createFormField(param, `query-${index}`, false);
+            html += createFormField(param, `query-${index}`, false, endpoint);
         });
     }
 
     // Body parameters
     if (endpoint.body && endpoint.body.length > 0) {
         endpoint.body.forEach((param) => {
-            html += createFormField(param, `body-${index}`, true);
+            html += createFormField(param, `body-${index}`, true, endpoint);
         });
     }
 
     return html || "<p>No parameters required for this endpoint.</p>";
 }
 
-function createFormField(param, prefix, isBody) {
+function createFormField(param, prefix, isBody, endpoint = null) {
     const fieldId = `${prefix}-${param.name}`;
     const required = param.required ? "required" : "";
     const formattedName = formatParameterName(param.name);
@@ -521,9 +571,30 @@ function createFormField(param, prefix, isBody) {
             </div>
         `;
     } else if (param.type === "json") {
-        inputHtml = `
-            <textarea id="${fieldId}" name="${param.name}" ${required} placeholder="${param.example || ''}" style="width: 100%; box-sizing: border-box;"></textarea>
-        `;
+        // Parse example to determine structure (array or object)
+        let jsonStructure = null;
+        if (param.example) {
+            try {
+                jsonStructure = JSON.parse(param.example);
+            } catch (e) {
+                // If example is not valid JSON, treat as simple text input
+                inputHtml = `
+                    <input type="text" id="${fieldId}" name="${param.name}" ${required} placeholder="${param.placeholder || param.example || 'Enter value'}" style="width: 100%; box-sizing: border-box;">
+                    ${param.example ? `<small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.85rem;">Example: ${param.example}</small>` : ''}
+                `;
+                return `
+                    <div class="form-group">
+                        <label for="${fieldId}">${formattedName} ${requiredText}</label>
+                        ${inputHtml}
+                    </div>
+                `;
+            }
+        }
+
+        // Generate dynamic JSON form based on structure
+        const elementTitle = getElementTitle(endpoint, param.name);
+        const jsonFormHtml = generateJsonFormField(fieldId, param.name, jsonStructure, prefix, required, requiredText, formattedName, elementTitle);
+        return jsonFormHtml;
     } else if (param.type === "file") {
         inputHtml = `
             <input type="file" id="${fieldId}" name="${param.name}" ${required} style="width: 100%; box-sizing: border-box;">
@@ -545,6 +616,232 @@ function createFormField(param, prefix, isBody) {
         </div>
     `;
 }
+
+function getElementTitle(endpoint, paramName) {
+    if (!endpoint) return "Item";
+
+    const endpointName = endpoint.name.toLowerCase();
+    const endpointDesc = (endpoint.description || "").toLowerCase();
+
+    // Determine title based on endpoint name/description
+    if (endpointName.includes("price") || endpointDesc.includes("price")) {
+        return "Price";
+    } else if (endpointName.includes("economic") || endpointDesc.includes("economic") || endpointName.includes("indicator")) {
+        return "Economic Data";
+    } else if (endpointName.includes("stir") || endpointDesc.includes("stir")) {
+        return "STIR Futures";
+    } else if (endpointName.includes("asset") || endpointDesc.includes("asset")) {
+        return "Asset";
+    } else if (endpointName.includes("central bank") || endpointDesc.includes("central bank")) {
+        return "Central Bank Data";
+    } else if (endpointName.includes("meeting") || endpointDesc.includes("meeting")) {
+        return "Meeting";
+    } else if (endpointName.includes("holiday") || endpointDesc.includes("holiday")) {
+        return "Holiday";
+    } else if (endpointName.includes("schedule") || endpointDesc.includes("schedule")) {
+        return "Schedule";
+    }
+
+    // Default: use generic "Item"
+    return "Item";
+}
+
+function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, required, requiredText, formattedName, elementTitle = "Item") {
+    if (Array.isArray(jsonStructure)) {
+        // Handle array: show each element with sub-fields and "Add new element" button
+        const containerId = `${fieldId}-container`;
+        const arrayIndex = 0; // Start with first element
+
+        let html = `
+            <div class="json-form-container" id="${containerId}" data-field-name="${fieldName}" data-structure-type="array">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">${formattedName} ${requiredText}</label>
+                <div class="json-array-items" id="${fieldId}-items">
+        `;
+
+        // Add first element if array has items
+        if (jsonStructure.length > 0) {
+            html += generateArrayElement(fieldId, fieldName, jsonStructure[0], 0, prefix, elementTitle);
+        } else {
+            // Empty array - add one empty element
+            html += generateArrayElement(fieldId, fieldName, {}, 0, prefix, elementTitle);
+        }
+
+        // Store element structure in data attribute to avoid JSON escaping issues
+        const elementStructureJson = JSON.stringify(jsonStructure[0] || {});
+        html += `
+                </div>
+                <button type="button" class="btn-submit btn-add-element"
+                        data-field-id="${fieldId}"
+                        data-field-name="${fieldName}"
+                        data-element-structure='${elementStructureJson.replace(/'/g, "&apos;")}'
+                        data-prefix="${prefix}"
+                        data-element-title="${elementTitle}"
+                        style="margin-top: 0.5rem;">
+                    Add
+                </button>
+            </div>
+        `;
+
+        return html;
+    } else if (jsonStructure && typeof jsonStructure === 'object') {
+        // Handle object: show all keys as form fields
+        return generateObjectFields(fieldId, fieldName, jsonStructure, prefix, required, requiredText, formattedName);
+    } else {
+        // Fallback: simple text input
+        return `
+            <div class="form-group">
+                <label for="${fieldId}">${formattedName} ${requiredText}</label>
+                <input type="text" id="${fieldId}" name="${fieldName}" ${required} placeholder="Enter JSON value" style="width: 100%; box-sizing: border-box;">
+            </div>
+        `;
+    }
+}
+
+function generateArrayElement(fieldId, fieldName, elementStructure, index, prefix, elementTitle = "Item") {
+    const elementId = `${fieldId}-item-${index}`;
+    let html = `
+        <div class="json-array-item" id="${elementId}" data-index="${index}" data-field-name="${fieldName}" style="border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 1rem; margin-bottom: 0.5rem; background-color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <strong style="color: #475569;">${elementTitle} ${index + 1}</strong>
+                <button type="button" class="btn-cancel" onclick="removeArrayElement('${elementId}')" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">
+                    Remove
+                </button>
+            </div>
+            <div class="json-object-fields">
+    `;
+
+    // Generate fields for each key in the element object
+    if (elementStructure && typeof elementStructure === 'object') {
+        Object.keys(elementStructure).forEach(key => {
+            const value = elementStructure[key];
+            html += generateFieldForValue(`${elementId}-${key}`, key, value, prefix, fieldName);
+        });
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    return html;
+}
+
+function generateObjectFields(fieldId, fieldName, objStructure, prefix, required, requiredText, formattedName) {
+    let html = `
+        <div class="json-form-container" id="${fieldId}-container" data-field-name="${fieldName}" data-structure-type="object">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">${formattedName} ${requiredText}</label>
+            <div class="json-object-fields" style="border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 1rem; background-color: #f8fafc;">
+    `;
+
+        Object.keys(objStructure).forEach(key => {
+            const value = objStructure[key];
+            html += generateFieldForValue(`${fieldId}-${key}`, key, value, prefix, fieldName);
+        });
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    return html;
+}
+
+function generateFieldForValue(fieldId, fieldName, value, prefix, baseFieldName = '') {
+    const formattedName = formatParameterName(fieldName);
+    let inputHtml = '';
+
+    if (Array.isArray(value)) {
+        // Nested array - create a simple text input for now (could be enhanced)
+        inputHtml = `
+            <input type="text" id="${fieldId}" name="${fieldName}" data-field-path="${fieldName}" placeholder='${JSON.stringify(value)}' style="width: 100%; box-sizing: border-box;">
+            <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.85rem;">Array: Enter comma-separated values or JSON array</small>
+        `;
+    } else if (value && typeof value === 'object') {
+        // Nested object - recursively generate fields
+        let nestedHtml = `
+            <div class="nested-object" data-nested-key="${fieldName}" style="border: 1px solid #e2e8f0; border-radius: 0.25rem; padding: 0.75rem; margin-top: 0.5rem; background-color: white;">
+                <strong style="color: #475569; display: block; margin-bottom: 0.5rem;">${formattedName}</strong>
+        `;
+
+        Object.keys(value).forEach(nestedKey => {
+            nestedHtml += generateFieldForValue(`${fieldId}-${nestedKey}`, nestedKey, value[nestedKey], prefix, baseFieldName);
+        });
+
+        nestedHtml += `</div>`;
+        return `
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="${fieldId}" style="display: block; margin-bottom: 0.25rem; font-weight: 500;">${formattedName}</label>
+                ${nestedHtml}
+            </div>
+        `;
+    } else {
+        // Simple value - determine input type
+        const inputType = typeof value === 'number' ? 'number' :
+                         (value && String(value).match(/^\d{4}-\d{2}-\d{2}/)) ? 'date' : 'text';
+
+        inputHtml = `
+            <input type="${inputType}" id="${fieldId}" name="${fieldName}" data-field-path="${fieldName}" value="${value || ''}" placeholder="${value || ''}" style="width: 100%; box-sizing: border-box;">
+        `;
+    }
+
+    return `
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="${fieldId}" style="display: block; margin-bottom: 0.25rem; font-weight: 500;">${formattedName}</label>
+            ${inputHtml}
+        </div>
+    `;
+}
+
+// Global function to add array element
+function addArrayElement(fieldId, fieldName, elementStructureJson, prefix, elementTitle = "Item") {
+    const itemsContainer = document.getElementById(`${fieldId}-items`);
+    if (!itemsContainer) {
+        console.error('Items container not found:', `${fieldId}-items`);
+        return;
+    }
+
+    // Parse the element structure from JSON string
+    let elementStructure;
+    try {
+        // Unescape HTML entities if needed
+        const unescaped = elementStructureJson.replace(/&apos;/g, "'").replace(/&#39;/g, "'");
+        elementStructure = JSON.parse(unescaped);
+    } catch (e) {
+        console.error('Error parsing element structure:', e, elementStructureJson);
+        elementStructure = {};
+    }
+
+    const existingItems = itemsContainer.querySelectorAll('.json-array-item');
+    const newIndex = existingItems.length;
+
+    const newElement = document.createElement('div');
+    newElement.innerHTML = generateArrayElement(fieldId, fieldName, elementStructure, newIndex, prefix, elementTitle);
+    const elementNode = newElement.firstElementChild;
+    if (elementNode) {
+        itemsContainer.appendChild(elementNode);
+    } else {
+        console.error('Failed to create array element');
+    }
+}
+
+// Make it available globally for onclick handlers (fallback)
+window.addArrayElement = addArrayElement;
+
+// Global function to remove array element
+window.removeArrayElement = function(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.remove();
+        // Re-index remaining elements
+        const container = element.closest('.json-array-items');
+        if (container) {
+            const items = container.querySelectorAll('.json-array-item');
+            items.forEach((item, index) => {
+                item.setAttribute('data-index', index);
+            });
+        }
+    }
+};
 
 async function confirmRequest() {
     if (currentEndpointIndex === null) return;
@@ -592,7 +889,7 @@ async function confirmRequest() {
         if (endpoint.body) {
             const formData = new FormData();
             let hasBodyData = false;
-            let jsonBody = null;
+            const bodyObj = {};
 
             endpoint.body.forEach((param) => {
                 const input = document.getElementById(`body-${index}-${param.name}`);
@@ -603,44 +900,182 @@ async function confirmRequest() {
                             hasBodyData = true;
                         }
                     } else if (param.type === "json") {
-                        if (input.value) {
-                            try {
-                                jsonBody = JSON.parse(input.value);
+                        // Reconstruct JSON from form fields
+                        const jsonContainer = document.getElementById(`body-${index}-${param.name}-container`);
+                        if (jsonContainer) {
+                            const structureType = jsonContainer.getAttribute('data-structure-type');
+                            if (structureType === 'array') {
+                                bodyObj[param.name] = collectArrayValues(jsonContainer, param.name);
                                 hasBodyData = true;
-                            } catch (e) {
-                                throw new Error(`Invalid JSON: ${e.message}`);
+                            } else if (structureType === 'object') {
+                                bodyObj[param.name] = collectObjectValues(jsonContainer, param.name);
+                                hasBodyData = true;
+                            }
+                        } else {
+                            // Fallback: try to parse as JSON from input value
+                            const input = document.getElementById(`body-${index}-${param.name}`);
+                            if (input && input.value) {
+                                try {
+                                    const parsed = JSON.parse(input.value);
+                                    bodyObj[param.name] = parsed;
+                                    hasBodyData = true;
+                                } catch (e) {
+                                    bodyObj[param.name] = input.value;
+                                    hasBodyData = true;
+                                }
                             }
                         }
                     } else if (param.type === "checkbox") {
                         if (input.checked) {
-                            formData.append(param.name, "true");
+                            bodyObj[param.name] = true;
+                            hasBodyData = true;
+                        } else {
+                            bodyObj[param.name] = false;
+                        }
+                    } else if (param.type === "number") {
+                        if (input.value) {
+                            const numValue = parseFloat(input.value);
+                            if (!isNaN(numValue)) {
+                                bodyObj[param.name] = numValue;
+                                hasBodyData = true;
+                            } else {
+                                bodyObj[param.name] = input.value;
+                                hasBodyData = true;
+                            }
+                        }
+                    } else if (param.type === "date") {
+                        if (input.value) {
+                            bodyObj[param.name] = input.value;
                             hasBodyData = true;
                         }
                     } else if (input.value) {
-                        formData.append(param.name, input.value);
+                        bodyObj[param.name] = input.value;
                         hasBodyData = true;
                     }
                 }
             });
 
-            if (jsonBody !== null) {
-                options.headers["Content-Type"] = "application/json";
-                options.body = JSON.stringify(jsonBody);
-            } else if (hasBodyData) {
+            if (hasBodyData) {
                 // Check if we have file uploads
                 const hasFiles = Array.from(formData.entries()).some(([key, value]) => value instanceof File);
                 if (hasFiles) {
+                    // If we have files, merge bodyObj into formData
+                    Object.keys(bodyObj).forEach(key => {
+                        if (typeof bodyObj[key] === 'object') {
+                            formData.append(key, JSON.stringify(bodyObj[key]));
+                        } else {
+                            formData.append(key, bodyObj[key]);
+                        }
+                    });
                     options.body = formData;
                 } else {
-                    // Convert FormData to JSON if no files
-                    const bodyObj = {};
-                    formData.forEach((value, key) => {
-                        bodyObj[key] = value;
-                    });
+                    // No files, send as JSON
                     options.headers["Content-Type"] = "application/json";
                     options.body = JSON.stringify(bodyObj);
                 }
             }
+        }
+    }
+
+    // Helper functions to collect JSON values from form
+    function collectArrayValues(container, fieldName) {
+        const items = container.querySelectorAll('.json-array-item');
+        const array = [];
+
+        items.forEach((item) => {
+            const itemData = collectObjectValues(item);
+            // Only add if item has at least one non-empty value
+            if (Object.keys(itemData).length > 0 && Object.values(itemData).some(v => v !== '' && v !== null && v !== undefined)) {
+                array.push(itemData);
+            }
+        });
+
+        return array;
+    }
+
+    function collectObjectValues(container) {
+        const obj = {};
+        const inputs = container.querySelectorAll('input:not([type="file"]), select, textarea');
+
+        inputs.forEach(input => {
+            if (input.type === 'file') {
+                return; // Skip file inputs
+            }
+
+            // Use data-field-path attribute if available, otherwise parse from ID
+            let fieldPath = [];
+            if (input.hasAttribute('data-field-path')) {
+                fieldPath = [input.getAttribute('data-field-path')];
+            } else {
+                // Parse from ID: find the field name (last part after all prefixes)
+                const fullId = input.id;
+                const parts = fullId.split('-');
+                // Find the actual field name - it's typically the last part, but we need to handle nested objects
+                // Look for nested-object containers to determine hierarchy
+                let nestedKey = null;
+                const nestedObj = input.closest('.nested-object');
+                if (nestedObj) {
+                    nestedKey = nestedObj.getAttribute('data-nested-key');
+                }
+
+                // Get the direct field name (last part of ID)
+                const directFieldName = parts[parts.length - 1];
+
+                if (nestedKey) {
+                    fieldPath = [nestedKey, directFieldName];
+                } else {
+                    fieldPath = [directFieldName];
+                }
+            }
+
+            if (fieldPath.length === 0) return;
+
+            // Get value
+            let value = null;
+            if (input.type === 'checkbox') {
+                value = input.checked;
+            } else if (input.type === 'number') {
+                value = input.value ? parseFloat(input.value) : null;
+            } else if (input.type === 'date') {
+                value = input.value || null;
+            } else if (input.tagName === 'SELECT') {
+                value = input.value || null;
+            } else {
+                // For text inputs, try to parse as JSON if it looks like JSON
+                const textValue = input.value.trim();
+                if (textValue.startsWith('[') || textValue.startsWith('{')) {
+                    try {
+                        value = JSON.parse(textValue);
+                    } catch (e) {
+                        value = textValue;
+                    }
+                } else if (textValue.includes(',') && !textValue.includes('{') && !textValue.includes('[')) {
+                    // Comma-separated values - treat as array
+                    value = textValue.split(',').map(v => v.trim()).filter(v => v);
+                } else {
+                    value = textValue || null;
+                }
+            }
+
+            // Only add non-empty values
+            if (value !== null && value !== '' && value !== undefined) {
+                // Set nested value using field path
+                setNestedValue(obj, fieldPath, value);
+            }
+        });
+
+        return obj;
+    }
+
+    function setNestedValue(obj, path, value) {
+        if (path.length === 1) {
+            obj[path[0]] = value;
+        } else {
+            const key = path[0];
+            if (!obj[key] || typeof obj[key] !== 'object' || Array.isArray(obj[key])) {
+                obj[key] = {};
+            }
+            setNestedValue(obj[key], path.slice(1), value);
         }
     }
 
