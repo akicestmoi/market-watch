@@ -89,7 +89,7 @@
 
   "[html]": {
     "editor.defaultFormatter": "vscode.html-language-features",
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "editor.tabSize": 2
   },
 

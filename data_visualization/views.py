@@ -5,16 +5,22 @@ from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
 import data_visualization.services.central_bank_recap_services as central_bank_recap_services
+import data_visualization.services.database_management_services as database_management_services
+import data_visualization.services.economic_chart_services as economic_chart_services
 import data_visualization.services.economic_recap_services as economic_recap_services
 import data_visualization.services.market_chart_services as market_chart_services
 import data_visualization.services.market_recap_services as market_recap_services
 import market_overview.services.market_data_services as market_data_services
 from central_banks_overview.models import CentralBankChoices
+from data_visualization.services.economic_chart_services import EconomicChartsFrontData
 from data_visualization.services.market_chart_services import (
     ChartDuration,
     MarketChartsFrontData,
 )
-from economic_overview.models import EconomicDataLocationChoices
+from economic_overview.models import (
+    EconomicDataCategoryChoices,
+    EconomicDataLocationChoices,
+)
 from market_overview.models import AssetClassChoices, LocationChoices
 
 
@@ -182,7 +188,9 @@ def market_charts_view(request):
 
 def economic_recap_view(request):
     """Economic Overview View."""
-    locations = [loc for loc in EconomicDataLocationChoices.ordered() if loc != "EU"]
+    locations = [
+        loc.value for loc in EconomicDataLocationChoices.ordered() if loc.value != "EU"
+    ]
     economic_data = economic_recap_services.get_economic_recap_data(locations)
     upcoming_events = economic_recap_services.get_economic_recap_upcoming_events()
     context = {
@@ -191,6 +199,77 @@ def economic_recap_view(request):
         "upcoming_events": upcoming_events,
     }
     return render(request, "data_visualization/economic_recap.html", context)
+
+
+def economic_charts_view(request):
+    """Economic Charts View."""
+    # Default Values
+    default_values = {
+        "zone": str(EconomicDataLocationChoices.US.label),
+        "us_growth_indicator": "",
+        "us_inflation_indicator": "",
+        "us_government_indicator": "",
+        "us_labour_indicator": "",
+        "us_housing_indicator": "",
+        "us_production_indicator": "",
+        "us_confidence_indicator": "",
+        "us_sales_indicator": "",
+        "fr_growth_indicator": "",
+        "fr_inflation_indicator": "",
+        "fr_government_indicator": "",
+        "fr_labour_indicator": "",
+        "fr_housing_indicator": "",
+        "fr_production_indicator": "",
+        "fr_confidence_indicator": "Aggregate Business Confidence",
+        "fr_sales_indicator": "",
+        "jp_growth_indicator": "",
+        "jp_inflation_indicator": "",
+        "jp_government_indicator": "",
+        "jp_labour_indicator": "",
+        "jp_housing_indicator": "",
+        "jp_production_indicator": "",
+        "jp_confidence_indicator": "",
+        "jp_sales_indicator": "",
+    }
+
+    # Get Data from Front
+    front_data = {
+        key: request.GET.get(key, default_values[key]) for key in default_values.keys()
+    }
+    errors = {}
+
+    # Return Selected Values for Front/Back Interaction
+    selected_values = {**front_data}
+    selected_zone = selected_values.get("zone", default_values["zone"])
+
+    # Dropdown values
+    dropdown_values = economic_chart_services.get_economic_charts_dropdown_values(
+        selected_zone
+    )
+
+    # Economic data
+    selected_indicators_by_category = (
+        economic_chart_services.get_selected_indicators_by_category(
+            selected_zone,
+            EconomicChartsFrontData(**front_data),
+        )
+    )
+    economic_data = economic_chart_services.get_economic_charts_data(
+        selected_zone, selected_indicators_by_category
+    )
+
+    context = {
+        "zone": selected_zone,
+        "dropdown_values": json.dumps(dropdown_values, default=str),
+        "economic_data": json.dumps(economic_data, default=str),
+        "categories": json.dumps(
+            [str(category.label) for category in EconomicDataCategoryChoices.ordered()]
+        ),
+        "selected_values": json.dumps(selected_values),
+    }
+    if errors:
+        context["error_messages"] = json.dumps(errors)
+    return render(request, "data_visualization/economic_charts.html", context)
 
 
 def central_banks_recap_view(request):
@@ -279,4 +358,8 @@ def central_banks_recap_view(request):
 
 def management_view(request):
     """Management View."""
-    return render(request, "data_visualization/management.html")
+    database_info = database_management_services.get_database_information()
+    context = {
+        "database_info": json.dumps(database_info, default=str),
+    }
+    return render(request, "data_visualization/management.html", context)

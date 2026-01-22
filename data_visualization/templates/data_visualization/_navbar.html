@@ -21,6 +21,11 @@
                 </a>
             </li>
             <li class="navbar-item">
+                <a href="{% url 'economic-charts-view' %}" class="navbar-link {% if request.resolver_match.url_name == 'economic-charts-view' %}active{% endif %}">
+                    Economic Charts
+                </a>
+            </li>
+            <li class="navbar-item">
                 <a href="{% url 'central-banks-recap' %}" class="navbar-link {% if request.resolver_match.url_name == 'central-banks-recap' %}active{% endif %}">
                     Central Banks
                 </a>

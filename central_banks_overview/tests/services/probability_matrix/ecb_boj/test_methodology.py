@@ -350,7 +350,7 @@ class TestECBStep4InverseDistanceWeighting(TestCase):
     def test_inverse_distance_weighting_concrete_scenario(self):
         """
         GIVEN concrete scenario: base_rate=4.0%, market_price=96.0,
-             meetings on 2024-03-15 and 2024-04-15, accrual period 2024-03-01 to 2024-05-31
+            meetings on 2024-03-15 and 2024-04-15, accrual 2024-03-01 to 2024-05-31
         WHEN applying inverse distance weighting
         THEN probabilities for each scenario are hardcoded expected values
         """
@@ -545,7 +545,7 @@ class TestECBStep5AggregateIndividualMeetingProbabilities(TestCase):
     def test_marginalization_concrete_scenario(self):
         """
         GIVEN concrete scenario: base_rate=4.0%, market_price=96.0,
-             meetings on 2024-03-15 and 2024-04-15, accrual period 2024-03-01 to 2024-05-31
+            meetings on 2024-03-15 and 2024-04-15, accrual 2024-03-01 to 2024-05-31
         WHEN aggregating individual meeting probabilities
         THEN probabilities for each meeting and step are hardcoded expected values
         """

@@ -1454,8 +1454,8 @@ class TestDeleteMarketPricesView(TestCase):
             "message": "Market prices successfully deleted.",
             "deleted_count": 3,
         }
-        assert MarketPriceModel.objects.filter(id=self.price1.id).exists()
-        assert MarketPriceModel.objects.filter(id=self.price4.id).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price1.pk).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price4.pk).exists()
         assert MarketPriceModel.objects.count() == 2
 
     def test_delete_market_prices_by_end_date(self):
@@ -1472,7 +1472,7 @@ class TestDeleteMarketPricesView(TestCase):
             "message": "Market prices successfully deleted.",
             "deleted_count": 4,
         }
-        assert MarketPriceModel.objects.filter(id=self.price3.id).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price3.pk).exists()
         assert MarketPriceModel.objects.count() == 1
 
     def test_delete_market_prices_by_short_names(self):
@@ -1489,8 +1489,8 @@ class TestDeleteMarketPricesView(TestCase):
             "message": "Market prices successfully deleted.",
             "deleted_count": 3,
         }
-        assert MarketPriceModel.objects.filter(id=self.price4.id).exists()
-        assert MarketPriceModel.objects.filter(id=self.price5.id).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price4.pk).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price5.pk).exists()
         assert MarketPriceModel.objects.count() == 2
 
     def test_delete_market_prices_by_multiple_short_names(self):
@@ -1525,7 +1525,7 @@ class TestDeleteMarketPricesView(TestCase):
             "message": "Market prices successfully deleted.",
             "deleted_count": 4,
         }
-        assert MarketPriceModel.objects.filter(id=self.price3.id).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price3.pk).exists()
         assert MarketPriceModel.objects.count() == 1
 
     def test_delete_market_prices_by_all_filters(self):
@@ -1542,9 +1542,9 @@ class TestDeleteMarketPricesView(TestCase):
             "message": "Market prices successfully deleted.",
             "deleted_count": 2,
         }
-        assert MarketPriceModel.objects.filter(id=self.price3.id).exists()
-        assert MarketPriceModel.objects.filter(id=self.price4.id).exists()
-        assert MarketPriceModel.objects.filter(id=self.price5.id).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price3.pk).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price4.pk).exists()
+        assert MarketPriceModel.objects.filter(pk=self.price5.pk).exists()
         assert MarketPriceModel.objects.count() == 3
 
     def test_delete_market_prices_no_parameters(self):

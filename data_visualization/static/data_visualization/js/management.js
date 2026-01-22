@@ -396,8 +396,113 @@ document.addEventListener("keydown", function(event) {
     }
 });
 
+function renderDatabaseInformation() {
+    const container = document.getElementById("database-info-container");
+    if (!container) return;
+
+    const databaseInfo = window.databaseInfoJSON || [];
+
+    if (databaseInfo.length === 0) {
+        container.innerHTML = "<p>No database information available.</p>";
+        return;
+    }
+
+    // Calculate totals
+    const totalCount = databaseInfo.reduce((sum, table) => sum + (table.count || 0), 0);
+    const totalSizeBytes = databaseInfo.reduce((sum, table) => sum + (table.size_bytes || 0), 0);
+
+    // Format total size (we'll get it from the backend or calculate)
+    // For now, we'll sum the size_bytes and format it
+    let totalSizeStr = "0 bytes";
+    if (totalSizeBytes > 0) {
+        // Simple formatting (could be improved)
+        if (totalSizeBytes < 1024) {
+            totalSizeStr = `${totalSizeBytes} bytes`;
+        } else if (totalSizeBytes < 1024 * 1024) {
+            totalSizeStr = `${(totalSizeBytes / 1024).toFixed(2)} kB`;
+        } else if (totalSizeBytes < 1024 * 1024 * 1024) {
+            totalSizeStr = `${(totalSizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+        } else {
+            totalSizeStr = `${(totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+        }
+    }
+
+    // Determine how many rows to show (top 5 + total)
+    const showAll = container.dataset.expanded === "true";
+    const rowsToShow = showAll ? databaseInfo.length : Math.min(5, databaseInfo.length);
+
+    // Create table
+    let html = `
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background-color: white; border-radius: 0.5rem; overflow: hidden;">
+                <thead>
+                    <tr style="background-color: #3b82f6; color: white;">
+                        <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 600;">Table Name</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right; font-weight: 600;">Number of Elements</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right; font-weight: 600;">Size</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    // Show top rows
+    for (let i = 0; i < rowsToShow; i++) {
+        const table = databaseInfo[i];
+        const rowClass = i % 2 === 0 ? "background-color: #f8fafc;" : "background-color: white;";
+        html += `
+            <tr style="${rowClass}">
+                <td style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem;">${table.display_name || table.name}</td>
+                <td style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0; text-align: right;">${(table.count || 0).toLocaleString()}</td>
+                <td style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0; text-align: right;">${table.size || "Unknown"}</td>
+            </tr>
+        `;
+    }
+
+    // Add total row
+    html += `
+            <tr style="background-color: #e0f2fe; font-weight: 600; border-top: 2px solid #3b82f6;">
+                <td style="padding: 0.75rem 1rem; font-size: 0.9rem;">Total</td>
+                <td style="padding: 0.75rem 1rem; text-align: right;">${totalCount.toLocaleString()}</td>
+                <td style="padding: 0.75rem 1rem; text-align: right;">${totalSizeStr}</td>
+            </tr>
+        </tbody>
+    </table>
+    `;
+
+    // Add expand/collapse button if there are more than 5 tables
+    if (databaseInfo.length > 5) {
+        html += `
+            <button type="button" class="btn-submit" onclick="toggleDatabaseTable()" style="margin-top: 1rem;">
+                ${showAll ? "Collapse" : "Expand"}
+            </button>
+        `;
+    }
+
+    html += `</div>`;
+
+    container.innerHTML = html;
+}
+
+function toggleDatabaseTable() {
+    const container = document.getElementById("database-info-container");
+    if (!container) return;
+
+    // Toggle expanded state
+    const isExpanded = container.dataset.expanded === "true";
+    container.dataset.expanded = (!isExpanded).toString();
+
+    // Re-render
+    renderDatabaseInformation();
+}
+
+// Make it available globally
+window.toggleDatabaseTable = toggleDatabaseTable;
+
 // Initialize the management interface
 document.addEventListener("DOMContentLoaded", function () {
+    // Render database information
+    renderDatabaseInformation();
+
     let globalIndex = 0;
 
     // Render quick actions endpoints

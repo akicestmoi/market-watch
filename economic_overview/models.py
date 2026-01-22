@@ -15,7 +15,7 @@ class EconomicDataLocationChoices(models.TextChoices):
     JP = "JP", _("Japan")
 
     @classmethod
-    def ordered(cls) -> List[str]:
+    def ordered(cls) -> List["EconomicDataLocationChoices"]:
         """Ordered list of economic data location choices."""
         order = ["US", "EU", "FR", "JP"]
         return [cls[value] for value in order]
@@ -39,10 +39,9 @@ class EconomicDataCategoryChoices(models.TextChoices):
     PRODUCTION = "PRODUCTION", _("Production")
     CONFIDENCE = "CONFIDENCE", _("Confidence")
     SALES = "SALES", _("Sales")
-    CENTRAL_BANKS = "CENTRAL_BANKS", _("Central Banks")
 
     @classmethod
-    def ordered(cls) -> List[str]:
+    def ordered(cls) -> List["EconomicDataCategoryChoices"]:
         """Ordered list of economic data category choices."""
         order = [
             "GROWTH",
@@ -53,7 +52,6 @@ class EconomicDataCategoryChoices(models.TextChoices):
             "PRODUCTION",
             "CONFIDENCE",
             "SALES",
-            "CENTRAL_BANKS",
         ]
         return [cls[value] for value in order]
 

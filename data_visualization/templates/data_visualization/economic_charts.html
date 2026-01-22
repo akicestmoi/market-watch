@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Economic Charts</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS -->
+    <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/economic_charts.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/error_modal.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    {% include "data_visualization/_navbar.html" %}
+    <div class="header">
+        <div class="header-form">
+            <div class="zone-section">
+                <label for="zone-buttons" class="zone-label">Zone:</label>
+                <div class="zone-buttons" id="zone-buttons">
+                    <button class="zone-btn" data-zone="US">US</button>
+                    <button class="zone-btn" data-zone="FR">FR</button>
+                    <button class="zone-btn" data-zone="JP">JP</button>
+                </div>
+            </div>
+            <form method="get">
+                <input type="hidden" id="zone" name="zone" value="{{ zone }}">
+            </form>
+        </div>
+    </div>
+
+    <!-- Chart Grid -->
+    <div class="chart-grid" id="chart-grid">
+        <!-- Charts will be populated by JavaScript -->
+    </div>
+
+    <script>
+        window.dropdownValuesJSON = {{ dropdown_values | safe }};
+        window.economicDataJSON = {{ economic_data | safe }};
+        window.categoriesJSON = {{ categories | safe }};
+        window.selectedValuesJSON = {{ selected_values | safe }};
+        window.currentZone = "{{ zone }}";
+    </script>
+    <script src="{% static 'data_visualization/js/errors.js' %}"></script>
+    {% if error_messages %}
+    <script>
+        window.errorMessages = {{ error_messages|safe }};
+    </script>
+    {% endif %}
+    <script src="{% static 'data_visualization/js/economic_charts.js' %}"></script>
+
+</body>
+
+</html>

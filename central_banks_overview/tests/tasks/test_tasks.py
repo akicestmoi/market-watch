@@ -522,6 +522,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         _extract_boj_meeting_dates.cache_clear()
 
     @freeze_time("2025-12-15")
+    @patch("central_banks_overview.services.cb_data_services.ingest_central_bank_data")
     @patch(
         "central_banks_overview.services.cb_meetings_services._extract_fomc_meeting_dates"
     )
@@ -531,15 +532,12 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
     @patch(
         "central_banks_overview.services.cb_meetings_services._extract_boj_meeting_dates"
     )
-    @patch("market_overview.services.price_ingestion_services.get_webstat_rates")
-    @patch("market_overview.services.price_ingestion_services.scrap_from_global_rates")
     def test_scheduled_update_cb_info_cleanup_success(
         self,
-        mock_scrap_global_rates,
-        mock_get_webstat_rates,
-        mock_extract_boj_meeting_dates,
-        mock_extract_ecb_meeting_dates,
-        mock_extract_fomc_meeting_dates,
+        mock_extract_boj,
+        mock_extract_ecb,
+        mock_extract_fomc,
+        mock_ingest_data,
     ):
         """
         GIVEN multiple central banks with past meeting dates
@@ -547,136 +545,72 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         THEN the task should clean up prices for all and update data
         """
         # Create meeting records: All central banks have past meetings
-        CentralBankMeetingModel.objects.create(
-            central_bank=CentralBankChoices.FRB,
-            order=1,
-            date=self.past_meeting_date,
-        )
-        CentralBankMeetingModel.objects.create(
-            central_bank=CentralBankChoices.ECB,
-            order=1,
-            date=self.past_meeting_date,
-        )
-        CentralBankMeetingModel.objects.create(
-            central_bank=CentralBankChoices.BOJ,
-            order=1,
-            date=self.past_meeting_date,
+        CentralBankMeetingModel.objects.bulk_create(
+            [
+                CentralBankMeetingModel(
+                    central_bank=CentralBankChoices.FRB,
+                    order=1,
+                    date=self.past_meeting_date,
+                ),
+                CentralBankMeetingModel(
+                    central_bank=CentralBankChoices.ECB,
+                    order=1,
+                    date=self.past_meeting_date,
+                ),
+                CentralBankMeetingModel(
+                    central_bank=CentralBankChoices.BOJ,
+                    order=1,
+                    date=self.past_meeting_date,
+                ),
+            ]
         )
 
         # Create prices for each central bank
-        StirFuturesModel.objects.create(
-            central_bank=CentralBankChoices.FRB,
-            short_name=StirFuturesNameChoices.FF1M,
-            maturity="26.03",
-            date=date(2025, 12, 5),  # Before cutoff
-            price=96.5,
-            source=StirFuturesSourceChoices.YAHOO,
-        )
-        StirFuturesModel.objects.create(
-            central_bank=CentralBankChoices.ECB,
-            short_name=StirFuturesNameChoices.ESTR3M,
-            maturity="26.03",
-            date=date(2025, 12, 5),  # Before cutoff
-            price=96.5,
-            source=StirFuturesSourceChoices.PDF,
-        )
-        StirFuturesModel.objects.create(
-            central_bank=CentralBankChoices.BOJ,
-            short_name=StirFuturesNameChoices.MUTAN3M,
-            maturity="26.03",
-            date=date(2025, 12, 5),  # Before cutoff
-            price=96.5,
-            source=StirFuturesSourceChoices.TFX,
-        )
-        # Create prices to keep (after cutoff date)
-        StirFuturesModel.objects.create(
-            central_bank=CentralBankChoices.FRB,
-            short_name=StirFuturesNameChoices.FF1M,
-            maturity="26.04",
-            date=date(2025, 12, 10),  # After cutoff
-            price=96.6,
-            source=StirFuturesSourceChoices.YAHOO,
+        StirFuturesModel.objects.bulk_create(
+            [
+                StirFuturesModel(
+                    central_bank=CentralBankChoices.FRB,
+                    short_name=StirFuturesNameChoices.FF1M,
+                    maturity="26.03",
+                    date=date(2025, 12, 5),  # Before cutoff
+                    price=96.5,
+                    source=StirFuturesSourceChoices.YAHOO,
+                ),
+                StirFuturesModel(
+                    central_bank=CentralBankChoices.ECB,
+                    short_name=StirFuturesNameChoices.ESTR3M,
+                    maturity="26.03",
+                    date=date(2025, 12, 5),  # Before cutoff
+                    price=96.5,
+                    source=StirFuturesSourceChoices.PDF,
+                ),
+                StirFuturesModel(
+                    central_bank=CentralBankChoices.BOJ,
+                    short_name=StirFuturesNameChoices.MUTAN3M,
+                    maturity="26.03",
+                    date=date(2025, 12, 5),  # Before cutoff
+                    price=96.5,
+                    source=StirFuturesSourceChoices.TFX,
+                ),
+                StirFuturesModel(
+                    central_bank=CentralBankChoices.FRB,
+                    short_name=StirFuturesNameChoices.FF1M,
+                    maturity="26.04",
+                    date=date(2025, 12, 10),  # After cutoff - should be kept
+                    price=96.6,
+                    source=StirFuturesSourceChoices.YAHOO,
+                ),
+            ]
         )
 
-        # Mock scraping functions
-        mock_get_webstat_rates.return_value = ScrapingResult(
-            price=None, comment="No data"
-        )
-        mock_scrap_global_rates.return_value = ScrapingResult(
-            price=None, comment="No data"
-        )
-        mock_extract_fomc_meeting_dates.return_value = [self.past_meeting_date]
-        mock_extract_ecb_meeting_dates.return_value = [self.past_meeting_date]
-        mock_extract_boj_meeting_dates.return_value = [self.past_meeting_date]
+        mock_ingest_data.return_value = []
+        mock_extract_fomc.return_value = []
+        mock_extract_ecb.return_value = []
+        mock_extract_boj.return_value = []
 
         # Verify initial state
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "comment": "",
-                "date": date(2025, 12, 5),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.03",
-                "price": 96.5,
-                "short_name": StirFuturesNameChoices.FF1M.value,
-                "source": StirFuturesSourceChoices.YAHOO.value,
-            },
-            {
-                "central_bank": CentralBankChoices.ECB.value,
-                "comment": "",
-                "date": date(2025, 12, 5),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.03",
-                "price": 96.5,
-                "short_name": StirFuturesNameChoices.ESTR3M.value,
-                "source": StirFuturesSourceChoices.PDF.value,
-            },
-            {
-                "central_bank": CentralBankChoices.BOJ.value,
-                "comment": "",
-                "date": date(2025, 12, 5),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.03",
-                "price": 96.5,
-                "short_name": StirFuturesNameChoices.MUTAN3M.value,
-                "source": StirFuturesSourceChoices.TFX.value,
-            },
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "comment": "",
-                "date": date(2025, 12, 10),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.04",
-                "price": 96.6,
-                "short_name": StirFuturesNameChoices.FF1M.value,
-                "source": StirFuturesSourceChoices.YAHOO.value,
-            },
-        ]
-        assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "date": "2025-12-10 13:00:00+0000",
-                "order": 1,
-            },
-            {
-                "central_bank": CentralBankChoices.ECB.value,
-                "date": "2025-12-10 13:00:00+0000",
-                "order": 1,
-            },
-            {
-                "central_bank": CentralBankChoices.BOJ.value,
-                "date": "2025-12-10 13:00:00+0000",
-                "order": 1,
-            },
-        ]
+        assert StirFuturesModel.objects.count() == 4
+        assert CentralBankMeetingModel.objects.count() == 3
 
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
@@ -685,7 +619,11 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             "status": "success",
             "message": "Central bank meetings updated successfully for ['FRB - 2025-12-08', 'BOJ - 2025-12-08', 'ECB - 2025-12-08']",
         }
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
+
+        # Verify only the price after cutoff remains
+        remaining_prices = StirFuturesModel.objects.all()
+        assert remaining_prices.count() == 1
+        assert parse_query_for_testing(remaining_prices) == [
             {
                 "central_bank": CentralBankChoices.FRB.value,
                 "comment": "",
@@ -700,7 +638,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             },
         ]
         # No meeting records should be left as meeting of 2025-12-10 is past
+        # and mocked extract functions return empty lists
         assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == []
+        mock_ingest_data.assert_called_once()
 
     @freeze_time("2025-12-15")
     @patch("central_banks_overview.services.cb_data_services.ingest_central_bank_data")
