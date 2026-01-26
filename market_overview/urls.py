@@ -15,6 +15,7 @@ from market_overview.views.price_views import (
     GetMarketPriceView,
     IngestMarketPricesView,
     ListMarketPricesView,
+    MarkAsHolidayView,
 )
 
 urlpatterns = [
@@ -32,6 +33,7 @@ urlpatterns = [
     path("prices/bulk-update", BulkUpdateAssetsPricesView.as_view()),
     path("prices/bulk-update-from-csv", CsvBulkUpdateAssetsPricesView.as_view()),
     path("prices/get-price-update-logs", GetPriceUpdateLogsView.as_view()),
+    path("prices/mark-as-holiday", MarkAsHolidayView.as_view()),
     path("holidays/ingest", IngestHolidaysView.as_view()),
     path("holidays", HolidaysDetailsView.as_view()),
 ]

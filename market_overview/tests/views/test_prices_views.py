@@ -1573,3 +1573,210 @@ class TestDeleteMarketPricesView(TestCase):
             "deleted_count": 0,
         }
         assert MarketPriceModel.objects.count() == 5
+
+
+class TestMarkAsHolidayView(TestCase):
+    """Test cases for Mark As Holiday View."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        self.base_url = "/markets/prices/mark-as-holiday"
+        self.asset1 = AssetModel.objects.create(
+            short_name="TEST1",
+            full_name="Test Asset 1",
+            asset_id=1,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+        )
+        self.asset2 = AssetModel.objects.create(
+            short_name="TEST2",
+            full_name="Test Asset 2",
+            asset_id=2,
+            asset_class=AssetClassChoices.STOCKS,
+            asset_type=AssetTypeChoices.EQUITY_INDEX,
+        )
+        self.date1 = date(2025, 1, 15)
+        self.date2 = date(2025, 2, 15)
+
+        # Create market prices
+        self.price1 = MarketPriceModel.objects.create(
+            asset=self.asset1,
+            date=self.date1,
+            price=100.0,
+        )
+        self.price2 = MarketPriceModel.objects.create(
+            asset=self.asset1,
+            date=self.date2,
+            price=110.0,
+        )
+        self.price3 = MarketPriceModel.objects.create(
+            asset=self.asset2,
+            date=self.date1,
+            price=200.0,
+        )
+
+    def test_mark_as_holiday_success_single_item(self):
+        """
+        GIVEN market prices exist
+        WHEN marking a single price as holiday
+        THEN the price is marked as holiday with correct comment
+        """
+        response = self.client.post(
+            self.base_url,
+            [{"short_name": "TEST1", "date": self.date1.isoformat()}],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Market prices marked as holiday.",
+            "updated_count": 1,
+            "not_found": [],
+        }
+        self.price1.refresh_from_db()
+        assert self.price1.comment == SpecialComment.BANK_HOLIDAY
+        assert self.price1.price is None
+
+    def test_mark_as_holiday_success_multiple_items(self):
+        """
+        GIVEN market prices exist for multiple assets
+        WHEN marking multiple prices as holiday
+        THEN all prices are marked as holiday
+        """
+        response = self.client.post(
+            self.base_url,
+            [
+                {"short_name": "TEST1", "date": self.date1.isoformat()},
+                {"short_name": "TEST2", "date": self.date1.isoformat()},
+            ],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Market prices marked as holiday.",
+            "updated_count": 2,
+            "not_found": [],
+        }
+        self.price1.refresh_from_db()
+        self.price3.refresh_from_db()
+        assert self.price1.comment == SpecialComment.BANK_HOLIDAY
+        assert self.price1.price is None
+        assert self.price3.comment == SpecialComment.BANK_HOLIDAY
+        assert self.price3.price is None
+
+    def test_mark_as_holiday_partial_success(self):
+        """
+        GIVEN some prices exist and some do not
+        WHEN marking prices as holiday
+        THEN existing prices are updated and not_found contains missing items
+        """
+        response = self.client.post(
+            self.base_url,
+            [
+                {"short_name": "TEST1", "date": self.date1.isoformat()},
+                {"short_name": "NONEXISTENT", "date": self.date1.isoformat()},
+            ],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Market prices marked as holiday.",
+            "updated_count": 1,
+            "not_found": [f"NONEXISTENT on {self.date1}"],
+        }
+        self.price1.refresh_from_db()
+        assert self.price1.comment == SpecialComment.BANK_HOLIDAY
+        assert self.price1.price is None
+
+    def test_mark_as_holiday_not_found(self):
+        """
+        GIVEN no matching prices exist
+        WHEN marking prices as holiday
+        THEN not_found contains all items and updated_count is 0
+        """
+        response = self.client.post(
+            self.base_url,
+            [
+                {"short_name": "NONEXISTENT1", "date": self.date1.isoformat()},
+                {"short_name": "NONEXISTENT2", "date": self.date2.isoformat()},
+            ],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Market prices marked as holiday.",
+            "updated_count": 0,
+            "not_found": [
+                f"NONEXISTENT1 on {self.date1}",
+                f"NONEXISTENT2 on {self.date2}",
+            ],
+        }
+
+    def test_mark_as_holiday_empty_list(self):
+        """
+        GIVEN an empty list
+        WHEN marking prices as holiday
+        THEN a 400 Bad Request error is returned
+        """
+        response = self.client.post(
+            self.base_url,
+            [],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "List cannot be empty" in str(response.json())
+
+    def test_mark_as_holiday_missing_short_name(self):
+        """
+        GIVEN a request with missing short_name
+        WHEN marking prices as holiday
+        THEN a 400 Bad Request error is returned
+        """
+        response = self.client.post(
+            self.base_url,
+            [{"date": self.date1.isoformat()}],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "short_name" in str(response.json())
+
+    def test_mark_as_holiday_missing_date(self):
+        """
+        GIVEN a request with missing date
+        WHEN marking prices as holiday
+        THEN a 400 Bad Request error is returned
+        """
+        response = self.client.post(
+            self.base_url,
+            [{"short_name": "TEST1"}],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "date" in str(response.json())
+
+    def test_mark_as_holiday_does_not_affect_other_prices(self):
+        """
+        GIVEN market prices exist for multiple dates
+        WHEN marking one price as holiday
+        THEN other prices remain unchanged
+        """
+        original_price2 = self.price2.price
+        original_comment2 = self.price2.comment
+
+        response = self.client.post(
+            self.base_url,
+            [{"short_name": "TEST1", "date": self.date1.isoformat()}],
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        self.price2.refresh_from_db()
+        assert self.price2.price == original_price2
+        assert self.price2.comment == original_comment2

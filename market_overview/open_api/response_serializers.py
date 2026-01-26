@@ -116,3 +116,11 @@ class DeleteMarketPricesResponseSerializer(serializers.Serializer):
 
     message = serializers.CharField()
     deleted_count = serializers.IntegerField()
+
+
+class MarkAsHolidayResponseSerializer(serializers.Serializer):
+    """Mark As Holiday Response Serializer."""
+
+    message = serializers.CharField()
+    updated_count = serializers.IntegerField()
+    not_found = serializers.ListField(child=serializers.CharField())

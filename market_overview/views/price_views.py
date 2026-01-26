@@ -25,16 +25,21 @@ from market_overview.open_api.request_serializers import (
     GetAssetsWithoutPricesSerializer,
     GetMarketPriceSerializer,
     ListMarketPricesSerializer,
+    MarkAsHolidaySerializer,
     MarketPriceIngestionSerializer,
 )
 from market_overview.open_api.response_serializers import (
     BatchPriceIngestionResponseSerializer,
     DeleteMarketPricesResponseSerializer,
     GetAssetWithoutPriceResponseSerializer,
+    MarkAsHolidayResponseSerializer,
     MarketPriceIngestionResponseSerializer,
     MarketPriceResponseSerializer,
 )
-from market_overview.services.market_data_services import BulkUpdateAssetsPricesItem
+from market_overview.services.market_data_services import (
+    BulkUpdateAssetsPricesItem,
+    MarkAsHolidayItem,
+)
 from market_overview.services.price_ingestion_services import BatchPriceIngestionItem
 
 
@@ -239,4 +244,34 @@ class CsvBulkUpdateAssetsPricesView(BaseAPIView):
         return Response(
             data=MarketPriceResponseSerializer(assets, many=True).data,
             status=status.HTTP_200_OK,
+        )
+
+
+class MarkAsHolidayView(BaseAPIView):
+    """Mark Market Prices as Holiday APIView."""
+
+    @open_api(
+        tags=[ApiTags.ASSET_PRICES],
+        summary="Mark As Holiday",
+        description="Mark market prices as holiday for the given assets and dates. "
+        "Sets the comment to 'Bank holiday' and price to null.",
+        request_serializer=MarkAsHolidaySerializer,
+        response=CreatedOpenApiResponse(MarkAsHolidayResponseSerializer),
+        error_responses=[BadRequestOpenApiResponse("List cannot be empty.")],
+    )
+    def post(self, validated_data: List[MarkAsHolidayItem]) -> Response:
+        """Mark market prices as holiday."""
+        items: List[MarkAsHolidayItem] = validated_data
+
+        result = market_data_services.mark_prices_as_holiday(items)
+
+        return Response(
+            data=MarkAsHolidayResponseSerializer(
+                {
+                    "message": "Market prices marked as holiday.",
+                    "updated_count": result["updated_count"],
+                    "not_found": result["not_found"],
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
         )

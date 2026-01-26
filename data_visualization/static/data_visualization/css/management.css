@@ -650,6 +650,44 @@ body {
     background: #dc2626;
 }
 
+/* Body mode tabs for Form vs JSON */
+.body-mode-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 1rem;
+}
+
+.body-mode-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+}
+
+.body-mode-tab:hover {
+    color: #3b82f6;
+}
+
+.body-mode-tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.body-mode-content {
+    display: none;
+}
+
+.body-mode-content.active {
+    display: block;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .management-container {

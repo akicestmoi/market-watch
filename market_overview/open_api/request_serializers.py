@@ -195,3 +195,22 @@ class DeleteMarketPricesSerializer(serializers.Serializer):
                 "At least one of 'start_date', 'end_date', or 'short_names' must be provided."
             )
         return attrs
+
+
+class MarkAsHolidayItemSerializer(serializers.Serializer):
+    """Mark As Holiday Item Serializer."""
+
+    short_name = serializers.CharField(required=True)
+    date = serializers.DateField(required=True)
+
+
+class MarkAsHolidaySerializer(serializers.ListSerializer):
+    """Mark As Holiday Serializer - list of short_name and date pairs."""
+
+    child = MarkAsHolidayItemSerializer()
+
+    def validate(self, attrs):
+        """Validate list is not empty."""
+        if not attrs:
+            raise serializers.ValidationError("List cannot be empty.")
+        return attrs

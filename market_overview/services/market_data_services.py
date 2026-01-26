@@ -78,6 +78,20 @@ class BulkUpdateAssetsPricesItem(TypedDict):
     logs: Optional[str]
 
 
+class MarkAsHolidayItem(TypedDict):
+    """Mark as holiday item dictionnary."""
+
+    short_name: str
+    date: date
+
+
+class MarkAsHolidayResult(TypedDict):
+    """Mark as holiday result dictionnary."""
+
+    updated_count: int
+    not_found: List[str]
+
+
 def get_all_asset_prices_for_date(price_date: date) -> List[MarketPriceModel]:
     """Get market prices for a specific date."""
     return list(
@@ -427,3 +441,25 @@ def delete_market_prices(
 def delete_price_update_logs_before_date(logs_date: date):
     """Delete price update logs before a given date."""
     PriceUpdateLogModel.objects.filter(date_added__lt=logs_date).delete()
+
+
+def mark_prices_as_holiday(items: List[MarkAsHolidayItem]) -> MarkAsHolidayResult:
+    """Mark market prices as holiday for the given assets and dates."""
+    updated_count = 0
+    not_found: List[str] = []
+
+    for item in items:
+        market_price = MarketPriceModel.objects.filter(
+            asset__short_name=item["short_name"],
+            date=item["date"],
+        ).first()
+
+        if market_price:
+            market_price.comment = SpecialComment.BANK_HOLIDAY
+            market_price.price = None
+            market_price.save()
+            updated_count += 1
+        else:
+            not_found.append(f"{item['short_name']} on {item['date']}")
+
+    return MarkAsHolidayResult(updated_count=updated_count, not_found=not_found)

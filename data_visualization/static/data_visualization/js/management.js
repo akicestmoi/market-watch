@@ -72,6 +72,17 @@ const ENDPOINTS = {
                 ],
                 query: null,
             },
+            {
+                name: "Mark As Holiday",
+                description: "Mark market prices as holiday for the given assets and dates. Sets the comment to 'Bank holiday' and price to null.",
+                method: "POST",
+                path: "/markets/prices/mark-as-holiday",
+                bodyAsList: true,
+                body: [
+                    { name: "data", type: "json", required: true, example: '[{"short_name": "", "date": ""}]' },
+                ],
+                query: null,
+            },
         ],
     },
     marketData: {
@@ -638,14 +649,60 @@ function createFormFields(endpoint, index) {
         });
     }
 
-    // Body parameters
+    // Body parameters - add tabs for POST/PATCH/PUT with JSON body
     if (endpoint.body && endpoint.body.length > 0) {
-        endpoint.body.forEach((param) => {
-            html += createFormField(param, `body-${index}`, true, endpoint);
-        });
+        const hasJsonBody = endpoint.body.some(p => p.type === "json");
+        const isPostLike = ["POST", "PATCH", "PUT"].includes(endpoint.method);
+
+        if (hasJsonBody && isPostLike) {
+            // Create tabbed interface for Form vs JSON
+            const jsonExample = endpoint.body.find(p => p.type === "json")?.example || "[]";
+
+            html += `
+                <div class="body-mode-tabs" style="margin-bottom: 1rem;">
+                    <button type="button" class="body-mode-tab active" data-mode="form" data-index="${index}" onclick="switchBodyMode(${index}, 'form')">Form</button>
+                    <button type="button" class="body-mode-tab" data-mode="json" data-index="${index}" onclick="switchBodyMode(${index}, 'json')">JSON</button>
+                </div>
+                <div id="body-mode-form-${index}" class="body-mode-content active">
+            `;
+
+            endpoint.body.forEach((param) => {
+                html += createFormField(param, `body-${index}`, true, endpoint);
+            });
+
+            html += `
+                </div>
+                <div id="body-mode-json-${index}" class="body-mode-content" style="display: none;">
+                    <div class="form-group">
+                        <label for="body-raw-json-${index}">JSON Body (required)</label>
+                        <textarea id="body-raw-json-${index}" name="raw_json" rows="10" placeholder='${jsonExample.replace(/'/g, "&#39;")}' style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.9rem;"></textarea>
+                        <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.85rem;">Enter valid JSON directly</small>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Regular body fields without tabs
+            endpoint.body.forEach((param) => {
+                html += createFormField(param, `body-${index}`, true, endpoint);
+            });
+        }
     }
 
     return html || "<p>No parameters required for this endpoint.</p>";
+}
+
+function switchBodyMode(index, mode) {
+    // Update tab buttons
+    document.querySelectorAll(`.body-mode-tab[data-index="${index}"]`).forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+    });
+
+    // Update content visibility
+    const formContent = document.getElementById(`body-mode-form-${index}`);
+    const jsonContent = document.getElementById(`body-mode-json-${index}`);
+
+    if (formContent) formContent.style.display = mode === 'form' ? 'block' : 'none';
+    if (jsonContent) jsonContent.style.display = mode === 'json' ? 'block' : 'none';
 }
 
 function createFormField(param, prefix, isBody, endpoint = null) {
@@ -881,11 +938,16 @@ function generateFieldForValue(fieldId, fieldName, value, prefix, baseFieldName 
         `;
     } else {
         // Simple value - determine input type
+        // Check if field name contains 'date' to use date picker
+        const isDateField = fieldName.toLowerCase().includes('date');
         const inputType = typeof value === 'number' ? 'number' :
+                         isDateField ? 'date' :
                          (value && String(value).match(/^\d{4}-\d{2}-\d{2}/)) ? 'date' : 'text';
 
+        // Use value only as placeholder hint, not as default value
+        const placeholderHint = value || '';
         inputHtml = `
-            <input type="${inputType}" id="${fieldId}" name="${fieldName}" data-field-path="${fieldName}" value="${value || ''}" placeholder="${value || ''}" style="width: 100%; box-sizing: border-box;">
+            <input type="${inputType}" id="${fieldId}" name="${fieldName}" data-field-path="${fieldName}" value="" placeholder="${placeholderHint}" style="width: 100%; box-sizing: border-box;">
         `;
     }
 
@@ -992,91 +1054,142 @@ async function confirmRequest() {
     // Handle body for POST and PATCH (DELETE uses query params only)
     if (["POST", "PATCH"].includes(endpoint.method)) {
         if (endpoint.body) {
-            const formData = new FormData();
-            let hasBodyData = false;
-            const bodyObj = {};
+            // Check if JSON mode is active
+            const jsonModeTab = document.querySelector(`.body-mode-tab[data-index="${index}"][data-mode="json"].active`);
+            const rawJsonInput = document.getElementById(`body-raw-json-${index}`);
 
-            endpoint.body.forEach((param) => {
-                const input = document.getElementById(`body-${index}-${param.name}`);
-                if (input) {
-                    if (param.type === "file") {
-                        if (input.files && input.files[0]) {
-                            formData.append(param.name, input.files[0]);
+            if (jsonModeTab && rawJsonInput && rawJsonInput.value.trim()) {
+                // JSON mode is active - use raw JSON directly
+                try {
+                    const parsedJson = JSON.parse(rawJsonInput.value.trim());
+                    options.headers["Content-Type"] = "application/json";
+                    options.body = JSON.stringify(parsedJson);
+                } catch (e) {
+                    alert("Invalid JSON: " + e.message);
+                    return;
+                }
+            } else {
+                // Form mode - collect from form fields
+                const formData = new FormData();
+                let hasBodyData = false;
+                const bodyObj = {};
+
+                // For bodyAsList endpoints, directly collect array items from the form
+                if (endpoint.bodyAsList) {
+                    const formContainer = document.getElementById(`body-mode-form-${index}`);
+                    if (formContainer) {
+                        const arrayItems = formContainer.querySelectorAll('.json-array-item');
+                        const arrayData = [];
+
+                        arrayItems.forEach((item) => {
+                            const itemObj = {};
+                            const inputs = item.querySelectorAll('input, select, textarea');
+
+                            inputs.forEach(input => {
+                                const fieldPath = input.getAttribute('data-field-path');
+                                if (fieldPath && input.value) {
+                                    itemObj[fieldPath] = input.value;
+                                }
+                            });
+
+                            // Only add if item has values
+                            if (Object.keys(itemObj).length > 0) {
+                                arrayData.push(itemObj);
+                            }
+                        });
+
+                        if (arrayData.length > 0) {
+                            options.headers["Content-Type"] = "application/json";
+                            options.body = JSON.stringify(arrayData);
                             hasBodyData = true;
                         }
-                    } else if (param.type === "json") {
-                        // Reconstruct JSON from form fields
-                        const jsonContainer = document.getElementById(`body-${index}-${param.name}-container`);
-                        if (jsonContainer) {
-                            const structureType = jsonContainer.getAttribute('data-structure-type');
-                            if (structureType === 'array') {
-                                bodyObj[param.name] = collectArrayValues(jsonContainer, param.name);
-                                hasBodyData = true;
-                            } else if (structureType === 'object') {
-                                bodyObj[param.name] = collectObjectValues(jsonContainer, param.name);
-                                hasBodyData = true;
-                            }
-                        } else {
-                            // Fallback: try to parse as JSON from input value
-                            const input = document.getElementById(`body-${index}-${param.name}`);
-                            if (input && input.value) {
-                                try {
-                                    const parsed = JSON.parse(input.value);
-                                    bodyObj[param.name] = parsed;
+                    }
+                } else {
+                    // Standard form collection for non-list endpoints
+                    endpoint.body.forEach((param) => {
+                        const input = document.getElementById(`body-${index}-${param.name}`);
+                        if (input) {
+                            if (param.type === "file") {
+                                if (input.files && input.files[0]) {
+                                    formData.append(param.name, input.files[0]);
                                     hasBodyData = true;
-                                } catch (e) {
+                                }
+                            } else if (param.type === "json") {
+                                // Reconstruct JSON from form fields
+                                const containerId = `body-${index}-${param.name}-container`;
+                                const jsonContainer = document.getElementById(containerId);
+                                if (jsonContainer) {
+                                    const structureType = jsonContainer.getAttribute('data-structure-type');
+                                    if (structureType === 'array') {
+                                        bodyObj[param.name] = collectArrayValues(jsonContainer, param.name);
+                                        hasBodyData = true;
+                                    } else if (structureType === 'object') {
+                                        bodyObj[param.name] = collectObjectValues(jsonContainer, param.name);
+                                        hasBodyData = true;
+                                    }
+                                } else {
+                                    // Fallback: try to parse as JSON from input value
+                                    const jsonInput = document.getElementById(`body-${index}-${param.name}`);
+                                    if (jsonInput && jsonInput.value) {
+                                        try {
+                                            const parsed = JSON.parse(jsonInput.value);
+                                            bodyObj[param.name] = parsed;
+                                            hasBodyData = true;
+                                        } catch (e) {
+                                            bodyObj[param.name] = jsonInput.value;
+                                            hasBodyData = true;
+                                        }
+                                    }
+                                }
+                            } else if (param.type === "checkbox") {
+                                if (input.checked) {
+                                    bodyObj[param.name] = true;
+                                    hasBodyData = true;
+                                } else {
+                                    bodyObj[param.name] = false;
+                                }
+                            } else if (param.type === "number") {
+                                if (input.value) {
+                                    const numValue = parseFloat(input.value);
+                                    if (!isNaN(numValue)) {
+                                        bodyObj[param.name] = numValue;
+                                        hasBodyData = true;
+                                    } else {
+                                        bodyObj[param.name] = input.value;
+                                        hasBodyData = true;
+                                    }
+                                }
+                            } else if (param.type === "date") {
+                                if (input.value) {
                                     bodyObj[param.name] = input.value;
                                     hasBodyData = true;
                                 }
-                            }
-                        }
-                    } else if (param.type === "checkbox") {
-                        if (input.checked) {
-                            bodyObj[param.name] = true;
-                            hasBodyData = true;
-                        } else {
-                            bodyObj[param.name] = false;
-                        }
-                    } else if (param.type === "number") {
-                        if (input.value) {
-                            const numValue = parseFloat(input.value);
-                            if (!isNaN(numValue)) {
-                                bodyObj[param.name] = numValue;
-                                hasBodyData = true;
-                            } else {
+                            } else if (input.value) {
                                 bodyObj[param.name] = input.value;
                                 hasBodyData = true;
                             }
                         }
-                    } else if (param.type === "date") {
-                        if (input.value) {
-                            bodyObj[param.name] = input.value;
-                            hasBodyData = true;
-                        }
-                    } else if (input.value) {
-                        bodyObj[param.name] = input.value;
-                        hasBodyData = true;
-                    }
-                }
-            });
-
-            if (hasBodyData) {
-                // Check if we have file uploads
-                const hasFiles = Array.from(formData.entries()).some(([key, value]) => value instanceof File);
-                if (hasFiles) {
-                    // If we have files, merge bodyObj into formData
-                    Object.keys(bodyObj).forEach(key => {
-                        if (typeof bodyObj[key] === 'object') {
-                            formData.append(key, JSON.stringify(bodyObj[key]));
-                        } else {
-                            formData.append(key, bodyObj[key]);
-                        }
                     });
-                    options.body = formData;
-                } else {
-                    // No files, send as JSON
-                    options.headers["Content-Type"] = "application/json";
-                    options.body = JSON.stringify(bodyObj);
+
+                    if (hasBodyData) {
+                        // Check if we have file uploads
+                        const hasFiles = Array.from(formData.entries()).some(([key, value]) => value instanceof File);
+                        if (hasFiles) {
+                            // If we have files, merge bodyObj into formData
+                            Object.keys(bodyObj).forEach(key => {
+                                if (typeof bodyObj[key] === 'object') {
+                                    formData.append(key, JSON.stringify(bodyObj[key]));
+                                } else {
+                                    formData.append(key, bodyObj[key]);
+                                }
+                            });
+                            options.body = formData;
+                        } else {
+                            // No files, send as JSON
+                            options.headers["Content-Type"] = "application/json";
+                            options.body = JSON.stringify(bodyObj);
+                        }
+                    }
                 }
             }
         }
@@ -1102,7 +1215,7 @@ async function confirmRequest() {
         const obj = {};
         const inputs = container.querySelectorAll('input:not([type="file"]), select, textarea');
 
-        inputs.forEach(input => {
+        inputs.forEach((input) => {
             if (input.type === 'file') {
                 return; // Skip file inputs
             }
