@@ -73,13 +73,21 @@ class BatchPriceIngestionItem(TypedDict):
     end_date: Optional[date]
 
 
+class IngestionNotUpdatedResult(TypedDict):
+    """Ingestion not updated result dictionnary."""
+
+    asset_not_updated: List[str]
+    asset_not_updated_holiday: List[str]
+
+
 class BatchPriceIngestionResult(TypedDict):
     """Batch price ingestion result dictionnary."""
 
     short_name: str
     status: str
     error: Optional[str]
-    asset_not_updated: Optional[List[str]]
+    asset_not_updated: List[str]
+    asset_not_updated_holiday: List[str]
 
 
 def _parse_str_decimals_to_float(a: str) -> Optional[float]:
@@ -499,12 +507,16 @@ def get_market_data(target_date: date) -> List[MarketData]:
 
 def ingest_market_data(
     market_data: List[MarketData],
-) -> List[MarketData]:
+) -> IngestionNotUpdatedResult:
     """Ingest market data."""
-    asset_not_updated = []
+    asset_not_updated: List[MarketData] = []
+    asset_not_updated_holiday: List[MarketData] = []
     for data in market_data:
         if not data["price"]:
-            asset_not_updated.append(data)
+            if data["comment"] == SpecialComment.BANK_HOLIDAY:
+                asset_not_updated_holiday.append(data)
+            else:
+                asset_not_updated.append(data)
         core_services.upsert_with_logs(
             model=MarketPriceModel,
             log_model=PriceUpdateLogModel,
@@ -517,7 +529,12 @@ def ingest_market_data(
             logging_on_fields=["price"],
             none_skip_fields=["price"],
         )
-    return asset_not_updated
+    return IngestionNotUpdatedResult(
+        asset_not_updated=[data["asset"].short_name for data in asset_not_updated],
+        asset_not_updated_holiday=[
+            data["asset"].short_name for data in asset_not_updated_holiday
+        ],
+    )
 
 
 def _get_specific_asset_market_data(
@@ -552,19 +569,21 @@ def _ingest_specific_asset_market_prices(
             short_name=short_name,
             status="error",
             error=f"Asset: {short_name} does not exist in database.",
-            asset_not_updated=None,
+            asset_not_updated=[],
+            asset_not_updated_holiday=[],
         )
 
     market_data = _get_specific_asset_market_data(
         short_name, start_date, target_end_date
     )
-    asset_not_updated = ingest_market_data(market_data)
+    ingestion_result = ingest_market_data(market_data)
 
     return BatchPriceIngestionResult(
         short_name=short_name,
         status="success",
         error=None,
-        asset_not_updated=[data["date"].isoformat() for data in asset_not_updated],
+        asset_not_updated=ingestion_result["asset_not_updated"],
+        asset_not_updated_holiday=ingestion_result["asset_not_updated_holiday"],
     )
 
 

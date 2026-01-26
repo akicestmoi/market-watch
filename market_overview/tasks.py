@@ -24,14 +24,13 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
     try:
         logger.info(f"Ingesting market data for {price_date}")
         market_data = price_ingestion_services.get_market_data(price_date)
-        asset_not_updated = price_ingestion_services.ingest_market_data(market_data)
+        ingestion_result = price_ingestion_services.ingest_market_data(market_data)
         return {
             "status": "success",
             "message": f"Market data ingested successfully for {price_date}",
             "date": price_date.isoformat(),
-            "asset_not_updated": [
-                data["asset"].short_name for data in asset_not_updated
-            ],
+            "asset_not_updated": ingestion_result["asset_not_updated"],
+            "asset_not_updated_holiday": ingestion_result["asset_not_updated_holiday"],
         }
 
     except Exception as e:

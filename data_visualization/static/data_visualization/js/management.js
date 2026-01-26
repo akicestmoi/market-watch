@@ -79,7 +79,7 @@ const ENDPOINTS = {
                 path: "/markets/prices/mark-as-holiday",
                 bodyAsList: true,
                 body: [
-                    { name: "data", type: "json", required: true, example: '[{"short_name": "", "date": ""}]' },
+                    { name: "data", type: "json", required: true, example: '[{"short_name": "EURUSD", "date": ""}]' },
                 ],
                 query: null,
             },

@@ -54,6 +54,7 @@ class TestScheduledMarketDataIngestion(TestCase):
         result = tasks.scheduled_market_data_ingestion(two_bdays_ago=False)
         assert result == {
             "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
             "date": "2025-12-12",
             "message": "Market data ingested successfully for 2025-12-12",
             "status": "success",
@@ -103,6 +104,7 @@ class TestScheduledMarketDataIngestion(TestCase):
             "asset_not_updated": [
                 "TEST",
             ],
+            "asset_not_updated_holiday": [],
             "date": "2025-12-12",
             "message": "Market data ingested successfully for 2025-12-12",
             "status": "success",
@@ -151,6 +153,7 @@ class TestScheduledMarketDataIngestion(TestCase):
         result = tasks.scheduled_market_data_ingestion(two_bdays_ago=True)
         assert result == {
             "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
             "date": "2025-12-11",
             "message": "Market data ingested successfully for 2025-12-11",
             "status": "success",

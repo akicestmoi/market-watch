@@ -447,9 +447,12 @@ class IngestMarketDataTest(TestCase):
             ),
         ]
 
-        asset_not_updated = ingest_market_data(market_data)
+        result = ingest_market_data(market_data)
 
-        assert len(asset_not_updated) == 0
+        assert result == {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
         queryset = MarketPriceModel.objects.filter(
             asset=self.asset, date=self.target_date
         )
@@ -483,16 +486,12 @@ class IngestMarketDataTest(TestCase):
             ),
         ]
 
-        asset_not_updated = ingest_market_data(market_data)
+        result = ingest_market_data(market_data)
 
-        assert asset_not_updated == [
-            {
-                "asset": self.asset,
-                "price": None,
-                "date": self.target_date + timedelta(days=1),
-                "comment": "No price",
-            },
-        ]
+        assert result == {
+            "asset_not_updated": [self.asset.short_name],
+            "asset_not_updated_holiday": [],
+        }
         queryset = MarketPriceModel.objects.filter(
             asset=self.asset, date=self.target_date
         )
@@ -519,16 +518,12 @@ class IngestMarketDataTest(TestCase):
             ),
         ]
 
-        asset_not_updated = ingest_market_data(market_data)
+        result = ingest_market_data(market_data)
 
-        assert asset_not_updated == [
-            MarketData(
-                asset=self.asset,
-                price=None,
-                date=self.target_date,
-                comment="No price",
-            ),
-        ]
+        assert result == {
+            "asset_not_updated": [self.asset.short_name],
+            "asset_not_updated_holiday": [],
+        }
         queryset = MarketPriceModel.objects.filter(
             asset=self.asset, date=self.target_date
         )
@@ -551,9 +546,39 @@ class IngestMarketDataTest(TestCase):
         """
         market_data: list[MarketData] = []
 
-        asset_not_updated = ingest_market_data(market_data)
+        result = ingest_market_data(market_data)
 
-        assert len(asset_not_updated) == 0
+        assert result == {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
+
+    def test_ingest_market_data_holiday_entries(self):
+        """
+        GIVEN market data where some entries are holidays
+        WHEN ingesting market data
+        THEN holiday entries are in asset_not_updated_holiday
+        """
+        from market_overview.models import SpecialComment
+
+        market_data = [
+            MarketData(
+                asset=self.asset, price=100.0, date=self.target_date, comment=""
+            ),
+            MarketData(
+                asset=self.asset,
+                price=None,
+                date=self.target_date + timedelta(days=1),
+                comment=SpecialComment.BANK_HOLIDAY,
+            ),
+        ]
+
+        result = ingest_market_data(market_data)
+
+        assert result == {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [self.asset.short_name],
+        }
 
     def test_ingest_market_data_creates_price_update_log(self):
         """
@@ -702,9 +727,12 @@ class IngestMarketDataTest(TestCase):
             ),
         ]
 
-        asset_not_updated = ingest_market_data(market_data)
+        result = ingest_market_data(market_data)
 
-        assert len(asset_not_updated) == 0
+        assert result == {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
         queryset = MarketPriceModel.objects.filter(asset=self.asset)
         prices = convert_query_to_dictionary_list(queryset)
         assert prices == [

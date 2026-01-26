@@ -26,6 +26,7 @@ class MarketPriceIngestionResponseSerializer(serializers.Serializer):
 
     message = serializers.CharField()
     asset_not_updated = serializers.ListField(child=serializers.CharField())
+    asset_not_updated_holiday = serializers.ListField(child=serializers.CharField())
     date = serializers.DateField()
 
 
@@ -36,6 +37,7 @@ class BatchPriceIngestionResponseSerializerItem(serializers.Serializer):
     status = serializers.CharField()
     error = serializers.CharField()
     asset_not_updated = serializers.ListField(child=serializers.CharField())
+    asset_not_updated_holiday = serializers.ListField(child=serializers.CharField())
 
 
 class BatchPriceIngestionResponseSerializer(serializers.Serializer):

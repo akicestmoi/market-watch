@@ -302,8 +302,8 @@ class TestECBStep3CalculateScenarioPrices(TestCase):
             [rate_after_meeting],
             [meeting_date],
             accrual_start_date,
-                accrual_end_date,
-                accrual_days,
+            accrual_end_date,
+            accrual_days,
         )
         assert estr_price == 95.93578524
 

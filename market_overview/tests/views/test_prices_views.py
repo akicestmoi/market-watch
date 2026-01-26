@@ -51,7 +51,10 @@ class TestMarketPricesIngestionViews(TestCase):
         THEN the market prices are successfully ingested
         """
         mock_get_market_data.return_value = []
-        mock_ingest.return_value = []
+        mock_ingest.return_value = {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_MARKET_PRICES_URL}",
@@ -62,6 +65,7 @@ class TestMarketPricesIngestionViews(TestCase):
         assert response.json() == {
             "message": "Market prices successfully ingested",
             "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
             "date": self.price_date.isoformat(),
         }
         mock_get_market_data.assert_called_once_with(self.price_date)
@@ -109,14 +113,10 @@ class TestMarketPricesIngestionViews(TestCase):
                 comment="No price",
             ),
         ]
-        mock_ingest.return_value = [
-            MarketData(
-                asset=asset_without_price,
-                price=None,
-                date=self.price_date,
-                comment="No price",
-            )
-        ]
+        mock_ingest.return_value = {
+            "asset_not_updated": ["ASSET_WITHOUT_PRICE"],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_MARKET_PRICES_URL}",
@@ -127,6 +127,7 @@ class TestMarketPricesIngestionViews(TestCase):
         assert response.json() == {
             "message": "Market prices successfully ingested",
             "asset_not_updated": ["ASSET_WITHOUT_PRICE"],
+            "asset_not_updated_holiday": [],
             "date": self.price_date.isoformat(),
         }
 
@@ -161,7 +162,10 @@ class TestMarketPricesIngestionViews(TestCase):
         THEN the asset prices are successfully ingested
         """
         mock_get_data.return_value = []
-        mock_ingest.return_value = []
+        mock_ingest.return_value = {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
@@ -184,6 +188,7 @@ class TestMarketPricesIngestionViews(TestCase):
                     "status": "success",
                     "error": None,
                     "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 }
             ],
         }
@@ -214,7 +219,8 @@ class TestMarketPricesIngestionViews(TestCase):
                     "short_name": "NONEXISTENT",
                     "status": "error",
                     "error": "Asset: NONEXISTENT does not exist in database.",
-                    "asset_not_updated": None,
+                    "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 }
             ],
         }
@@ -232,7 +238,10 @@ class TestMarketPricesIngestionViews(TestCase):
         THEN a 400 Bad Request error is returned
         """
         mock_get_data.return_value = []
-        mock_ingest.return_value = []
+        mock_ingest.return_value = {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
@@ -307,11 +316,10 @@ class TestMarketPricesIngestionViews(TestCase):
                 comment="",
             ),
         ]
-        mock_ingest.return_value = [
-            MarketData(
-                asset=self.asset, price=None, date=self.start_date, comment="No price"
-            )
-        ]
+        mock_ingest.return_value = {
+            "asset_not_updated": ["TEST"],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
@@ -333,7 +341,8 @@ class TestMarketPricesIngestionViews(TestCase):
                     "short_name": "TEST",
                     "status": "success",
                     "error": None,
-                    "asset_not_updated": [self.start_date.isoformat()],
+                    "asset_not_updated": ["TEST"],
+                    "asset_not_updated_holiday": [],
                 }
             ],
         }
@@ -379,7 +388,10 @@ class TestMarketPricesIngestionViews(TestCase):
                 ]
 
         mock_get_data.side_effect = mock_get_data_side_effect
-        mock_ingest.return_value = []
+        mock_ingest.return_value = {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
@@ -407,12 +419,14 @@ class TestMarketPricesIngestionViews(TestCase):
                     "status": "success",
                     "error": None,
                     "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 },
                 {
                     "short_name": "TEST2",
                     "status": "success",
                     "error": None,
                     "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 },
             ],
         }
@@ -431,7 +445,10 @@ class TestMarketPricesIngestionViews(TestCase):
         THEN the existing asset is processed and the non-existent one returns an error
         """
         mock_get_data.return_value = []
-        mock_ingest.return_value = []
+        mock_ingest.return_value = {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
@@ -459,12 +476,14 @@ class TestMarketPricesIngestionViews(TestCase):
                     "status": "success",
                     "error": None,
                     "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 },
                 {
                     "short_name": "NONEXISTENT",
                     "status": "error",
                     "error": "Asset: NONEXISTENT does not exist in database.",
-                    "asset_not_updated": None,
+                    "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 },
             ],
         }
@@ -489,7 +508,10 @@ class TestMarketPricesIngestionViews(TestCase):
                 comment="",
             )
         ]
-        mock_ingest.return_value = []
+        mock_ingest.return_value = {
+            "asset_not_updated": [],
+            "asset_not_updated_holiday": [],
+        }
 
         response = self.client.post(
             f"{self.base_url}{self.INGEST_SPECIFIC_ASSET_MARKET_PRICES_URL}",
@@ -511,6 +533,7 @@ class TestMarketPricesIngestionViews(TestCase):
                     "status": "success",
                     "error": None,
                     "asset_not_updated": [],
+                    "asset_not_updated_holiday": [],
                 }
             ],
         }
