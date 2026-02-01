@@ -41,7 +41,7 @@ class TestCentralBankMeetingsViews(TestCase):
         )
 
     @patch(
-        "central_banks_overview.services.cb_meetings_services.ingest_central_bank_meeting_dates"
+        "central_banks_overview.services.cb_meetings_services.ingest_all_central_bank_meeting_dates"
     )
     def test_ingest_meeting_dates_success(self, mock_ingest):
         """

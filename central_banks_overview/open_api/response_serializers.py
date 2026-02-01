@@ -26,9 +26,12 @@ class CentralBankDataIngestionResponseSerializer(serializers.Serializer):
 class CentralBankDataResponseSerializer(serializers.ModelSerializer):
     """Central Bank Data Response Serializer."""
 
+    id = serializers.IntegerField(source="pk", read_only=True)
+
     class Meta:
         model = CentralBankDataModel
         fields = [
+            "id",
             "central_bank",
             "short_name",
             "full_name",
@@ -56,9 +59,12 @@ class StirFuturesPriceIngestionResponseSerializer(serializers.Serializer):
 class StirFuturesPriceResponseSerializer(serializers.ModelSerializer):
     """Stir Futures Price Response Serializer."""
 
+    id = serializers.IntegerField(source="pk", read_only=True)
+
     class Meta:
         model = StirFuturesModel
         fields = [
+            "id",
             "central_bank",
             "full_name",
             "maturity",
@@ -90,6 +96,13 @@ class CentralBankProbabilityMatrixResponseSerializer(serializers.Serializer):
 
 class DeleteStirFuturesPricesResponseSerializer(serializers.Serializer):
     """Delete STIR Futures Prices Response Serializer."""
+
+    message = serializers.CharField()
+    deleted_count = serializers.IntegerField()
+
+
+class DeleteCentralBankDataResponseSerializer(serializers.Serializer):
+    """Delete Central Bank Data Response Serializer."""
 
     message = serializers.CharField()
     deleted_count = serializers.IntegerField()

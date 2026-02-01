@@ -159,42 +159,18 @@ class DeleteHolidaysSerializer(serializers.Serializer):
 class DeleteMarketPricesSerializer(serializers.Serializer):
     """Delete Market Prices Serializer."""
 
-    start_date = serializers.DateField(required=False, allow_null=True)
-    end_date = serializers.DateField(required=False, allow_null=True)
-    short_names = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True
-    )
+    ids = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
-    def validate_short_names(self, value):
-        """Convert comma-separated string or list to list."""
-        if not value:
+    def validate_ids(self, value):
+        """Convert comma-separated string to list of integers."""
+        if not value or not value.strip():
             return None
-        if isinstance(value, list):
-            return [name.strip() for name in value if name and name.strip()]
-        if isinstance(value, str) and value.strip():
-            return [name.strip() for name in value.split(",") if name.strip()]
-        return None
-
-    def validate(self, attrs):
-        """Validate that at least one parameter is provided."""
-        short_names_str = attrs.pop("short_names", None)
-        if short_names_str is not None:
-            short_names_list = self.validate_short_names(short_names_str)
-            if short_names_list:
-                attrs["short_names"] = short_names_list
-
-        # Check if at least one parameter is provided
-        if not any(
-            [
-                attrs.get("start_date"),
-                attrs.get("end_date"),
-                attrs.get("short_names"),
+        try:
+            return [
+                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
             ]
-        ):
-            raise serializers.ValidationError(
-                "At least one of 'start_date', 'end_date', or 'short_names' must be provided."
-            )
-        return attrs
+        except ValueError:
+            raise serializers.ValidationError("IDs must be comma-separated integers.")
 
 
 class MarkAsHolidayItemSerializer(serializers.Serializer):

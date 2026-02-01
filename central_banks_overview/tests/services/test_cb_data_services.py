@@ -12,6 +12,7 @@ from central_banks_overview.services.cb_data_services import (
     CentralBankDataDate,
     CentralBankDataIngestionResponseItem,
     _get_specific_central_bank_data,
+    delete_central_bank_data,
     get_central_bank_data,
     ingest_central_bank_data,
     ingest_requested_central_bank_data,
@@ -667,3 +668,38 @@ class TestCentralBankDataServices(TestCase):
             value=5.50,
             comment="",
         )
+
+    def test_delete_central_bank_data_by_ids(self):
+        """
+        GIVEN existing central bank data
+        WHEN deleting by IDs
+        THEN the specified data is deleted
+        """
+        deleted_count = delete_central_bank_data(
+            [self.frb_data_1.pk, self.frb_data_2.pk]
+        )
+
+        assert deleted_count == 2
+        assert (
+            CentralBankDataModel.objects.filter(
+                central_bank=CentralBankChoices.FRB
+            ).count()
+            == 0
+        )
+        assert (
+            CentralBankDataModel.objects.filter(
+                central_bank=CentralBankChoices.ECB
+            ).count()
+            == 1
+        )
+
+    def test_delete_central_bank_data_by_ids_empty(self):
+        """
+        GIVEN existing central bank data
+        WHEN deleting with empty IDs list
+        THEN no data is deleted
+        """
+        deleted_count = delete_central_bank_data([])
+
+        assert deleted_count == 0
+        assert CentralBankDataModel.objects.count() == 3

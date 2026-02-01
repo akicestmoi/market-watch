@@ -5,7 +5,6 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.services import convert_query_to_dictionary_list
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
@@ -124,8 +123,11 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         response = self.client.get(self.base_url)
 
         assert response.status_code == status.HTTP_200_OK
+        economic_data = list(EconomicDataModel.objects.all().order_by("pk"))
+        assert len(economic_data) == 3
         assert response.json() == [
             {
+                "id": economic_data[0].pk,
                 "indicator": {
                     "name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
@@ -141,6 +143,7 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
                 "comment": "Test comment",
             },
             {
+                "id": economic_data[1].pk,
                 "indicator": {
                     "name": "Second test indicator name",
                     "location": EconomicDataLocationChoices.JP.value,
@@ -156,6 +159,7 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
                 "comment": "Second Indicator test comment",
             },
             {
+                "id": economic_data[2].pk,
                 "indicator": {
                     "name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
@@ -184,8 +188,14 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
+        economic_data = list(
+            EconomicDataModel.objects.filter(indicator=self.indicator).order_by(
+                "period"
+            )
+        )
         assert response.json() == [
             {
+                "id": economic_data[0].pk,
                 "indicator": {
                     "name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
@@ -201,6 +211,7 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
                 "comment": "Test comment",
             },
             {
+                "id": economic_data[1].pk,
                 "indicator": {
                     "name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
@@ -229,8 +240,12 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
+        economic_data = list(
+            EconomicDataModel.objects.filter(period=self.period).order_by("pk")
+        )
         assert response.json() == [
             {
+                "id": economic_data[0].pk,
                 "indicator": {
                     "name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
@@ -246,6 +261,7 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
                 "comment": "Test comment",
             },
             {
+                "id": economic_data[1].pk,
                 "indicator": {
                     "name": "Second test indicator name",
                     "location": EconomicDataLocationChoices.JP.value,
@@ -275,8 +291,12 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
+        economic_data = EconomicDataModel.objects.get(
+            indicator=self.indicator, period=self.period
+        )
         assert response.json() == [
             {
+                "id": economic_data.pk,
                 "indicator": {
                     "name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
@@ -306,35 +326,56 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_delete_economic_data_success(self):
+    def test_delete_economic_data_no_ids(self):
+        """
+        GIVEN no ids provided
+        WHEN deleting economic data
+        THEN a 400 error is returned (ids required)
+        """
+        response = self.client.delete(self.base_url)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_delete_economic_data_by_ids(self):
         """
         GIVEN existing economic data
-        WHEN deleting economic data
-        THEN the data is successfully deleted
+        WHEN deleting by IDs
+        THEN the specified data is deleted
         """
+        to_delete = list(EconomicDataModel.objects.filter(indicator=self.indicator)[:2])
+        ids_str = ",".join(str(d.pk) for d in to_delete)
+
+        response = self.client.delete(f"{self.base_url}?ids={ids_str}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Economic data successfully deleted",
+            "deleted_count": 2,
+        }
+        for d in to_delete:
+            assert not EconomicDataModel.objects.filter(pk=d.pk).exists()
+        assert EconomicDataModel.objects.count() == 1
+
+    def test_delete_economic_data_ids_with_other_parameters(self):
+        """
+        GIVEN IDs and other parameters
+        WHEN deleting economic data
+        THEN data matching ids is deleted (other params ignored)
+        """
+        to_delete = list(EconomicDataModel.objects.filter(indicator=self.indicator)[:2])
+        ids_str = ",".join(str(d.pk) for d in to_delete)
+
         response = self.client.delete(
-            f"{self.base_url}?indicator_name={self.indicator.name}&period={self.period.isoformat()}"
+            f"{self.base_url}?ids={ids_str}&start_date=2024-01-01"
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {"message": "Economic data successfully deleted"}
-
-        economic_data = EconomicDataModel.objects.filter(
-            indicator=self.indicator, period=self.period
-        )
-        result_dict = convert_query_to_dictionary_list(economic_data)
-        assert result_dict == []
-
-    def test_delete_economic_data_indicator_not_found(self):
-        """
-        GIVEN non-existent indicator name
-        WHEN deleting economic data
-        THEN a 404 error is returned
-        """
-        query_params = f"indicator_name=NonExistent&period={self.period.isoformat()}"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json() == {
+            "message": "Economic data successfully deleted",
+            "deleted_count": 2,
+        }
+        for d in to_delete:
+            assert not EconomicDataModel.objects.filter(pk=d.pk).exists()
 
 
 class TestIngestEconomicDataView(TestCase):

@@ -130,24 +130,18 @@ class GetMarketPriceView(BaseAPIView):
     @open_api(
         tags=[ApiTags.ASSET_PRICES],
         summary="Delete Market Prices",
-        description="Delete market prices based on optional filters.",
+        description="Delete market prices by IDs.",
         request_serializer=DeleteMarketPricesSerializer,
         response=OkOpenApiResponse(DeleteMarketPricesResponseSerializer),
         error_responses=[
-            BadRequestOpenApiResponse(
-                "At least one of 'start_date', 'end_date', or 'short_names' must be provided."
-            )
+            BadRequestOpenApiResponse("IDs must be comma-separated integers.")
         ],
     )
     def delete(self, validated_data: dict) -> Response:
-        """Delete market prices based on optional filters."""
-        start_date: Optional[date] = validated_data.get("start_date")
-        end_date: Optional[date] = validated_data.get("end_date")
-        short_names: Optional[List[str]] = validated_data.get("short_names")
+        """Delete market prices by IDs."""
+        ids: List[int] = validated_data.get("ids", [])
 
-        deleted_count = market_data_services.delete_market_prices(
-            start_date, end_date, short_names
-        )
+        deleted_count = market_data_services.delete_market_prices(ids)
         return Response(
             data=DeleteMarketPricesResponseSerializer(
                 {

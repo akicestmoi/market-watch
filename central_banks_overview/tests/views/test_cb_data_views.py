@@ -178,6 +178,7 @@ class TestCentralBankDataViews(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
+                "id": self.frb_data_1.pk,
                 "central_bank": CentralBankChoices.FRB.value,
                 "short_name": "FRB_FEDFUNDS",
                 "full_name": "FRB Target Fed Funds Rate",
@@ -186,6 +187,7 @@ class TestCentralBankDataViews(TestCase):
                 "comment": "",
             },
             {
+                "id": self.ecb_data_1.pk,
                 "central_bank": CentralBankChoices.ECB.value,
                 "short_name": "ECB_Deposit",
                 "full_name": "ECB Deposit Facility Rate",
@@ -210,6 +212,7 @@ class TestCentralBankDataViews(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
+                "id": self.frb_data_1.pk,
                 "central_bank": CentralBankChoices.FRB.value,
                 "short_name": "FRB_FEDFUNDS",
                 "full_name": "FRB Target Fed Funds Rate",
@@ -234,6 +237,7 @@ class TestCentralBankDataViews(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
+                "id": self.frb_data_1.pk,
                 "central_bank": CentralBankChoices.FRB.value,
                 "short_name": "FRB_FEDFUNDS",
                 "full_name": "FRB Target Fed Funds Rate",
@@ -242,6 +246,7 @@ class TestCentralBankDataViews(TestCase):
                 "comment": "",
             },
             {
+                "id": self.ecb_data_1.pk,
                 "central_bank": CentralBankChoices.ECB.value,
                 "short_name": "ECB_Deposit",
                 "full_name": "ECB Deposit Facility Rate",
@@ -265,6 +270,7 @@ class TestCentralBankDataViews(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
+                "id": self.ecb_data_1.pk,
                 "central_bank": CentralBankChoices.ECB.value,
                 "short_name": "ECB_Deposit",
                 "full_name": "ECB Deposit Facility Rate",
@@ -273,6 +279,7 @@ class TestCentralBankDataViews(TestCase):
                 "comment": "",
             },
             {
+                "id": self.frb_data_2.pk,
                 "central_bank": CentralBankChoices.FRB.value,
                 "short_name": "FRB_FEDFUNDS",
                 "full_name": "FRB Target Fed Funds Rate",
@@ -293,6 +300,7 @@ class TestCentralBankDataViews(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == [
             {
+                "id": self.frb_data_1.pk,
                 "central_bank": CentralBankChoices.FRB.value,
                 "short_name": "FRB_FEDFUNDS",
                 "full_name": "FRB Target Fed Funds Rate",
@@ -301,6 +309,7 @@ class TestCentralBankDataViews(TestCase):
                 "comment": "",
             },
             {
+                "id": self.frb_data_2.pk,
                 "central_bank": CentralBankChoices.FRB.value,
                 "short_name": "FRB_FEDFUNDS",
                 "full_name": "FRB Target Fed Funds Rate",
@@ -309,6 +318,7 @@ class TestCentralBankDataViews(TestCase):
                 "comment": "",
             },
             {
+                "id": self.ecb_data_1.pk,
                 "central_bank": CentralBankChoices.ECB.value,
                 "short_name": "ECB_Deposit",
                 "full_name": "ECB Deposit Facility Rate",
@@ -331,3 +341,86 @@ class TestCentralBankDataViews(TestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
+
+    def test_delete_central_bank_data_no_ids(self):
+        """
+        GIVEN no ids provided
+        WHEN deleting central bank data
+        THEN no data is deleted and deleted_count is 0
+        """
+        response = self.client.delete(self.base_url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Central Bank Data successfully deleted",
+            "deleted_count": 0,
+        }
+        assert CentralBankDataModel.objects.count() == 3
+
+    def test_delete_central_bank_data_by_ids(self):
+        """
+        GIVEN existing central bank data
+        WHEN deleting by IDs
+        THEN the specified data is deleted
+        """
+        data1 = CentralBankDataModel.objects.create(
+            cb_data_id=1,
+            central_bank=CentralBankChoices.FRB,
+            short_name="FRB_FEDFUNDS",
+            full_name="FRB Target Fed Funds Rate",
+            date=self.test_date,
+            value=5.25,
+        )
+        data2 = CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=self.test_date_2,
+            value=4.0,
+        )
+
+        response = self.client.delete(f"{self.base_url}?ids={data1.pk},{data2.pk}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Central Bank Data successfully deleted",
+            "deleted_count": 2,
+        }
+        assert not CentralBankDataModel.objects.filter(pk=data1.pk).exists()
+        assert not CentralBankDataModel.objects.filter(pk=data2.pk).exists()
+
+    def test_delete_central_bank_data_ids_with_other_parameters(self):
+        """
+        GIVEN IDs and other parameters
+        WHEN deleting central bank data
+        THEN data matching ids is deleted (other params ignored)
+        """
+        data1 = CentralBankDataModel.objects.create(
+            cb_data_id=1,
+            central_bank=CentralBankChoices.FRB,
+            short_name="FRB_FEDFUNDS",
+            full_name="FRB Target Fed Funds Rate",
+            date=self.test_date,
+            value=5.25,
+        )
+        data2 = CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=self.test_date_2,
+            value=4.0,
+        )
+
+        response = self.client.delete(
+            f"{self.base_url}?ids={data1.pk},{data2.pk}&start_date=2024-01-01"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Central Bank Data successfully deleted",
+            "deleted_count": 2,
+        }
+        assert not CentralBankDataModel.objects.filter(pk=data1.pk).exists()
+        assert not CentralBankDataModel.objects.filter(pk=data2.pk).exists()

@@ -366,13 +366,15 @@ def bulk_update_assets_prices(
             date=update["date"],
             asset__short_name=update["short_name"],
         )
+        logs_value = update.get("logs", "Bulk update of assets prices.")
         updated_assets.append(
             core_services.update_with_logs(
                 model_to_update=market_price,
                 log_model=PriceUpdateLogModel,
                 updates={
-                    "logs": update.get("logs", "Bulk update of assets prices."),
+                    "logs": logs_value,
                     "price": update["price"],
+                    "comment": logs_value,
                 },
                 logging_on_fields=["price"],
                 none_skip_fields=["price"],
@@ -418,21 +420,9 @@ def bulk_update_assets_prices_from_csv(
     return bulk_update_assets_prices(updates)
 
 
-def delete_market_prices(
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-    short_names: Optional[List[str]] = None,
-) -> int:
-    """Delete market prices based on optional filters."""
-    market_prices_queryset = MarketPriceModel.objects.all()
-    if start_date:
-        market_prices_queryset = market_prices_queryset.filter(date__gte=start_date)
-    if end_date:
-        market_prices_queryset = market_prices_queryset.filter(date__lte=end_date)
-    if short_names:
-        market_prices_queryset = market_prices_queryset.filter(
-            asset__short_name__in=short_names
-        )
+def delete_market_prices(ids: List[int]) -> int:
+    """Delete market prices by IDs."""
+    market_prices_queryset = MarketPriceModel.objects.filter(pk__in=ids)
     deleted_count = market_prices_queryset.count()
     market_prices_queryset.delete()
     return deleted_count

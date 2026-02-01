@@ -611,7 +611,9 @@ class TestMarketPricesViews(TestCase):
         response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_200_OK
+        price = MarketPriceModel.objects.get(asset=self.asset, date=self.price_date)
         assert response.json() == {
+            "id": price.pk,
             "comment": "",
             "date": self.price_date.isoformat(),
             "price": 100.0,
@@ -692,8 +694,10 @@ class TestMarketPricesViews(TestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
+        price = MarketPriceModel.objects.get(asset=self.asset, date=self.price_date)
         assert response.json() == [
             {
+                "id": price.pk,
                 "comment": "",
                 "date": self.price_date.isoformat(),
                 "price": 100.0,
@@ -772,8 +776,11 @@ class TestMarketPricesViews(TestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
+        price1 = MarketPriceModel.objects.get(asset=self.asset, date=self.price_date)
+        price2 = MarketPriceModel.objects.get(asset=asset2, date=self.price_date)
         assert response.json() == [
             {
+                "id": price1.pk,
                 "comment": "",
                 "date": self.price_date.isoformat(),
                 "price": 100.0,
@@ -790,6 +797,7 @@ class TestMarketPricesViews(TestCase):
                 },
             },
             {
+                "id": price2.pk,
                 "comment": "",
                 "date": self.price_date.isoformat(),
                 "price": 200.0,
@@ -1103,8 +1111,15 @@ class TestMarketPricesViews(TestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
+        updated_price = MarketPriceModel.objects.get(
+            asset=self.asset, date=self.price_date
+        )
         assert response.json() == [
             {
+                "id": updated_price.pk,
+                "comment": "Test update",
+                "date": self.price_date.isoformat(),
+                "price": 150.0,
                 "asset": {
                     "asset_class": "STOCKS",
                     "asset_id": 1,
@@ -1116,15 +1131,8 @@ class TestMarketPricesViews(TestCase):
                     "source": "",
                     "ticker": "",
                 },
-                "comment": "",
-                "date": self.price_date.isoformat(),
-                "price": 150.0,
-            },
+            }
         ]
-        updated_price = MarketPriceModel.objects.get(
-            asset=self.asset, date=self.price_date
-        )
-        assert updated_price.price == 150.0
 
     def test_bulk_update_assets_prices_empty_list(self):
         """
@@ -1229,7 +1237,7 @@ class TestMarketPricesViews(TestCase):
         """
         GIVEN a list of updates with no logs
         WHEN bulk updating the assets prices
-        THEN a log is created with the default message
+        THEN a log is created with the default message and comment is updated
         """
         updates: List[dict] = [
             {
@@ -1253,12 +1261,16 @@ class TestMarketPricesViews(TestCase):
             log.logs
             == "Bulk update of assets prices. Updated price from 100.0 to 150.0."
         )
+        updated_price = MarketPriceModel.objects.get(
+            asset=self.asset, date=self.price_date
+        )
+        assert updated_price.comment == "Bulk update of assets prices."
 
     def test_bulk_update_assets_prices_with_custom_logs(self):
         """
         GIVEN a list of updates with a custom logs message
         WHEN bulk updating the assets prices
-        THEN a log is created with the custom message
+        THEN a log is created with the custom message and comment is updated
         """
         updates: List[BulkUpdateAssetsPricesItem] = [
             {
@@ -1280,6 +1292,10 @@ class TestMarketPricesViews(TestCase):
             market_price__asset=self.asset, market_price__date=self.price_date
         )
         assert log.logs == "Custom log message Updated price from 100.0 to 150.0."
+        updated_price = MarketPriceModel.objects.get(
+            asset=self.asset, date=self.price_date
+        )
+        assert updated_price.comment == "Custom log message"
 
     def test_bulk_update_assets_prices_multiple_updates(self):
         """
@@ -1329,20 +1345,15 @@ class TestMarketPricesViews(TestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == 3
-        assert (
-            MarketPriceModel.objects.get(asset=self.asset, date=self.price_date).price
-            == 150.0
-        )
-        assert (
-            MarketPriceModel.objects.get(
-                asset=self.asset, date=self.previous_date
-            ).price
-            == 200.0
-        )
-        assert (
-            MarketPriceModel.objects.get(asset=second_asset, date=self.price_date).price
-            == 80.0
-        )
+        price1 = MarketPriceModel.objects.get(asset=self.asset, date=self.price_date)
+        assert price1.price == 150.0
+        assert price1.comment == "Update 1"
+        price2 = MarketPriceModel.objects.get(asset=self.asset, date=self.previous_date)
+        assert price2.price == 200.0
+        assert price2.comment == "Update 2"
+        price3 = MarketPriceModel.objects.get(asset=second_asset, date=self.price_date)
+        assert price3.price == 80.0
+        assert price3.comment == "Update 3"
 
     def test_csv_bulk_update_success(self):
         """
@@ -1463,132 +1474,13 @@ class TestDeleteMarketPricesView(TestCase):
             price=210.0,
         )
 
-    def test_delete_market_prices_by_start_date(self):
+    def test_delete_market_prices_no_ids(self):
         """
-        GIVEN market prices exist
-        WHEN deleting prices with start_date filter
-        THEN prices from that date onwards are deleted
-        """
-        query_params = f"start_date={self.date2.isoformat()}"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "message": "Market prices successfully deleted.",
-            "deleted_count": 3,
-        }
-        assert MarketPriceModel.objects.filter(pk=self.price1.pk).exists()
-        assert MarketPriceModel.objects.filter(pk=self.price4.pk).exists()
-        assert MarketPriceModel.objects.count() == 2
-
-    def test_delete_market_prices_by_end_date(self):
-        """
-        GIVEN market prices exist
-        WHEN deleting prices with end_date filter
-        THEN prices up to that date are deleted
-        """
-        query_params = f"end_date={self.date2.isoformat()}"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "message": "Market prices successfully deleted.",
-            "deleted_count": 4,
-        }
-        assert MarketPriceModel.objects.filter(pk=self.price3.pk).exists()
-        assert MarketPriceModel.objects.count() == 1
-
-    def test_delete_market_prices_by_short_names(self):
-        """
-        GIVEN market prices exist for multiple assets
-        WHEN deleting prices with short_names filter
-        THEN prices for those assets are deleted
-        """
-        query_params = "short_names=TEST1"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "message": "Market prices successfully deleted.",
-            "deleted_count": 3,
-        }
-        assert MarketPriceModel.objects.filter(pk=self.price4.pk).exists()
-        assert MarketPriceModel.objects.filter(pk=self.price5.pk).exists()
-        assert MarketPriceModel.objects.count() == 2
-
-    def test_delete_market_prices_by_multiple_short_names(self):
-        """
-        GIVEN market prices exist for multiple assets
-        WHEN deleting prices with multiple short_names
-        THEN prices for all specified assets are deleted
-        """
-        query_params = "short_names=TEST1,TEST2"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "message": "Market prices successfully deleted.",
-            "deleted_count": 5,
-        }
-        assert MarketPriceModel.objects.count() == 0
-
-    def test_delete_market_prices_by_date_range(self):
-        """
-        GIVEN market prices exist
-        WHEN deleting prices with start_date and end_date filters
-        THEN prices within the date range are deleted
-        """
-        query_params = (
-            f"start_date={self.date1.isoformat()}&end_date={self.date2.isoformat()}"
-        )
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "message": "Market prices successfully deleted.",
-            "deleted_count": 4,
-        }
-        assert MarketPriceModel.objects.filter(pk=self.price3.pk).exists()
-        assert MarketPriceModel.objects.count() == 1
-
-    def test_delete_market_prices_by_all_filters(self):
-        """
-        GIVEN market prices exist
-        WHEN deleting prices with all filters combined
-        THEN prices matching all criteria are deleted
-        """
-        query_params = f"start_date={self.date1.isoformat()}&end_date={self.date2.isoformat()}&short_names=TEST1"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "message": "Market prices successfully deleted.",
-            "deleted_count": 2,
-        }
-        assert MarketPriceModel.objects.filter(pk=self.price3.pk).exists()
-        assert MarketPriceModel.objects.filter(pk=self.price4.pk).exists()
-        assert MarketPriceModel.objects.filter(pk=self.price5.pk).exists()
-        assert MarketPriceModel.objects.count() == 3
-
-    def test_delete_market_prices_no_parameters(self):
-        """
-        GIVEN a delete request
-        WHEN no parameters are provided
-        THEN a 400 Bad Request error is returned
+        GIVEN no ids provided
+        WHEN deleting market prices
+        THEN no prices are deleted and deleted_count is 0
         """
         response = self.client.delete(f"{self.base_url}")
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "At least one of" in str(response.json().get("error_message", ""))
-
-    def test_delete_market_prices_no_matching_records(self):
-        """
-        GIVEN a delete request
-        WHEN no prices match the criteria
-        THEN 0 records are deleted and success response is returned
-        """
-        query_params = f"start_date={date(2026, 1, 1).isoformat()}"
-        response = self.client.delete(f"{self.base_url}?{query_params}")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
@@ -1596,6 +1488,57 @@ class TestDeleteMarketPricesView(TestCase):
             "deleted_count": 0,
         }
         assert MarketPriceModel.objects.count() == 5
+
+    def test_delete_market_prices_no_matching_ids(self):
+        """
+        GIVEN a delete request with non-existent IDs
+        WHEN deleting market prices
+        THEN 0 records are deleted and success response is returned
+        """
+        response = self.client.delete(f"{self.base_url}?ids=999999,999998")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 0,
+        }
+        assert MarketPriceModel.objects.count() == 5
+
+    def test_delete_market_prices_by_ids(self):
+        """
+        GIVEN existing market prices
+        WHEN deleting by IDs
+        THEN the specified prices are deleted
+        """
+        response = self.client.delete(
+            f"{self.base_url}?ids={self.price1.pk},{self.price2.pk}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 2,
+        }
+        assert not MarketPriceModel.objects.filter(pk=self.price1.pk).exists()
+        assert not MarketPriceModel.objects.filter(pk=self.price2.pk).exists()
+
+    def test_delete_market_prices_ids_with_other_parameters(self):
+        """
+        GIVEN IDs and other parameters
+        WHEN deleting market prices
+        THEN data matching ids is deleted (other params ignored)
+        """
+        response = self.client.delete(
+            f"{self.base_url}?ids={self.price1.pk},{self.price2.pk}&start_date=2024-01-01"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "Market prices successfully deleted.",
+            "deleted_count": 2,
+        }
+        assert not MarketPriceModel.objects.filter(pk=self.price1.pk).exists()
+        assert not MarketPriceModel.objects.filter(pk=self.price2.pk).exists()
 
 
 class TestMarkAsHolidayView(TestCase):

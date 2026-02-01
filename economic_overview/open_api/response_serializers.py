@@ -59,12 +59,21 @@ class EconomicDataResponseSerializer(serializers.ModelSerializer):
     """Economic Data Response Serializer."""
 
     indicator = EconomicIndicatorInformationSerializer(read_only=True)
+    id = serializers.IntegerField(source="pk", read_only=True)
 
     class Meta:
         model = EconomicDataModel
         fields = [
+            "id",
             "indicator",
             "period",
             "data_value",
             "comment",
         ]
+
+
+class DeleteEconomicDataResponseSerializer(serializers.Serializer):
+    """Delete Economic Data Response Serializer."""
+
+    message = serializers.CharField()
+    deleted_count = serializers.IntegerField()

@@ -640,7 +640,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         # No meeting records should be left as meeting of 2025-12-10 is past
         # and mocked extract functions return empty lists
         assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == []
-        mock_ingest_data.assert_called_once()
+        assert mock_ingest_data.call_count == 3
 
     @freeze_time("2025-12-15")
     @patch("central_banks_overview.services.cb_data_services.ingest_central_bank_data")
@@ -781,7 +781,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == [
             {
                 "central_bank": CentralBankChoices.ECB.value,
-                "date": "2026-01-15 13:15:00+0000",
+                "date": "2026-01-15 13:00:00+0000",
                 "order": 1,
             }
         ]

@@ -78,12 +78,12 @@ def get_economic_data(
     return query
 
 
-def delete_economic_data(indicator_name: str, period: Optional[str] = None):
-    """Delete economic data for a specific indicator and period."""
-    query = EconomicDataModel.objects.filter(indicator__name=indicator_name)
-    if period is not None:
-        query = query.filter(period=period)
-    query.delete()
+def delete_economic_data(ids: List[int]) -> int:
+    """Delete economic data by IDs."""
+    queryset = EconomicDataModel.objects.filter(pk__in=ids)
+    deleted_count = queryset.count()
+    queryset.delete()
+    return deleted_count
 
 
 def delete_economic_data_update_logs_before_date(logs_date: date):

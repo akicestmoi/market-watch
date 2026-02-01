@@ -125,6 +125,7 @@ const ENDPOINTS = {
                 description: "Ingest market prices for specific assets over target periods. This endpoint scrapes historical data for multiple assets.",
                 method: "POST",
                 path: "/markets/prices/batch-ingest",
+                bodyAsList: true,
                 body: [
                     { name: "data", type: "json", required: true, example: '[{"short_name": "EURUSD", "start_date": "2024-01-01", "end_date": "2024-01-31"}]' },
                 ],
@@ -156,6 +157,7 @@ const ENDPOINTS = {
                 description: "Bulk update assets prices.",
                 method: "PATCH",
                 path: "/markets/prices/bulk-update",
+                bodyAsList: true,
                 body: [
                     { name: "data", type: "json", required: true, example: '[{"short_name": "EURUSD", "date": "2024-01-01", "price": 1.10, "logs": "Manual update"}]' },
                 ],
@@ -192,6 +194,7 @@ const ENDPOINTS = {
                     { name: "start_date", type: "date", required: false },
                     { name: "end_date", type: "date", required: false },
                     { name: "short_names", type: "text", required: false, placeholder: "Comma-separated list" },
+                    { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
                 ],
             },
         ],
@@ -248,6 +251,7 @@ const ENDPOINTS = {
                 description: "Ingest specific economic data for a specific indicator and period.",
                 method: "POST",
                 path: "/economics/indicator/ingest-specific",
+                bodyAsList: true,
                 body: [
                     { name: "data", type: "json", required: true, example: '[{"indicator_name": "France Consumer Confidence", "periods": ["2024-01", "2024-02"]}]' },
                 ],
@@ -262,6 +266,19 @@ const ENDPOINTS = {
                 query: [
                     { name: "indicator_names", type: "text", required: false, placeholder: "Comma-separated list" },
                     { name: "period", type: "text", required: false },
+                ],
+            },
+            {
+                name: "Delete Economic Data",
+                description: "Delete economic data based on optional filters. At least one filter must be provided.",
+                method: "DELETE",
+                path: "/economics/indicator",
+                body: null,
+                query: [
+                    { name: "start_date", type: "date", required: false },
+                    { name: "end_date", type: "date", required: false },
+                    { name: "indicator_names", type: "text", required: false, placeholder: "Comma-separated list" },
+                    { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
                 ],
             },
         ],
@@ -297,10 +314,24 @@ const ENDPOINTS = {
                 description: "Ingest central bank data.",
                 method: "POST",
                 path: "/central-banks/data/ingest",
+                bodyAsList: true,
                 body: [
                     { name: "data", type: "json", required: true, example: '[{"central_bank": "FRB", "date": "2024-01-01"}]' },
                 ],
                 query: null,
+            },
+            {
+                name: "Delete Central Bank Data",
+                description: "Delete central bank data based on optional filters. At least one filter must be provided.",
+                method: "DELETE",
+                path: "/central-banks/data",
+                body: null,
+                query: [
+                    { name: "start_date", type: "date", required: false },
+                    { name: "end_date", type: "date", required: false },
+                    { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+                    { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
+                ],
             },
         ],
         "STIR Futures Prices": [
@@ -320,6 +351,7 @@ const ENDPOINTS = {
                 description: "Bulk update stir futures prices.",
                 method: "PATCH",
                 path: "/central-banks/stir-futures/bulk-update",
+                bodyAsList: true,
                 body: [
                     { name: "data", type: "json", required: true, example: '[{"date": "2024-01-01", "short_name": "ESTR", "maturity": "2024-03", "price": 95.5, "logs": "Manual update"}]' },
                 ],
@@ -356,6 +388,7 @@ const ENDPOINTS = {
                     { name: "start_date", type: "date", required: false },
                     { name: "end_date", type: "date", required: false },
                     { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+                    { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
                 ],
             },
         ],

@@ -10,6 +10,7 @@ import economic_overview.services.economic_data_services as economic_data_servic
 import economic_overview.services.publication_services as publication_services
 from core.open_api import (
     ApiTags,
+    BadRequestOpenApiResponse,
     CreatedOpenApiResponse,
     NotFoundOpenApiResponse,
     OkOpenApiResponse,
@@ -28,6 +29,7 @@ from economic_overview.open_api.request_serializers import (
     SpecificEconomicDataIngestionSerializer,
 )
 from economic_overview.open_api.response_serializers import (
+    DeleteEconomicDataResponseSerializer,
     EconomicDataIngestionResponseSerializer,
     EconomicDataResponseSerializer,
     SpecificEconomicDataIngestionResponseSerializer,
@@ -209,21 +211,24 @@ class EconomicDataDetailedView(EconomicOverviewBaseView):
     @open_api(
         tags=[ApiTags.ECONOMIC_DATA],
         summary="Delete Economic Data",
-        description="Delete economic data",
+        description="Delete economic data by IDs.",
         request_serializer=DeleteEconomicDataSerializer,
-        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
+        response=OkOpenApiResponse(DeleteEconomicDataResponseSerializer),
+        error_responses=[
+            BadRequestOpenApiResponse("IDs must be comma-separated integers.")
+        ],
     )
     def delete(self, validated_data: dict) -> Response:
-        """Delete economic data for a specific indicator and period."""
-        indicator_name: str = validated_data["indicator_name"]
-        period: str = validated_data["period"]
+        """Delete economic data by IDs."""
+        ids: List[int] = validated_data.get("ids", [])
 
-        validation_error = self._validate_indicators_exist([indicator_name])
-        if validation_error:
-            return validation_error
-
-        economic_data_services.delete_economic_data(indicator_name, period)
+        deleted_count = economic_data_services.delete_economic_data(ids)
         return Response(
-            data={"message": "Economic data successfully deleted"},
+            data=DeleteEconomicDataResponseSerializer(
+                {
+                    "message": "Economic data successfully deleted",
+                    "deleted_count": deleted_count,
+                }
+            ).data,
             status=status.HTTP_200_OK,
         )

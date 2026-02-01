@@ -14,9 +14,9 @@ from central_banks_overview.services.cb_meetings_services import (
     _extract_boj_meeting_dates,
     _extract_ecb_meeting_dates,
     _extract_fomc_meeting_dates,
-    _ingest_specific_central_bank_meeting_dates,
     get_central_bank_meeting_dates,
     get_central_bank_next_meeting_date,
+    ingest_all_central_bank_meeting_dates,
     ingest_central_bank_meeting_dates,
 )
 from core.tests import MockResponse, parse_query_for_testing, read_file_content
@@ -186,7 +186,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         mock_get.assert_any_call(FOMC_MEETING_URL, timeout=10)
         result = parse_query_for_testing(
@@ -292,7 +292,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         mock_get.assert_any_call(ECB_MEETING_URL, timeout=10)
         result = parse_query_for_testing(
@@ -368,7 +368,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         mock_get.assert_any_call(BOJ_MPM_URL, timeout=10)
         result = parse_query_for_testing(
@@ -481,7 +481,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "order"]
@@ -526,7 +526,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         existing_meeting.refresh_from_db()
         assert existing_meeting.order == 1
@@ -627,7 +627,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         result = parse_query_for_testing(CentralBankMeetingModel.objects.all())
         assert result == []
@@ -656,7 +656,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.side_effect = mock_get_side_effect
 
-        ingest_central_bank_meeting_dates()
+        ingest_all_central_bank_meeting_dates()
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["order"]
@@ -739,28 +739,39 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_boj_meeting_dates"
+    )
     @freeze_time("2025-01-01 12:00:00")
-    def test_ingest_specific_central_bank_meeting_dates_deletes_old_meetings(self):
+    def test_ingest_central_bank_meeting_dates_deletes_old_meetings(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
+    ):
         """
-        GIVEN existing meetings in database and new meeting dates list
-        WHEN ingesting specific central bank meeting dates
+        GIVEN existing meetings in database and extracted meeting dates
+        WHEN ingesting central bank meeting dates for FRB
         THEN old meetings are deleted and new meetings are created
         and the order of the meetings is updated.
         """
         # Create existing meetings that should be deleted
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2024, 12, 10, 13, 0, 0, tzinfo=timezone.utc),
             order=1,
         )
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),
             order=2,
         )
         # Create a meeting that should be kept (it's in the new list)
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
             order=3,
         )
@@ -770,10 +781,11 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
             datetime(2025, 5, 7, 13, 0, 0, tzinfo=timezone.utc),
         ]
+        mock_extract_fomc.return_value = new_meeting_dates
+        mock_extract_ecb.return_value = []
+        mock_extract_boj.return_value = []
 
-        _ingest_specific_central_bank_meeting_dates(
-            CentralBankChoices.FRB, new_meeting_dates
-        )
+        ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["order"]
@@ -796,9 +808,18 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_boj_meeting_dates"
+    )
     @freeze_time("2025-01-01 12:00:00")
-    def test_ingest_specific_central_bank_meeting_dates_only_deletes_same_central_bank(
-        self,
+    def test_ingest_central_bank_meeting_dates_only_deletes_same_central_bank(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
     ):
         """
         GIVEN meetings for multiple central banks
@@ -807,14 +828,14 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         """
         # Create FRB meeting that should be deleted
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 2, 1, 13, 0, 0, tzinfo=timezone.utc),
             order=1,
         )
 
         # Create ECB meeting that should NOT be deleted
         CentralBankMeetingModel.objects.create(
-            central_bank="ECB",
+            central_bank=CentralBankChoices.ECB,
             date=datetime(2025, 2, 1, 13, 15, 0, tzinfo=timezone.utc),
             order=1,
         )
@@ -824,10 +845,11 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),
             datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
         ]
+        mock_extract_fomc.return_value = new_frb_dates
+        mock_extract_ecb.return_value = []
+        mock_extract_boj.return_value = []
 
-        _ingest_specific_central_bank_meeting_dates(
-            CentralBankChoices.FRB, new_frb_dates
-        )
+        ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "order"]
@@ -850,19 +872,28 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_boj_meeting_dates"
+    )
     @freeze_time("2025-01-01 12:00:00")
-    def test_ingest_specific_central_bank_meeting_dates_respects_nb_meetings_limit(
-        self,
+    def test_ingest_central_bank_meeting_dates_respects_nb_meetings_limit(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
     ):
         """
         GIVEN more meeting dates than NB_MEETINGS_TO_INGEST
-        WHEN ingesting specific central bank meeting dates
+        WHEN ingesting central bank meeting dates for FRB
         THEN only meetings within the limit are kept, others are deleted
         """
         # Create existing meetings beyond the limit
         for i in range(20):
             CentralBankMeetingModel.objects.create(
-                central_bank="FRB",
+                central_bank=CentralBankChoices.FRB,
                 date=datetime(2025, 2, i + 1, 13, 0, 0, tzinfo=timezone.utc),
                 order=i + 1,
             )
@@ -871,10 +902,11 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         # Generate 20 valid dates starting from January 29, 2025
         start_date = datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc)
         new_meeting_dates = [start_date + relativedelta(days=i) for i in range(20)]
+        mock_extract_fomc.return_value = new_meeting_dates
+        mock_extract_ecb.return_value = []
+        mock_extract_boj.return_value = []
 
-        _ingest_specific_central_bank_meeting_dates(
-            CentralBankChoices.FRB, new_meeting_dates
-        )
+        ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         # Verify only NB_MEETINGS_TO_INGEST (15) meetings exist
         all_meetings = CentralBankMeetingModel.objects.filter(central_bank="FRB")
@@ -885,18 +917,27 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         expected_dates = {new_meeting_dates[i] for i in range(15)}
         assert meeting_dates_in_db == expected_dates
 
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_boj_meeting_dates"
+    )
     @freeze_time("2025-01-01 12:00:00")
-    def test_ingest_specific_central_bank_meeting_dates_filters_past_dates_before_deletion(
-        self,
+    def test_ingest_central_bank_meeting_dates_filters_past_dates_before_deletion(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
     ):
         """
         GIVEN meeting dates including past dates
-        WHEN ingesting specific central bank meeting dates
+        WHEN ingesting central bank meeting dates for FRB
         THEN past dates are filtered out and old meetings are deleted correctly
         """
         # Create existing future meeting
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 2, 1, 13, 0, 0, tzinfo=timezone.utc),
             order=1,
         )
@@ -907,10 +948,11 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),  # Future
             datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),  # Future
         ]
+        mock_extract_fomc.return_value = meeting_dates_with_past
+        mock_extract_ecb.return_value = []
+        mock_extract_boj.return_value = []
 
-        _ingest_specific_central_bank_meeting_dates(
-            CentralBankChoices.FRB, meeting_dates_with_past
-        )
+        ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["order"]
@@ -928,23 +970,32 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.cb_meetings_services._extract_boj_meeting_dates"
+    )
     @freeze_time("2025-01-01 12:00:00")
-    def test_ingest_specific_central_bank_meeting_dates_updates_order_existing_meetings(
-        self,
+    def test_ingest_central_bank_meeting_dates_updates_order_existing_meetings(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
     ):
         """
         GIVEN existing meetings with incorrect order
-        WHEN ingesting meeting dates
+        WHEN ingesting central bank meeting dates for FRB
         THEN existing meetings are updated with correct order using bulk_update
         """
         # Create existing meetings with wrong order
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
             order=99,  # Wrong order
         )
         CentralBankMeetingModel.objects.create(
-            central_bank="FRB",
+            central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),
             order=88,  # Wrong order
         )
@@ -954,10 +1005,11 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),  # Should be order 1
             datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),  # Should be order 2
         ]
+        mock_extract_fomc.return_value = new_meeting_dates
+        mock_extract_ecb.return_value = []
+        mock_extract_boj.return_value = []
 
-        _ingest_specific_central_bank_meeting_dates(
-            CentralBankChoices.FRB, new_meeting_dates
-        )
+        ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["order"]

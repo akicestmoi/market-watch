@@ -258,13 +258,15 @@ def _extract_boj_meeting_dates() -> List[datetime]:
     return sorted(meeting_dates)
 
 
-def _ingest_specific_central_bank_meeting_dates(
-    central_bank: CentralBankChoices, meeting_dates: List[datetime]
-):
+def ingest_central_bank_meeting_dates(central_bank: CentralBankChoices):
     """Ingest specific central bank meeting dates.
 
     Updates or creates meeting dates in the database and deletes any past meetings.
     """
+    if central_bank not in CB_MEETINGS_EXTRACT_MAP:
+        return []
+    meeting_dates = CB_MEETINGS_EXTRACT_MAP[central_bank]()
+
     now = datetime.now(timezone.utc)
     meeting_dates = [date for date in meeting_dates if date >= now]
     meeting_dates = meeting_dates[:NB_MEETINGS_TO_INGEST]
@@ -302,13 +304,10 @@ def _ingest_specific_central_bank_meeting_dates(
     ).delete()
 
 
-def ingest_central_bank_meeting_dates():
+def ingest_all_central_bank_meeting_dates():
     """Ingest all central banks meeting dates."""
     for central_bank in CentralBankChoices:
-        if central_bank not in CB_MEETINGS_EXTRACT_MAP:
-            continue
-        meeting_dates = CB_MEETINGS_EXTRACT_MAP[central_bank]()
-        _ingest_specific_central_bank_meeting_dates(central_bank, meeting_dates)
+        ingest_central_bank_meeting_dates(central_bank)
 
 
 def get_central_bank_meeting_dates(

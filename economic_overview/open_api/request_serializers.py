@@ -53,5 +53,15 @@ class ListEconomicDataSerializer(serializers.Serializer):
 class DeleteEconomicDataSerializer(serializers.Serializer):
     """Delete Economic Data Serializer."""
 
-    indicator_name = serializers.CharField(required=True)
-    period = serializers.CharField(required=True)
+    ids = serializers.CharField(required=True)
+
+    def validate_ids(self, value):
+        """Convert comma-separated string to list of integers."""
+        if not value or not value.strip():
+            return None
+        try:
+            return [
+                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
+            ]
+        except ValueError:
+            raise serializers.ValidationError("IDs must be comma-separated integers.")

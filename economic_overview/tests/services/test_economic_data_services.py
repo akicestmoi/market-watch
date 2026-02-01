@@ -391,33 +391,35 @@ class TestEconomicDataServices(TestCase):
             },
         ]
 
-    def test_delete_economic_data_with_period(self):
+    def test_delete_economic_data_by_ids(self):
         """
         GIVEN existing economic data
-        WHEN deleting economic data for a specific indicator and period
-        THEN the data is deleted
+        WHEN deleting economic data by IDs
+        THEN the specified data is deleted
         """
-        delete_economic_data(self.indicator.name, self.period.isoformat())
+        deleted_count = delete_economic_data([self.economic_data.pk])
 
+        assert deleted_count == 1
         result = get_economic_data(indicator_names=[self.indicator.name])
         result_dict = convert_query_to_dictionary_list(result)
         assert result_dict == []
 
-    def test_delete_economic_data_without_period(self):
+    def test_delete_economic_data_by_ids_multiple(self):
         """
-        GIVEN existing economic data
-        WHEN deleting economic data for a specific indicator without period
-        THEN all data for that indicator is deleted
+        GIVEN existing economic data for multiple periods
+        WHEN deleting economic data by multiple IDs
+        THEN all specified data is deleted
         """
         other_period = date(2024, 2, 15)
-        EconomicDataModel.objects.create(
+        other_data = EconomicDataModel.objects.create(
             indicator=self.indicator,
             period=other_period,
             data_value=200.0,
         )
 
-        delete_economic_data(self.indicator.name)
+        deleted_count = delete_economic_data([self.economic_data.pk, other_data.pk])
 
+        assert deleted_count == 2
         result = get_economic_data(indicator_names=[self.indicator.name])
         result_dict = convert_query_to_dictionary_list(result)
         assert result_dict == []

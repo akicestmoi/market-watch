@@ -453,7 +453,7 @@ class TestECBIntegrationScenarios(TestCase):
                         "probabilities": [90.4],
                     },
                 ],
-                    },
+            },
             {
                 "central_bank": CentralBankChoices.BOJ,
                 "meeting_dates": [date(2026, 3, 15)],
@@ -536,7 +536,7 @@ class TestECBIntegrationScenarios(TestCase):
             asset=self.estr_asset,
             date=date(2025, 12, 10),
             price=4.0,
-            )
+        )
 
         # Create futures prices
         future = StirFuturesModel.objects.create(

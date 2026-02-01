@@ -104,22 +104,32 @@ class GetCentralBankProbabilityMatrixSerializer(CentralBankBaseSerializer):
 class DeleteStirFuturesPricesSerializer(CentralBankBaseSerializer):
     """Delete STIR Futures Prices Serializer."""
 
-    start_date = serializers.DateField(required=False, allow_null=True)
-    end_date = serializers.DateField(required=False, allow_null=True)
+    ids = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
-    def validate(self, attrs):
-        """Validate that at least one parameter is provided."""
-        central_banks = attrs.get("central_banks")
-        if central_banks and not central_banks.strip():
-            central_banks = None
-        if not any(
-            [
-                attrs.get("start_date"),
-                attrs.get("end_date"),
-                central_banks,
+    def validate_ids(self, value):
+        """Convert comma-separated string to list of integers."""
+        if not value or not value.strip():
+            return None
+        try:
+            return [
+                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
             ]
-        ):
-            raise serializers.ValidationError(
-                "At least one of 'start_date', 'end_date', or 'central_banks' must be provided."
-            )
-        return attrs
+        except ValueError:
+            raise serializers.ValidationError("IDs must be comma-separated integers.")
+
+
+class DeleteCentralBankDataSerializer(CentralBankBaseSerializer):
+    """Delete Central Bank Data Serializer."""
+
+    ids = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    def validate_ids(self, value):
+        """Convert comma-separated string to list of integers."""
+        if not value or not value.strip():
+            return None
+        try:
+            return [
+                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
+            ]
+        except ValueError:
+            raise serializers.ValidationError("IDs must be comma-separated integers.")

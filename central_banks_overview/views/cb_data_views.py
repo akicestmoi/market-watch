@@ -8,14 +8,22 @@ import central_banks_overview.services.cb_data_services as cb_data_services
 from central_banks_overview.models import CentralBankChoices
 from central_banks_overview.open_api.request_serializers import (
     CentralBankDataIngestionSerializer,
+    DeleteCentralBankDataSerializer,
     ListCentralBankDataSerializer,
 )
 from central_banks_overview.open_api.response_serializers import (
     CentralBankDataIngestionResponseSerializer,
     CentralBankDataResponseSerializer,
+    DeleteCentralBankDataResponseSerializer,
 )
 from central_banks_overview.services.cb_data_services import CentralBankDataDate
-from core.open_api import ApiTags, CreatedOpenApiResponse, OkOpenApiResponse, open_api
+from core.open_api import (
+    ApiTags,
+    BadRequestOpenApiResponse,
+    CreatedOpenApiResponse,
+    OkOpenApiResponse,
+    open_api,
+)
 from core.views import BaseAPIView
 
 
@@ -72,5 +80,30 @@ class ListCentralBankDataView(BaseAPIView):
         )
         return Response(
             data=CentralBankDataResponseSerializer(central_bank_data, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @open_api(
+        tags=[ApiTags.CENTRAL_BANKS],
+        summary="Delete Central Bank Data",
+        description="Delete Central Bank Data by IDs.",
+        request_serializer=DeleteCentralBankDataSerializer,
+        response=OkOpenApiResponse(DeleteCentralBankDataResponseSerializer),
+        error_responses=[
+            BadRequestOpenApiResponse("IDs must be comma-separated integers.")
+        ],
+    )
+    def delete(self, validated_data: dict) -> Response:
+        """Delete Central Bank Data by IDs."""
+        ids: List[int] = validated_data.get("ids", [])
+
+        deleted_count = cb_data_services.delete_central_bank_data(ids)
+        return Response(
+            data=DeleteCentralBankDataResponseSerializer(
+                {
+                    "message": "Central Bank Data successfully deleted",
+                    "deleted_count": deleted_count,
+                }
+            ).data,
             status=status.HTTP_200_OK,
         )

@@ -134,29 +134,18 @@ class ListStirFuturesPricesView(BaseAPIView):
     @open_api(
         tags=[ApiTags.CENTRAL_BANKS],
         summary="Delete STIR Futures Prices",
-        description="Delete STIR futures prices based on optional filters.",
+        description="Delete STIR futures prices by IDs.",
         request_serializer=DeleteStirFuturesPricesSerializer,
         response=OkOpenApiResponse(DeleteStirFuturesPricesResponseSerializer),
         error_responses=[
-            BadRequestOpenApiResponse(
-                "At least one of 'start_date', 'end_date', or 'central_banks' must be provided."
-            )
+            BadRequestOpenApiResponse("IDs must be comma-separated integers.")
         ],
     )
     def delete(self, validated_data: dict) -> Response:
-        """Delete STIR futures prices based on optional filters."""
-        start_date: Optional[date] = validated_data.get("start_date")
-        end_date: Optional[date] = validated_data.get("end_date")
-        central_banks_str: Optional[str] = validated_data.get("central_banks")
-        central_banks = (
-            [CentralBankChoices(cb) for cb in central_banks_str.split(",")]
-            if central_banks_str
-            else None
-        )
+        """Delete STIR futures prices by IDs."""
+        ids: List[int] = validated_data.get("ids", [])
 
-        deleted_count = stir_futures_services.delete_stir_futures_prices(
-            start_date, end_date, central_banks
-        )
+        deleted_count = stir_futures_services.delete_stir_futures_prices(ids)
         return Response(
             data=DeleteStirFuturesPricesResponseSerializer(
                 {

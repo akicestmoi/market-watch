@@ -107,19 +107,19 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
             stir_futures_services.delete_stir_futures_prices_before_date(
                 central_bank, price_date
             )
-
-        if results:
             cb_data_services.ingest_central_bank_data(
                 central_bank=central_bank,
                 date_to_ingest=(date.today() - BDay(1)).date(),
             )
-            cb_meetings_services.ingest_central_bank_meeting_dates()
-            message = f"Central bank meetings updated successfully for {results}"
-        else:
-            message = "No central bank meetings to update"
+            cb_meetings_services.ingest_central_bank_meeting_dates(central_bank)
+
         return {
             "status": "success",
-            "message": message,
+            "message": (
+                "No central bank meetings to update"
+                if not results
+                else f"Central bank meetings updated successfully for {results}"
+            ),
         }
     except Exception as e:
         logger.error(f"Error in stir futures prices cleanup task: {str(e)}")

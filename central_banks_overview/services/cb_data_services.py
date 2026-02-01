@@ -175,3 +175,11 @@ def get_central_bank_data(
         central_bank_data = central_bank_data.filter(date=target_date)
 
     return central_bank_data
+
+
+def delete_central_bank_data(ids: List[int]) -> int:
+    """Delete central bank data by IDs."""
+    queryset = CentralBankDataModel.objects.filter(pk__in=ids)
+    deleted_count = queryset.count()
+    queryset.delete()
+    return deleted_count

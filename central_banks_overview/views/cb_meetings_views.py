@@ -26,7 +26,7 @@ class CentralBankMeetingDatesIngestionView(BaseAPIView):
     )
     def post(self, validated_data: dict) -> Response:
         """Get Central Bank Meeting Dates for a given date."""
-        cb_meetings_services.ingest_central_bank_meeting_dates()
+        cb_meetings_services.ingest_all_central_bank_meeting_dates()
         return Response(
             data={"message": "Central Bank Meeting Dates successfully ingested"},
             status=status.HTTP_201_CREATED,

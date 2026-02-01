@@ -78,11 +78,13 @@ class GetAssetWithoutPriceResponseSerializer(serializers.Serializer):
 class MarketPriceResponseSerializer(serializers.ModelSerializer):
     """Market Price Serializer with Asset information."""
 
+    id = serializers.IntegerField(source="pk", read_only=True)
     asset = AssetResponseSerializer(read_only=True)
 
     class Meta:
         model = MarketPriceModel
         fields = [
+            "id",
             "date",
             "price",
             "comment",
