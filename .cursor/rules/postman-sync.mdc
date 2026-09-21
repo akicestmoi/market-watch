@@ -1,0 +1,16 @@
+---
+description: Keep the Postman collection in sync when HTTP endpoints change, using the full Postman MCP and upsert-endpoint.
+globs: "**/urls.py,**/*views*.py,**/open_api/**/*.py,**/serializers.py"
+alwaysApply: false
+---
+
+# Postman sync
+
+When routes, request/response schemas, query params, or auth on this Django API change, update the Postman collection through the **full** Postman MCP in `.cursor/mcp.json`. Do not hand-edit collections.
+
+1. Resolve the target from `.cursor/postman.local.json` (per machine) then [POSTMAN.md](../../POSTMAN.md). Workspace **Perso**, collection **market-watch**; the whole collection is this repo.
+2. Use `check-endpoint` for a read-only drift report.
+3. Use `upsert-endpoint` to create or update matching requests (never delete orphaned ones).
+4. If write tools are missing, the MCP is not on the `/mcp` (full) profile — stop and switch the URL to `https://mcp.postman.com/mcp` (or override in `~/.cursor/mcp.json` on this PC).
+
+Folder placement follows each `/` in the path; skip path-param segments. See `check-endpoint` / `upsert-endpoint`.

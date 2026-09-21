@@ -32,6 +32,9 @@ celerybeat-schedule.db
 # Docker
 .dockerignore
 
+# Per-machine Postman target (workspace/collection IDs). See POSTMAN.md
+.cursor/postman.local.json
+
 # IDE
 .idea/
 *.swp

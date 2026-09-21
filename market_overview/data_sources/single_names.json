@@ -1,0 +1,1820 @@
+[
+  {
+    "id": 1,
+    "Company": "3M Company",
+    "YFinance Ticker": "MMM",
+    "Sector": "Industrials",
+    "Subcategory": "Conglomerates",
+    "Index": "DJIA"
+  },
+  {
+    "id": 2,
+    "Company": "American Express Company",
+    "YFinance Ticker": "AXP",
+    "Sector": "Financials",
+    "Subcategory": "Financial Services",
+    "Index": "DJIA"
+  },
+  {
+    "id": 3,
+    "Company": "Amgen Inc.",
+    "YFinance Ticker": "AMGN",
+    "Sector": "Healthcare",
+    "Subcategory": "Biotechnology",
+    "Index": "DJIA"
+  },
+  {
+    "id": 4,
+    "Company": "Apple Inc.",
+    "YFinance Ticker": "AAPL",
+    "Sector": "Technology",
+    "Subcategory": "Technology Hardware",
+    "Index": "DJIA"
+  },
+  {
+    "id": 5,
+    "Company": "Boeing Company",
+    "YFinance Ticker": "BA",
+    "Sector": "Industrials",
+    "Subcategory": "Aerospace & Defense",
+    "Index": "DJIA"
+  },
+  {
+    "id": 6,
+    "Company": "Caterpillar Inc.",
+    "YFinance Ticker": "CAT",
+    "Sector": "Industrials",
+    "Subcategory": "Machinery",
+    "Index": "DJIA"
+  },
+  {
+    "id": 7,
+    "Company": "Chevron Corporation",
+    "YFinance Ticker": "CVX",
+    "Sector": "Energy",
+    "Subcategory": "Oil & Gas Integrated",
+    "Index": "DJIA"
+  },
+  {
+    "id": 8,
+    "Company": "Cisco Systems, Inc.",
+    "YFinance Ticker": "CSCO",
+    "Sector": "Technology",
+    "Subcategory": "Networking Equipment",
+    "Index": "DJIA"
+  },
+  {
+    "id": 9,
+    "Company": "The Coca-Cola Company",
+    "YFinance Ticker": "KO",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Beverages",
+    "Index": "DJIA"
+  },
+  {
+    "id": 10,
+    "Company": "Dow Inc.",
+    "YFinance Ticker": "DOW",
+    "Sector": "Materials",
+    "Subcategory": "Chemicals",
+    "Index": "DJIA"
+  },
+  {
+    "id": 11,
+    "Company": "The Goldman Sachs Group, Inc.",
+    "YFinance Ticker": "GS",
+    "Sector": "Financials",
+    "Subcategory": "Investment Banking",
+    "Index": "DJIA"
+  },
+  {
+    "id": 12,
+    "Company": "The Home Depot, Inc.",
+    "YFinance Ticker": "HD",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Home Improvement Retail",
+    "Index": "DJIA"
+  },
+  {
+    "id": 13,
+    "Company": "Honeywell International Inc.",
+    "YFinance Ticker": "HON",
+    "Sector": "Industrials",
+    "Subcategory": "Industrial Conglomerates",
+    "Index": "DJIA"
+  },
+  {
+    "id": 14,
+    "Company": "International Business Machines Corporation",
+    "YFinance Ticker": "IBM",
+    "Sector": "Technology",
+    "Subcategory": "IT Services",
+    "Index": "DJIA"
+  },
+  {
+    "id": 15,
+    "Company": "Intel Corporation",
+    "YFinance Ticker": "INTC",
+    "Sector": "Technology",
+    "Subcategory": "Semiconductors",
+    "Index": "DJIA"
+  },
+  {
+    "id": 16,
+    "Company": "Johnson & Johnson",
+    "YFinance Ticker": "JNJ",
+    "Sector": "Healthcare",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "DJIA"
+  },
+  {
+    "id": 17,
+    "Company": "JPMorgan Chase & Co.",
+    "YFinance Ticker": "JPM",
+    "Sector": "Financials",
+    "Subcategory": "Banking",
+    "Index": "DJIA"
+  },
+  {
+    "id": 18,
+    "Company": "McDonald's Corporation",
+    "YFinance Ticker": "MCD",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Restaurants",
+    "Index": "DJIA"
+  },
+  {
+    "id": 19,
+    "Company": "Merck & Co., Inc.",
+    "YFinance Ticker": "MRK",
+    "Sector": "Healthcare",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "DJIA"
+  },
+  {
+    "id": 20,
+    "Company": "Microsoft Corporation",
+    "YFinance Ticker": "MSFT",
+    "Sector": "Technology",
+    "Subcategory": "Software",
+    "Index": "DJIA"
+  },
+  {
+    "id": 21,
+    "Company": "Nike, Inc.",
+    "YFinance Ticker": "NKE",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Apparel & Footwear",
+    "Index": "DJIA"
+  },
+  {
+    "id": 22,
+    "Company": "The Procter & Gamble Company",
+    "YFinance Ticker": "PG",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Household Products",
+    "Index": "DJIA"
+  },
+  {
+    "id": 23,
+    "Company": "Salesforce, Inc.",
+    "YFinance Ticker": "CRM",
+    "Sector": "Technology",
+    "Subcategory": "Cloud Software",
+    "Index": "DJIA"
+  },
+  {
+    "id": 24,
+    "Company": "The Travelers Companies, Inc.",
+    "YFinance Ticker": "TRV",
+    "Sector": "Financials",
+    "Subcategory": "Insurance",
+    "Index": "DJIA"
+  },
+  {
+    "id": 25,
+    "Company": "UnitedHealth Group Incorporated",
+    "YFinance Ticker": "UNH",
+    "Sector": "Healthcare",
+    "Subcategory": "Managed Care",
+    "Index": "DJIA"
+  },
+  {
+    "id": 26,
+    "Company": "Verizon Communications Inc.",
+    "YFinance Ticker": "VZ",
+    "Sector": "Communication Services",
+    "Subcategory": "Telecom Services",
+    "Index": "DJIA"
+  },
+  {
+    "id": 27,
+    "Company": "Visa Inc.",
+    "YFinance Ticker": "V",
+    "Sector": "Financials",
+    "Subcategory": "Payment Networks",
+    "Index": "DJIA"
+  },
+  {
+    "id": 28,
+    "Company": "Walgreens Boots Alliance, Inc.",
+    "YFinance Ticker": "WBA",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Pharmacy Retail",
+    "Index": "DJIA"
+  },
+  {
+    "id": 29,
+    "Company": "Walmart Inc.",
+    "YFinance Ticker": "WMT",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Mass Merchandise Retail",
+    "Index": "DJIA"
+  },
+  {
+    "id": 33,
+    "Company": "Airbus SE",
+    "YFinance Ticker": "AIR.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Aerospace & Defense",
+    "Index": "CAC40"
+  },
+  {
+    "id": 34,
+    "Company": "Alstom SA",
+    "YFinance Ticker": "ALO.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Rail Equipment",
+    "Index": "CAC40"
+  },
+  {
+    "id": 35,
+    "Company": "ArcelorMittal SA",
+    "YFinance Ticker": "MT.AS",
+    "Sector": "Materials",
+    "Subcategory": "Steel",
+    "Index": "CAC40"
+  },
+  {
+    "id": 36,
+    "Company": "AXA SA",
+    "YFinance Ticker": "CS.PA",
+    "Sector": "Financials",
+    "Subcategory": "Insurance",
+    "Index": "CAC40"
+  },
+  {
+    "id": 37,
+    "Company": "BNP Paribas SA",
+    "YFinance Ticker": "BNP.PA",
+    "Sector": "Financials",
+    "Subcategory": "Banking",
+    "Index": "CAC40"
+  },
+  {
+    "id": 38,
+    "Company": "Bouygues SA",
+    "YFinance Ticker": "EN.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Construction",
+    "Index": "CAC40"
+  },
+  {
+    "id": 39,
+    "Company": "Capgemini SE",
+    "YFinance Ticker": "CAP.PA",
+    "Sector": "Technology",
+    "Subcategory": "IT Services",
+    "Index": "CAC40"
+  },
+  {
+    "id": 40,
+    "Company": "Carrefour SA",
+    "YFinance Ticker": "CA.PA",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Food Retail",
+    "Index": "CAC40"
+  },
+  {
+    "id": 41,
+    "Company": "Cr\u00e9dit Agricole SA",
+    "YFinance Ticker": "ACA.PA",
+    "Sector": "Financials",
+    "Subcategory": "Banking",
+    "Index": "CAC40"
+  },
+  {
+    "id": 42,
+    "Company": "Danone SA",
+    "YFinance Ticker": "BN.PA",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Food Products",
+    "Index": "CAC40"
+  },
+  {
+    "id": 43,
+    "Company": "Dassault Syst\u00e8mes SE",
+    "YFinance Ticker": "DSY.PA",
+    "Sector": "Technology",
+    "Subcategory": "Software",
+    "Index": "CAC40"
+  },
+  {
+    "id": 44,
+    "Company": "Edenred SA",
+    "YFinance Ticker": "EDEN.PA",
+    "Sector": "Financials",
+    "Subcategory": "Payment Services",
+    "Index": "CAC40"
+  },
+  {
+    "id": 45,
+    "Company": "Engie SA",
+    "YFinance Ticker": "ENGI.PA",
+    "Sector": "Utilities",
+    "Subcategory": "Multi-Utilities",
+    "Index": "CAC40"
+  },
+  {
+    "id": 46,
+    "Company": "EssilorLuxottica SA",
+    "YFinance Ticker": "EL.PA",
+    "Sector": "Healthcare",
+    "Subcategory": "Medical Equipment",
+    "Index": "CAC40"
+  },
+  {
+    "id": 47,
+    "Company": "Eurofins Scientific SE",
+    "YFinance Ticker": "ERF.PA",
+    "Sector": "Healthcare",
+    "Subcategory": "Life Sciences Tools",
+    "Index": "CAC40"
+  },
+  {
+    "id": 48,
+    "Company": "Herm\u00e8s International SCA",
+    "YFinance Ticker": "RMS.PA",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Luxury Goods",
+    "Index": "CAC40"
+  },
+  {
+    "id": 49,
+    "Company": "Kering SA",
+    "YFinance Ticker": "KER.PA",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Luxury Goods",
+    "Index": "CAC40"
+  },
+  {
+    "id": 50,
+    "Company": "Legrand SA",
+    "YFinance Ticker": "LR.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Electrical Equipment",
+    "Index": "CAC40"
+  },
+  {
+    "id": 51,
+    "Company": "L'Or\u00e9al SA",
+    "YFinance Ticker": "OR.PA",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Personal Care",
+    "Index": "CAC40"
+  },
+  {
+    "id": 52,
+    "Company": "LVMH Mo\u00ebt Hennessy Louis Vuitton SE",
+    "YFinance Ticker": "MC.PA",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Luxury Goods",
+    "Index": "CAC40"
+  },
+  {
+    "id": 53,
+    "Company": "Michelin SCA",
+    "YFinance Ticker": "ML.PA",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Tires",
+    "Index": "CAC40"
+  },
+  {
+    "id": 54,
+    "Company": "Orange SA",
+    "YFinance Ticker": "ORA.PA",
+    "Sector": "Communication Services",
+    "Subcategory": "Telecom Services",
+    "Index": "CAC40"
+  },
+  {
+    "id": 55,
+    "Company": "Pernod Ricard SA",
+    "YFinance Ticker": "RI.PA",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Beverages",
+    "Index": "CAC40"
+  },
+  {
+    "id": 56,
+    "Company": "Publicis Groupe SA",
+    "YFinance Ticker": "PUB.PA",
+    "Sector": "Communication Services",
+    "Subcategory": "Advertising",
+    "Index": "CAC40"
+  },
+  {
+    "id": 57,
+    "Company": "Renault SA",
+    "YFinance Ticker": "RNO.PA",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Automobiles",
+    "Index": "CAC40"
+  },
+  {
+    "id": 58,
+    "Company": "Safran SA",
+    "YFinance Ticker": "SAF.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Aerospace & Defense",
+    "Index": "CAC40"
+  },
+  {
+    "id": 59,
+    "Company": "Sanofi SA",
+    "YFinance Ticker": "SAN.PA",
+    "Sector": "Healthcare",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "CAC40"
+  },
+  {
+    "id": 60,
+    "Company": "Schneider Electric SE",
+    "YFinance Ticker": "SU.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Electrical Equipment",
+    "Index": "CAC40"
+  },
+  {
+    "id": 61,
+    "Company": "Soci\u00e9t\u00e9 G\u00e9n\u00e9rale SA",
+    "YFinance Ticker": "GLE.PA",
+    "Sector": "Financials",
+    "Subcategory": "Banking",
+    "Index": "CAC40"
+  },
+  {
+    "id": 62,
+    "Company": "Stellantis NV",
+    "YFinance Ticker": "STLAM.PA",
+    "Sector": "Consumer Discretionary",
+    "Subcategory": "Automobiles",
+    "Index": "CAC40"
+  },
+  {
+    "id": 63,
+    "Company": "STMicroelectronics NV",
+    "YFinance Ticker": "STM.PA",
+    "Sector": "Technology",
+    "Subcategory": "Semiconductors",
+    "Index": "CAC40"
+  },
+  {
+    "id": 64,
+    "Company": "Teleperformance SE",
+    "YFinance Ticker": "TEP.PA",
+    "Sector": "Communication Services",
+    "Subcategory": "Business Services",
+    "Index": "CAC40"
+  },
+  {
+    "id": 65,
+    "Company": "Thales SA",
+    "YFinance Ticker": "HO.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Defense Electronics",
+    "Index": "CAC40"
+  },
+  {
+    "id": 66,
+    "Company": "TotalEnergies SE",
+    "YFinance Ticker": "TTE.PA",
+    "Sector": "Energy",
+    "Subcategory": "Oil & Gas Integrated",
+    "Index": "CAC40"
+  },
+  {
+    "id": 67,
+    "Company": "Unibail-Rodamco-Westfield SE",
+    "YFinance Ticker": "URW.PA",
+    "Sector": "Real Estate",
+    "Subcategory": "Commercial REIT",
+    "Index": "CAC40"
+  },
+  {
+    "id": 68,
+    "Company": "Veolia Environnement SA",
+    "YFinance Ticker": "VIE.PA",
+    "Sector": "Utilities",
+    "Subcategory": "Environmental Services",
+    "Index": "CAC40"
+  },
+  {
+    "id": 69,
+    "Company": "Vinci SA",
+    "YFinance Ticker": "DG.PA",
+    "Sector": "Industrials",
+    "Subcategory": "Construction & Engineering",
+    "Index": "CAC40"
+  },
+  {
+    "id": 70,
+    "Company": "Worldline SA",
+    "YFinance Ticker": "WLN.PA",
+    "Sector": "Financials",
+    "Subcategory": "Payment Processing",
+    "Index": "CAC40"
+  },
+  {
+    "id": 71,
+    "Company": "Toyota Motor Corp",
+    "YFinance Ticker": "7203.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 72,
+    "Company": "Honda Motor Co., Ltd.",
+    "YFinance Ticker": "7267.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 73,
+    "Company": "Nissan Motor Co., Ltd.",
+    "YFinance Ticker": "7201.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 74,
+    "Company": "Suzuki Motor Corp",
+    "YFinance Ticker": "7269.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 75,
+    "Company": "Subaru Corp",
+    "YFinance Ticker": "7270.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 76,
+    "Company": "Mazda Motor Corp",
+    "YFinance Ticker": "7261.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 77,
+    "Company": "Isuzu Motors Ltd",
+    "YFinance Ticker": "7202.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Commercial Vehicles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 78,
+    "Company": "Daihatsu Motor Co., Ltd.",
+    "YFinance Ticker": "7262.T",
+    "Sector": "Automobiles",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 79,
+    "Company": "Sony Group Corp",
+    "YFinance Ticker": "6758.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electronics & Media",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 80,
+    "Company": "Panasonic Holdings Corp",
+    "YFinance Ticker": "6752.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electrical Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 81,
+    "Company": "Hitachi, Ltd.",
+    "YFinance Ticker": "6501.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Industrial Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 82,
+    "Company": "Mitsubishi Electric Corp",
+    "YFinance Ticker": "6503.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Industrial Electronics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 83,
+    "Company": "Tokyo Electron Ltd",
+    "YFinance Ticker": "8035.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Semiconductors",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 84,
+    "Company": "Advantest Corp",
+    "YFinance Ticker": "6857.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Semiconductors",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 85,
+    "Company": "Omron Corp",
+    "YFinance Ticker": "6645.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Automation & Sensors",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 86,
+    "Company": "TDK Corp",
+    "YFinance Ticker": "6762.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electronic Components",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 87,
+    "Company": "NEC Corp",
+    "YFinance Ticker": "6701.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "IT & Networking",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 88,
+    "Company": "Fujitsu Ltd",
+    "YFinance Ticker": "6702.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "IT Services",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 89,
+    "Company": "Canon Inc",
+    "YFinance Ticker": "7751.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Imaging & Optical",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 90,
+    "Company": "Ricoh Co Ltd",
+    "YFinance Ticker": "7752.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Office Electronics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 91,
+    "Company": "Sharp Corp",
+    "YFinance Ticker": "6753.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Consumer Electronics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 92,
+    "Company": "Fujifilm Holdings",
+    "YFinance Ticker": "4901.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Imaging Systems",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 93,
+    "Company": "SoftBank Group Corp",
+    "YFinance Ticker": "9984.T",
+    "Sector": "Telecommunications",
+    "Subcategory": "Telecom & Media",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 94,
+    "Company": "KDDI Corp",
+    "YFinance Ticker": "9433.T",
+    "Sector": "Telecommunications",
+    "Subcategory": "Telecom Services",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 95,
+    "Company": "NTT Docomo Inc",
+    "YFinance Ticker": "9437.T",
+    "Sector": "Telecommunications",
+    "Subcategory": "Mobile Services",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 96,
+    "Company": "Takeda Pharmaceutical Co., Ltd.",
+    "YFinance Ticker": "4502.T",
+    "Sector": "Pharmaceuticals",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 97,
+    "Company": "Astellas Pharma Inc",
+    "YFinance Ticker": "4503.T",
+    "Sector": "Pharmaceuticals",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 98,
+    "Company": "Eisai Co., Ltd.",
+    "YFinance Ticker": "4523.T",
+    "Sector": "Pharmaceuticals",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 99,
+    "Company": "Daiichi Sankyo Co., Ltd.",
+    "YFinance Ticker": "4568.T",
+    "Sector": "Pharmaceuticals",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 100,
+    "Company": "Otsuka Holdings Co., Ltd.",
+    "YFinance Ticker": "4578.T",
+    "Sector": "Pharmaceuticals",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 101,
+    "Company": "Sumitomo Pharma Co., Ltd.",
+    "YFinance Ticker": "4506.T",
+    "Sector": "Pharmaceuticals",
+    "Subcategory": "Pharmaceuticals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 102,
+    "Company": "Fast Retailing Co., Ltd.",
+    "YFinance Ticker": "9983.T",
+    "Sector": "Retail",
+    "Subcategory": "Retail & Apparel",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 103,
+    "Company": "Seven & i Holdings Co., Ltd.",
+    "YFinance Ticker": "3382.T",
+    "Sector": "Retail",
+    "Subcategory": "Convenience Stores",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 104,
+    "Company": "Ito Yokado Co., Ltd.",
+    "YFinance Ticker": "8267.T",
+    "Sector": "Retail",
+    "Subcategory": "General Merchandise",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 105,
+    "Company": "Mitsubishi UFJ Financial Gr    "Company": "Aeon Co., Ltd.",
+    "YFinance Ticker": "8267.T",
+    "Sector": "Retail",
+    "Company": "Ito Yokado Co., Ltd.",",
+id": 106,
+    "Company": "Mizuho Financial Group, Inc.",
+    "Subcategory": "General Merchandise",
+    "Sector": "Banking",
+    "Subcategory": "Banking",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 107,
+    "Company": "Sumitomo Mitsui Financial Group, Inc.",
+    "YFinance Ticker": "8316.T",
+    "Sector": "Banking",
+    "Subcategory": "Banking",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 108,
+    "Company": "Resona Holdings, Inc.",
+    "YFinance Ticker": "8308.T",
+    "Sector": "Banking",
+    "Subcategory": "Banking",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 109,
+    "Company": "Japan Post Bank Co., Ltd.",
+    "YFinance Ticker": "7182.T",
+    "Sector": "Banking",
+    "Subcategory": "Savings Bank",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 110,
+    "Company": "Daikin Industries, Ltd.",
+    "YFinance Ticker": "6367.T",
+    "Sector": "Machinery",
+    "Subcategory": "Industrial Machinery",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 111,
+    "Company": "Komatsu Ltd.",
+    "YFinance Ticker": "6301.T",
+    "Sector": "Machinery",
+    "Subcategory": "Construction Machinery",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 112,
+    "Company": "Fanuc Corp",
+    "YFinance Ticker": "6954.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Automation Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 113,
+    "Company": "Bridgestone Corp",
+    "YFinance Ticker": "5108.T",
+    "Sector": "Rubber",
+    "Subcategory": "Tires",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 114,
+    "Company": "Nippon Steel Corp",
+    "YFinance Ticker": "5401.T",
+    "Sector": "Iron & Steel",
+    "Subcategory": "Steel Production",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 115,
+    "Company": "JFE Holdings, Inc.",
+    "YFinance Ticker": "5411.T",
+    "Sector": "Iron & Steel",
+    "Subcategory": "Steel Production",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 116,
+    "Company": "Sumitomo Metal Mining Co., Ltd.",
+    "YFinance Ticker": "5713.T",
+    "Sector": "Materials",
+    "Subcategory": "Nonferrous Metals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 117,
+    "Company": "Tokyo Gas Co., Ltd.",
+    "YFinance Ticker": "9531.T",
+    "Sector": "Utilities",
+    "Subcategory": "Gas Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 118,
+    "Company": "Osaka Gas Co., Ltd.",
+    "YFinance Ticker": "9532.T",
+    "Sector": "Utilities",
+    "Subcategory": "Gas Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 119,
+    "Company": "Tohoku Electric Power Co., Inc.",
+    "YFinance Ticker": "9506.T",
+    "Sector": "Utilities",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 120,
+    "Company": "Chubu Electric Power Co., Inc.",
+    "YFinance Ticker": "9502.T",
+    "Sector": "Utilities",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 121,
+    "Company": "Kansai Electric Power Co., Inc.",
+    "YFinance Ticker": "9503.T",
+    "Sector": "Utilities",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 122,
+    "Company": "Seven Bank, Ltd.",
+    "YFinance Ticker": "8410.T",
+    "Sector": "Banking",
+    "Subcategory": "Retail Banking",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 123,
+    "Company": "Japan Airlines Co., Ltd.",
+    "YFinance Ticker": "9201.T",
+    "Sector": "Transportation",
+    "Subcategory": "Airlines",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 124,
+    "Company": "All Nippon Airways Co., Ltd.",
+    "YFinance Ticker": "9202.T",
+    "Sector": "Transportation",
+    "Subcategory": "Airlines",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 125,
+    "Company": "East Japan Railway Co.",
+    "YFinance Ticker": "9020.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 126,
+    "Company": "Central Japan Railway Co.",
+    "YFinance Ticker": "9022.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 127,
+    "Company": "West Japan Railway Co.",
+    "YFinance Ticker": "9021.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 128,
+    "Company": "Nippon Yusen KK",
+    "YFinance Ticker": "9101.T",
+    "Sector": "Transportation",
+    "Subcategory": "Marine Transport",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 129,
+    "Company": "K Line (Kawasaki Kisen Kaisha, Ltd.)",
+    "YFinance Ticker": "9107.T",
+    "Sector": "Transportation",
+    "Subcategory": "Marine Transport",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 130,
+    "Company": "Mitsui OSK Lines Ltd.",
+    "YFinance Ticker": "9104.T",
+    "Sector": "Transportation",
+    "Subcategory": "Marine Transport",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 131,
+    "Company": "Japan Tobacco Inc.",
+    "YFinance Ticker": "2914.T",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Tobacco Products",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 132,
+    "Company": "Asahi Group Holdings, Ltd.",
+    "YFinance Ticker": "2502.T",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Beverages",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 133,
+    "Company": "Suntory Beverage & Food Ltd.",
+    "YFinance Ticker": "2587.T",
+    "Sector": "Consumer Staples",
+    "Subcategory": "Beverages",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 134,
+    "Company": "Kirin Holdings Co., Ltd.",
+    "YFinance Ticker": "2503.T",
+    "Sector": "Foods",
+    "Subcategory": "Beverages",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 135,
+    "Company": "Meiji Holdings Co., Ltd.",
+    "YFinance Ticker": "2269.T",
+    "Sector": "Foods",
+    "Subcategory": "Food Products",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 136,
+    "Company": "Ajinomoto Co., Inc.",
+    "YFinance Ticker": "2802.T",
+    "Sector": "Foods",
+    "Subcategory": "Food Products",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 137,
+    "Company": "Nissin Foods Holdings Co., Ltd.",
+    "YFinance Ticker": "2897.T",
+    "Sector": "Foods",
+    "Subcategory": "Processed Foods",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 138,
+    "Company": "Shiseido Co., Ltd.",
+    "YFinance Ticker": "4911.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Cosmetics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 139,
+    "Company": "Kao Corp.",
+    "YFinance Ticker": "4452.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Consumer Chemicals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 140,
+    "Company": "Sumitomo Chemical Co., Ltd.",
+    "YFinance Ticker": "4005.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Diversified Chemicals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 141,
+    "Company": "Mitsubishi Chemical Group Corp.",
+    "YFinance Ticker": "4188.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Diversified Chemicals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 142,
+    "Company": "Asahi Kasei Corp.",
+    "YFinance Ticker": "3407.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Specialty Chemicals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 143,
+    "Company": "Toray Industries, Inc.",
+    "YFinance Ticker": "3402.T",
+    "Sector": "Textiles & Apparel",
+    "Subcategory": "Synthetic Fibers",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 144,
+    "Company": "Teijin Ltd.",
+    "YFinance Ticker": "3401.T",
+    "Sector": "Textiles & Apparel",
+    "Subcategory": "Advanced Materials",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 145,
+    "Company": "Taiyo Yuden Co., Ltd.",
+    "YFinance Ticker": "6976.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electronic Components",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 146,
+    "Company": "Murata Manufacturing Co., Ltd.",
+    "YFinance Ticker": "6981.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electronic Components",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 147,
+    "Company": "Keyence Corp.",
+    "YFinance Ticker": "6861.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Factory Automation",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 148,
+    "Company": "Yaskawa Electric Corp.",
+    "YFinance Ticker": "6506.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Industrial Automation",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 149,
+    "Company": "Nidec Corp.",
+    "YFinance Ticker": "6594.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electric Motors",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 150,
+    "Company": "Seiko Epson Corp.",
+    "YFinance Ticker": "6724.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Printers & Imaging",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 151,
+    "Company": "MinebeaMitsumi Inc.",
+    "YFinance Ticker": "6479.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Precision Components",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 152,
+    "Company": "Brother Industries, Ltd.",
+    "YFinance Ticker": "6448.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Office Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 153,
+    "Company": "Denso Corp.",
+    "YFinance Ticker": "6902.T",
+    "Sector": "Transportation Equipment",
+    "Subcategory": "Auto Parts",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 154,
+    "Company": "Aisin Corp.",
+    "YFinance Ticker": "7259.T",
+    "Sector": "Transportation Equipment",
+    "Subcategory": "Auto Parts",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 155,
+    "Company": "Toyota Industries Corp.",
+    "YFinance Ticker": "6201.T",
+    "Sector": "Machinery",
+    "Subcategory": "Industrial Vehicles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 156,
+    "Company": "Kubota Corp.",
+    "YFinance Ticker": "6326.T",
+    "Sector": "Machinery",
+    "Subcategory": "Agricultural Machinery",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 157,
+    "Company": "IHI Corp.",
+    "YFinance Ticker": "7013.T",
+    "Sector": "Machinery",
+    "Subcategory": "Heavy Machinery",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 158,
+    "Company": "Kawasaki Heavy Industries, Ltd.",
+    "YFinance Ticker": "7012.T",
+    "Sector": "Machinery",
+    "Subcategory": "Heavy Machinery",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 159,
+    "Company": "Mitsubishi Heavy Industries, Ltd.",
+    "YFinance Ticker": "7011.T",
+    "Sector": "Machinery",
+    "Subcategory": "Heavy Machinery",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 160,
+    "Company": "Orix Corp.",
+    "YFinance Ticker": "8591.T",
+    "Sector": "Other Financial Services",
+    "Subcategory": "Leasing & Finance",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 161,
+    "Company": "Nomura Holdings, Inc.",
+    "YFinance Ticker": "8604.T",
+    "Sector": "Securities",
+    "Subcategory": "Brokerage",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 162,
+    "Company": "Daiwa Securities Group Inc.",
+    "YFinance Ticker": "8601.T",
+    "Sector": "Securities",
+    "Subcategory": "Brokerage",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 163,
+    "Company": "Tokio Marine Holdings, Inc.",
+    "YFinance Ticker": "8766.T",
+    "Sector": "Insurance",
+    "Subcategory": "Non-Life Insurance",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 164,
+    "Company": "MS&AD Insurance Group Holdings, Inc.",
+    "YFinance Ticker": "8725.T",
+    "Sector": "Insurance",
+    "Subcategory": "Non-Life Insurance",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 165,
+    "Company": "Sompo Holdings, Inc.",
+    "YFinance Ticker": "8630.T",
+    "Sector": "Insurance",
+    "Subcategory": "Non-Life Insurance",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 166,
+    "Company": "Dai-ichi Life Holdings, Inc.",
+    "YFinance Ticker": "8750.T",
+    "Sector": "Insurance",
+    "Subcategory": "Life Insurance",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 167,
+    "Company": "Japan Exchange Group, Inc.",
+    "YFinance Ticker": "8697.T",
+    "Sector": "Other Financial Services",
+    "Subcategory": "Exchange Operator",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 168,
+    "Company": "Recruit Holdings Co., Ltd.",
+    "YFinance Ticker": "6098.T",
+    "Sector": "Services",
+    "Subcategory": "HR & Staffing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 169,
+    "Company": "Oriental Land Co., Ltd.",
+    "YFinance Ticker": "4661.T",
+    "Sector": "Services",
+    "Subcategory": "Leisure & Theme Parks",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 170,
+    "Company": "CyberAgent, Inc.",
+    "YFinance Ticker": "4751.T",
+    "Sector": "Services",
+    "Subcategory": "Internet Services",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 171,
+    "Company": "Dentsu Group Inc.",
+    "YFinance Ticker": "4324.T",
+    "Sector": "Services",
+    "Subcategory": "Advertising",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 172,
+    "Company": "Toppan Inc.",
+    "YFinance Ticker": "7911.T",
+    "Sector": "Pulp & Paper",
+    "Subcategory": "Printing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 173,
+    "Company": "Dai Nippon Printing Co., Ltd.",
+    "YFinance Ticker": "7912.T",
+    "Sector": "Pulp & Paper",
+    "Subcategory": "Printing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 174,
+    "Company": "Oji Holdings Corp.",
+    "YFinance Ticker": "3861.T",
+    "Sector": "Pulp & Paper",
+    "Subcategory": "Paper Manufacturing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 175,
+    "Company": "Nippon Paper Industries Co., Ltd.",
+    "YFinance Ticker": "3863.T",
+    "Sector": "Pulp & Paper",
+    "Subcategory": "Paper Manufacturing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 176,
+    "Company": "ENEOS Holdings, Inc.",
+    "YFinance Ticker": "5020.T",
+    "Sector": "Oil & Coal Products",
+    "Subcategory": "Oil Refining",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 177,
+    "Company": "Idemitsu Kosan Co., Ltd.",
+    "YFinance Ticker": "5019.T",
+    "Sector": "Oil & Coal Products",
+    "Subcategory": "Oil Refining",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 178,
+    "Company": "Showa Denko K.K.",
+    "YFinance Ticker": "4004.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Specialty Chemicals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 179,
+    "Company": "Sumitomo Realty & Development Co., Ltd.",
+    "YFinance Ticker": "8830.T",
+    "Sector": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 180,
+    "Company": "Mitsui Fudosan Co., Ltd.",
+    "YFinance Ticker": "8801.T",
+    "Sector": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 181,
+    "Company": "Mitsubishi Estate Co., Ltd.",
+    "YFinance Ticker": "8802.T",
+    "Sector": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 182,
+    "Company": "Tokyu Corp.",
+    "YFinance Ticker": "9005.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 183,
+    "Company": "Keio Corp.",
+    "YFinance Ticker": "9008.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 184,
+    "Company": "Odakyu Electric Railway Co., Ltd.",
+    "YFinance Ticker": "9007.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 185,
+    "Company": "Keisei Electric Railway Co., Ltd.",
+    "YFinance Ticker": "9009.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 186,
+    "Company": "Keikyu Corp.",
+    "YFinance Ticker": "9006.T",
+    "Sector": "Transportation",
+    "Subcategory": "Railways",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 187,
+    "Company": "Yamato Holdings Co., Ltd.",
+    "YFinance Ticker": "9064.T",
+    "Sector": "Transportation",
+    "Subcategory": "Logistics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 188,
+    "Company": "SG Holdings Co., Ltd.",
+    "YFinance Ticker": "9143.T",
+    "Sector": "Transportation",
+    "Subcategory": "Logistics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 189,
+    "Company": "Nitori Holdings Co., Ltd.",
+    "YFinance Ticker": "9843.T",
+    "Sector": "Retail",
+    "Subcategory": "Home Furnishings",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 190,
+    "Company": "Rakuten Group, Inc.",
+    "YFinance Ticker": "4755.T",
+    "Sector": "Services",
+    "Subcategory": "E-Commerce",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 191,
+    "Company": "Z Holdings Corp.",
+    "YFinance Ticker": "4689.T",
+    "Sector": "Services",
+    "Subcategory": "Internet Services",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 192,
+    "Company": "Persol Holdings Co., Ltd.",
+    "YFinance Ticker": "2181.T",
+    "Sector": "Services",
+    "Subcategory": "Staffing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 193,
+    "Company": "Hoshizaki Corp.",
+    "YFinance Ticker": "6465.T",
+    "Sector": "Machinery",
+    "Subcategory": "Commercial Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 194,
+    "Company": "Fuji Electric Co., Ltd.",
+    "YFinance Ticker": "6504.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Industrial Electrical Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 195,
+    "Company": "GS Yuasa Corporation",
+    "YFinance Ticker": "6674.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Batteries",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 196,
+    "Company": "Meidensha Corporation",
+    "YFinance Ticker": "6508.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Heavy Electrical Equipment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 197,
+    "Company": "Yokogawa Electric Corporation",
+    "YFinance Ticker": "6841.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Industrial Automation",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 198,
+    "Company": "Alps Alpine Co., Ltd.",
+    "YFinance Ticker": "6770.T",
+    "Sector": "Electric Machinery",
+    "Subcategory": "Electronic Components",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 199,
+    "Company": "THK Co., Ltd.",
+    "YFinance Ticker": "6481.T",
+    "Sector": "Machinery",
+    "Subcategory": "Linear Motion Systems",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 200,
+    "Company": "Daifuku Co., Ltd.",
+    "YFinance Ticker": "6383.T",
+    "Sector": "Machinery",
+    "Subcategory": "Material Handling Systems",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 201,
+    "Company": "Mitsubishi Motors Corporation",
+    "YFinance Ticker": "7211.T",
+    "Sector": "Transportation Equipment",
+    "Subcategory": "Automobiles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 202,
+    "Company": "Yamaha Motor Co., Ltd.",
+    "YFinance Ticker": "7272.T",
+    "Sector": "Transportation Equipment",
+    "Subcategory": "Motorcycles",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 203,
+    "Company": "Sumitomo Rubber Industries, Ltd.",
+    "YFinance Ticker": "5110.T",
+    "Sector": "Other Products",
+    "Subcategory": "Tires",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 204,
+    "Company": "Kobe Steel, Ltd.",
+    "YFinance Ticker": "5406.T",
+    "Sector": "Iron & Steel",
+    "Subcategory": "Steel Manufacturing",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 205,
+    "Company": "Nintendo Co., Ltd.",
+    "YFinance Ticker": "7974.T",
+    "Sector": "Other Products",
+    "Subcategory": "Gaming",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 206,
+    "Company": "Bandai Namco Holdings Inc.",
+    "YFinance Ticker": "7832.T",
+    "Sector": "Other Products",
+    "Subcategory": "Entertainment Products",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 207,
+    "Company": "Lion Corporation",
+    "YFinance Ticker": "4912.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Household Products",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 208,
+    "Company": "Kuraray Co., Ltd.",
+    "YFinance Ticker": "3405.T",
+    "Sector": "Chemicals",
+    "Subcategory": "Specialty Chemicals",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 209,
+    "Company": "Sekisui House, Ltd.",
+    "YFinance Ticker": "1928.T",
+    "Sector": "Construction",
+    "Subcategory": "Home Builders",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 210,
+    "Company": "Obayashi Corporation",
+    "YFinance Ticker": "1802.T",
+    "Sector": "Construction",
+    "Subcategory": "General Construction",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 211,
+    "Company": "Shimizu Corporation",
+    "YFinance Ticker": "1803.T",
+    "Sector": "Construction",
+    "Subcategory": "General Construction",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 212,
+    "Company": "Taisei Corporation",
+    "YFinance Ticker": "1801.T",
+    "Sector": "Construction",
+    "Subcategory": "General Construction",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 213,
+    "Company": "Kajima Corporation",
+    "YFinance Ticker": "1812.T",
+    "Sector": "Construction",
+    "Subcategory": "General Construction",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 214,
+    "Company": "Daito Trust Construction Co., Ltd.",
+    "YFinance Ticker": "1878.T",
+    "Sector": "Construction",
+    "Subcategory": "Rental Housing Construction",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 215,
+    "Company": "Toho Gas Co., Ltd.",
+    "YFinance Ticker": "9533.T",
+    "Sector": "Gas",
+    "Subcategory": "City Gas",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 216,
+    "Company": "Tokyo Electric Power Company Holdings, Inc.",
+    "YFinance Ticker": "9501.T",
+    "Sector": "Electric Power",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 217,
+    "Company": "Hokkaido Electric Power Co., Inc.",
+    "YFinance Ticker": "9509.T",
+    "Sector": "Electric Power",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 218,
+    "Company": "Shikoku Electric Power Co., Inc.",
+    "YFinance Ticker": "9507.T",
+    "Sector": "Electric Power",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 219,
+    "Company": "Kyushu Electric Power Co., Inc.",
+    "YFinance Ticker": "9508.T",
+    "Sector": "Electric Power",
+    "Subcategory": "Electric Utilities",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 220,
+    "Company": "Nippon Express Holdings, Inc.",
+    "YFinance Ticker": "9147.T",
+    "Sector": "Land Transport",
+    "Subcategory": "Logistics",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 221,
+    "Company": "Isetan Mitsukoshi Holdings Ltd.",
+    "YFinance Ticker": "3099.T",
+    "Sector": "Retail Trade",
+    "Subcategory": "Department Stores",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 222,
+    "Company": "Takashimaya Company, Limited",
+    "YFinance Ticker": "8233.T",
+    "Sector": "Retail Trade",
+    "Subcategory": "Department Stores",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 223,
+    "Company": "Marui Group Co., Ltd.",
+    "YFinance Ticker": "8252.T",
+    "Sector": "Retail Trade",
+    "Subcategory": "Retail & Consumer Finance",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 224,
+    "Company": "Trend Micro Incorporated",
+    "YFinance Ticker": "4704.T",
+    "Sector": "Services",
+    "Subcategory": "Cybersecurity",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 225,
+    "Company": "Secom Co., Ltd.",
+    "YFinance Ticker": "9735.T",
+    "Sector": "Services",
+    "Subcategory": "Security Services",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 226,
+    "Company": "Toho Co., Ltd.",
+    "YFinance Ticker": "9602.T",
+    "Sector": "Services",
+    "Subcategory": "Film & Entertainment",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 227,
+    "Company": "Tokyu Fudosan Holdings Corporation",
+    "YFinance Ticker": "3289.T",
+    "Sector": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 228,
+    "Company": "Nomura Real Estate Holdings, Inc.",
+    "YFinance Ticker": "3231.T",
+    "Sector": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 229,
+    "Company": "T&D Holdings, Inc.",
+    "YFinance Ticker": "8795.T",
+    "Sector": "Insurance",
+    "Subcategory": "Life Insurance",
+    "Index": "Nikkei225"
+  }
+]tor": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 215,
+    "Company": "Nomura Real Estate Holdings, Inc.",
+    "YFinance Ticker": "3231.T",
+    "Sector": "Real Estate",
+    "Subcategory": "Real Estate Development",
+    "Index": "Nikkei225"
+  },
+  {
+    "id": 216,
