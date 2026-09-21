@@ -119,6 +119,14 @@ class MarketPriceModel(BaseModel):
     price = models.FloatField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True, default="")
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["asset", "date"],
+                name="unique_market_price_per_asset_date",
+            )
+        ]
+
     def convert_to_dict(
         self,
         remove_foreign_key: bool = False,

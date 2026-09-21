@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest  # type: ignore[reportMissingImports]
 from bs4 import BeautifulSoup
+from django.db import IntegrityError
 from django.test import TestCase
 from freezegun import freeze_time  # type: ignore[reportMissingImports]
 from rest_framework.exceptions import NotFound
@@ -316,6 +317,50 @@ class TestUpsertWithLogs(TestCase):
             new_price_in_db,
         ]
         # No log should be created for new instances
+        assert PriceUpdateLogModel.objects.count() == 0
+
+    def test_upsert_with_logs_cancels_after_integrity_error(self):
+        """
+        GIVEN a concurrent create already inserted the row
+        WHEN upsert_with_logs hits IntegrityError on create
+        THEN it should return the existing row without updating it
+        """
+        lookup_kwargs = {"asset": self.asset, "date": "2025-12-16"}
+        updates = {"price": 200.0, "logs": "Raced create."}
+        raced = MarketPriceModel.objects.create(
+            asset=self.asset,
+            date="2025-12-16",
+            price=150.0,
+        )
+
+        with (
+            patch.object(
+                MarketPriceModel.objects,
+                "get",
+                side_effect=[
+                    MarketPriceModel.DoesNotExist,
+                    raced,
+                ],
+            ),
+            patch.object(
+                MarketPriceModel.objects,
+                "create",
+                side_effect=IntegrityError("unique_market_price_per_asset_date"),
+            ),
+        ):
+            result = upsert_with_logs(
+                model=MarketPriceModel,
+                log_model=PriceUpdateLogModel,
+                lookup_kwargs=lookup_kwargs,
+                updates=updates,
+                logging_on_fields=["price"],
+                none_skip_fields=[],
+                enable_none_updates=True,
+            )
+
+        assert result.pk == raced.pk
+        raced.refresh_from_db()
+        assert raced.price == 150.0
         assert PriceUpdateLogModel.objects.count() == 0
 
 

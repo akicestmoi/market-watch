@@ -8,6 +8,7 @@ from rest_framework.response import Response
 import economic_overview.services.data_ingestion_services as data_ingestion_services
 import economic_overview.services.economic_data_services as economic_data_services
 import economic_overview.services.publication_services as publication_services
+from core.locks import redis_lock
 from core.open_api import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -115,12 +116,18 @@ class IngestEconomicDataView(EconomicOverviewBaseView):
             start_date=start_date,
             end_date=end_date,
         )
-        indicator_not_updated = data_ingestion_services.ingest_economic_data(indicators)
-        schedule_not_updated = []
-        if update_schedule:
-            schedule_not_updated = publication_services.update_publication_schedules(
+        with redis_lock(
+            data_ingestion_services.economic_data_ingestion_lock_key(),
+            locked_detail="Economic data ingestion is already in progress.",
+        ):
+            indicator_not_updated = data_ingestion_services.ingest_economic_data(
                 indicators
             )
+            schedule_not_updated = []
+            if update_schedule:
+                schedule_not_updated = (
+                    publication_services.update_publication_schedules(indicators)
+                )
         return Response(
             data=EconomicDataIngestionResponseSerializer(
                 {
@@ -165,9 +172,15 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
         indicators = economic_data_services.get_economic_indicators_by_names(
             indicator_names=indicator_names
         )
-        indicator_not_updated = data_ingestion_services.ingest_specific_economic_data(
-            indicators, periods=periods
-        )
+        with redis_lock(
+            data_ingestion_services.economic_data_ingestion_lock_key(),
+            locked_detail="Economic data ingestion is already in progress.",
+        ):
+            indicator_not_updated = (
+                data_ingestion_services.ingest_specific_economic_data(
+                    indicators, periods=periods
+                )
+            )
         return Response(
             data=SpecificEconomicDataIngestionResponseSerializer(
                 {

@@ -5,6 +5,7 @@ from celery import shared_task
 import economic_overview.services.data_ingestion_services as data_ingestion_services
 import economic_overview.services.economic_data_services as economic_data_services
 import economic_overview.services.publication_services as publication_services
+from core.locks import try_acquire_redis_lock
 from core.services import logger
 
 
@@ -15,6 +16,20 @@ def scheduled_economic_data_and_schedule_update():
     This task will be scheduled to run daily.
     """
     today = date.today()
+    lock = try_acquire_redis_lock(
+        data_ingestion_services.economic_data_ingestion_lock_key()
+    )
+    if lock is None:
+        logger.warning(
+            "Skipping economic data ingestion for %s: already in progress.",
+            today.isoformat(),
+        )
+        return {
+            "status": "skipped",
+            "message": "Economic data ingestion already in progress.",
+            "date": today.isoformat(),
+        }
+
     try:
         economic_indicators_to_update = (
             economic_data_services.get_economic_indicators_to_update(
@@ -47,6 +62,11 @@ def scheduled_economic_data_and_schedule_update():
             "message": f"Error: {str(e)}",
             "date": today.isoformat(),
         }
+    finally:
+        try:
+            lock.release()
+        except Exception:
+            logger.warning("Could not release economic data ingestion lock.")
 
 
 @shared_task

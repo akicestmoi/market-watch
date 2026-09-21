@@ -13,6 +13,18 @@ from market_overview.services.price_ingestion_services import (
     scrap_from_global_rates,
 )
 
+
+def cb_data_ingestion_lock_key(
+    central_bank: CentralBankChoices | str, price_date: date
+) -> str:
+    bank = (
+        central_bank.value
+        if isinstance(central_bank, CentralBankChoices)
+        else str(central_bank)
+    )
+    return f"lock:cb_data_ingestion:{bank}:{price_date.isoformat()}"
+
+
 CENTRAL_BANK_DATA_MAP = {
     PriceSourceChoices.WEBSTAT: lambda d, t: get_webstat_rates(d, t),
     PriceSourceChoices.GLOBAL_RATES: lambda d, t: scrap_from_global_rates(d, t),

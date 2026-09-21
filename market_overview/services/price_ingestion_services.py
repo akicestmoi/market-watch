@@ -26,6 +26,11 @@ from market_overview.services import market_data_services
 
 env = environ.Env()
 
+
+def market_price_ingestion_lock_key(price_date: date) -> str:
+    return f"lock:market_price_ingestion:{price_date.isoformat()}"
+
+
 GLOBAL_RATES_URL = "https://www.global-rates.com/en/interest-rates"
 NY_FED_RATE_URL = "https://markets.newyorkfed.org/read?productCode=50&limit=25&startPosition=0&sort=postDt:-1&format=xml"
 DEPT_TREASURY_RATE_URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xmlview?data=daily_treasury_yield_curve"

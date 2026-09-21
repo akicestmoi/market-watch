@@ -28,6 +28,11 @@ from market_overview.services.price_ingestion_services import (
     get_yahoo_finance_closing_prices,
 )
 
+
+def stir_price_ingestion_lock_key(price_date: date) -> str:
+    return f"lock:stir_price_ingestion:{price_date.isoformat()}"
+
+
 MONTH_CODE = {
     "Jan": "F",
     "Feb": "G",

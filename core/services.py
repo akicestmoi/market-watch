@@ -4,6 +4,7 @@ from typing import List, Optional, Type, TypeVar
 import requests
 from bs4 import BeautifulSoup
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
 from rest_framework.exceptions import NotFound
 
@@ -82,7 +83,12 @@ def upsert_with_logs(
     none_skip_fields: List[str] = [],
     enable_none_updates: bool = False,
 ) -> T:
-    """Update entity and create logs if exists, or create entity in database."""
+    """Update entity and create logs if exists, or create entity in database.
+
+    Concurrent creates are safe when the model has a matching uniqueness
+    constraint on ``lookup_kwargs``: a lost race raises IntegrityError and
+    returns the row already written by the other process.
+    """
     try:
         model_to_update = model.objects.get(**lookup_kwargs)
         return update_with_logs(
@@ -98,7 +104,12 @@ def upsert_with_logs(
             **lookup_kwargs,
             **{k: v for k, v in updates.items() if k != "logs"},
         }
-        return model.objects.create(**create_data)
+        try:
+            with transaction.atomic():
+                return model.objects.create(**create_data)
+        except IntegrityError:
+            # Another process won the insert — leave their row unchanged.
+            return model.objects.get(**lookup_kwargs)
 
 
 def convert_query_to_dictionary_list(

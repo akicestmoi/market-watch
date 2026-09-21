@@ -7,6 +7,7 @@ from rest_framework.response import Response
 import core.services as core_services
 import market_overview.services.market_data_services as market_data_services
 import market_overview.services.price_ingestion_services as price_ingestion_services
+from core.locks import redis_lock
 from core.open_api import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -59,8 +60,15 @@ class IngestMarketPricesView(BaseAPIView):
         price_date: date = validated_data["date"]
 
         logger.info(f"Ingesting market data for date: {price_date}")
-        market_data = price_ingestion_services.get_market_data(price_date)
-        ingestion_result = price_ingestion_services.ingest_market_data(market_data)
+        with redis_lock(
+            price_ingestion_services.market_price_ingestion_lock_key(price_date),
+            locked_detail=(
+                "Market price ingestion is already in progress for "
+                f"{price_date.isoformat()}."
+            ),
+        ):
+            market_data = price_ingestion_services.get_market_data(price_date)
+            ingestion_result = price_ingestion_services.ingest_market_data(market_data)
         return Response(
             data=MarketPriceIngestionResponseSerializer(
                 {

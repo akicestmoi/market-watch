@@ -17,6 +17,11 @@ from economic_overview.models import (
     EconomicIndicatorInformationModel,
 )
 
+
+def economic_data_ingestion_lock_key() -> str:
+    return "lock:economic_data_ingestion"
+
+
 SOURCE_SCRAP_MAP = {
     EconomicDataSourceChoices.INSEE: lambda t, p: _get_data_from_insee(t, p),
     EconomicDataSourceChoices.JP_CABINET_OFFICE: lambda t, p: _get_data_from_japan_cabinet_office(

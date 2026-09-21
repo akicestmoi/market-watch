@@ -22,6 +22,7 @@ from central_banks_overview.open_api.response_serializers import (
 from central_banks_overview.services.stir_prices_ingestion_services import (
     BulkUpdateFuturesPricesItem,
 )
+from core.locks import redis_lock
 from core.open_api import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -48,12 +49,19 @@ class StirFuturesPriceIngestionView(BaseAPIView):
         price_date: date = validated_data["date"]
 
         logger.info(f"Ingesting STIR Futures prices for date: {price_date}")
-        stir_futures_prices = stir_futures_services.extract_all_stir_futures_prices(
-            price_date
-        )
-        stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
-            stir_futures_prices
-        )
+        with redis_lock(
+            stir_futures_services.stir_price_ingestion_lock_key(price_date),
+            locked_detail=(
+                "STIR Futures prices ingestion is already in progress for "
+                f"{price_date.isoformat()}."
+            ),
+        ):
+            stir_futures_prices = stir_futures_services.extract_all_stir_futures_prices(
+                price_date
+            )
+            stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
+                stir_futures_prices
+            )
         return Response(
             data=StirFuturesPriceIngestionResponseSerializer(
                 {
@@ -84,12 +92,19 @@ class EstrPriceIngestionViaPdfView(BaseAPIView):
         pdf_file = validated_data["pdf_file"]
         price_date: date = validated_data["date"]
 
-        estr_prices = stir_futures_services.extract_estr_prices_from_pdf(
-            pdf_file.read(), price_date
-        )
-        stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
-            estr_prices
-        )
+        with redis_lock(
+            stir_futures_services.stir_price_ingestion_lock_key(price_date),
+            locked_detail=(
+                "STIR Futures prices ingestion is already in progress for "
+                f"{price_date.isoformat()}."
+            ),
+        ):
+            estr_prices = stir_futures_services.extract_estr_prices_from_pdf(
+                pdf_file.read(), price_date
+            )
+            stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
+                estr_prices
+            )
         return Response(
             data=StirFuturesPriceIngestionResponseSerializer(
                 {

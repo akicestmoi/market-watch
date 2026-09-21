@@ -6,6 +6,7 @@ from pandas.tseries.offsets import BDay
 import market_overview.services.holiday_services as holiday_services
 import market_overview.services.market_data_services as market_data_services
 import market_overview.services.price_ingestion_services as price_ingestion_services
+from core.locks import try_acquire_redis_lock
 from core.services import logger
 from market_overview.services.holiday_services import HOLIDAY_COUNTRIES
 
@@ -21,6 +22,22 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
             price_date = (date.today() - BDay(2)).date()
         case False:
             price_date = (date.today() - BDay(1)).date()
+
+    lock_key = price_ingestion_services.market_price_ingestion_lock_key(price_date)
+    lock = try_acquire_redis_lock(lock_key)
+    if lock is None:
+        logger.warning(
+            "Skipping market data ingestion for %s: already in progress.",
+            price_date.isoformat(),
+        )
+        return {
+            "status": "skipped",
+            "message": (
+                f"Market data ingestion already in progress for {price_date.isoformat()}"
+            ),
+            "date": price_date.isoformat(),
+        }
+
     try:
         logger.info(f"Ingesting market data for {price_date}")
         market_data = price_ingestion_services.get_market_data(price_date)
@@ -40,6 +57,14 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
             "message": f"Error: {str(e)}",
             "date": price_date.isoformat(),
         }
+    finally:
+        try:
+            lock.release()
+        except Exception:
+            logger.warning(
+                "Could not release market price ingestion lock for %s",
+                price_date.isoformat(),
+            )
 
 
 @shared_task

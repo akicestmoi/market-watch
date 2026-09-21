@@ -17,6 +17,7 @@ from central_banks_overview.open_api.response_serializers import (
     DeleteCentralBankDataResponseSerializer,
 )
 from central_banks_overview.services.cb_data_services import CentralBankDataDate
+from core.locks import redis_locks
 from core.open_api import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -40,9 +41,21 @@ class CentralBankDataIngestionView(BaseAPIView):
     def post(self, validated_data: List[CentralBankDataDate]) -> Response:
         """Ingest central bank data."""
         dates_to_ingest_by_central_bank: List[CentralBankDataDate] = validated_data
-        central_bank_data_updated = cb_data_services.ingest_requested_central_bank_data(
-            dates_to_ingest_by_central_bank
-        )
+        lock_keys = [
+            cb_data_services.cb_data_ingestion_lock_key(
+                item["central_bank"], item["date"]
+            )
+            for item in dates_to_ingest_by_central_bank
+        ]
+        with redis_locks(
+            lock_keys,
+            locked_detail="Central bank data ingestion is already in progress.",
+        ):
+            central_bank_data_updated = (
+                cb_data_services.ingest_requested_central_bank_data(
+                    dates_to_ingest_by_central_bank
+                )
+            )
         return Response(
             data=CentralBankDataIngestionResponseSerializer(
                 {
