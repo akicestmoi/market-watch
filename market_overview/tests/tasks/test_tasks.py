@@ -1,3 +1,5 @@
+"""Tests for market_overview Celery tasks."""
+
 from datetime import date, datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -27,6 +29,7 @@ class TestScheduledMarketDataIngestion(TestCase):
     """Test cases for scheduled_market_data_ingestion task."""
 
     @freeze_time("2025-12-15")
+    @patch("market_overview.tasks._schedule_market_analysis_after_ingestion")
     @patch(
         "market_overview.tasks.try_acquire_redis_lock",
         return_value=_mock_ingestion_lock(),
@@ -36,7 +39,7 @@ class TestScheduledMarketDataIngestion(TestCase):
     )
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_scheduled_market_data_ingestion_success_one_bday_ago(
-        self, mock_requests_get, mock_yahoo_finance, _mock_lock
+        self, mock_requests_get, mock_yahoo_finance, _mock_lock, mock_schedule_analysis
     ):
         """
         GIVEN valid market data from scraping
@@ -78,8 +81,10 @@ class TestScheduledMarketDataIngestion(TestCase):
                 "price": 100.0,
             }
         ]
+        mock_schedule_analysis.assert_called_once_with(price_date)
 
     @freeze_time("2025-12-15")
+    @patch("market_overview.tasks._schedule_market_analysis_after_ingestion")
     @patch(
         "market_overview.tasks.try_acquire_redis_lock",
         return_value=_mock_ingestion_lock(),
@@ -89,7 +94,7 @@ class TestScheduledMarketDataIngestion(TestCase):
     )
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_scheduled_market_data_ingestion_success_one_bday_ago_no_scrapping_function(
-        self, mock_requests_get, mock_yahoo_finance, _mock_lock
+        self, mock_requests_get, mock_yahoo_finance, _mock_lock, mock_schedule_analysis
     ):
         """
         GIVEN valid market data from scraping
@@ -132,8 +137,10 @@ class TestScheduledMarketDataIngestion(TestCase):
                 "price": None,
             }
         ]
+        mock_schedule_analysis.assert_called_once_with(price_date)
 
     @freeze_time("2025-12-15")
+    @patch("market_overview.tasks._schedule_market_analysis_after_ingestion")
     @patch(
         "market_overview.tasks.try_acquire_redis_lock",
         return_value=_mock_ingestion_lock(),
@@ -143,7 +150,7 @@ class TestScheduledMarketDataIngestion(TestCase):
     )
     @patch("market_overview.services.price_ingestion_services.requests.get")
     def test_scheduled_market_data_ingestion_success_two_bdays_ago(
-        self, mock_requests_get, mock_yahoo_finance, _mock_lock
+        self, mock_requests_get, mock_yahoo_finance, _mock_lock, mock_schedule_analysis
     ):
         """
         GIVEN valid market data from scraping
@@ -185,15 +192,17 @@ class TestScheduledMarketDataIngestion(TestCase):
                 "price": 100.0,
             }
         ]
+        mock_schedule_analysis.assert_called_once_with(price_date)
 
     @freeze_time("2025-12-15")
+    @patch("market_overview.tasks._schedule_market_analysis_after_ingestion")
     @patch(
         "market_overview.tasks.try_acquire_redis_lock",
         return_value=_mock_ingestion_lock(),
     )
     @patch("market_overview.services.price_ingestion_services.get_market_data")
     def test_scheduled_market_data_ingestion_error(
-        self, mock_get_market_data, _mock_lock
+        self, mock_get_market_data, _mock_lock, mock_schedule_analysis
     ):
         """
         GIVEN an error occurs during scraping
@@ -209,13 +218,17 @@ class TestScheduledMarketDataIngestion(TestCase):
             "message": "Error: Network error",
             "date": price_date.isoformat(),
         }
+        mock_schedule_analysis.assert_not_called()
 
     @freeze_time("2025-12-15")
+    @patch("market_overview.tasks._schedule_market_analysis_after_ingestion")
     @patch(
         "market_overview.tasks.try_acquire_redis_lock",
         return_value=None,
     )
-    def test_scheduled_market_data_ingestion_skipped_when_locked(self, _mock_lock):
+    def test_scheduled_market_data_ingestion_skipped_when_locked(
+        self, _mock_lock, mock_schedule_analysis
+    ):
         """
         GIVEN another ingestion already holds the Redis lock for the date
         WHEN scheduled_market_data_ingestion is called
@@ -227,6 +240,24 @@ class TestScheduledMarketDataIngestion(TestCase):
             "message": "Market data ingestion already in progress for 2025-12-12",
             "date": "2025-12-12",
         }
+        mock_schedule_analysis.assert_not_called()
+
+    @freeze_time("2025-12-15")
+    @patch("market_analysis.tasks.scheduled_analysis_pipeline.delay")
+    def test_schedule_market_analysis_after_ingestion_queues_immediately(
+        self, mock_delay
+    ):
+        """
+        GIVEN a successful price date
+        WHEN _schedule_market_analysis_after_ingestion is called
+        THEN analysis is queued immediately for that date
+        """
+        price_date = date(2025, 12, 12)
+        tasks._schedule_market_analysis_after_ingestion(price_date)
+        mock_delay.assert_called_once_with(
+            reporting_date="2025-12-12",
+            force=False,
+        )
 
 
 class TestScheduledPriceUpdateLogsCleanup(TestCase):

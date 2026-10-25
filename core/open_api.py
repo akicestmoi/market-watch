@@ -26,6 +26,7 @@ class ApiTags(str, Enum):
     CENTRAL_BANKS = "Central Banks"
     LOGS = "Logs"
     HOLIDAYS = "Holidays"
+    MARKET_ANALYSIS = "Market Analysis"
 
 
 DEFAULT_ERROR_MESSAGES = {

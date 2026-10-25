@@ -12,20 +12,60 @@
 </head>
 
 <body>
+    {% csrf_token %}
     {% include "data_visualization/_navbar.html" %}
     <!-- Header -->
     <div class="header">
-        <div class="header-form">
-            <form method="get">
-                <label for="reference_date">Target Date:</label>
-                <input type="date" id="reference_date" name="reference_date"
-                    value="{{ reference_date|default:default_reference_date }}">
-                <label for="previous_date">Previous Date:</label>
-                <input type="date" id="previous_date" name="previous_date"
-                    value="{{ previous_date|default:default_previous_date }}">
-                <button type="submit" class="btn-primary">Update</button>
-                <button type="button" class="btn-primary" id="lastBtn">Last</button>
-            </form>
+        <div class="header-bar">
+            <div class="header-form">
+                <form method="get" class="header-date-form">
+                    <label for="reference_date">Target Date:</label>
+                    <input type="date" id="reference_date" name="reference_date"
+                        value="{{ reference_date|default:default_reference_date }}">
+                    <label for="previous_date">Previous Date:</label>
+                    <input type="date" id="previous_date" name="previous_date"
+                        value="{{ previous_date|default:default_previous_date }}">
+                    <button type="submit" class="btn-primary">Update</button>
+                    <button type="button" class="btn-primary" id="lastBtn">Last</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Market Recap -->
+    <div class="daily-recap-panel" id="dailyRecapPanel">
+        <div class="daily-recap-card" id="dailyRecapCard">
+            <div class="daily-recap-header">
+                <button type="button" class="daily-recap-toggle" id="dailyRecapToggle" aria-expanded="false">
+                    <span class="daily-recap-toggle-icon" aria-hidden="true">▸</span>
+                    <h2 id="dailyRecapTitle">Daily Market Recap</h2>
+                </button>
+                <div class="daily-recap-actions">
+                    <button type="button" class="btn-primary" id="generateRecapBtn">
+                        Generate new recap
+                    </button>
+                    <button type="button" class="btn-primary" id="openChatBtn">
+                        Fix recap with agent
+                    </button>
+                </div>
+            </div>
+            <div class="daily-recap-body" id="dailyRecapBody">Loading…</div>
+        </div>
+    </div>
+
+    <!-- Agent Chat Modal -->
+    <div class="agent-chat-overlay" id="agentChatOverlay" aria-hidden="true">
+        <div class="agent-chat-card" role="dialog" aria-modal="true" aria-labelledby="agentChatTitle">
+            <div class="agent-chat-header">
+                <h2 id="agentChatTitle">Fix recap with agent</h2>
+                <button type="button" class="agent-chat-close" id="agentChatClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="agent-chat-history-label">Chat history</div>
+            <div class="agent-chat-messages" id="agentChatMessages" aria-live="polite"></div>
+            <div class="agent-chat-form" id="agentChatForm">
+                <textarea id="agentChatInput" rows="3" placeholder="Fix recap with agent"></textarea>
+                <button type="button" class="btn-primary" id="agentChatSendBtn">Send</button>
+            </div>
         </div>
     </div>
 
@@ -59,6 +99,33 @@
                     <thead id="fxMatrixHeader"></thead>
                     <tbody id="fxMatrixBody"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="loading-modal-overlay" id="loading-modal-overlay">
+        <div class="loading-modal">
+            <div class="loading-spinner"></div>
+            <p class="loading-text" id="loading-modal-text">Processing request...</p>
+        </div>
+    </div>
+
+    <!-- Generate Recap Confirmation Modal -->
+    <div class="confirm-modal-overlay" id="generate-recap-confirm-overlay">
+        <div class="confirm-modal">
+            <div class="confirm-modal-header">
+                <h3 class="confirm-modal-title">Confirm Generate Recap</h3>
+                <button type="button" class="modal-close" id="generateRecapConfirmClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="confirm-modal-body">
+                <p id="generateRecapConfirmMessage">
+                    Generate a new daily market recap? This can take a while and will overwrite any existing recap for that date.
+                </p>
+            </div>
+            <div class="confirm-modal-footer">
+                <button type="button" class="btn-cancel" id="generateRecapConfirmCancel">Cancel</button>
+                <button type="button" class="btn-primary" id="generateRecapConfirmOk">Generate</button>
             </div>
         </div>
     </div>

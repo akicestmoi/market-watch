@@ -1,6 +1,6 @@
 # Market Watch
 
-A Django-based market monitoring application with comprehensive API documentation, Docker support, and development tools.
+A Django-based market monitoring application with comprehensive API documentation, Docker support, development tools, and an LLM-assisted **market analysis** pipeline (daily T-1 news recap + chat).
 
 ## Quick Start
 
@@ -35,6 +35,7 @@ A Django-based market monitoring application with comprehensive API documentatio
    DB_PORT
    CELERY_BROKER_URL
    CELERY_RESULT_BACKEND
+   OPENAI_API_KEY
    ```
 
 4. **Set up database and start server**:
@@ -130,6 +131,7 @@ These tasks fetch and ingest data from external sources:
 1. **Market Data Ingestion** - Runs **3 times daily** (8:00 AM, 2:00 PM, 8:00 PM)
    - Ingests asset prices: stocks, FX, crypto, commodities, government bond rates
    - Task: `market_overview.tasks.scheduled_market_data_ingestion`
+   - On success, queues **Market Analysis Pipeline** for that price date (see [Market Analysis](#market-analysis))
 
 2. **STIR Futures Prices Ingestion** - Runs **2 times daily** (8:00 AM, 8:40 PM)
    - Ingests Short-Term Interest Rate futures prices (FedFunds, ESTR, TONA)
@@ -199,6 +201,7 @@ python manage.py trigger_task <task_name> --async
 
 **Available task names:**
 - `scheduled_market_data_ingestion`
+- `scheduled_analysis_pipeline` (requires `reporting_date=YYYY-MM-DD`; see Market Analysis)
 - `scheduled_stir_prices_ingestion`
 - `scheduled_economic_data_and_schedule_update`
 - `scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`
@@ -244,6 +247,229 @@ python manage.py trigger_task scheduled_holidays_ingestion --async
    ```bash
    celery -A core call market_overview.tasks.scheduled_market_data_ingestion
    ```
+
+## Applications
+
+Project-owned Django apps (see `INSTALLED_APPS` in `core/settings.py`). URL mounts are wired in `core/urls.py`.
+
+| App | Package | URL prefix | Role |
+|---|---|---|---|
+| Core | `core` | *(project root)* | Settings, Celery, shared models/utils, admin, OpenAPI |
+| Market Overview | `market_overview` | `/markets/` | Assets, daily prices, holidays, price logs |
+| Economic Overview | `economic_overview` | `/economics/` | Indicators, observations, publication schedules |
+| Central Banks | `central_banks_overview` | `/central-banks/` | Meetings, CB series, STIR futures, probability matrices |
+| Data Visualization | `data_visualization` | `/` (site root pages) | HTML recaps, charts, DB management UI |
+| Market Analysis | `market_analysis` | `/analysis/` | LLM daily news recap + chat |
+
+**Dependency sketch:** `core` ← all · `market_overview` → viz + some CB scrapers + analysis trigger · `economic_overview` / `central_banks_overview` → viz · `data_visualization` → UI only · `market_analysis` → LLM recaps after market price ingestion.
+
+### Core (`core`)
+
+Shared project kernel — not a domain API.
+
+- **Models:** abstract `BaseModel` (`date_added` / `last_modified`) and `BaseLogModel` (text logs). No concrete domain tables.
+- **Services / helpers:** logging, HTML fetch, datetime parse, cache TTL constants, Redis distributed locks (`locks.py`), `BaseAPIView` + OpenAPI tag helpers, Celery app (`celery.py`) with task autodiscover.
+- **URLs:** mounts other apps; also `admin/`, `api/schema/`, `api/docs/` (Swagger via `drf_spectacular`).
+- **Management:** `trigger_task` to run scheduled Celery tasks manually (see [Celery Task Scheduling](#celery-task-scheduling)).
+- **Celery tasks:** none defined here (broker/app only).
+
+### Market Overview (`market_overview`)
+
+Asset catalog and daily market prices (equities, rates, FX, crypto, commodities), plus holidays and price-update audit logs.
+
+- **Models:** `AssetModel` (metadata, ticker, source, location, class); `MarketPriceModel` (per-asset daily price, unique on asset+date); `PriceUpdateLogModel`; `HolidayModel`.
+- **Services:** `price_ingestion_services` — scrape/ingest closes (Yahoo, US Treasury, NY Fed, Webstat, Bundesbank, BoJ, BB, GlobalRates, etc.); `market_data_services` — queries, missing prices, bulk/CSV updates, log cleanup; `holiday_services` — public holidays (e.g. Nager.Date for supported countries).
+- **Data sources:** `data_sources/market_data.json` (seed assets), `data_sources/single_names.json`.
+- **HTTP (`/markets/`):** `asset/*` (generate base data, names, details); `prices/*` (ingest, batch ingest, list, missing prices, bulk/CSV update, logs, mark-as-holiday); `holidays/*`.
+- **Tasks:** `scheduled_market_data_ingestion` (then queues market analysis); `scheduled_price_update_logs_cleanup`; `scheduled_holidays_ingestion`.
+- **Relations:** Feeds visualization recaps/charts; rate scrapers reused by central banks; successful ingestion triggers `market_analysis`.
+
+### Economic Overview (`economic_overview`)
+
+Economic indicator definitions, observation values, publication calendars, and update logs.
+
+- **Models:** `EconomicIndicatorInformationModel`; `PublicationScheduleModel`; `EconomicDataModel`; `EconomicDataUpdateLogModel`.
+- **Services:** `data_ingestion_services` — scrape/ingest series (e.g. INSEE; JP Cabinet Office stubs); `economic_data_services` — due indicators, CRUD helpers, log cleanup; `publication_services` — scrape/update publication schedules.
+- **Data sources:** `data_sources/economic_data.json` (seed indicators); `data_sources/to_do.json` (planned series).
+- **HTTP (`/economics/`):** `indicator/generate-base-information`, `indicator/ingest`, `indicator/ingest-specific`, `indicator` (detail); `schedule/update`.
+- **Tasks:** `scheduled_economic_data_and_schedule_update`; `scheduled_economic_data_update_logs_cleanup`.
+- **Relations:** Consumed by `data_visualization` economic recap/charts; location concepts align with market holidays / CB calendar in upcoming-events UI.
+
+### Central Banks Overview (`central_banks_overview`)
+
+FRB / ECB / BoJ meeting calendars, central-bank data series, STIR futures prices, and meeting-by-meeting rate-path **probability matrices**.
+
+- **Models:** `CentralBankMeetingModel`; `CentralBankDataModel`; `StirFuturesModel` (e.g. Fed funds / ESTR / mutan futures); `StirFuturesPriceUpdateLogModel`. Reuses `market_overview` location enums via a CB location map.
+- **Services:** `cb_data_services` — ingest/query CB series; `cb_meetings_services` — scrape FOMC/ECB/BoJ calendars; `stir_prices_ingestion_services` — Yahoo, TFX, ESTR PDF, bulk/CSV; `cb_inference_services` — probability matrices from STIR (Fed vs 3M futures methodologies).
+- **Data sources:** `data_sources/central_banks_data.json`; Fed/ECB/BoJ sites; Yahoo; TFX; ESTR PDF; some rate scrapers shared with market overview.
+- **HTTP (`/central-banks/`):** `data`, `data/ingest`; `meeting-dates`, `meeting-dates/ingest`; `stir-futures` (+ ingest, ESTR PDF, bulk/CSV); `probability-matrix`.
+- **Tasks:** `scheduled_stir_prices_ingestion`; `scheduled_stir_futures_price_update_logs_cleanup`; `scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`.
+- **Relations:** Depends on `market_overview` for locations / some scrapes; powers CB recap and upcoming events in visualization.
+
+### Data Visualization (`data_visualization`)
+
+Server-rendered operator UI: recaps, charts, and a database management console. **No models of its own** — read-only composition over the domain apps.
+
+- **Services:** `market_recap_services` / `market_chart_services` ← market overview; `economic_recap_services` / `economic_chart_services` ← economic (+ holidays/CB meetings for calendar); `central_bank_recap_services` ← CB data + probability matrices; `database_management_services` — table counts/sizes for the management page.
+- **HTTP (site root):** `market-recap/`, `market-charts/`, `economic-recap/`, `economic-charts/`, `central-banks-recap/`, `management/`.
+- **Static:** CSS/JS under `data_visualization/static/`; templates under `data_visualization/templates/`.
+- **Celery:** none.
+- **Relations:** Presentation layer for `market_overview`, `economic_overview`, and `central_banks_overview`.
+
+
+### Market Analysis (`market_analysis`)
+
+Cost-conscious daily **T-1** research agent: scrape a small set of date-scoped market wraps, analyze them **in memory** with an LLM, then persist a single daily recap tied to verified DB prices. Interactive chat continues via client-sent `messages`.
+
+Mounted under **`/analysis/`** (see `core/urls.py`).
+
+#### Goals and non-goals
+
+| Does | Does not |
+|---|---|
+| One AI daily analysis per `reporting_date` | Store scraped articles in Postgres |
+| Use verified `MarketPriceModel` prices in the recap prompt | Invent prices from news text |
+| Cache same-day article digests in Redis (~24h) | Dedicated feedback / training pipeline |
+| Improve behavior via repo markdown (skills / instructions) | Auto-train or self-modify prompts |
+
+`reporting_date` is the **T-1 session / price date** (same calendar day as market data ingestion). It is **required** on pipeline, recap generate, and article-cache endpoints — there is no “default to today”.
+
+#### What is stored
+
+| Store | Contents |
+|---|---|
+| **Postgres** | `DailyRecapModel` only — one row per `reporting_date` (`title`, `analysis_content`, `source_urls`, `model_name`, `prompt_version`) |
+| **Redis** | Optional article-analysis digests keyed by reporting date + article URL + `PROMPT_VERSION` (TTL 24h). Used to skip repeat LLM analysis on re-runs. Inspect via `GET /analysis/article-cache` |
+| **Repo JSON** | `market_analysis/data_sources/news_sources.json` — which sources to scrape (`source` enum, `name`, `base_url`) |
+| **Repo markdown** | `market_analysis/llm/skills/market-analysis.md` (injected into prompts) and `market_analysis/llm/instructions/*.md` (system prompts for analysis / recap / chat) |
+| **Settings** | `OPENAI_API_KEY`, `LLM_MODEL_NAME` (full PydanticAI model id, e.g. `openai:gpt-6-luna`) in `core/settings.py` |
+
+News source enum: `NewsSourceChoices` in `market_analysis/models.py`. Scrapers are mapped in code (`SOURCE_SCRAP_MAP`), not in the DB.
+
+#### Pipeline flow
+
+```
+Price ingestion succeeds (reporting_date = price_date)
+        │
+        ▼
+schedule_market_analysis_after_ingestion(price_date)
+        │
+        ▼
+scheduled_analysis_pipeline(reporting_date)   # Celery, Redis lock per date
+        │
+        ▼
+run_daily_analysis_pipeline(reporting_date)
+  • skip if DailyRecap already exists (unless force)
+        │
+        ▼
+extract_all_articles(reporting_date)          # in memory, one article / source
+        │
+        ▼
+analyze_extracted_articles(...)               # LLM; Redis cache hit/miss
+        │
+        ▼
+generate_daily_recap(reporting_date, analyses)
+  • inject skills + bulk market context from DB
+  • persist / overwrite DailyRecapModel
+```
+
+Orchestration: `market_analysis.services.market_analysis_services.run_daily_analysis_pipeline`.  
+Celery entry: `market_analysis.tasks.scheduled_analysis_pipeline` (requires ISO `reporting_date` string).  
+Queued after successful price ingestion from `market_overview.tasks`.
+
+#### News extraction
+
+Config-driven list in `news_sources.json`. Each entry has a dedicated scrap function in `article_extraction_services.py` (same pattern as price ingestion: `ScrapingResult`, `@ttl_cache`).
+
+| Enum | Scraper | Discovery |
+|---|---|---|
+| `BOURSIER_CLOTURE_PARIS` | `scrap_boursier_cloture_paris` | `boursier.com/.../news-du-jour/{YYYYMMDD}` → **Clôture Paris** (HTTP via `curl_cffi` Chrome impersonation) |
+| `SWISSINFO_MARKET_WRAP` | `scrap_swissinfo_market_wrap` | [Swissinfo Bloomberg listing](https://www.swissinfo.ch/eng/bloomberg/) → **Markets Wrap** for that calendar day |
+
+- **One article per source** for the given `reporting_date`.
+- Scraped body is treated as **untrusted data** (`safe_untrusted_content_wrapper` in `market_analysis/llm/config.py`) — never as agent instructions.
+- Results stay in process memory (`ArticleData`); only URLs are copied onto the recap as `source_urls`.
+
+#### LLM analysis and recap
+
+| Piece | Module / path | Role |
+|---|---|---|
+| Structured outputs | `market_analysis/llm/schemas.py` | Pydantic models for article analysis, daily recap, chat |
+| Constants / loaders | `market_analysis/llm/config.py` | `PROMPT_VERSION`, skill/instruction loaders, untrusted wrapper |
+| Analysis + recap | `llm_market_recap_services.py` | Per-article analysis, bulk market context for recap, `DailyRecapModel` write |
+| Redis digests | `analysis_cache_services.py` | Get/set/list cached analyses |
+| Chat | `llm_interaction_services.py` | Shared chat agent; tools for recaps, prices, economic context, gated recap update |
+| Skills | `llm/skills/market-analysis.md` | Zones, regime language, econ coverage, chat update rules |
+| Instructions | `llm/instructions/{analysis,recap,chat}_system.md` | Agent system prompts |
+
+**Article analysis fields** (in memory / Redis only): title, summary, `event_types` (list), companies, sectors, sentiment, key_facts, uncertainties, `source_url`. No tickers on analysis (news names rarely match your DB tickers); chat can pull verified prices for a date via the market-context tool.
+
+**Recap**: combines analyzed news + market context + **economic indicator context** from `economic_overview`. Structure: Global → US → EU → Japan (see market-analysis skill). Idempotent one row per date; `force=True` overwrites.
+
+**Chat**: may propose recap edits; persists via tool only after explicit user agreement or order. May propose a Cursor Agent prompt to edit `market-analysis.md` only after that update path is agreed.
+
+Improving quality (no Feedback DB):
+
+1. Edit `llm/skills/market-analysis.md` and/or `llm/instructions/*.md`
+2. Edit `data_sources/news_sources.json` or scrapers / chat tools
+3. Redeploy — next run loads files from disk (`PROMPT_VERSION` also keys the Redis cache)
+
+PydanticAI does **not** learn from feedback by itself.
+
+#### HTTP API (`/analysis/`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/analysis/recap` | Fetch latest recap, or filter by `reporting_date` / `id` |
+| `POST` | `/analysis/recap/generate` | Run pipeline in-process (`reporting_date` required, optional `force`) |
+| `POST` | `/analysis/chat` | Q&A; optional prior `messages` for continuity |
+| `GET` | `/analysis/article-cache` | Inspect Redis digests for a `reporting_date` (optional `source_url`) |
+
+OpenAPI: tag **Market Analysis** on Swagger UI (`/api/docs/`). Serializers live under `market_analysis/open_api/`.
+
+#### Chat
+
+- Shared agent instance (`get_chat_agent`) with fixed tools/instructions.
+- Conversation continuity = client-sent `messages` in the request body.
+- Tools: recent daily recaps, market prices for a reporting date, economic context, gated recap update.
+- Skills stay in the prompt (not a tool).
+
+#### Manual runs
+
+```bash
+# HTTP — runs extract → analyze → persist in the request (not queued)
+# POST /analysis/recap/generate  {"reporting_date": "2026-10-23", "force": true}
+
+# Scheduled / ops — Celery task after price ingestion (or call from shell)
+python manage.py shell
+>>> from market_analysis.tasks import scheduled_analysis_pipeline
+>>> scheduled_analysis_pipeline.delay(reporting_date="2026-10-23", force=False)
+```
+
+Requires `OPENAI_API_KEY` and a valid `LLM_MODEL_NAME`. Pipeline skips when a daily recap already exists (unless `force`).
+
+#### Layout (high level)
+
+```text
+market_analysis/
+  data_sources/news_sources.json
+  llm/
+    config.py
+    schemas.py
+    skills/
+    instructions/
+  models.py                 # DailyRecapModel, NewsSourceChoices
+  tasks.py
+  services/
+    market_analysis_services.py      # gates + pipeline
+    article_extraction_services.py   # scrapers
+    llm_market_recap_services.py     # analyze + recap
+    analysis_cache_services.py       # Redis digests
+    llm_interaction_services.py      # chat
+  views/                             # API
+  open_api/
+  tests/
+```
 
 ## Testing
 

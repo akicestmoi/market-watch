@@ -1,10 +1,12 @@
 """Shared utilities (logging, HTML fetch helpers) used across apps."""
 
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional, Type, TypeVar
 
 import requests
 from bs4 import BeautifulSoup
+from dateutil import parser as date_parser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
@@ -144,3 +146,16 @@ def fetch_html(url: str) -> Optional[BeautifulSoup]:
     except requests.RequestException as e:
         logger.error(f"Error fetching {url}: {str(e)}")
         return
+
+
+def parse_datetime(value: Optional[str]) -> Optional[datetime]:
+    """Parse an ISO / RFC-ish datetime string to aware datetime when possible."""
+    if not value:
+        return None
+    try:
+        parsed_datetime = date_parser.parse(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if parsed_datetime.tzinfo is None:
+        parsed_datetime = parsed_datetime.replace(tzinfo=timezone.utc)
+    return parsed_datetime

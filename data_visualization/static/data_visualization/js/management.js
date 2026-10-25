@@ -413,6 +413,55 @@ const ENDPOINTS = {
             },
         ],
     },
+    marketAnalysis: {
+        Recap: [
+            {
+                name: "Get Daily Recap",
+                description: "Fetch the AI-generated financial news recap for a date (or latest).",
+                method: "GET",
+                path: "/analysis/recap",
+                body: null,
+                query: [
+                    { name: "reporting_date", type: "date", required: false },
+                    { name: "id", type: "text", required: false },
+                ],
+            },
+            {
+                name: "Generate Daily Recap",
+                description: "Run the pipeline in-process: collect → analyze → persist recap (not queued).",
+                method: "POST",
+                path: "/analysis/recap/generate",
+                body: [
+                    { name: "reporting_date", type: "date", required: true },
+                    { name: "force", type: "checkbox", required: false },
+                ],
+                query: null,
+            },
+        ],
+        "Cache & Chat": [
+            {
+                name: "Article Analysis Cache",
+                description: "Inspect same-day Redis-cached article digests (24h TTL).",
+                method: "GET",
+                path: "/analysis/article-cache",
+                body: null,
+                query: [
+                    { name: "reporting_date", type: "date", required: false },
+                    { name: "source_url", type: "text", required: false },
+                ],
+            },
+            {
+                name: "Market Analysis Chat",
+                description: "Q&A with the market-analysis agent (send prior turns in messages for continuity).",
+                method: "POST",
+                path: "/analysis/chat",
+                body: [
+                    { name: "question", type: "text", required: true },
+                ],
+                query: null,
+            },
+        ],
+    },
 };
 
 // Store endpoint references
@@ -604,6 +653,28 @@ document.addEventListener("DOMContentLoaded", function () {
             globalIndex++;
         });
     });
+
+    // Render research agent endpoints
+    const researchContainer = document.getElementById("market-analysis-endpoints");
+    if (researchContainer && ENDPOINTS.marketAnalysis) {
+        Object.entries(ENDPOINTS.marketAnalysis).forEach(([subcategory, endpoints]) => {
+            const sortedEndpoints = sortEndpointsByMethod(endpoints);
+            const subcategorySection = createSubcategorySection(
+                subcategory,
+                sortedEndpoints,
+                globalIndex,
+                "marketAnalysis"
+            );
+            researchContainer.appendChild(subcategorySection.container);
+            sortedEndpoints.forEach((endpoint) => {
+                const card = createEndpointCard(endpoint, globalIndex, "marketAnalysis");
+                subcategorySection.grid.appendChild(card);
+                endpointMap.set(globalIndex, { category: "marketAnalysis", subcategory, endpoint });
+                globalIndex++;
+            });
+        });
+    }
+
 });
 
 function createSubcategorySection(subcategory, endpoints, startIndex, category) {

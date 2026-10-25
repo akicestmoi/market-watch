@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "data_visualization.apps.DataVisualizationConfig",
     "economic_overview.apps.EconomicOverviewConfig",
     "central_banks_overview.apps.CentralBanksOverviewConfig",
+    "market_analysis.apps.MarketAnalysisConfig",
 ]
 
 MIDDLEWARE = [
@@ -133,6 +134,12 @@ TIME_ZONE = "Europe/Paris"
 USE_I18N = True
 
 USE_TZ = True
+
+# LLM Configuration
+# https://developers.openai.com/api/docs/models/gpt-6-luna
+
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+LLM_MODEL_NAME = "openai:gpt-6-luna"
 
 
 # Static files (CSS, JavaScript, Images)
@@ -292,6 +299,10 @@ SPECTACULAR_SETTINGS = {
         {
             "name": ApiTags.HOLIDAYS.value,
             "description": "Holidays related endpoints",
+        },
+        {
+            "name": ApiTags.MARKET_ANALYSIS.value,
+            "description": "Market analysis AI agent related endpoints",
         },
     ],
 }

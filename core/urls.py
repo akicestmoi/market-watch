@@ -23,6 +23,7 @@ urlpatterns = [
     path("markets/", include("market_overview.urls")),
     path("economics/", include("economic_overview.urls")),
     path("central-banks/", include("central_banks_overview.urls")),
+    path("analysis/", include("market_analysis.urls")),
     path("", include("data_visualization.urls")),
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

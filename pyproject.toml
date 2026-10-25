@@ -28,7 +28,7 @@ ensure_newline_before_comments = true
 skip_glob = ["*/migrations/*", "*/staticfiles/*", "*/venv/*", "*/.venv/*", "*/node_modules/*"]
 
 [tool.pyright]
-include = ["core", "economic_overview", "market_overview", "data_visualization"]
+include = ["core", "economic_overview", "market_overview", "data_visualization", "market_analysis", "central_banks_overview"]
 exclude = [
     "**/migrations",
     "**/staticfiles",

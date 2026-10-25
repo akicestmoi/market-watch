@@ -14,6 +14,7 @@ from core.services import (
     convert_query_to_dictionary_list,
     fetch_html,
     get,
+    parse_datetime,
     update_with_logs,
     upsert_with_logs,
 )
@@ -609,3 +610,38 @@ class TestFetchHtml(TestCase):
 
         assert result is None
         mock_get.assert_called_once_with(url, timeout=10)
+
+
+class TestParseDatetime(TestCase):
+    """Test cases for parse_datetime."""
+
+    def test_parse_datetime_iso(self):
+        """
+        GIVEN an ISO datetime string with offset
+        WHEN parse_datetime is called
+        THEN an aware datetime matching the calendar date is returned
+        """
+        parsed = parse_datetime("2026-10-23T22:05:55+02:00")
+        assert parsed is not None
+        assert parsed.year == 2026
+        assert parsed.month == 10
+        assert parsed.day == 23
+
+    def test_parse_datetime_naive_assumes_utc(self):
+        """
+        GIVEN a naive ISO datetime string
+        WHEN parse_datetime is called
+        THEN timezone is set to UTC
+        """
+        parsed = parse_datetime("2026-10-23T22:05:55")
+        assert parsed is not None
+        assert parsed.tzinfo == timezone.utc
+
+    def test_parse_datetime_empty_returns_none(self):
+        """
+        GIVEN an empty value
+        WHEN parse_datetime is called
+        THEN None is returned
+        """
+        assert parse_datetime(None) is None
+        assert parse_datetime("") is None

@@ -8,6 +8,7 @@ from pandas.tseries.offsets import BDay
 import market_overview.services.holiday_services as holiday_services
 import market_overview.services.market_data_services as market_data_services
 import market_overview.services.price_ingestion_services as price_ingestion_services
+import market_analysis.tasks as market_analysis_tasks
 from core.locks import try_acquire_redis_lock
 from core.services import logger
 from market_overview.services.holiday_services import HOLIDAY_COUNTRIES
@@ -44,13 +45,15 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
         logger.info(f"Ingesting market data for {price_date}")
         market_data = price_ingestion_services.get_market_data(price_date)
         ingestion_result = price_ingestion_services.ingest_market_data(market_data)
-        return {
+        result = {
             "status": "success",
             "message": f"Market data ingested successfully for {price_date}",
             "date": price_date.isoformat(),
             "asset_not_updated": ingestion_result["asset_not_updated"],
             "asset_not_updated_holiday": ingestion_result["asset_not_updated_holiday"],
         }
+        market_analysis_tasks.schedule_market_analysis_after_ingestion(price_date)
+        return result
 
     except Exception as e:
         logger.error(f"Error in market data ingestion task: {str(e)}")

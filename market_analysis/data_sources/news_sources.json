@@ -1,0 +1,12 @@
+[
+  {
+    "source": "BOURSIER_CLOTURE_PARIS",
+    "name": "Boursier — Clôture Paris",
+    "base_url": "https://www.boursier.com"
+  },
+  {
+    "source": "SWISSINFO_MARKET_WRAP",
+    "name": "Swissinfo — Bloomberg Markets Wrap",
+    "base_url": "https://www.swissinfo.ch"
+  }
+]
