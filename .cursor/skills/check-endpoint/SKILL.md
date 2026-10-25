@@ -57,12 +57,17 @@ Use the Postman MCP (read-only tools are enough):
 | ✅ **In sync**  | Postman request matches the code exactly, including folder path                                  |
 | ⚠️ **Outdated** | A Postman request exists but has drifted from the code (list the exact fields, including folder) |
 | ❌ **Missing**  | Endpoint exists in code, no Postman request at all                                               |
-| 👻 **Orphaned** | Postman request has no matching code endpoint (removed, renamed, or moved)                       |
+| 👻 **Orphaned** | Postman request has no matching code endpoint (removed, renamed, or moved). Expected home: collection-root folder **`Deprecated`**. If it still sits under a live folder, flag that in the report (upsert will move it). |
 
 A request whose method, params, and body match but that sits in the wrong folder is ⚠️ **Outdated**.
 A request/folder whose **name** does not follow Naming convention is also ⚠️ **Outdated** (even if method/path/folder placement match).
 Requests in a folder that are not ordered per Request ordering are also ⚠️ **Outdated**.
+An **empty folder** (no requests or nested folders) anywhere in the collection is ⚠️ **Outdated** — upsert will delete it.
 A body-capable request (POST / PUT / PATCH, or DELETE with a body) that has an empty/`{}` body when the code expects fields — or whose example payload is missing required keys — is ⚠️ **Outdated**.
+A JSON body request whose raw language is `text` (or unset) instead of `json` is ⚠️ **Outdated**.
+A body request that declares a redundant `Content-Type` header (Postman already sets it from body mode) is ⚠️ **Outdated**.
+A request missing expected query params or URI/path params vs the Django route / query serializer is ⚠️ **Outdated**.
+A request whose Docs/`description` is empty or missing the required Docs sections (`## Response`, plus Path/Query/Body/Example sections when applicable) is ⚠️ **Outdated**.
 
 ### Folder arrangement
 
@@ -100,15 +105,41 @@ Within each folder, requests must appear in this order:
 
 Wrong order is ⚠️ **Outdated**.
 
-### Example payloads
+### Example payloads, params, and headers
 
 Every request that accepts a body (**POST**, **PUT**, **PATCH**, and **DELETE** when the view reads a body) **must** include a realistic example payload in Postman:
 
 1. Derive fields from the DRF serializer, `request.data` / parsed JSON keys, or `open_api/` schema — not invented keys.
-2. Use `raw` + `Content-Type: application/json` unless the endpoint is multipart/file upload (then `formdata` with the real field names).
-3. Fill **required** fields with plausible example values (dates as `YYYY-MM-DD`, tickers, short arrays of 1–2 items). Optional fields may be included when they clarify usage.
-4. GET requests: no body. Prefer example **query params** when the view reads query params.
-5. An empty `{}` is only valid when the view truly accepts an empty body (no required fields). Otherwise missing/empty example payload is drift.
+2. **Body mode (critical):**
+   - Non-multipart JSON APIs → `dataMode: "raw"` with `dataOptions.raw.language: "json"` and a JSON string in `rawModeData`. **Never** leave raw language as `text` (or omit language so Postman defaults to Text) when the body is JSON.
+   - Multipart / file upload → `dataMode: "formdata"` with the real field names (`type: "file"` where needed).
+3. **Do not set `Content-Type` in `headerData` for body requests.** Postman sets it from the body mode / raw language (JSON → `application/json`, formdata → multipart boundary). An explicit `Content-Type: application/json` header is useless drift and can override Postman's correct value — flag ⚠️ **Outdated** and remove it on upsert. Keep only headers the API actually requires beyond body Content-Type (e.g. auth).
+4. Fill **required** fields with plausible example values (dates as `YYYY-MM-DD`, tickers, short arrays of 1–2 items). Optional fields may be included when they clarify usage.
+5. **Query params:** when the view reads query params (`request.query_params` / GET serializers), the Postman request **must** declare them under `queryParams` with realistic example values (and enable the ones callers typically send). Missing or wrong query keys are ⚠️ **Outdated**.
+6. **URI / path params:** path placeholders in the URL (`:id`, `{id}`, `{{id}}` — match collection convention) must match code path converters. Example values belong in the URL segment or collection/path variables the collection already uses — never drop a path param the route requires.
+7. GET / DELETE with no body: no `rawModeData`. Prefer example **query params** when the view reads them.
+8. An empty `{}` is only valid when the view truly accepts an empty body (no required fields). Otherwise missing/empty example payload is drift.
+
+Drift examples for this section (all ⚠️ **Outdated**):
+
+- Raw body with language `text` (or unset) when the API expects JSON
+- Explicit `Content-Type: application/json` (or multipart Content-Type) on a request that already has a body mode
+- Missing / wrong `queryParams` vs the view's query serializer
+- Missing path/URI param vs the Django route
+
+### Docs tab (request description)
+
+Every request’s **Docs** tab (Postman `description`) must be markdown with the sections below. Missing or non-conforming Docs is ⚠️ **Outdated**. Omit any section that does not apply to that endpoint.
+
+1. **Opening summary** — one sentence from the view / `@open_api` summary or description.
+2. **`## Path Parameters`** — markdown table with columns `Parameter | Required | Description`.
+3. **`## Query Parameters`** — markdown table with columns `Parameter | Required | Description`.
+4. **`## Request Body`** — short intro (e.g. “JSON object with the following fields:”) then a table with columns `Field | Required | Type | Description`.
+5. **`## Example Payload`** — fenced `json` code block with a realistic body example (body-bearing methods only).
+6. **`## Response`** — short intro (“Returns a JSON object…” / “…array of objects…”) then a table with columns `Field | Type | Description`.
+7. **`## Example Response`** — fenced `json` code block with a realistic response example.
+
+Derive fields, types, and examples from DRF serializers / Spectacular OpenAPI — not invented keys. Prefer generating Docs from the project schema (e.g. `scripts/generate_postman_docs.py`) when upserting.
 
 ### Naming convention
 
@@ -137,4 +168,4 @@ Output one table, most severe first (❌ → ⚠️ → 👻 → ✅). Do **not*
 ## Notes
 
 - Never call a Postman write tool from this skill.
-- 👻 Orphaned entries are informational only — never suggested for deletion.
+- 👻 Orphaned entries are never suggested for deletion. They belong under collection-root **`Deprecated`**; if misplaced, point the user to `upsert-endpoint` to move them there.

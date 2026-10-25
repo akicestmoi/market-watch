@@ -16,11 +16,14 @@ MCP is `.cursor/mcp.json` (`https://mcp.postman.com/mcp`). Per-PC MCP overrides:
 ## CRITICAL BEHAVIOR RULES
 
 1. **ACT, DON'T LIST.** Run the check, then apply the fixes for everything ❌ Missing or ⚠️ Outdated in the same pass. Do not stop to ask for confirmation on obvious upserts.
-2. **NEVER DELETE.** 👻 Orphaned Postman requests are reported, never removed.
+2. **NEVER DELETE FROM THE COLLECTION.** 👻 Orphaned Postman requests are never discarded. **Move** them into a collection-root folder named **`Deprecated`** (create the folder if missing). Do not leave orphans in their old live folders. Orphans already under `Deprecated` need no further move. Prefer MCP `transferCollectionRequests` (`mode: move`, target `Deprecated`). If transfer is unavailable, recreate under `Deprecated` (POST with `position.parent`), copy fields via JSON Patch, then remove only the old copy — the request must still exist under `Deprecated`.
 3. **TARGETED PATCH, NOT BLIND OVERWRITE.** When updating an existing request, only change the fields that drifted (params, body, headers, method, URL, folder). Preserve description, saved example responses, and pre-request/test scripts. If the folder is wrong, **move** the request (an update, not a delete).
 4. **MATCH THE COLLECTION'S CONVENTIONS.** New requests must look like they belong: Naming convention below, nested folders matching each `/` in the path, same base-URL variable (`{{base_url}}` or similar), same auth pattern as the rest of the collection.
 5. **RENAME TO MATCH NAMING CONVENTION.** If a folder or request name is wrong (kebab-case, lowercase, or not descriptive), **rename** it. Do not leave drift on names.
-6. **ALWAYS SET EXAMPLE PAYLOADS.** POST/PUT/PATCH (and body-bearing DELETE) must include a realistic example body from serializers/`request.data`. GET/DELETE with query params must include example query values. Never leave `{}` when fields are required.
+6. **ALWAYS SET EXAMPLE PAYLOADS + PARAMS.** POST/PUT/PATCH (and body-bearing DELETE) must include a realistic example body from serializers/`request.data`. GET/DELETE with query params must include example `queryParams`. Path/URI params must remain in the URL. Never leave `{}` when fields are required.
+7. **JSON BODY LANGUAGE, NOT TEXT.** For non-multipart JSON bodies set `dataMode: "raw"` and `dataOptions.raw.language: "json"`. Never leave language as `text` (Postman’s default Text mode).
+8. **NO MANUAL CONTENT-TYPE ON BODY REQUESTS.** Do not put `Content-Type` in `headerData` when a body mode is set — Postman detects it. Strip redundant Content-Type headers when updating existing requests.
+9. **ALWAYS SET DOCS.** Every create/update must set the request Docs tab (`description`) to the markdown structure in `check-endpoint`: opening summary; `## Path Parameters` / `## Query Parameters` tables; `## Request Body` + `## Example Payload`; `## Response` + `## Example Response` (omit sections that do not apply). Prefer `scripts/generate_postman_docs.py` from the OpenAPI schema. CLI: pass markdown via `--description "$(cat file.md)"` (inline text) — unlike `--body`, `--description` does **not** expand `@file` and will store the literal `@…` path if you pass one.
 
 ## Workflow
 
@@ -36,7 +39,7 @@ Before making any change, confirm the Postman MCP exposes write tools (collectio
 
 ### 6. Apply fixes
 
-Process ❌ Missing first, then ⚠️ Outdated. Skip 👻 Orphaned and ✅ In sync.
+Process ❌ Missing first, then ⚠️ Outdated, then 👻 Orphaned (move into `Deprecated` only — never delete requests). Delete empty folders. Skip ✅ In sync and orphans already under `Deprecated`.
 
 **❌ Missing → create a new request:**
 
@@ -62,13 +65,20 @@ Same rule as `check-endpoint` (keep in sync). Summary:
 
 **Create (❌ Missing):** walk folders from the collection root by **Title Case** folder names; reuse an existing folder of that name or create it; create the request **inside** the innermost folder with a descriptive Title Case name.
 
-**Move (⚠️ wrong folder):** create any missing folders, then move the existing request. Do not duplicate or delete it. Leave emptied folders in place. Typical fix: resource-root GET/DELETE sitting in the parent must move into the resource folder (e.g. `Markets` → `Markets / Asset`).
+**Move (⚠️ wrong folder or 👻 orphan → `Deprecated`):** create any missing folders (including collection-root `Deprecated` for orphans), then move the existing request via MCP `transferCollectionRequests` / `transferCollectionFolders` when available. Do not leave a duplicate in the old folder. After a move, **delete any folders left empty**. Typical fix: resource-root GET/DELETE sitting in the parent must move into the resource folder (e.g. `Markets` → `Markets / Asset`). Collection-api note: `position` is set only on create — PATCH cannot re-parent; if transfer fails, recreate under the target parent, JSON-Patch the fields, then remove the old item.
 
 **Rename (⚠️ wrong name):** update the folder/request `name` only (targeted patch).
 
 **Reorder (⚠️ wrong order):** within each folder, put **CRUD** resource-root requests first (Create=`POST` → Read=`GET` → Update=`PUT`/`PATCH` → Delete=`DELETE`), then the rest **alphabetical** by display name. Use move/transfer to fix order; do not recreate requests.
 
-**Example payload (⚠️ missing/wrong body):** set `rawModeData` (JSON) or form-data from the serializer / `request.data` keys. Keep `Content-Type: application/json` for JSON bodies. See Example payloads in `check-endpoint`.
+**Example payload / params / headers (⚠️ missing/wrong):** See Example payloads, params, and headers in `check-endpoint`. When applying:
+
+- JSON APIs (MCP): `dataMode: "raw"`, `dataOptions: { "raw": { "language": "json" } }`, `rawModeData` = JSON string from the serializer. **Never** use raw language `text`.
+- JSON APIs (Postman CLI cloud): `-d 'json:{...}'` (the `json:` prefix sets body type to JSON, not Text).
+- Multipart: `dataMode: "formdata"` / CLI `formdata:...` with real fields — not raw JSON.
+- **Never** add `Content-Type` to `headerData` / `--headers` for body requests; Postman detects it from body mode. If an existing request has a redundant Content-Type header, **remove** it (replace `headerData` without that key; CLI: replace headers so Content-Type is gone).
+- Always set `queryParams` / `--param` with example values when the view has query params; keep URI/path params in the URL matching the Django route.
+- Always set Docs (`description`) per the Docs tab structure in `check-endpoint` (summary; Path/Query/Body/Response tables; Example Payload / Example Response JSON blocks).
 
 ### Naming convention
 
@@ -80,7 +90,7 @@ Same as `check-endpoint` — keep both skills in sync:
 
 ### 7. Report
 
-Summarize what changed — created, updated, orphaned (left untouched), already in sync. Do not just say "done".
+Summarize what changed — created, updated, orphaned (moved into `Deprecated`), already in sync. Do not just say "done".
 
 ## Notes
 

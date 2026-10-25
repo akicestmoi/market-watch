@@ -10,7 +10,9 @@ When routes, request/response schemas, query params, or auth on this Django API 
 
 1. Resolve the target from `.cursor/postman.local.json` (per machine) then [POSTMAN.md](../../POSTMAN.md). Workspace **Perso**, collection **market-watch**; the whole collection is this repo.
 2. Use `check-endpoint` for a read-only drift report.
-3. Use `upsert-endpoint` to create or update matching requests (never delete orphaned ones).
+3. Use `upsert-endpoint` to create or update matching requests (never delete orphaned ones — move them into a collection-root `Deprecated` folder).
 4. If write tools are missing, the MCP is not on the `/mcp` (full) profile — stop and switch the URL to `https://mcp.postman.com/mcp` (or override in `~/.cursor/mcp.json` on this PC).
+5. Body conventions: non-multipart bodies are **JSON** (raw language `json` / CLI `-d 'json:...'`), never Text; **do not** set a manual `Content-Type` header — Postman detects it. Always sync query + URI params from the Django route / serializers.
+6. Docs tab: every request needs markdown with an opening summary plus (when applicable) `## Path Parameters`, `## Query Parameters`, `## Request Body`, `## Example Payload`, `## Response`, and `## Example Response`. Generate from OpenAPI via `scripts/generate_postman_docs.py` when possible.
 
 Folder placement follows each `/` in the path; skip path-param segments. See `check-endpoint` / `upsert-endpoint`.
