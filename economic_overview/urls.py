@@ -5,7 +5,8 @@ from django.urls import path
 from economic_overview.views.economic_data_views import (
     EconomicDataDetailedView,
     GenerateBaseEconomicIndicatorInformationView,
-    IngestEconomicDataView,
+    IngestHistoricalEconomicDataView,
+    IngestLatestEconomicDataView,
     IngestSpecificEconomicDataView,
 )
 from economic_overview.views.publication_schedules_views import (
@@ -17,7 +18,8 @@ urlpatterns = [
         "indicator/generate-base-information",
         GenerateBaseEconomicIndicatorInformationView.as_view(),
     ),
-    path("indicator/ingest", IngestEconomicDataView.as_view()),
+    path("indicator/ingest", IngestLatestEconomicDataView.as_view()),
+    path("indicator/ingest-historical", IngestHistoricalEconomicDataView.as_view()),
     path("indicator/ingest-specific", IngestSpecificEconomicDataView.as_view()),
     path("indicator", EconomicDataDetailedView.as_view()),
     path("schedule/update", UpdatePublicationScheduleView.as_view()),

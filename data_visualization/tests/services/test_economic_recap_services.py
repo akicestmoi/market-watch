@@ -106,26 +106,6 @@ class TestEconomicRecapServices(TestCase):
         ]
         result = get_economic_recap_data(locations)
         assert result == {
-            EconomicDataCategoryChoices.CONFIDENCE.value: [
-                {
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "location": EconomicDataLocationChoices.FR.value,
-                    "name": "Test Indicator",
-                    "current": 110.0,
-                    "previous": 100.0,
-                    "change": 10.0,
-                    "period": self.second_economic_data.get_period_display(),
-                },
-                {
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "change": None,
-                    "current": None,
-                    "location": EconomicDataLocationChoices.US.value,
-                    "name": "Test Indicator",
-                    "period": None,
-                    "previous": None,
-                },
-            ],
             EconomicDataCategoryChoices.GROWTH.value: [
                 {
                     "category": EconomicDataCategoryChoices.GROWTH.value,
@@ -144,6 +124,26 @@ class TestEconomicRecapServices(TestCase):
                     "previous": None,
                     "change": None,
                     "period": self.first_economic_data.get_period_display(),
+                },
+            ],
+            EconomicDataCategoryChoices.CONFIDENCE.value: [
+                {
+                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
+                    "location": EconomicDataLocationChoices.FR.value,
+                    "name": "Test Indicator",
+                    "current": 110.0,
+                    "previous": 100.0,
+                    "change": 10.0,
+                    "period": self.second_economic_data.get_period_display(),
+                },
+                {
+                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
+                    "change": None,
+                    "current": None,
+                    "location": EconomicDataLocationChoices.US.value,
+                    "name": "Test Indicator",
+                    "period": None,
+                    "previous": None,
                 },
             ],
         }

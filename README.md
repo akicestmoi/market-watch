@@ -313,8 +313,8 @@ Maintains the economic calendar and observation history used by the economic rec
 
 - **Models:** `EconomicIndicatorInformationModel`; `PublicationScheduleModel`; `EconomicDataModel`; `EconomicDataUpdateLogModel`.
 - **Services:** `data_ingestion_services` — scrape/ingest series (e.g. INSEE; JP Cabinet Office stubs); `economic_data_services` — due indicators, CRUD helpers, log cleanup; `publication_services` — scrape/update publication schedules.
-- **Data sources:** `data_sources/economic_data.json` (seed indicators); `data_sources/to_do.json` (planned series).
-- **HTTP (`/economics/`):** `indicator/generate-base-information`, `indicator/ingest`, `indicator/ingest-specific`, `indicator` (detail); `schedule/update`.
+- **Data sources:** `data_sources/economic_data.json` (seed indicators); series catalog and methodology notes in `docs/INDICATORS.md`.
+- **HTTP (`/economics/`):** `indicator/generate-base-information`, `indicator/ingest` (latest), `indicator/ingest-historical`, `indicator/ingest-specific`, `indicator` (detail); `schedule/update`.
 - **Tasks:** `scheduled_economic_data_and_schedule_update`; `scheduled_economic_data_update_logs_cleanup`.
 - **Relations:** Consumed by `data_visualization` economic recap/charts; location concepts align with market holidays / CB calendar in upcoming-events UI.
 
@@ -399,8 +399,8 @@ generate_daily_recap(reporting_date, analyses)
   • persist / overwrite DailyRecapModel
 ```
 
-Orchestration: `market_analysis.services.market_analysis_services.run_daily_analysis_pipeline`.  
-Celery entry: `market_analysis.tasks.scheduled_analysis_pipeline` (requires ISO `reporting_date` string).  
+Orchestration: `market_analysis.services.market_analysis_services.run_daily_analysis_pipeline`.
+Celery entry: `market_analysis.tasks.scheduled_analysis_pipeline` (requires ISO `reporting_date` string).
 Queued after successful price ingestion from `market_overview.tasks`.
 
 #### News extraction

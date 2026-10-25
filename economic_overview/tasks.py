@@ -19,7 +19,7 @@ def scheduled_economic_data_and_schedule_update():
     """
     today = date.today()
     lock = try_acquire_redis_lock(
-        data_ingestion_services.economic_data_ingestion_lock_key()
+        data_ingestion_services.get_economic_data_ingestion_lock_key()
     )
     if lock is None:
         logger.warning(
@@ -49,7 +49,9 @@ def scheduled_economic_data_and_schedule_update():
         logger.info(
             f"Ingesting economic data: {[indicator.name for indicator in economic_indicators_to_update]} for {today}"
         )
-        data_ingestion_services.ingest_economic_data(economic_indicators_to_update)
+        data_ingestion_services.ingest_latest_economic_data(
+            economic_indicators_to_update
+        )
         logger.info("Updating publication schedules.")
         publication_services.update_publication_schedules(economic_indicators_to_update)
         return {

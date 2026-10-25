@@ -115,27 +115,27 @@ class TestEconomicChartServices(TestCase):
             "us_growth_indicator": "GDP Growth,Real GDP",
             "us_inflation_indicator": "CPI",
             "us_government_indicator": "",
+            "us_production_indicator": "",
+            "us_sales_indicator": "",
             "us_labour_indicator": "",
             "us_housing_indicator": "",
-            "us_production_indicator": "",
             "us_confidence_indicator": "",
-            "us_sales_indicator": "",
             "fr_growth_indicator": "",
             "fr_inflation_indicator": "",
             "fr_government_indicator": "",
+            "fr_production_indicator": "",
+            "fr_sales_indicator": "",
             "fr_labour_indicator": "",
             "fr_housing_indicator": "",
-            "fr_production_indicator": "",
             "fr_confidence_indicator": "Aggregate Business Confidence",
-            "fr_sales_indicator": "",
             "jp_growth_indicator": "",
             "jp_inflation_indicator": "",
             "jp_government_indicator": "",
+            "jp_production_indicator": "",
+            "jp_sales_indicator": "",
             "jp_labour_indicator": "",
             "jp_housing_indicator": "",
-            "jp_production_indicator": "",
             "jp_confidence_indicator": "",
-            "jp_sales_indicator": "",
         }
 
         result = get_selected_indicators_by_category(
@@ -155,6 +155,14 @@ class TestEconomicChartServices(TestCase):
                 selected_indicators=[],
             ),
             SelectedIndicatorsByCategory(
+                category=EconomicDataCategoryChoices.PRODUCTION,
+                selected_indicators=[],
+            ),
+            SelectedIndicatorsByCategory(
+                category=EconomicDataCategoryChoices.SALES,
+                selected_indicators=[],
+            ),
+            SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.LABOUR,
                 selected_indicators=[],
             ),
@@ -163,15 +171,7 @@ class TestEconomicChartServices(TestCase):
                 selected_indicators=[],
             ),
             SelectedIndicatorsByCategory(
-                category=EconomicDataCategoryChoices.PRODUCTION,
-                selected_indicators=[],
-            ),
-            SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.CONFIDENCE,
-                selected_indicators=[],
-            ),
-            SelectedIndicatorsByCategory(
-                category=EconomicDataCategoryChoices.SALES,
                 selected_indicators=[],
             ),
         ]
@@ -188,22 +188,22 @@ class TestEconomicChartServices(TestCase):
                 "Growth",
                 "Inflation",
                 "Government",
+                "Production",
+                "Sales",
                 "Labour",
                 "Housing",
-                "Production",
                 "Confidence",
-                "Sales",
             ],
             locations=["United States", "Europe", "France", "Japan"],
             indicators_by_category=[
                 {"category": "Growth", "indicators": ["GDP Growth"]},
                 {"category": "Inflation", "indicators": ["CPI"]},
                 {"category": "Government", "indicators": []},
+                {"category": "Production", "indicators": []},
+                {"category": "Sales", "indicators": []},
                 {"category": "Labour", "indicators": []},
                 {"category": "Housing", "indicators": []},
-                {"category": "Production", "indicators": []},
                 {"category": "Confidence", "indicators": []},
-                {"category": "Sales", "indicators": []},
             ],
         )
 
@@ -221,22 +221,22 @@ class TestEconomicChartServices(TestCase):
                 "Growth",
                 "Inflation",
                 "Government",
+                "Production",
+                "Sales",
                 "Labour",
                 "Housing",
-                "Production",
                 "Confidence",
-                "Sales",
             ],
             locations=["United States", "Europe", "France", "Japan"],
             indicators_by_category=[
                 {"category": "Growth", "indicators": ["GDP Growth"]},
                 {"category": "Inflation", "indicators": []},
                 {"category": "Government", "indicators": []},
+                {"category": "Production", "indicators": []},
+                {"category": "Sales", "indicators": []},
                 {"category": "Labour", "indicators": []},
                 {"category": "Housing", "indicators": []},
-                {"category": "Production", "indicators": []},
                 {"category": "Confidence", "indicators": []},
-                {"category": "Sales", "indicators": []},
             ],
         )
 
@@ -271,11 +271,11 @@ class TestEconomicChartServices(TestCase):
             ),
             EconomicChartsData(category="Inflation", category_data=[]),
             EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
             EconomicChartsData(category="Labour", category_data=[]),
             EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
             EconomicChartsData(category="Confidence", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
         ]
 
     def test_get_charts_data_inflation_category(self):
@@ -309,11 +309,11 @@ class TestEconomicChartServices(TestCase):
                 ],
             ),
             EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
             EconomicChartsData(category="Labour", category_data=[]),
             EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
             EconomicChartsData(category="Confidence", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
         ]
 
     def test_get_charts_data_with_selected_indicators(self):
@@ -352,11 +352,11 @@ class TestEconomicChartServices(TestCase):
             ),
             EconomicChartsData(category="Inflation", category_data=[]),
             EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
             EconomicChartsData(category="Labour", category_data=[]),
             EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
             EconomicChartsData(category="Confidence", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
         ]
 
     def test_get_charts_data_empty_selected_list_returns_all_empty(self):
@@ -370,11 +370,11 @@ class TestEconomicChartServices(TestCase):
             EconomicChartsData(category="Growth", category_data=[]),
             EconomicChartsData(category="Inflation", category_data=[]),
             EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
             EconomicChartsData(category="Labour", category_data=[]),
             EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
             EconomicChartsData(category="Confidence", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
         ]
 
     def test_get_charts_data_empty_category(self):
@@ -394,9 +394,9 @@ class TestEconomicChartServices(TestCase):
             EconomicChartsData(category="Growth", category_data=[]),
             EconomicChartsData(category="Inflation", category_data=[]),
             EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
             EconomicChartsData(category="Labour", category_data=[]),
             EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
             EconomicChartsData(category="Confidence", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
         ]

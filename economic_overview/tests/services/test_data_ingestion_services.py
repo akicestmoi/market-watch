@@ -16,21 +16,22 @@ from economic_overview.models import (
     EconomicPublicationFrequencyChoices,
 )
 from economic_overview.services.data_ingestion_services import (
-    ingest_economic_data,
+    ingest_historical_economic_data,
+    ingest_latest_economic_data,
     ingest_specific_economic_data,
 )
 
 
-def _scraper_side_effect(ticker, period):
+def _scraper_side_effect(ticker, period, frequency=None):
     if ticker == "TEST":
-        return {"period": date(2024, 1, 15), "data_value": 100.0, "comment": ""}
-    return {"period": None, "data_value": None, "comment": "No data"}
+        return [{"period": date(2024, 1, 15), "data_value": 100.0, "comment": ""}]
+    return [{"period": None, "data_value": None, "comment": "No data"}]
 
 
-def _scraper_multiple_periods_side_effect(ticker, period):
+def _scraper_multiple_periods_side_effect(ticker, period, frequency=None):
     if period == "2024-01":
-        return {"period": date(2024, 1, 15), "data_value": 100.0, "comment": ""}
-    return {"period": date(2024, 2, 15), "data_value": 200.0, "comment": ""}
+        return [{"period": date(2024, 1, 15), "data_value": 100.0, "comment": ""}]
+    return [{"period": date(2024, 2, 15), "data_value": 200.0, "comment": ""}]
 
 
 class TestDataIngestionServices(TestCase):
@@ -62,15 +63,17 @@ class TestDataIngestionServices(TestCase):
         THEN the data is successfully ingested
         """
         mock_scraper = Mock(
-            return_value={
-                "period": date(2024, 1, 15),
-                "data_value": 100.0,
-                "comment": "",
-            }
+            return_value=[
+                {
+                    "period": date(2024, 1, 15),
+                    "data_value": 100.0,
+                    "comment": "",
+                }
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
-        result = ingest_economic_data([self.indicator])
+        result = ingest_latest_economic_data([self.indicator])
 
         assert result == []
         economic_data = EconomicDataModel.objects.filter(indicator=self.indicator)
@@ -95,11 +98,13 @@ class TestDataIngestionServices(TestCase):
         THEN the indicator is listed as not updated
         """
         mock_scraper = Mock(
-            return_value={"period": None, "data_value": None, "comment": "No data"}
+            return_value=[
+                {"period": None, "data_value": None, "comment": "No data"}
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
-        result = ingest_economic_data([self.indicator])
+        result = ingest_latest_economic_data([self.indicator])
 
         assert result == [self.indicator.name]
         economic_data = EconomicDataModel.objects.filter(indicator=self.indicator)
@@ -138,7 +143,7 @@ class TestDataIngestionServices(TestCase):
         mock_scraper = Mock(side_effect=_scraper_side_effect)
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
-        result = ingest_economic_data([self.indicator, other_indicator])
+        result = ingest_latest_economic_data([self.indicator, other_indicator])
 
         assert result == [other_indicator.name]
         economic_data = EconomicDataModel.objects.all()
@@ -169,11 +174,13 @@ class TestDataIngestionServices(TestCase):
         THEN the data for those periods is ingested
         """
         mock_scraper = Mock(
-            return_value={
-                "period": date(2024, 1, 15),
-                "data_value": 100.0,
-                "comment": "",
-            }
+            return_value=[
+                {
+                    "period": date(2024, 1, 15),
+                    "data_value": 100.0,
+                    "comment": "",
+                }
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
@@ -204,7 +211,9 @@ class TestDataIngestionServices(TestCase):
         THEN the indicator and period are listed as not updated
         """
         mock_scraper = Mock(
-            return_value={"period": None, "data_value": None, "comment": "No data"}
+            return_value=[
+                {"period": None, "data_value": None, "comment": "No data"}
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
@@ -300,11 +309,13 @@ class TestDataIngestionServices(TestCase):
         ]
 
         mock_scraper = Mock(
-            return_value={
-                "period": date(2024, 1, 15),
-                "data_value": None,
-                "comment": "No data",
-            }
+            return_value=[
+                {
+                    "period": date(2024, 1, 15),
+                    "data_value": None,
+                    "comment": "No data",
+                }
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
@@ -381,15 +392,17 @@ class TestDataIngestionServices(TestCase):
             comment="",
         )
         mock_scraper = Mock(
-            return_value={
-                "period": date(2024, 1, 15),
-                "data_value": 100.0,
-                "comment": "",
-            }
+            return_value=[
+                {
+                    "period": date(2024, 1, 15),
+                    "data_value": 100.0,
+                    "comment": "",
+                }
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
-        ingest_economic_data([self.indicator])
+        ingest_latest_economic_data([self.indicator])
 
         economic_data = EconomicDataModel.objects.get(
             indicator=self.indicator, period=date(2024, 1, 15)
@@ -423,11 +436,13 @@ class TestDataIngestionServices(TestCase):
             comment="",
         )
         mock_scraper = Mock(
-            return_value={
-                "period": date(2024, 1, 15),
-                "data_value": 100.0,
-                "comment": "",
-            }
+            return_value=[
+                {
+                    "period": date(2024, 1, 15),
+                    "data_value": 100.0,
+                    "comment": "",
+                }
+            ]
         )
         mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
 
@@ -445,3 +460,81 @@ class TestDataIngestionServices(TestCase):
                 "logs": "Automated data update on TEST. Updated data_value from 90.0 to 100.0.",
             },
         ]
+
+    @patch(
+        "economic_overview.services.data_ingestion_services.SOURCE_SCRAP_MAP",
+        new_callable=dict,
+    )
+    def test_ingest_historical_economic_data_success(self, mock_source_scrap_map):
+        """
+        GIVEN a scraper returning multiple observations
+        WHEN ingesting historical economic data for a date window
+        THEN only in-window observations are stored
+        """
+        mock_scraper = Mock(
+            return_value=[
+                {"period": date(2023, 12, 1), "data_value": 99.0, "comment": ""},
+                {"period": date(2024, 1, 1), "data_value": 100.0, "comment": ""},
+                {"period": date(2024, 2, 1), "data_value": 101.5, "comment": ""},
+                {"period": date(2025, 1, 1), "data_value": 110.0, "comment": ""},
+            ]
+        )
+        mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
+
+        result = ingest_historical_economic_data(
+            [self.indicator],
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+        )
+
+        assert result == []
+        mock_scraper.assert_called_once_with(
+            self.indicator.ticker, None, self.indicator.frequency
+        )
+        economic_data = EconomicDataModel.objects.filter(
+            indicator=self.indicator
+        ).order_by("period")
+        result_dict = convert_query_to_dictionary_list(economic_data)
+        assert result_dict == [
+            {
+                "indicator_id": self.indicator.id,
+                "period": date(2024, 1, 1),
+                "data_value": 100.0,
+                "comment": "",
+            },
+            {
+                "indicator_id": self.indicator.id,
+                "period": date(2024, 2, 1),
+                "data_value": 101.5,
+                "comment": "",
+            },
+        ]
+
+    @patch(
+        "economic_overview.services.data_ingestion_services.SOURCE_SCRAP_MAP",
+        new_callable=dict,
+    )
+    def test_ingest_historical_economic_data_no_observations(
+        self, mock_source_scrap_map
+    ):
+        """
+        GIVEN a historical scraper that returns no usable observations
+        WHEN ingesting historical economic data
+        THEN the indicator is listed as not updated
+        """
+        mock_scraper = Mock(return_value=[])
+        mock_source_scrap_map[EconomicDataSourceChoices.INSEE] = mock_scraper
+
+        result = ingest_historical_economic_data(
+            [self.indicator],
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+        )
+
+        assert result == [
+            {
+                "indicator": self.indicator.name,
+                "period": "2024-01-01/2024-12-31",
+            }
+        ]
+

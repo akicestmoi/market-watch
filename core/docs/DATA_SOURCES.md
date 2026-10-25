@@ -57,10 +57,11 @@ This document lists all external data sources used in the Market Watch project, 
 ### - INSEE (Institut National de la Statistique et des Études Économiques)
 
 - **Base Source**: https://www.insee.fr/
-- **URL**: https://bdm.insee.fr/series/{ticker}/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=1977&periodeFin=10&anneeFin=2025&revision=sansrevisions
+- **URL**: https://bdm.insee.fr/series/{ticker}/csv?lang=fr&ordre=antechronologique&anneeDebut=2010&anneeFin={year}&revision=sansrevisions
 - **Publication URL**: https://www.insee.fr/fr/agenda-diffusion
-- **Data Type**: French economic indicators (GDP, inflation, unemployment, etc.)
-- **Documentation**: https://www.insee.fr/fr/statistiques/serie/{ticker}
+- **Data Type**: French economic indicators (confidence, HICP, industrial raw materials, retail sales, IPI, labour, housing, GDP & components, Maastricht debt, external balance, etc.)
+- **Series documentation**: [`economic_overview/docs/INDICATORS.md`](../../economic_overview/docs/INDICATORS.md) — what each seeded series measures, why it was chosen, and INSEE methodology links
+- **Per-series page**: https://www.insee.fr/en/statistiques/serie/{ticker}
 
 ### - Japan Cabinet Office
 

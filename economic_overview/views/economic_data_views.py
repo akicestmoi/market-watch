@@ -1,7 +1,7 @@
 """API views for economic data ingestion and retrieval."""
 
 import json
-from datetime import date, timedelta
+from datetime import date
 from typing import List, Optional, TypedDict
 
 from rest_framework import status
@@ -27,14 +27,16 @@ from economic_overview.models import (
 )
 from economic_overview.open_api.request_serializers import (
     DeleteEconomicDataSerializer,
-    EconomicDataIngestionSerializer,
+    HistoricalEconomicDataIngestionSerializer,
+    LatestEconomicDataIngestionSerializer,
     ListEconomicDataSerializer,
     SpecificEconomicDataIngestionSerializer,
 )
 from economic_overview.open_api.response_serializers import (
     DeleteEconomicDataResponseSerializer,
-    EconomicDataIngestionResponseSerializer,
     EconomicDataResponseSerializer,
+    HistoricalEconomicDataIngestionResponseSerializer,
+    LatestEconomicDataIngestionResponseSerializer,
     SpecificEconomicDataIngestionResponseSerializer,
 )
 
@@ -97,34 +99,29 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
         )
 
 
-class IngestEconomicDataView(EconomicOverviewBaseView):
-    """Ingest Economic Data APIView."""
+class IngestLatestEconomicDataView(EconomicOverviewBaseView):
+    """Ingest the latest observation for every economic indicator."""
 
     @open_api(
         tags=[ApiTags.ECONOMIC_DATA],
-        summary="Ingest Economic Data",
-        description="Ingest economic data from various sources.",
-        request_serializer=EconomicDataIngestionSerializer,
-        response=CreatedOpenApiResponse(EconomicDataIngestionResponseSerializer),
-        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
+        summary="Ingest Latest Economic Data",
+        description=(
+            "Ingest the latest available observation for every seeded economic "
+            "indicator. Optionally refresh publication schedules for those indicators."
+        ),
+        request_serializer=LatestEconomicDataIngestionSerializer,
+        response=CreatedOpenApiResponse(LatestEconomicDataIngestionResponseSerializer),
     )
     def post(self, validated_data: dict) -> Response:
-        """Ingest economic data from various sources."""
-        start_date: date = validated_data.get(
-            "start_date", date.today() - timedelta(days=30)
-        )
-        end_date: date = validated_data.get("end_date", date.today())
+        """Ingest the latest observation for all indicators."""
         update_schedule: bool = validated_data.get("update_schedule", True)
+        indicators = economic_data_services.get_economic_indicators_by_names()
 
-        indicators = economic_data_services.get_economic_indicators_to_update(
-            start_date=start_date,
-            end_date=end_date,
-        )
         with redis_lock(
-            data_ingestion_services.economic_data_ingestion_lock_key(),
+            data_ingestion_services.get_economic_data_ingestion_lock_key(),
             locked_detail="Economic data ingestion is already in progress.",
         ):
-            indicator_not_updated = data_ingestion_services.ingest_economic_data(
+            indicator_not_updated = data_ingestion_services.ingest_latest_economic_data(
                 indicators
             )
             schedule_not_updated = []
@@ -133,12 +130,63 @@ class IngestEconomicDataView(EconomicOverviewBaseView):
                     publication_services.update_publication_schedules(indicators)
                 )
         return Response(
-            data=EconomicDataIngestionResponseSerializer(
+            data=LatestEconomicDataIngestionResponseSerializer(
                 {
-                    "message": "Economic data successfully ingested",
+                    "message": "Latest economic data successfully ingested",
                     "updated_indicators": [indicator.name for indicator in indicators],
                     "indicator_not_updated": indicator_not_updated,
                     "schedule_not_updated": schedule_not_updated,
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class IngestHistoricalEconomicDataView(EconomicOverviewBaseView):
+    """Ingest historical observations for a date window."""
+
+    @open_api(
+        tags=[ApiTags.ECONOMIC_DATA],
+        summary="Ingest Historical Economic Data",
+        description=(
+            "Ingest every available observation whose period falls in "
+            "[start_date, end_date] inclusive. Pass `indicators` as indicator names "
+            "to restrict the run; omit or pass an empty list to ingest all indicators."
+        ),
+        request_serializer=HistoricalEconomicDataIngestionSerializer,
+        response=CreatedOpenApiResponse(
+            HistoricalEconomicDataIngestionResponseSerializer
+        ),
+        error_responses=[NotFoundOpenApiResponse("Indicator not found")],
+    )
+    def post(self, validated_data: dict) -> Response:
+        """Ingest historical economic data for a date window."""
+        start_date: date = validated_data["start_date"]
+        end_date: date = validated_data["end_date"]
+        indicator_names: List[str] = validated_data.get("indicators", [])
+
+        validation_error = self._validate_indicators_exist(indicator_names)
+        if validation_error:
+            return validation_error
+
+        indicators = economic_data_services.get_economic_indicators_by_names(
+            indicator_names=indicator_names
+        )
+        with redis_lock(
+            data_ingestion_services.get_economic_data_ingestion_lock_key(),
+            locked_detail="Economic data ingestion is already in progress.",
+        ):
+            indicator_not_updated = (
+                data_ingestion_services.ingest_historical_economic_data(
+                    indicators, start_date=start_date, end_date=end_date
+                )
+            )
+        return Response(
+            data=HistoricalEconomicDataIngestionResponseSerializer(
+                {
+                    "message": "Historical economic data successfully ingested",
+                    "updated_indicators": [indicator.name for indicator in indicators],
+                    "indicator_not_updated": indicator_not_updated,
                 }
             ).data,
             status=status.HTTP_201_CREATED,
@@ -177,7 +225,7 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
             indicator_names=indicator_names
         )
         with redis_lock(
-            data_ingestion_services.economic_data_ingestion_lock_key(),
+            data_ingestion_services.get_economic_data_ingestion_lock_key(),
             locked_detail="Economic data ingestion is already in progress.",
         ):
             indicator_not_updated = (

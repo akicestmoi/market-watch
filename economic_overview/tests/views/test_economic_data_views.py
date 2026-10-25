@@ -1,6 +1,6 @@
 """Tests for economic data API views."""
 
-from datetime import date, timedelta
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
@@ -380,10 +380,11 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             assert not EconomicDataModel.objects.filter(pk=d.pk).exists()
 
 
-class TestIngestEconomicDataView(TestCase):
-    """Test cases for IngestEconomicDataView."""
+class TestIngestLatestEconomicDataView(TestCase):
+    """Test cases for IngestLatestEconomicDataView."""
 
-    INGEST_ECONOMIC_DATA_URL = "/ingest"
+    INGEST_LATEST_ECONOMIC_DATA_URL = "/ingest"
+    INGEST_HISTORICAL_ECONOMIC_DATA_URL = "/ingest-historical"
     INGEST_SPECIFIC_ECONOMIC_DATA_URL = "/ingest-specific"
 
     def setUp(self):
@@ -405,69 +406,157 @@ class TestIngestEconomicDataView(TestCase):
     @patch(
         "economic_overview.services.publication_services.update_publication_schedules"
     )
-    @patch("economic_overview.services.data_ingestion_services.ingest_economic_data")
     @patch(
-        "economic_overview.services.economic_data_services.get_economic_indicators_to_update"
+        "economic_overview.services.data_ingestion_services.ingest_latest_economic_data"
     )
-    def test_ingest_economic_data_success(
+    @patch(
+        "economic_overview.services.economic_data_services.get_economic_indicators_by_names"
+    )
+    def test_ingest_latest_economic_data_success(
         self, mock_get_indicators, mock_ingest, mock_update_schedules
     ):
         """
-        GIVEN valid date range
-        WHEN ingesting economic data
-        THEN the data is successfully ingested
+        GIVEN seeded indicators
+        WHEN ingesting latest economic data
+        THEN the latest observation is ingested for each indicator
         """
         mock_get_indicators.return_value = [self.indicator]
         mock_ingest.return_value = []
         mock_update_schedules.return_value = []
 
         response = self.client.post(
-            f"{self.base_url}{self.INGEST_ECONOMIC_DATA_URL}",
-            {
-                "start_date": (date.today() - timedelta(days=30)).isoformat(),
-                "end_date": date.today().isoformat(),
-            },
+            f"{self.base_url}{self.INGEST_LATEST_ECONOMIC_DATA_URL}",
+            {},
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
-            "message": "Economic data successfully ingested",
+            "message": "Latest economic data successfully ingested",
             "updated_indicators": [self.indicator.name],
             "indicator_not_updated": [],
             "schedule_not_updated": [],
         }
+        mock_get_indicators.assert_called_once_with()
 
-    @patch("economic_overview.services.data_ingestion_services.ingest_economic_data")
     @patch(
-        "economic_overview.services.economic_data_services.get_economic_indicators_to_update"
+        "economic_overview.services.data_ingestion_services.ingest_latest_economic_data"
     )
-    def test_ingest_economic_data_without_update_schedule(
+    @patch(
+        "economic_overview.services.economic_data_services.get_economic_indicators_by_names"
+    )
+    def test_ingest_latest_economic_data_without_update_schedule(
         self, mock_get_indicators, mock_ingest
     ):
         """
-        GIVEN valid date range and update_schedule=False
-        WHEN ingesting economic data
-        THEN the data is ingested without updating schedules
+        GIVEN update_schedule=False
+        WHEN ingesting latest economic data
+        THEN schedules are not updated
         """
         mock_get_indicators.return_value = [self.indicator]
         mock_ingest.return_value = []
 
         response = self.client.post(
-            f"{self.base_url}{self.INGEST_ECONOMIC_DATA_URL}",
-            {
-                "start_date": (date.today() - timedelta(days=30)).isoformat(),
-                "end_date": date.today().isoformat(),
-                "update_schedule": False,
-            },
+            f"{self.base_url}{self.INGEST_LATEST_ECONOMIC_DATA_URL}",
+            {"update_schedule": False},
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
-            "message": "Economic data successfully ingested",
+            "message": "Latest economic data successfully ingested",
             "updated_indicators": [self.indicator.name],
             "indicator_not_updated": [],
             "schedule_not_updated": [],
         }
+
+    @patch(
+        "economic_overview.services.data_ingestion_services.ingest_historical_economic_data"
+    )
+    @patch(
+        "economic_overview.services.economic_data_services.get_economic_indicators_by_names"
+    )
+    def test_ingest_historical_economic_data_success(
+        self, mock_get_indicators, mock_ingest
+    ):
+        """
+        GIVEN a date window
+        WHEN ingesting historical economic data
+        THEN observations in the window are ingested
+        """
+        mock_get_indicators.return_value = [self.indicator]
+        mock_ingest.return_value = []
+        start_date = date(2024, 1, 1)
+        end_date = date(2024, 12, 31)
+
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_HISTORICAL_ECONOMIC_DATA_URL}",
+            {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "indicators": [self.indicator.name],
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "message": "Historical economic data successfully ingested",
+            "updated_indicators": [self.indicator.name],
+            "indicator_not_updated": [],
+        }
+        mock_get_indicators.assert_called_once_with(
+            indicator_names=[self.indicator.name]
+        )
+        mock_ingest.assert_called_once_with(
+            [self.indicator], start_date=start_date, end_date=end_date
+        )
+
+    @patch(
+        "economic_overview.services.data_ingestion_services.ingest_historical_economic_data"
+    )
+    @patch(
+        "economic_overview.services.economic_data_services.get_economic_indicators_by_names"
+    )
+    def test_ingest_historical_economic_data_all_indicators(
+        self, mock_get_indicators, mock_ingest
+    ):
+        """
+        GIVEN an empty indicators list
+        WHEN ingesting historical economic data
+        THEN all indicators are selected
+        """
+        mock_get_indicators.return_value = [self.indicator]
+        mock_ingest.return_value = []
+
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_HISTORICAL_ECONOMIC_DATA_URL}",
+            {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        mock_get_indicators.assert_called_once_with(indicator_names=[])
+
+    def test_ingest_historical_economic_data_indicator_not_found(self):
+        """
+        GIVEN a non-existent indicator name
+        WHEN ingesting historical economic data
+        THEN a 404 error is returned
+        """
+        response = self.client.post(
+            f"{self.base_url}{self.INGEST_HISTORICAL_ECONOMIC_DATA_URL}",
+            {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "indicators": ["NonExistent"],
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert "NonExistent" in response.json()["error"]
 
     @patch(
         "economic_overview.services.data_ingestion_services.ingest_specific_economic_data"

@@ -235,14 +235,24 @@ const ENDPOINTS = {
                 query: null,
             },
             {
-                name: "Ingest Economic Data",
-                description: "Ingest economic data from various sources.",
+                name: "Ingest Latest Economic Data",
+                description: "Ingest the latest observation for every seeded economic indicator.",
                 method: "POST",
                 path: "/economics/indicator/ingest",
                 body: [
+                    { name: "update_schedule", type: "checkbox", required: false },
+                ],
+                query: null,
+            },
+            {
+                name: "Ingest Historical Economic Data",
+                description: "Ingest all observations in a date window. Leave indicators empty to run on all indicators.",
+                method: "POST",
+                path: "/economics/indicator/ingest-historical",
+                body: [
                     { name: "start_date", type: "date", required: true },
                     { name: "end_date", type: "date", required: true },
-                    { name: "update_schedule", type: "checkbox", required: false },
+                    { name: "indicators", type: "json", required: false, example: '["France HICP", "France Retail Sales"]' },
                 ],
                 query: null,
             },

@@ -36,11 +36,11 @@ class EconomicDataCategoryChoices(models.TextChoices):
     GROWTH = "GROWTH", _("Growth")
     INFLATION = "INFLATION", _("Inflation")
     GOVERNMENT = "GOVERNMENT", _("Government")
+    PRODUCTION = "PRODUCTION", _("Production")
+    SALES = "SALES", _("Sales")
     LABOUR = "LABOUR", _("Labour")
     HOUSING = "HOUSING", _("Housing")
-    PRODUCTION = "PRODUCTION", _("Production")
     CONFIDENCE = "CONFIDENCE", _("Confidence")
-    SALES = "SALES", _("Sales")
 
     @classmethod
     def ordered(cls) -> List["EconomicDataCategoryChoices"]:
@@ -49,11 +49,11 @@ class EconomicDataCategoryChoices(models.TextChoices):
             "GROWTH",
             "INFLATION",
             "GOVERNMENT",
+            "PRODUCTION",
+            "SALES",
             "LABOUR",
             "HOUSING",
-            "PRODUCTION",
             "CONFIDENCE",
-            "SALES",
         ]
         return [cls[value] for value in order]
 

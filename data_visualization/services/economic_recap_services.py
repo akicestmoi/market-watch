@@ -7,6 +7,7 @@ import central_banks_overview.services.cb_meetings_services as cb_meetings_servi
 import market_overview.services.holiday_services as holiday_services
 from central_banks_overview.models import CENTRAL_BANK_LOCATION_MAP, CentralBankChoices
 from economic_overview.models import (
+    EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
     EconomicDataModel,
     EconomicIndicatorInformationModel,
@@ -71,7 +72,15 @@ def get_economic_recap_data(
                 )
             )
 
-    return economic_data
+    # Front table iterates dict insertion order — match category.ordered().
+    ordered_economic_data: Dict[str, List[EconomicRecapItem]] = {}
+    for category in EconomicDataCategoryChoices.ordered():
+        if category.value in economic_data:
+            ordered_economic_data[category.value] = economic_data[category.value]
+    for category_key, items in economic_data.items():
+        if category_key not in ordered_economic_data:
+            ordered_economic_data[category_key] = items
+    return ordered_economic_data
 
 
 class EconomicEvent(TypedDict):

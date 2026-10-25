@@ -66,27 +66,27 @@ class EconomicChartsFrontData(TypedDict):
     us_growth_indicator: str
     us_inflation_indicator: str
     us_government_indicator: str
+    us_production_indicator: str
+    us_sales_indicator: str
     us_labour_indicator: str
     us_housing_indicator: str
-    us_production_indicator: str
     us_confidence_indicator: str
-    us_sales_indicator: str
     fr_growth_indicator: str
     fr_inflation_indicator: str
     fr_government_indicator: str
+    fr_production_indicator: str
+    fr_sales_indicator: str
     fr_labour_indicator: str
     fr_housing_indicator: str
-    fr_production_indicator: str
     fr_confidence_indicator: str
-    fr_sales_indicator: str
     jp_growth_indicator: str
     jp_inflation_indicator: str
     jp_government_indicator: str
+    jp_production_indicator: str
+    jp_sales_indicator: str
     jp_labour_indicator: str
     jp_housing_indicator: str
-    jp_production_indicator: str
     jp_confidence_indicator: str
-    jp_sales_indicator: str
 
 
 class SelectedIndicatorsByCategory(TypedDict):
