@@ -1,3 +1,5 @@
+"""Build economic recap payloads for the visualization UI."""
+
 from datetime import date, datetime, timezone
 from typing import Dict, List, Optional, TypedDict
 

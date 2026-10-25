@@ -1,3 +1,5 @@
+"""DRF request serializers for central banks overview API inputs."""
+
 from rest_framework import serializers
 
 from central_banks_overview.models import CentralBankChoices

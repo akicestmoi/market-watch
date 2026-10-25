@@ -1,3 +1,5 @@
+"""Tests for STIR futures price ingestion."""
+
 from datetime import date, datetime, timezone
 from unittest.mock import MagicMock, patch
 

@@ -1,3 +1,5 @@
+"""Django app config for market overview."""
+
 from django.apps import AppConfig
 
 

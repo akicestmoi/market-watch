@@ -1,3 +1,5 @@
+"""Central bank, meeting, STIR futures, and related data models."""
+
 from typing import List
 
 from django.db import models

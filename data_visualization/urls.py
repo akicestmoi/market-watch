@@ -1,3 +1,5 @@
+"""HTTP routes for market/economic/CB recaps, charts, and management UI."""
+
 from django.urls import path
 
 from data_visualization.views import (

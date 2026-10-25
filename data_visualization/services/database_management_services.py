@@ -1,3 +1,5 @@
+"""Helpers for the DB management console (table/metadata summaries)."""
+
 import re
 from typing import List, Protocol, TypedDict
 

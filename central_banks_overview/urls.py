@@ -1,3 +1,5 @@
+"""HTTP routes for CB data, meetings, STIR prices, and probability matrices."""
+
 from django.urls import path
 
 from .views.cb_data_views import CentralBankDataIngestionView, ListCentralBankDataView

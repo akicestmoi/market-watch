@@ -1,3 +1,5 @@
+"""Tests for price-update log API views."""
+
 from datetime import date, timedelta
 
 from django.test import TestCase

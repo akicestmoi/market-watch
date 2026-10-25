@@ -1,3 +1,5 @@
+"""Build economic chart series payloads for the visualization UI."""
+
 from datetime import date
 from typing import List, TypedDict
 

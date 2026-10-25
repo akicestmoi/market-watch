@@ -1,3 +1,5 @@
+"""API views for economic publication schedules."""
+
 from typing import List
 
 from rest_framework import status

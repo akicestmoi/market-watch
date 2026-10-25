@@ -1,3 +1,5 @@
+"""Celery tasks for economic data updates and publication schedules."""
+
 from datetime import date
 
 from celery import shared_task

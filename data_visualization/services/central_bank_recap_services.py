@@ -1,3 +1,5 @@
+"""Build central-bank recap payloads for the visualization UI."""
+
 from datetime import date, datetime
 from typing import List, Optional, TypedDict
 

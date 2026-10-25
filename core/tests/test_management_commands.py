@@ -1,3 +1,5 @@
+"""Tests for core management commands (e.g. trigger_task)."""
+
 from io import StringIO
 from unittest.mock import MagicMock, patch
 

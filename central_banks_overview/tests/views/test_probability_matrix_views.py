@@ -1,3 +1,5 @@
+"""Tests for probability-matrix API views."""
+
 from datetime import date
 from unittest.mock import patch
 

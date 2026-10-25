@@ -1,3 +1,5 @@
+"""Unit tests for FRB probability-matrix methodology."""
+
 from datetime import date, datetime, timezone
 
 import pytest  # type: ignore[reportMissingImports]

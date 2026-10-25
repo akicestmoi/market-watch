@@ -1,3 +1,5 @@
+"""Celery tasks for STIR prices, CB data, and meetings ingestion."""
+
 from datetime import date, datetime, timedelta, timezone
 
 from celery import shared_task

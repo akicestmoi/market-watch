@@ -1,3 +1,5 @@
+"""Tests for economic data ingestion orchestration."""
+
 from datetime import date
 from unittest.mock import Mock, patch
 

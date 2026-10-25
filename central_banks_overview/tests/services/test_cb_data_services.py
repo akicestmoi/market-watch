@@ -1,3 +1,5 @@
+"""Tests for central bank data services."""
+
 from datetime import date
 from typing import List
 from unittest.mock import patch

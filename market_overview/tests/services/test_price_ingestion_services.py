@@ -1,3 +1,5 @@
+"""Tests for market price ingestion orchestration."""
+
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 

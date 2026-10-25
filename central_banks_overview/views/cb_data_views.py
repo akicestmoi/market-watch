@@ -1,3 +1,5 @@
+"""API views for central bank data ingestion and retrieval."""
+
 from datetime import date
 from typing import List, Optional
 

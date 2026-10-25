@@ -1,3 +1,5 @@
+"""Tests for shared core service helpers."""
+
 from datetime import date, datetime, timezone
 from unittest.mock import Mock, patch
 

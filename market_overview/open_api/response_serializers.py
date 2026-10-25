@@ -1,3 +1,5 @@
+"""DRF response serializers for market overview API outputs."""
+
 from rest_framework import serializers
 
 from market_overview.models import (

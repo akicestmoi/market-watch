@@ -1,3 +1,5 @@
+"""Base API view classes shared by domain endpoints."""
+
 from typing import Any, Dict, Optional
 
 from django.http import Http404

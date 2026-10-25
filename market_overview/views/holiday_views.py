@@ -1,3 +1,5 @@
+"""API views for holiday ingestion and lookup."""
+
 from datetime import date
 from typing import Optional
 

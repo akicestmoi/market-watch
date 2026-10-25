@@ -1,3 +1,5 @@
+"""Django app config for the core project package."""
+
 from django.apps import AppConfig
 
 

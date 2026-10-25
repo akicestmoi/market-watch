@@ -1,3 +1,5 @@
+"""Celery application instance and autodiscovery for project tasks."""
+
 import os
 
 from celery import Celery

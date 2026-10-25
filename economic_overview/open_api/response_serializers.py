@@ -1,3 +1,5 @@
+"""DRF response serializers for economic overview API outputs."""
+
 from rest_framework import serializers
 
 from economic_overview.models import (

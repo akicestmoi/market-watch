@@ -1,3 +1,5 @@
+"""Tests for central-bank recap views."""
+
 import json
 from datetime import date, datetime, timezone
 

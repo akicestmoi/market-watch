@@ -1,3 +1,5 @@
+"""Shared OpenAPI / drf-spectacular helpers and API tag definitions."""
+
 import functools
 from enum import Enum
 from typing import List, Optional, Type, TypeVar, Union

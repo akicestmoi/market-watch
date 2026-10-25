@@ -1,3 +1,5 @@
+"""Tests for holiday API views."""
+
 from datetime import date, timedelta
 from unittest.mock import patch
 

@@ -1,3 +1,5 @@
+"""Integration tests for FRB probability-matrix inference."""
+
 from datetime import date, datetime, timezone
 from unittest.mock import patch
 

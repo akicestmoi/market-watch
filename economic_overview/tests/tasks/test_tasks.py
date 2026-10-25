@@ -1,3 +1,5 @@
+"""Tests for economic_overview Celery tasks."""
+
 import json
 from datetime import date, datetime, timezone
 from unittest.mock import patch

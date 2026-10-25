@@ -1,3 +1,5 @@
+"""Build market recap payloads for the visualization UI."""
+
 from datetime import date
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union, cast

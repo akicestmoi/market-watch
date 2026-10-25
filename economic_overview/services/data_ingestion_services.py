@@ -1,3 +1,5 @@
+"""Scrape and ingest economic indicator time series."""
+
 import io
 import zipfile
 from datetime import date, datetime

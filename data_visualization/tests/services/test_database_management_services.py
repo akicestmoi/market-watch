@@ -1,3 +1,5 @@
+"""Tests for database management console helpers."""
+
 from unittest.mock import MagicMock, Mock, patch
 
 from django.test import TestCase

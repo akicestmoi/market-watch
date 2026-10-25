@@ -1,3 +1,5 @@
+"""Tests for market chart views."""
+
 import json
 from datetime import date
 

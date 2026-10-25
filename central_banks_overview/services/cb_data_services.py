@@ -1,3 +1,5 @@
+"""Ingest and query central bank policy-rate / balance-sheet style series."""
+
 import json
 from datetime import date
 from typing import List, Optional, TypedDict
@@ -12,6 +14,9 @@ from market_overview.services.price_ingestion_services import (
     get_webstat_rates,
     scrap_from_global_rates,
 )
+
+
+CENTRAL_BANKS_DATA_JSON = "central_banks_overview/data_sources/central_banks_data.json"
 
 
 def cb_data_ingestion_lock_key(
@@ -70,7 +75,7 @@ class CentralBankDataIngestionResponseItem(TypedDict):
 
 def _get_central_bank_base_info() -> List[CentralBankDataBaseInfo]:
     """Get central bank base info."""
-    with open("central_banks_overview/data_sources/central_banks_data.json") as f:
+    with open(CENTRAL_BANKS_DATA_JSON) as f:
         return [CentralBankDataBaseInfo(**data) for data in json.load(f)]
 
 

@@ -1,3 +1,5 @@
+"""HTTP routes for economic data and publication schedules."""
+
 from django.urls import path
 
 from economic_overview.views.economic_data_views import (

@@ -1,3 +1,5 @@
+"""Shared utilities (logging, HTML fetch helpers) used across apps."""
+
 import logging
 from typing import List, Optional, Type, TypeVar
 

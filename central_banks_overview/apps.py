@@ -1,3 +1,5 @@
+"""Django app config for central banks overview."""
+
 from django.apps import AppConfig
 
 

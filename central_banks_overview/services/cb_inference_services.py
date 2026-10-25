@@ -1,3 +1,5 @@
+"""Infer meeting-by-meeting rate-path probabilities from STIR futures."""
+
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

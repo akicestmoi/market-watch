@@ -1,3 +1,5 @@
+"""Unit tests for ECB/BoJ probability-matrix methodology."""
+
 from datetime import date, datetime, timezone
 
 import pandas as pd

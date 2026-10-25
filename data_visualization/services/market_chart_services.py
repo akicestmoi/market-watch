@@ -1,3 +1,5 @@
+"""Build market chart series payloads for the visualization UI."""
+
 from datetime import date, timedelta
 from enum import Enum
 from typing import List, Optional, TypedDict, cast

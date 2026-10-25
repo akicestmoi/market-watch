@@ -1,3 +1,5 @@
+"""Legacy/placeholder tests module for the core package."""
+
 import json
 from datetime import datetime
 from typing import List, Optional, Union

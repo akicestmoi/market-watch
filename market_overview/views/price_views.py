@@ -1,3 +1,5 @@
+"""API views for market price ingestion and queries."""
+
 from datetime import date
 from typing import List, Optional
 

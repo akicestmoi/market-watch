@@ -1,3 +1,5 @@
+"""Tests for market recap visualization services."""
+
 from datetime import date
 
 from django.test import TestCase

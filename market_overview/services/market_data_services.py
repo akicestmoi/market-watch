@@ -1,3 +1,5 @@
+"""Query helpers for assets and prices (including missing-price reports)."""
+
 from datetime import date, datetime
 from io import BytesIO
 from typing import Dict, List, Optional, TypedDict, cast

@@ -1,3 +1,5 @@
+"""Deprecated helpers kept temporarily for migration compatibility."""
+
 # @ttl_cache(maxsize=128, ttl=10 * 60)
 # def _get_spanish_yield_curves_from_bank_of_spain(target_date: date) -> dict:
 #     """Extract Spanish bond yield curves from Bank of Spain database.

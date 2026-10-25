@@ -1,3 +1,5 @@
+"""Tests for economic indicator scraping helpers."""
+
 import io
 import zipfile
 from datetime import date

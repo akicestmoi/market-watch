@@ -1,3 +1,5 @@
+"""API views for central bank meetings."""
+
 from typing import Optional
 
 from rest_framework import status

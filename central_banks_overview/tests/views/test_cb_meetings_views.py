@@ -1,3 +1,5 @@
+"""Tests for central bank meetings API views."""
+
 from datetime import datetime, timezone
 from unittest.mock import patch
 

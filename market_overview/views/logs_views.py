@@ -1,3 +1,5 @@
+"""API views for price update / ingestion logs."""
+
 from datetime import date
 from typing import Optional
 

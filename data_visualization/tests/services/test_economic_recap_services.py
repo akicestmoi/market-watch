@@ -1,3 +1,5 @@
+"""Tests for economic recap visualization services."""
+
 from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import patch
 

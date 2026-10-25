@@ -1,3 +1,5 @@
+"""Tests for publication schedule scraping helpers."""
+
 import json
 from datetime import datetime
 from unittest.mock import patch

@@ -1,3 +1,5 @@
+"""Tests for STIR futures prices API views."""
+
 import csv
 from datetime import date
 from io import StringIO

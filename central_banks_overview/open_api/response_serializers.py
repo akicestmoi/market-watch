@@ -1,3 +1,5 @@
+"""DRF response serializers for central banks overview API outputs."""
+
 from rest_framework import serializers
 
 from central_banks_overview.models import (

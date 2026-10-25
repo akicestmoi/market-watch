@@ -1,3 +1,5 @@
+"""Tests for market price scraping helpers."""
+
 from datetime import date
 from io import BytesIO
 from unittest.mock import MagicMock, patch

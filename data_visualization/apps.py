@@ -1,3 +1,5 @@
+"""Django app config for data visualization."""
+
 from django.apps import AppConfig
 
 

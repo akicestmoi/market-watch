@@ -1,3 +1,5 @@
+"""Tests for central_banks_overview Celery tasks."""
+
 from datetime import date, datetime, timezone
 from unittest.mock import patch
 

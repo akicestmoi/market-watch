@@ -1,3 +1,5 @@
+"""Scrape and ingest STIR futures prices used for rate-path inference."""
+
 import re
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO, StringIO

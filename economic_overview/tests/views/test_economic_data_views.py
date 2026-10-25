@@ -1,3 +1,5 @@
+"""Tests for economic data API views."""
+
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 

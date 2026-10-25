@@ -1,3 +1,5 @@
+"""Economic indicator, observation, and publication-schedule models."""
+
 from typing import List
 
 from django.db import models

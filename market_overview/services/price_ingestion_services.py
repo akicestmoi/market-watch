@@ -1,3 +1,5 @@
+"""Scrape and ingest closing prices from external market data sources."""
+
 import re
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta

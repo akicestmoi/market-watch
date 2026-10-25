@@ -1,3 +1,5 @@
+"""API views for listing and managing market assets."""
+
 import json
 
 from rest_framework import status
@@ -22,6 +24,8 @@ from market_overview.open_api.response_serializers import (
     GetAssetNamesResponseSerializer,
 )
 
+MARKET_DATA_JSON = "market_overview/data_sources/market_data.json"
+
 
 class GenerateBaseAssetsDataView(BaseAPIView):
     """Generate Base Assets Data APIView."""
@@ -34,7 +38,7 @@ class GenerateBaseAssetsDataView(BaseAPIView):
     )
     def post(self, validated_data: dict) -> Response:
         """Generate asset data from market_data.json."""
-        with open("market_overview/data_sources/market_data.json") as f:
+        with open(MARKET_DATA_JSON) as f:
             assets_base_info = json.load(f)
 
         short_names = set()

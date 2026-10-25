@@ -1,3 +1,5 @@
+"""Shared base models used by domain apps."""
+
 from typing import List
 
 from django.db import models

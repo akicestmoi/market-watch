@@ -1,3 +1,5 @@
+"""API views for economic data ingestion and retrieval."""
+
 import json
 from datetime import date, timedelta
 from typing import List, Optional, TypedDict
@@ -36,6 +38,8 @@ from economic_overview.open_api.response_serializers import (
     SpecificEconomicDataIngestionResponseSerializer,
 )
 
+ECONOMIC_DATA_JSON = "economic_overview/data_sources/economic_data.json"
+
 
 class EconomicOverviewBaseView(BaseAPIView):
     """Base view for economic overview operations."""
@@ -69,7 +73,7 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
     )
     def post(self, validated_data: dict) -> Response:
         """Generate economic indicator information from economic_data.json."""
-        with open("economic_overview/data_sources/economic_data.json") as f:
+        with open(ECONOMIC_DATA_JSON) as f:
             economic_data = json.load(f)
         for economic_indicator in economic_data:
             logger.info(

@@ -1,3 +1,5 @@
+"""Tests for central-bank recap visualization services."""
+
 from datetime import date, datetime, timezone
 from unittest.mock import patch
 

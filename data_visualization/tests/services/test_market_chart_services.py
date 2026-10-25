@@ -1,3 +1,5 @@
+"""Tests for market chart visualization services."""
+
 from datetime import date, timedelta
 from unittest.mock import patch
 

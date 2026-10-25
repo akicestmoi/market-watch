@@ -1,3 +1,5 @@
+"""DRF request serializers for economic overview API inputs."""
+
 from rest_framework import serializers
 
 

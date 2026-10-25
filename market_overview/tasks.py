@@ -1,3 +1,5 @@
+"""Celery tasks for market price ingestion, holidays, and log cleanup."""
+
 from datetime import date, timedelta
 
 from celery import shared_task

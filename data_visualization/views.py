@@ -1,3 +1,5 @@
+"""Page and API views for recaps, charts, and the management console."""
+
 import json
 from datetime import date, datetime
 

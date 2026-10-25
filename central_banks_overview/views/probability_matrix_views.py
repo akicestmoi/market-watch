@@ -1,3 +1,5 @@
+"""API views for rate-path probability matrices."""
+
 from datetime import date
 from typing import Optional
 

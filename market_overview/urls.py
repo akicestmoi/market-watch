@@ -1,3 +1,5 @@
+"""HTTP routes for assets, prices, holidays, and ingestion logs."""
+
 from django.urls import path
 
 from market_overview.views.asset_views import (

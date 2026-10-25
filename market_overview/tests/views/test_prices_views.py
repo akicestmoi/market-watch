@@ -1,3 +1,5 @@
+"""Tests for price API views."""
+
 from datetime import date, timedelta
 from io import BytesIO
 from typing import List

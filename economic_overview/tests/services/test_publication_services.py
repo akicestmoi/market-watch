@@ -1,3 +1,5 @@
+"""Tests for publication schedule services."""
+
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 

@@ -1,3 +1,5 @@
+"""Tests for economic chart views."""
+
 import json
 from datetime import date
 from typing import Any, Dict, Protocol, Union

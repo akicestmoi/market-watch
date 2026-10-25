@@ -1,3 +1,5 @@
+"""Manage central bank meeting calendars and related metadata."""
+
 import re
 from datetime import datetime, time, timezone
 from typing import List, Optional, Tuple, TypedDict

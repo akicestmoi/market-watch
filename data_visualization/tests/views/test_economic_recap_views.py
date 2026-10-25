@@ -1,3 +1,5 @@
+"""Tests for economic recap views."""
+
 from datetime import date, datetime, timezone
 
 from django.test import Client, TestCase

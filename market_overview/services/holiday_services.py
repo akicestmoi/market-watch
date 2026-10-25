@@ -1,3 +1,5 @@
+"""Fetch and ingest public holidays used for price completeness checks."""
+
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
