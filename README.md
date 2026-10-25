@@ -1,6 +1,23 @@
 # Market Watch
 
-A Django-based market monitoring application with comprehensive API documentation, Docker support, development tools, and an LLM-assisted **market analysis** pipeline (daily T-1 news recap + chat).
+A Django-based market monitoring platform that ingests market, economic, and central-bank data on a schedule, exposes it through a REST API and operator UI, and runs an LLM-assisted **market analysis** pipeline (daily T-1 news recap + chat).
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| **Backend** | Python, Django 4.2, Django REST Framework |
+| **API docs** | OpenAPI via `drf-spectacular` (Swagger UI at `/api/docs/`) |
+| **Database** | PostgreSQL (`psycopg2`) |
+| **Cache / broker** | Redis (Celery broker/result backend, distributed locks, LLM article digests) |
+| **Async jobs** | Celery + Celery Beat (Europe/Paris schedules); Flower for monitoring |
+| **LLM** | PydanticAI + OpenAI (`OPENAI_API_KEY`, `LLM_MODEL_NAME`) |
+| **Data / scraping** | pandas, yfinance, BeautifulSoup, requests, curl-cffi, pdfplumber |
+| **Frontend (ops UI)** | Server-rendered Django templates + static CSS/JS (`data_visualization`) |
+| **Tooling** | Docker Compose, Makefile, pytest, Black / Flake8 / isort / Pyright, ESLint / Stylelint |
+| **Config** | `django-environ` (`.env`) |
+
+**Runtime shape:** Django web app → Celery Beat → Redis → Celery workers. Domain logic lives in Django apps; visualization and analysis compose those domains rather than owning their own primary datasets.
 
 ## Quick Start
 
@@ -250,22 +267,24 @@ python manage.py trigger_task scheduled_holidays_ingestion --async
 
 ## Applications
 
-Project-owned Django apps (see `INSTALLED_APPS` in `core/settings.py`). URL mounts are wired in `core/urls.py`.
+Project-owned Django apps (see `INSTALLED_APPS` in `core/settings.py`). URL mounts are wired in `core/urls.py`. Together they form a pipeline: **ingest** (market / economic / CB) → **expose** (REST + admin) → **present** (HTML recaps/charts) → **interpret** (LLM daily analysis).
 
-| App | Package | URL prefix | Role |
+| App | Package | URL prefix | Purpose (short) |
 |---|---|---|---|
-| Core | `core` | *(project root)* | Settings, Celery, shared models/utils, admin, OpenAPI |
-| Market Overview | `market_overview` | `/markets/` | Assets, daily prices, holidays, price logs |
-| Economic Overview | `economic_overview` | `/economics/` | Indicators, observations, publication schedules |
-| Central Banks | `central_banks_overview` | `/central-banks/` | Meetings, CB series, STIR futures, probability matrices |
-| Data Visualization | `data_visualization` | `/` (site root pages) | HTML recaps, charts, DB management UI |
-| Market Analysis | `market_analysis` | `/analysis/` | LLM daily news recap + chat |
+| Core | `core` | *(project root)* | Project kernel: settings, Celery, shared utilities, OpenAPI |
+| Market Overview | `market_overview` | `/markets/` | Asset catalog, daily closes, holidays, price audit logs |
+| Economic Overview | `economic_overview` | `/economics/` | Macro indicators, observations, publication calendars |
+| Central Banks | `central_banks_overview` | `/central-banks/` | CB meetings, STIR futures, implied rate-path probabilities |
+| Data Visualization | `data_visualization` | `/` (site root pages) | Operator UI: HTML recaps, charts, DB management |
+| Market Analysis | `market_analysis` | `/analysis/` | LLM T-1 news recap + interactive chat over verified data |
 
 **Dependency sketch:** `core` ← all · `market_overview` → viz + some CB scrapers + analysis trigger · `economic_overview` / `central_banks_overview` → viz · `data_visualization` → UI only · `market_analysis` → LLM recaps after market price ingestion.
 
 ### Core (`core`)
 
-Shared project kernel — not a domain API.
+**Purpose:** shared project kernel — wiring, cross-cutting helpers, and infra — not a domain API.
+
+Owns Django settings, Celery app bootstrap, Redis locks, abstract base models, OpenAPI/Swagger mounts, and the `trigger_task` management command so every domain app can plug in without duplicating infrastructure.
 
 - **Models:** abstract `BaseModel` (`date_added` / `last_modified`) and `BaseLogModel` (text logs). No concrete domain tables.
 - **Services / helpers:** logging, HTML fetch, datetime parse, cache TTL constants, Redis distributed locks (`locks.py`), `BaseAPIView` + OpenAPI tag helpers, Celery app (`celery.py`) with task autodiscover.
@@ -275,7 +294,9 @@ Shared project kernel — not a domain API.
 
 ### Market Overview (`market_overview`)
 
-Asset catalog and daily market prices (equities, rates, FX, crypto, commodities), plus holidays and price-update audit logs.
+**Purpose:** source of truth for *what* assets exist and *what* they closed at on each session day.
+
+Catalogs equities, rates, FX, crypto, and commodities; ingests daily prices from multiple public sources; tracks market holidays and price-update audit logs. Successful weekday ingestion is also the trigger that queues the market-analysis pipeline for that price date.
 
 - **Models:** `AssetModel` (metadata, ticker, source, location, class); `MarketPriceModel` (per-asset daily price, unique on asset+date); `PriceUpdateLogModel`; `HolidayModel`.
 - **Services:** `price_ingestion_services` — scrape/ingest closes (Yahoo, US Treasury, NY Fed, Webstat, Bundesbank, BoJ, BB, GlobalRates, etc.); `market_data_services` — queries, missing prices, bulk/CSV updates, log cleanup; `holiday_services` — public holidays (e.g. Nager.Date for supported countries).
@@ -286,7 +307,9 @@ Asset catalog and daily market prices (equities, rates, FX, crypto, commodities)
 
 ### Economic Overview (`economic_overview`)
 
-Economic indicator definitions, observation values, publication calendars, and update logs.
+**Purpose:** track macro releases — indicator definitions, published values, and when the next prints are due.
+
+Maintains the economic calendar and observation history used by the economic recap/charts and by market analysis when building daily context. Scheduled jobs refresh due indicators and scrape publication schedules so the UI and LLM stay aligned with official calendars.
 
 - **Models:** `EconomicIndicatorInformationModel`; `PublicationScheduleModel`; `EconomicDataModel`; `EconomicDataUpdateLogModel`.
 - **Services:** `data_ingestion_services` — scrape/ingest series (e.g. INSEE; JP Cabinet Office stubs); `economic_data_services` — due indicators, CRUD helpers, log cleanup; `publication_services` — scrape/update publication schedules.
@@ -297,7 +320,9 @@ Economic indicator definitions, observation values, publication calendars, and u
 
 ### Central Banks Overview (`central_banks_overview`)
 
-FRB / ECB / BoJ meeting calendars, central-bank data series, STIR futures prices, and meeting-by-meeting rate-path **probability matrices**.
+**Purpose:** central-bank calendar and market-implied policy path for Fed / ECB / BoJ.
+
+Stores meeting dates, CB data series, and STIR futures prices, then derives meeting-by-meeting **probability matrices** for rate moves. That powers the central-banks recap and upcoming-events views, and complements market prices with a policy-path lens.
 
 - **Models:** `CentralBankMeetingModel`; `CentralBankDataModel`; `StirFuturesModel` (e.g. Fed funds / ESTR / mutan futures); `StirFuturesPriceUpdateLogModel`. Reuses `market_overview` location enums via a CB location map.
 - **Services:** `cb_data_services` — ingest/query CB series; `cb_meetings_services` — scrape FOMC/ECB/BoJ calendars; `stir_prices_ingestion_services` — Yahoo, TFX, ESTR PDF, bulk/CSV; `cb_inference_services` — probability matrices from STIR (Fed vs 3M futures methodologies).
@@ -308,7 +333,9 @@ FRB / ECB / BoJ meeting calendars, central-bank data series, STIR futures prices
 
 ### Data Visualization (`data_visualization`)
 
-Server-rendered operator UI: recaps, charts, and a database management console. **No models of its own** — read-only composition over the domain apps.
+**Purpose:** human-facing operator console — browse recaps and charts without calling the API by hand.
+
+Server-rendered HTML for market / economic / central-bank summaries, interactive charts, and a lightweight database management page. **No models of its own** — read-only composition over the domain apps.
 
 - **Services:** `market_recap_services` / `market_chart_services` ← market overview; `economic_recap_services` / `economic_chart_services` ← economic (+ holidays/CB meetings for calendar); `central_bank_recap_services` ← CB data + probability matrices; `database_management_services` — table counts/sizes for the management page.
 - **HTTP (site root):** `market-recap/`, `market-charts/`, `economic-recap/`, `economic-charts/`, `central-banks-recap/`, `management/`.
@@ -316,12 +343,11 @@ Server-rendered operator UI: recaps, charts, and a database management console. 
 - **Celery:** none.
 - **Relations:** Presentation layer for `market_overview`, `economic_overview`, and `central_banks_overview`.
 
-
 ### Market Analysis (`market_analysis`)
 
-Cost-conscious daily **T-1** research agent: scrape a small set of date-scoped market wraps, analyze them **in memory** with an LLM, then persist a single daily recap tied to verified DB prices. Interactive chat continues via client-sent `messages`.
+**Purpose:** turn verified T-1 prices + a small set of day-scoped news wraps into one persisted daily narrative, then allow follow-up Q&A via chat.
 
-Mounted under **`/analysis/`** (see `core/urls.py`).
+Cost-conscious research agent: scrape date-scoped market wraps, analyze them **in memory** with an LLM, persist a single `DailyRecap` tied to DB prices (not invented from headlines), and continue via client-sent `messages`. Mounted under **`/analysis/`**.
 
 #### Goals and non-goals
 
