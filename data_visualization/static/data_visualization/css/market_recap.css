@@ -59,6 +59,13 @@ body {
     cursor: pointer;
 }
 
+.daily-recap-card.is-unavailable {
+    background-color: #e2e8f0;
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.92;
+}
+
 .daily-recap-header {
     display: flex;
     justify-content: space-between;
@@ -119,6 +126,11 @@ body {
 .daily-recap-body.error {
     color: #b91c1c;
     white-space: pre-wrap;
+}
+
+.daily-recap-body.unavailable {
+    color: #64748b;
+    font-style: italic;
 }
 
 .daily-recap-headline {
@@ -395,7 +407,8 @@ body {
     font-size: 1.2rem;
 }
 
-.header-form input[type="date"] {
+.header-form input[type="date"],
+.header-form .comparison-period-select {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     border: 1px solid #0f172a;
@@ -404,9 +417,22 @@ body {
     font-size: 0.9rem;
     transition: all 0.2s ease;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
-.header-form input[type="date"]:hover {
+.header-form .comparison-period-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231e293b' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 0.75rem;
+}
+
+.header-form input[type="date"]:hover,
+.header-form .comparison-period-select:hover {
     background-color: #dbeafe;
 }
 

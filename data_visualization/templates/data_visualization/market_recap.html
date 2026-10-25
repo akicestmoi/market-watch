@@ -26,7 +26,14 @@
                     <input type="date" id="previous_date" name="previous_date"
                         value="{{ previous_date|default:default_previous_date }}">
                     <button type="submit" class="btn-primary">Update</button>
-                    <button type="button" class="btn-primary" id="lastBtn">Last</button>
+                    <select id="comparisonPeriod" class="comparison-period-select"
+                        aria-label="Comparison Date">
+                        <option value="" selected disabled>Comparison Date</option>
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                    </select>
                 </form>
             </div>
         </div>
@@ -146,6 +153,7 @@
         window.errorMessages = {{ error_messages | safe }};
     </script>
     {% endif %}
+    <script src="{% static 'data_visualization/js/comparison_period.js' %}"></script>
     <script src="{% static 'data_visualization/js/market_recap.js' %}"></script>
 </body>
 

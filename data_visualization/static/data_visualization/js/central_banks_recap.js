@@ -1,8 +1,9 @@
 // Central Banks Recap JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Last button
-    initializeLastButton();
+    if (window.ComparisonPeriod) {
+        window.ComparisonPeriod.initializeComparisonPeriodSelect();
+    }
 
     // Highlight max and second max values in probability matrix
     highlightProbabilityMatrix();
@@ -10,22 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Calculate and display probability matrix diffs
     calculateProbabilityDiffs();
 });
-
-function initializeLastButton() {
-    const lastBtn = document.getElementById('lastBtn');
-    if (lastBtn && window.defaultReferenceDate && window.defaultPreviousDate) {
-        lastBtn.addEventListener('click', function() {
-            const referenceDateInput = document.getElementById('reference_date');
-            const previousDateInput = document.getElementById('previous_date');
-
-            if (referenceDateInput && previousDateInput) {
-                referenceDateInput.value = window.defaultReferenceDate;
-                previousDateInput.value = window.defaultPreviousDate;
-                document.querySelector('form').submit();
-            }
-        });
-    }
-}
 
 function highlightProbabilityMatrix() {
     // Find all probability matrix tables (main, not diff)

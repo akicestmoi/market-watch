@@ -40,18 +40,10 @@ function persistAgentChatMessages() {
   }
 }
 
-function initializeLastButton() {
-  const lastBtn = document.getElementById('lastBtn');
-  if (lastBtn && window.defaultReferenceDate && window.defaultPreviousDate) {
-    lastBtn.addEventListener('click', function() {
-      const referenceDateInput = document.getElementById('reference_date');
-      const previousDateInput = document.getElementById('previous_date');
-
-      if (referenceDateInput && previousDateInput) {
-        referenceDateInput.value = window.defaultReferenceDate;
-        previousDateInput.value = window.defaultPreviousDate;
-        document.querySelector('.header-date-form').submit();
-      }
+function initializeComparisonPeriod() {
+  if (window.ComparisonPeriod) {
+    window.ComparisonPeriod.initializeComparisonPeriodSelect({
+      formSelector: '.header-date-form',
     });
   }
 }
@@ -59,6 +51,60 @@ function initializeLastButton() {
 function getReportingDate() {
   const referenceDateInput = document.getElementById('reference_date');
   return referenceDateInput ? referenceDateInput.value : '';
+}
+
+function getPreviousDate() {
+  const previousDateInput = document.getElementById('previous_date');
+  return previousDateInput ? previousDateInput.value : '';
+}
+
+function isDayComparisonActive() {
+  if (!window.ComparisonPeriod || !window.ComparisonPeriod.isDayOverDayComparison) {
+    return true;
+  }
+  return window.ComparisonPeriod.isDayOverDayComparison(
+    getReportingDate(),
+    getPreviousDate()
+  );
+}
+
+function setDailyRecapActionsEnabled(enabled) {
+  const generateBtn = document.getElementById('generateRecapBtn');
+  const openChatBtn = document.getElementById('openChatBtn');
+  if (generateBtn) {
+    generateBtn.disabled = !enabled;
+    generateBtn.title = enabled
+      ? ''
+      : 'Available for day comparisons only';
+  }
+  if (openChatBtn) {
+    openChatBtn.disabled = !enabled;
+    openChatBtn.title = enabled
+      ? ''
+      : 'Available for day comparisons only';
+  }
+}
+
+function renderDailyRecapUnavailableForComparison() {
+  const card = document.getElementById('dailyRecapCard');
+  const titleEl = document.getElementById('dailyRecapTitle');
+  const bodyEl = document.getElementById('dailyRecapBody');
+  if (card) {
+    card.classList.add('is-unavailable');
+  }
+  if (titleEl) {
+    titleEl.textContent = 'Daily Market Recap';
+  }
+  if (bodyEl) {
+    bodyEl.classList.remove('error');
+    bodyEl.classList.add('unavailable');
+    bodyEl.style.whiteSpace = 'normal';
+    bodyEl.textContent =
+      'The written daily recap covers a single session day. ' +
+      'It is only available for day comparisons — choose Day under Comparison Date to view or generate it.';
+  }
+  setRecapExpanded(false);
+  setDailyRecapActionsEnabled(false);
 }
 
 function getCsrfToken() {
@@ -298,13 +344,18 @@ function setRecapExpanded(expanded) {
 }
 
 function renderDailyRecap(data) {
+  const card = document.getElementById('dailyRecapCard');
   const titleEl = document.getElementById('dailyRecapTitle');
   const bodyEl = document.getElementById('dailyRecapBody');
   if (!bodyEl) {
     return;
   }
 
-  bodyEl.classList.remove('error');
+  if (card) {
+    card.classList.remove('is-unavailable');
+  }
+  bodyEl.classList.remove('error', 'unavailable');
+  setDailyRecapActionsEnabled(true);
   if (titleEl) {
     titleEl.textContent = 'Daily Market Recap';
   }
@@ -328,12 +379,17 @@ function renderDailyRecap(data) {
 }
 
 function renderDailyRecapError(message) {
+  const card = document.getElementById('dailyRecapCard');
   const titleEl = document.getElementById('dailyRecapTitle');
   const bodyEl = document.getElementById('dailyRecapBody');
+  if (card) {
+    card.classList.remove('is-unavailable');
+  }
   if (titleEl) {
     titleEl.textContent = 'Daily Market Recap';
   }
   if (bodyEl) {
+    bodyEl.classList.remove('unavailable');
     bodyEl.classList.add('error');
     bodyEl.textContent = message;
   }
@@ -346,7 +402,17 @@ async function loadDailyRecap() {
     return;
   }
 
-  bodyEl.classList.remove('error');
+  if (!isDayComparisonActive()) {
+    renderDailyRecapUnavailableForComparison();
+    return;
+  }
+
+  const card = document.getElementById('dailyRecapCard');
+  if (card) {
+    card.classList.remove('is-unavailable');
+  }
+  bodyEl.classList.remove('error', 'unavailable');
+  setDailyRecapActionsEnabled(true);
   bodyEl.textContent = 'Loading daily recap…';
 
   const reportingDate = getReportingDate();
@@ -398,6 +464,10 @@ function hideLoadingModal() {
 }
 
 function openGenerateRecapConfirm() {
+  if (!isDayComparisonActive()) {
+    renderDailyRecapUnavailableForComparison();
+    return;
+  }
   const reportingDate = getReportingDate();
   if (!reportingDate) {
     renderDailyRecapError('Select a Target Date before generating a recap.');
@@ -594,6 +664,10 @@ function appendAgentChatNote(text) {
 }
 
 function openAgentChat() {
+  if (!isDayComparisonActive()) {
+    renderDailyRecapUnavailableForComparison();
+    return;
+  }
   const overlay = document.getElementById('agentChatOverlay');
   if (!overlay) {
     return;
@@ -781,6 +855,9 @@ function initializeDailyRecapControls() {
   const dailyRecapCard = document.getElementById('dailyRecapCard');
   if (dailyRecapCard) {
     dailyRecapCard.addEventListener('click', (event) => {
+      if (dailyRecapCard.classList.contains('is-unavailable')) {
+        return;
+      }
       if (event.target.closest('.daily-recap-actions')) {
         return;
       }
@@ -832,6 +909,6 @@ function initializeDailyRecapControls() {
   loadDailyRecap();
 }
 
-initializeLastButton();
+initializeComparisonPeriod();
 initializeDailyRecapControls();
 renderFxMatrix();
