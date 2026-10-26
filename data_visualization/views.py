@@ -6,16 +6,16 @@ from datetime import date, datetime
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
-import data_visualization.services.central_bank_recap_services as central_bank_recap_services
-import data_visualization.services.database_management_services as database_management_services
-import data_visualization.services.economic_chart_services as economic_chart_services
-import data_visualization.services.economic_recap_services as economic_recap_services
-import data_visualization.services.market_chart_services as market_chart_services
-import data_visualization.services.market_recap_services as market_recap_services
-import market_overview.services.market_data_services as market_data_services
+import data_visualization.services.central_banks_recap as central_banks_recap
+import data_visualization.services.database_management as database_management
+import data_visualization.services.economic_charts as economic_charts
+import data_visualization.services.economic_recap as economic_recap
+import data_visualization.services.market_charts as market_charts
+import data_visualization.services.market_recap as market_recap
+import market_overview.services.market_data as market_data
 from central_banks_overview.models import CentralBankChoices
-from data_visualization.services.economic_chart_services import EconomicChartsFrontData
-from data_visualization.services.market_chart_services import (
+from data_visualization.services.economic_charts import EconomicChartsFrontData
+from data_visualization.services.market_charts import (
     ChartDuration,
     MarketChartsFrontData,
 )
@@ -59,25 +59,21 @@ def market_recap_view(request):
             f"Reference date {reference_date} must be greater than the previous date {previous_date}."
         )
 
-    reference_market_prices = market_data_services.get_all_asset_prices_for_date(
-        reference_date
-    )
+    reference_market_prices = market_data.get_all_asset_prices_for_date(reference_date)
     if not reference_market_prices:
         errors["reference_market_prices"] = (
             f"No data found for reference date {reference_date}."
         )
 
-    previous_market_prices = (
-        market_data_services.get_all_asset_prices_for_date_without_holidays(
-            previous_date
-        )
+    previous_market_prices = market_data.get_all_asset_prices_for_date_without_holidays(
+        previous_date
     )
     if not previous_market_prices:
         errors["previous_market_prices"] = (
             f"No data found for reference date {previous_date}."
         )
 
-    data_to_display = market_recap_services.format_data_for_market_recap_display(
+    data_to_display = market_recap.format_data_for_market_recap_display(
         reference_market_prices, previous_market_prices
     )
 
@@ -92,9 +88,9 @@ def market_recap_view(request):
         AssetClassChoices.RATES.label,
     ]
 
-    fx_matrix = market_recap_services.get_fx_prices_matrix(
-        reference_date, previous_date
-    )
+    fx_matrix = market_recap.get_fx_prices_matrix(reference_date, previous_date)
+
+    upcoming_weeks = market_recap.group_upcoming_events_by_week()
 
     context = {
         **base_context,
@@ -102,7 +98,8 @@ def market_recap_view(request):
         "left_asset_classes": left_asset_classes,
         "right_asset_classes": right_asset_classes,
         "fx_matrix": fx_matrix,
-        "fx_matrix_order": market_recap_services.FX_MATRIX_ORDER,
+        "fx_matrix_order": market_recap.FX_MATRIX_ORDER,
+        "upcoming_weeks": upcoming_weeks,
     }
     if errors:
         context["error_messages"] = json.dumps(errors)
@@ -161,15 +158,15 @@ def market_charts_view(request):
     }
 
     # Dropdown values
-    dropdown_values = market_chart_services.get_market_charts_dropdown_values()
+    dropdown_values = market_charts.get_market_charts_dropdown_values()
 
     # Get Label
-    labels = market_chart_services.get_market_charts_labels(
+    labels = market_charts.get_market_charts_labels(
         dropdown_values, MarketChartsFrontData(**front_data)
     )
 
     # Get Market Data
-    market_data = market_chart_services.get_market_charts_market_data(
+    charts_data = market_charts.get_market_charts_data(
         reference_date, previous_curve_date, MarketChartsFrontData(**front_data)
     )
 
@@ -181,7 +178,7 @@ def market_charts_view(request):
         "dropdown_values": json.dumps(dropdown_values, default=str),
         "selected_values": json.dumps(selected_values),
         "labels": json.dumps(labels),
-        "market_data": json.dumps(market_data, default=str),
+        "market_data": json.dumps(charts_data, default=str),
     }
     if errors:
         context["error_messages"] = json.dumps(errors)
@@ -191,14 +188,17 @@ def market_charts_view(request):
 def economic_recap_view(request):
     """Economic Overview View."""
     locations = [
-        loc.value for loc in EconomicDataLocationChoices.ordered() if loc.value != "EU"
+        loc
+        for loc in EconomicDataLocationChoices.ordered()
+        if loc != EconomicDataLocationChoices.EU
     ]
-    economic_data = economic_recap_services.get_economic_recap_data(locations)
-    upcoming_events = economic_recap_services.get_economic_recap_upcoming_events()
+    economic_data = economic_recap.get_economic_recap_data(locations)
+    location_codes = [loc.value for loc in locations]
     context = {
-        "locations": locations,
+        "locations": location_codes,
         "economic_data": economic_data,
-        "upcoming_events": upcoming_events,
+        "economic_data_json": json.dumps(economic_data, default=str),
+        "locations_json": json.dumps(location_codes),
     }
     return render(request, "data_visualization/economic_recap.html", context)
 
@@ -208,6 +208,7 @@ def economic_charts_view(request):
     # Default Values
     default_values = {
         "zone": str(EconomicDataLocationChoices.US.label),
+        "period_window": economic_charts.ChartPeriodWindow.FIVE_YEARS.value,
         "us_growth_indicator": "",
         "us_inflation_indicator": "",
         "us_government_indicator": "",
@@ -216,14 +217,31 @@ def economic_charts_view(request):
         "us_labour_indicator": "",
         "us_housing_indicator": "",
         "us_confidence_indicator": "",
-        "fr_growth_indicator": "",
-        "fr_inflation_indicator": "",
-        "fr_government_indicator": "",
-        "fr_production_indicator": "",
-        "fr_sales_indicator": "",
-        "fr_labour_indicator": "",
-        "fr_housing_indicator": "",
-        "fr_confidence_indicator": "Aggregate Business Confidence",
+        "fr_growth_indicator": economic_charts.encode_indicator_selection(
+            "GDP", economic_charts.ChartSeriesMode.YOY
+        ),
+        "fr_inflation_indicator": economic_charts.encode_indicator_selection(
+            "Consumer Price Index", economic_charts.ChartSeriesMode.YOY
+        ),
+        "fr_government_indicator": economic_charts.encode_indicator_selection(
+            "Government Debt (% of GDP)", economic_charts.ChartSeriesMode.ABS
+        ),
+        "fr_production_indicator": economic_charts.encode_indicator_selection(
+            "Industrial Production", economic_charts.ChartSeriesMode.ABS
+        ),
+        "fr_sales_indicator": economic_charts.encode_indicator_selection(
+            "Retail Sales", economic_charts.ChartSeriesMode.YOY
+        ),
+        "fr_labour_indicator": economic_charts.encode_indicator_selection(
+            "Unemployment Rate", economic_charts.ChartSeriesMode.ABS
+        ),
+        "fr_housing_indicator": economic_charts.encode_indicator_selection(
+            "Home Prices", economic_charts.ChartSeriesMode.ABS
+        ),
+        "fr_confidence_indicator": economic_charts.encode_indicator_selection(
+            "Aggregate Business Confidence",
+            economic_charts.ChartSeriesMode.ABS,
+        ),
         "jp_growth_indicator": "",
         "jp_inflation_indicator": "",
         "jp_government_indicator": "",
@@ -243,30 +261,37 @@ def economic_charts_view(request):
     # Return Selected Values for Front/Back Interaction
     selected_values = {**front_data}
     selected_zone = selected_values.get("zone", default_values["zone"])
+    location = EconomicDataLocationChoices.from_label(selected_zone)
+    period_window = economic_charts.ChartPeriodWindow(
+        selected_values.get("period_window", default_values["period_window"])
+    )
 
     # Dropdown values
-    dropdown_values = economic_chart_services.get_economic_charts_dropdown_values(
-        selected_zone
-    )
+    dropdown_values = economic_charts.get_economic_charts_dropdown_values(location)
 
     # Economic data
     selected_indicators_by_category = (
-        economic_chart_services.get_selected_indicators_by_category(
-            selected_zone,
+        economic_charts.get_selected_indicators_by_category(
+            location,
             EconomicChartsFrontData(**front_data),
         )
     )
-    economic_data = economic_chart_services.get_economic_charts_data(
-        selected_zone, selected_indicators_by_category
+    economic_data = economic_charts.get_economic_charts_data(
+        location,
+        selected_indicators_by_category,
+        period_window=period_window,
     )
 
     context = {
         "zone": selected_zone,
+        "period_window": period_window.value,
+        "period_window_options": [
+            period_window_option.value
+            for period_window_option in economic_charts.ChartPeriodWindow
+        ],
         "dropdown_values": json.dumps(dropdown_values, default=str),
         "economic_data": json.dumps(economic_data, default=str),
-        "categories": json.dumps(
-            [str(category.label) for category in EconomicDataCategoryChoices.ordered()]
-        ),
+        "categories": json.dumps(EconomicDataCategoryChoices.get_labels()),
         "selected_values": json.dumps(selected_values),
     }
     if errors:
@@ -309,7 +334,7 @@ def central_banks_recap_view(request):
         probability_change_matrix = None
 
         try:
-            cb_data_items = central_bank_recap_services.get_central_bank_data_item(
+            cb_data_items = central_banks_recap.get_central_bank_data_item(
                 central_bank, reference_date
             )
         except Exception as e:
@@ -318,8 +343,10 @@ def central_banks_recap_view(request):
             )
 
         try:
-            probability_matrix = central_bank_recap_services.get_central_bank_formatted_probability_matrix(
-                central_bank, reference_date
+            probability_matrix = (
+                central_banks_recap.get_central_bank_formatted_probability_matrix(
+                    central_bank, reference_date
+                )
             )
         except Exception as e:
             errors[f"{central_bank.value}_probability_matrix"] = (
@@ -327,11 +354,13 @@ def central_banks_recap_view(request):
             )
 
         try:
-            previous_probability_matrix = central_bank_recap_services.get_central_bank_formatted_probability_matrix(
-                central_bank, previous_date
+            previous_probability_matrix = (
+                central_banks_recap.get_central_bank_formatted_probability_matrix(
+                    central_bank, previous_date
+                )
             )
             probability_change_matrix = (
-                central_bank_recap_services.get_formatted_probability_matrix_changes(
+                central_banks_recap.get_formatted_probability_matrix_changes(
                     probability_matrix,
                     previous_probability_matrix,
                     previous_date=previous_date,
@@ -360,7 +389,7 @@ def central_banks_recap_view(request):
 
 def management_view(request):
     """Management View."""
-    database_info = database_management_services.get_database_information()
+    database_info = database_management.get_database_information()
     context = {
         "database_info": json.dumps(database_info, default=str),
     }

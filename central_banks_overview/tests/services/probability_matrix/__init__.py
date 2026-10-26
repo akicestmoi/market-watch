@@ -1,2 +1,0 @@
-"""Probability-matrix test package."""
-

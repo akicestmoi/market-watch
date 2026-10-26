@@ -35,6 +35,7 @@ django.setup()
 
 
 def main():
+    """Export the database to a SQL dump file."""
     parser = argparse.ArgumentParser(
         description="Export the database to a SQL dump file"
     )

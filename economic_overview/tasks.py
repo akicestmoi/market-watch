@@ -4,9 +4,9 @@ from datetime import date
 
 from celery import shared_task
 
-import economic_overview.services.data_ingestion_services as data_ingestion_services
-import economic_overview.services.economic_data_services as economic_data_services
-import economic_overview.services.publication_services as publication_services
+import economic_overview.services.data_ingestion as data_ingestion
+import economic_overview.services.economic_data as economic_data
+import economic_overview.services.publication as publication
 from core.locks import try_acquire_redis_lock
 from core.services import logger
 
@@ -19,7 +19,7 @@ def scheduled_economic_data_and_schedule_update():
     """
     today = date.today()
     lock = try_acquire_redis_lock(
-        data_ingestion_services.get_economic_data_ingestion_lock_key()
+        data_ingestion.get_economic_data_ingestion_lock_key()
     )
     if lock is None:
         logger.warning(
@@ -34,7 +34,7 @@ def scheduled_economic_data_and_schedule_update():
 
     try:
         economic_indicators_to_update = (
-            economic_data_services.get_economic_indicators_to_update(
+            economic_data.get_economic_indicators_to_update(
                 end_date=today,
             )
         )
@@ -49,11 +49,11 @@ def scheduled_economic_data_and_schedule_update():
         logger.info(
             f"Ingesting economic data: {[indicator.name for indicator in economic_indicators_to_update]} for {today}"
         )
-        data_ingestion_services.ingest_latest_economic_data(
+        data_ingestion.ingest_latest_economic_data(
             economic_indicators_to_update
         )
         logger.info("Updating publication schedules.")
-        publication_services.update_publication_schedules(economic_indicators_to_update)
+        publication.update_publication_schedules(economic_indicators_to_update)
         return {
             "status": "success",
             "message": "Economic data ingested successfully.",
@@ -87,7 +87,7 @@ def scheduled_economic_data_update_logs_cleanup():
     )
     try:
         logger.info(f"Cleaning up economic data update logs for {logs_date}")
-        economic_data_services.delete_economic_data_update_logs_before_date(logs_date)
+        economic_data.delete_economic_data_update_logs_before_date(logs_date)
         return {
             "status": "success",
             "message": f"Economic data update logs deleted successfully for {logs_date}",

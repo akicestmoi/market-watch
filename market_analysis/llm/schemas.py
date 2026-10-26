@@ -1,7 +1,6 @@
 """Pydantic schemas for LLM structured outputs (article analysis, recap, chat)."""
 
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -49,20 +48,20 @@ class ArticleAnalysisOutput(BaseModel):
 
     title: str = Field(..., max_length=500)
     summary: str = Field(..., max_length=2000)
-    event_types: List[EventType] = Field(default_factory=list, max_length=10)
-    companies: List[str] = Field(
+    event_types: list[EventType] = Field(default_factory=list, max_length=10)
+    companies: list[str] = Field(
         default_factory=list,
         max_length=20,
         description="Company names mentioned as impacted.",
     )
-    sectors: List[str] = Field(
+    sectors: list[str] = Field(
         default_factory=list,
         max_length=20,
         description="Sectors mentioned as impacted.",
     )
     sentiment: Sentiment
-    key_facts: List[str] = Field(default_factory=list, max_length=15)
-    uncertainties: List[str] = Field(default_factory=list, max_length=10)
+    key_facts: list[str] = Field(default_factory=list, max_length=15)
+    uncertainties: list[str] = Field(default_factory=list, max_length=10)
     source_url: str = Field(..., max_length=1000)
 
 
@@ -125,10 +124,10 @@ class ChatAnswerOutput(BaseModel):
     """LLM shape for a chat reply."""
 
     answer: str = Field(..., max_length=8000)
-    citations: List[EvidenceItem] = Field(default_factory=list, max_length=15)
-    missing_information: List[str] = Field(default_factory=list, max_length=10)
-    uncertainties: List[str] = Field(default_factory=list, max_length=10)
-    proposed_recap_title: Optional[str] = Field(
+    citations: list[EvidenceItem] = Field(default_factory=list, max_length=15)
+    missing_information: list[str] = Field(default_factory=list, max_length=10)
+    uncertainties: list[str] = Field(default_factory=list, max_length=10)
+    proposed_recap_title: str | None = Field(
         default=None,
         max_length=300,
         description=(
@@ -136,36 +135,36 @@ class ChatAnswerOutput(BaseModel):
             "apply only after user agrees or orders. Leave null if unchanged."
         ),
     )
-    proposed_main_summary: Optional[str] = Field(
+    proposed_main_summary: str | None = Field(
         default=None,
         max_length=6000,
         description="Only if main_summary would change; else null.",
     )
-    proposed_us_summary: Optional[str] = Field(
+    proposed_us_summary: str | None = Field(
         default=None,
         max_length=8000,
         description="Only if us_summary would change; else null.",
     )
-    proposed_eur_summary: Optional[str] = Field(
+    proposed_eur_summary: str | None = Field(
         default=None,
         max_length=8000,
         description="Only if eur_summary would change; else null.",
     )
-    proposed_jp_summary: Optional[str] = Field(
+    proposed_jp_summary: str | None = Field(
         default=None,
         max_length=8000,
         description="Only if jp_summary would change; else null.",
     )
-    proposed_additional_summary: Optional[str] = Field(
+    proposed_additional_summary: str | None = Field(
         default=None,
         max_length=8000,
         description="Only if additional_summary would change; else null.",
     )
-    proposed_recap_reporting_date: Optional[str] = Field(
+    proposed_recap_reporting_date: str | None = Field(
         default=None,
         description="ISO date for the recap being discussed/updated.",
     )
-    cursor_guidelines_prompt: Optional[str] = Field(
+    cursor_guidelines_prompt: str | None = Field(
         default=None,
         max_length=8000,
         description=(
@@ -177,6 +176,6 @@ class ChatAnswerOutput(BaseModel):
         default=False,
         description=(
             "Informational only for the model. The API sets this from whether "
-            "tool_update_daily_recap actually persisted changes."
+            "_update_daily_recap actually persisted changes."
         ),
     )

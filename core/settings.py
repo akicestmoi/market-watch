@@ -16,7 +16,7 @@ from pathlib import Path
 import environ
 from celery.schedules import crontab
 
-from core.open_api import ApiTags
+from core.open_api.schema import ApiTags
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -129,6 +129,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
+# Display / Celery wall clock. Datetimes are stored UTC-aware (USE_TZ).
+# See docs/GUIDELINES.md.
 TIME_ZONE = "Europe/Paris"
 
 USE_I18N = True
@@ -161,7 +163,7 @@ CELERY_TIMEZONE = TIME_ZONE
 # ============================================================================
 # Celery Beat Schedule (Periodic Tasks)
 # ============================================================================
-# All times are in Europe/Paris timezone (TIME_ZONE setting)
+# Beat crontab times are Europe/Paris wall clock (TIME_ZONE). Stored datetimes stay UTC.
 # ============================================================================
 
 CELERY_BEAT_SCHEDULE = {

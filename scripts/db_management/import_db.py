@@ -156,6 +156,7 @@ def reset_sequences():
 
 
 def main():
+    """Import a database from a SQL dump file."""
     parser = argparse.ArgumentParser(
         description="Import a database from a SQL dump file"
     )

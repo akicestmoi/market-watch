@@ -53,6 +53,8 @@ class AssetResponseSerializer(serializers.ModelSerializer):
     """Asset Serializer."""
 
     class Meta:
+        """Asset response serializer metadata."""
+
         model = AssetModel
         fields = [
             "asset_id",
@@ -84,6 +86,8 @@ class MarketPriceResponseSerializer(serializers.ModelSerializer):
     asset = AssetResponseSerializer(read_only=True)
 
     class Meta:
+        """Market price response serializer metadata."""
+
         model = MarketPriceModel
         fields = [
             "id",
@@ -98,6 +102,8 @@ class PriceUpdateLogResponseSerializer(serializers.ModelSerializer):
     """Price Update Log Response Serializer."""
 
     class Meta:
+        """Price update log response serializer metadata."""
+
         model = PriceUpdateLogModel
         fields = [
             "market_price_id",
@@ -109,6 +115,8 @@ class HolidayResponseSerializer(serializers.ModelSerializer):
     """Holiday Response Serializer."""
 
     class Meta:
+        """Holiday response serializer metadata."""
+
         model = HolidayModel
         fields = [
             "date",

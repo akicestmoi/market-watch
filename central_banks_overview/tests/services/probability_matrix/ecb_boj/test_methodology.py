@@ -11,7 +11,7 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.cb_inference_services import (
+from central_banks_overview.services.central_banks_inference import (
     EstrFuturesProbabilityMatrixService,
     MutanFuturesProbabilityMatrixService,
 )
@@ -522,11 +522,15 @@ class TestECBStep4InverseDistanceWeighting(TestCase):
 
         # Find scenario with minimum distance
         min_distance_idx = prob_df["distance"].idxmin()
-        min_distance_prob = float(prob_df.loc[min_distance_idx, "probability"])  # type: ignore
+        min_distance_value = prob_df.loc[min_distance_idx, "probability"]
+        assert isinstance(min_distance_value, (int, float))
+        min_distance_prob = float(min_distance_value)
 
         # Find scenario with maximum distance
         max_distance_idx = prob_df["distance"].idxmax()
-        max_distance_prob = float(prob_df.loc[max_distance_idx, "probability"])  # type: ignore
+        max_distance_value = prob_df.loc[max_distance_idx, "probability"]
+        assert isinstance(max_distance_value, (int, float))
+        max_distance_prob = float(max_distance_value)
 
         # Closer scenario should have higher probability
         assert min_distance_prob > max_distance_prob

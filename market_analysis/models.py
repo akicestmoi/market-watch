@@ -34,6 +34,8 @@ class DailyRecapModel(BaseModel):
     prompt_version = models.CharField(max_length=64, blank=True, default="")
 
     class Meta:
+        """Daily recap model metadata (newest reporting date first)."""
+
         ordering = ["-reporting_date", "-date_added"]
 
     def __str__(self) -> str:

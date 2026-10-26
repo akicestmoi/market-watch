@@ -3,7 +3,7 @@
 from datetime import date, datetime, timezone
 from unittest.mock import patch
 
-import pytest  # type: ignore[reportMissingImports]
+import pytest
 from django.test import TestCase
 
 from central_banks_overview.models import (
@@ -12,10 +12,10 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.cb_inference_services import (
+from central_banks_overview.services.central_banks_inference import (
     get_central_bank_probability_matrices,
 )
-from central_banks_overview.services.cb_meetings_services import CentralBankMeetingDates
+from central_banks_overview.services.central_banks_meetings import CentralBankMeetingDates
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -62,10 +62,10 @@ class TestFRBIntegrationScenarios(TestCase):
         )
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_single_meeting_rate_cut(self, mock_get_futures, mock_get_meetings):
         """
@@ -137,10 +137,10 @@ class TestFRBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_two_meetings_consecutive_rate_cuts(
         self, mock_get_futures, mock_get_meetings
@@ -237,10 +237,10 @@ class TestFRBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_three_meetings_mixed_rate_path(self, mock_get_futures, mock_get_meetings):
         """
@@ -363,10 +363,10 @@ class TestFRBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_no_meetings_raises_error(self, mock_get_futures, mock_get_meetings):
         """
@@ -405,10 +405,10 @@ class TestFRBIntegrationScenarios(TestCase):
         assert "No meeting dates found for FRB" in str(exc_info.value)
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_meeting_with_intervening_contract(
         self, mock_get_futures, mock_get_meetings

@@ -9,7 +9,7 @@ Run the same drift check as `check-endpoint`, then **immediately fix** whatever 
 
 `$ARGUMENTS`: an endpoint name, path, or view class (e.g. `prices`, `POST /markets/prices/ingest`, `IngestMarketPricesView`). When omitted, upsert **every** endpoint in the project.
 
-**Target:** `.cursor/postman.local.json` first, then [POSTMAN.md](../../../POSTMAN.md). Workspace `Perso`, collection `market-watch`; IDs when present. The whole collection is this repo.
+**Target:** `.cursor/postman.local.json` first, then [docs/POSTMAN.md](../../../docs/POSTMAN.md). Workspace `Perso`, collection `market-watch`; IDs when present. The whole collection is this repo.
 
 MCP is `.cursor/mcp.json` (`https://mcp.postman.com/mcp`). Per-PC MCP overrides: `~/.cursor/mcp.json`.
 

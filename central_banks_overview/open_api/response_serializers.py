@@ -31,6 +31,8 @@ class CentralBankDataResponseSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="pk", read_only=True)
 
     class Meta:
+        """Central bank data serializer metadata."""
+
         model = CentralBankDataModel
         fields = [
             "id",
@@ -64,6 +66,8 @@ class StirFuturesPriceResponseSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="pk", read_only=True)
 
     class Meta:
+        """STIR futures price serializer metadata."""
+
         model = StirFuturesModel
         fields = [
             "id",

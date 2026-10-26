@@ -3,38 +3,29 @@
 from rest_framework import serializers
 
 from central_banks_overview.models import CentralBankChoices
+from core.open_api.fields import (
+    CommaSeparatedChoiceField,
+    CommaSeparatedIntegerField,
+)
 
 
 class CentralBankBaseSerializer(serializers.Serializer):
     """Central Bank Base Serializer."""
 
-    central_banks = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True
+    central_banks = CommaSeparatedChoiceField(
+        choices=CentralBankChoices.choices,
+        enum_class=CentralBankChoices,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
-
-    def validate_central_bank(self, value: str) -> str:
-        """Validate central bank."""
-        if value:
-            for cb_value in value.split(","):
-                cb_value = cb_value.strip()
-                if cb_value not in CentralBankChoices.choices:
-                    raise serializers.ValidationError(
-                        f"Invalid central bank value: {value}"
-                    )
-        return value
 
 
 class CentralBankDataIngestionItemSerializer(serializers.Serializer):
     """Central Bank Data Ingestion Item Serializer."""
 
-    central_bank = serializers.CharField()
+    central_bank = serializers.ChoiceField(choices=CentralBankChoices.choices)
     date = serializers.DateField()
-
-    def validate_central_bank(self, value: str) -> str:
-        """Validate central bank."""
-        if value not in [choice.value for choice in CentralBankChoices]:
-            raise serializers.ValidationError(f"Invalid central bank value: {value}")
-        return value
 
 
 class CentralBankDataIngestionSerializer(serializers.ListSerializer):
@@ -106,32 +97,10 @@ class GetCentralBankProbabilityMatrixSerializer(CentralBankBaseSerializer):
 class DeleteStirFuturesPricesSerializer(CentralBankBaseSerializer):
     """Delete STIR Futures Prices Serializer."""
 
-    ids = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
-    def validate_ids(self, value):
-        """Convert comma-separated string to list of integers."""
-        if not value or not value.strip():
-            return None
-        try:
-            return [
-                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
-            ]
-        except ValueError:
-            raise serializers.ValidationError("IDs must be comma-separated integers.")
+    ids = CommaSeparatedIntegerField(required=False, allow_blank=True, allow_null=True)
 
 
 class DeleteCentralBankDataSerializer(CentralBankBaseSerializer):
     """Delete Central Bank Data Serializer."""
 
-    ids = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
-    def validate_ids(self, value):
-        """Convert comma-separated string to list of integers."""
-        if not value or not value.strip():
-            return None
-        try:
-            return [
-                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
-            ]
-        except ValueError:
-            raise serializers.ValidationError("IDs must be comma-separated integers.")
+    ids = CommaSeparatedIntegerField(required=False, allow_blank=True, allow_null=True)

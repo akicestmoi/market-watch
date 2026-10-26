@@ -1,0 +1,343 @@
+---
+description: Project coding conventions
+alwaysApply: true
+---
+
+# Coding conventions
+
+## App / API structure
+
+Each Django app keeps a fixed layout. Do not invent parallel folders for the same concern.
+
+| Concern                             | Location                                                                                      |
+| ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| Models / `TextChoices`              | `<app>/models.py`                                                                             |
+| Business logic                      | `<app>/services/` (one module per domain area)                                                |
+| HTTP API views                      | `<app>/views/` (or `<app>/views.py` when tiny) — subclass `core.views.BaseAPIView`            |
+| Request serializers                 | `<app>/open_api/request_serializers.py`                                                       |
+| Response serializers                | `<app>/open_api/response_serializers.py`                                                      |
+| Celery tasks                        | `<app>/tasks.py`                                                                              |
+| App routes                          | `<app>/urls.py` — also register `include(...)` in `core/urls.py` when adding a new app prefix |
+| Tests                               | `<app>/tests/` mirroring services / views / tasks                                             |
+| Static JSON / fixtures used by code | `<app>/data_sources/`                                                                         |
+
+### Every REST endpoint uses `@open_api`
+
+DRF API methods **must** be decorated with `core.open_api.schema.open_api` (tags, summary, description, serializers, responses). Do not ship undocumented hand-rolled views for JSON APIs.
+
+```python
+@open_api(
+    tags=[ApiTags.ASSETS],
+    summary="…",
+    description="…",
+    request_serializer=SomeRequestSerializer,
+    response=OkOpenApiResponse(SomeResponseSerializer),
+    error_responses=[
+        BadRequestOpenApiResponse("…"),
+        NotFoundOpenApiResponse("…"),
+        ConflictOpenApiResponse("…"),  # e.g. Redis lock held
+    ],
+)
+def get(self, validated_data: SomeValidatedData) -> Response:
+    ...
+```
+
+- **Request / response schemas** live only under `<app>/open_api/` — not next to the view, not in `serializers.py` at app root.
+- **`*ValidatedData` TypedDicts** stay in the **view module**, immediately above the view that annotates `validated_data` (ChoiceField still yields `str` at runtime — convert to enums at the view boundary before calling services).
+- **`error_responses`**: always list every **explicit** client error the endpoint can return. Use the **most accurate** helper in `core.open_api.schema` — not only 400/404:
+  - `BadRequestOpenApiResponse` (400) — malformed / invalid input, serializer failures
+  - `NotFoundOpenApiResponse` (404) — missing resource
+  - `ConflictOpenApiResponse` (409) — lock held / conflicting state (`ResourceLocked`)
+  - `UnprocessableEntityOpenApiResponse` (422) — well-formed but semantically invalid (when you actually return 422)
+  - Add a new `*OpenApiResponse` helper in `core/open_api/schema.py` when another **explicit** client status is the right fit.
+    **Never document 500 / `InternalServerError` in OpenAPI.** Unexpected failures stay an implementation concern; the contract only exposes named, actionable errors. Prefer raising a typed client error (400/404/409/…) over a generic 500 whenever the failure mode is known.
+    **Keep them up to date in the same change whenever you touch an API.** An `@open_api` without the errors that path can return is incomplete.
+  - **Every** `BadRequestOpenApiResponse` / `NotFoundOpenApiResponse` / `ConflictOpenApiResponse` / `UnprocessableEntityOpenApiResponse` call **must** pass a non-empty `message` string (the constructor requires it — no empty `BadRequestOpenApiResponse()`). Derive the text from request-serializer required fields / `ValidationError` messages, raises in the view, and known service failures that surface as that status. When one status covers several failure modes, join them with `|` (space-pipe-space), e.g. `BadRequestOpenApiResponse("date is required | short_name is required")`.
+- **Views stay thin**: validate → call services → serialize response. Scraping, upserts, and domain rules belong in `services/`.
+- **Tasks** that run on a schedule or from other apps live in `tasks.py` and call services (same as views).
+- **New / changed routes**: update `<app>/urls.py` (and `core/urls.py` if the app mount is new). Then sync Postman with `check-endpoint` / `upsert-endpoint` (see `.cursor/rules/postman-sync.mdc`).
+
+**Exception:** `data_visualization` serves HTML/templates (not the JSON OpenAPI surface). It does not use `@open_api`; keep page views and static assets there, and call other apps’ services for data.
+
+Shared OpenAPI helpers, tags, and error response classes live in `core/open_api/schema.py`. Shared request fields live in `core/open_api/fields.py`.
+
+### Module file names
+
+- Do **not** suffix modules with `_views` or `_services`. The parent package already says the role (`views/prices.py`, `services/price_ingestion.py`).
+- Test modules mirror the production module: `tests/services/test_price_ingestion.py` for `services/price_ingestion.py`.
+
+## Naming
+
+### Function names start with a verb
+
+Public and helper function names must begin with a verb (or verb phrase) that states the action.
+
+```python
+# ❌ BAD — noun / adjective as the name
+def display_timezone() -> ZoneInfo: ...
+def local_today() -> date: ...
+
+# ✅ GOOD
+def get_display_timezone() -> ZoneInfo: ...
+def convert_to_display_timezone(value: datetime) -> datetime: ...
+def get_local_today() -> date: ...
+```
+
+Exceptions: well-known callables expected by a framework (e.g. Django `save`, `__str__`), and `@property` getters that read as attributes.
+
+### Variables and parameters are explicit
+
+Names must make the value’s role obvious at the use site. Prefer a short domain phrase over a letter or a vague word.
+
+```python
+# ❌ BAD — cryptic / too abstract
+m = ChatMessage(...)
+data = fetch()
+item = rows[0]
+tmp = convert(x)
+
+# ✅ GOOD
+chat_message = ChatMessage(...)
+market_prices = fetch_market_prices()
+price_row = rows[0]
+paris_datetime = convert_to_display_timezone(utc_datetime)
+```
+
+Avoid single-letter names except conventional loop indices (`i`, `j`) or well-known math locals in a tiny scope. Do not invent new short aliases for types or modules (`dt` for `datetime`, `cb` for central bank) at call sites — use the real name.
+
+Do **not** reuse an imported module’s name as a local variable (`holidays = holidays.get_…` → UnboundLocalError). Prefer a domain noun for the value (`holiday_rows`, `prices_to_ingest`, `economic_data_rows`).
+
+## Module layout
+
+Python modules use this top-to-bottom order:
+
+1. **Module docstring**
+2. **Imports**
+3. **Module-level globals / constants** (URLs, cache sizes, literal maps, **and source → callable dispatch maps**) — all of these sit here, at the top
+4. **Public-function clusters** (less complex → more complex), each shaped as:
+
+```text
+[TypedDict / NamedTuple / enum / small class used first by public_x]
+[_helpers used only by public_x, in call order]
+public_x
+
+[types used first by public_y]
+[_helpers used only by public_y]
+public_y   # may reuse types/helpers already declared above
+```
+
+Do **not** park all types at the top of the module. Declare each type **immediately before the first public function (or view class) that uses it**. If type `A` is referenced by type `B`, `A` comes first within that cluster. Types/helpers shared with a later public stay where they were first declared — do not redeclare them.
+
+Same clustering for **view modules**: `*ValidatedData` TypedDict(s) for a view sit immediately above that view class.
+
+**Dispatch / mapper exception:** source → scraper (or similar) maps are **globals**. Keep them in step 3 with the other module constants, even when their values are lambdas that call helpers defined later in this module (names resolve when the lambda runs). Do **not** move those maps below the helpers they reference.
+
+### Imports stay at module top
+
+All imports belong in the module import block (step 2). Do **not** import inside functions, methods, or mid-module for style, laziness, or “optional” use.
+
+**Only exception:** a **circular import**. Then import inside the function that needs it, as the **first statement** of that function (before any other logic), with a one-line comment naming the cycle.
+
+```python
+def get_recap(...):
+    # Circular: market_analysis.views ↔ market_analysis.services
+    from market_analysis.views import RecapSerializer
+
+    ...
+```
+
+`typing.TYPE_CHECKING` imports are allowed for annotation-only names that would otherwise create a cycle; they are not a substitute for a needed runtime import (that still goes at function top with the circular comment).
+
+## Leading underscore = module-private
+
+Prefix a function with `_` when it is only used inside its own module. As soon as it is imported or otherwise used from **another non-test module**, drop the leading underscore (do not keep a private name while exporting it).
+
+**Tests do not count as external use.** A helper may stay `_private` if its only callers outside the defining module are under `**/tests/**`. Prefer importing `_helpers` in tests over renaming them public just for coverage.
+
+```python
+# ✅ GOOD — only used inside this module (+ maybe tests); public tool name via Tool(...)
+def _get_previous_recaps(...) -> list: ...
+
+def _build_chat_tools() -> list[Tool[None]]:
+    return [Tool(_get_previous_recaps, name="get_previous_recaps")]
+
+# ✅ GOOD — production module imports it → public name
+def build_market_context(...) -> list: ...  # called from llm_interaction
+
+# ❌ BAD — no underscore but never imported from any non-test module
+def get_previous_recaps(...) -> list: ...
+```
+
+When a private callable is registered with an external API (e.g. an LLM tool), pass an explicit public `name=` so the external name stays verb-led and without `_`.
+
+## Prefer enums / `TextChoices` over plain `str`
+
+When a domain value already has an enum, Django `TextChoices` / `IntegerChoices`, or similar closed set, **annotate and pass that type** — not `str`.
+
+```python
+# ❌ BAD
+def ingest(source: str, location: str) -> None: ...
+
+class Filters(TypedDict, total=False):
+    asset_class: str
+    source: str
+
+# ✅ GOOD
+def ingest(source: PriceSourceChoices, location: LocationChoices) -> None: ...
+
+class Filters(TypedDict, total=False):
+    asset_class: AssetClassChoices
+    source: PriceSourceChoices
+```
+
+Parse/validate at the boundary (serializer, JSON load), then keep the typed value inward. Use plain `str` only for free text or intentionally denormalized display labels (document that at the field).
+
+## Prefer builtin / `collections.abc` typing (Python 3.12+)
+
+Do **not** use deprecated `typing` aliases that have builtin or `collections.abc` equivalents.
+
+| Avoid (`typing`)                                                                        | Prefer                                              |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `List`, `Dict`, `Tuple`, `Set`, `FrozenSet`, `Type`                                     | `list`, `dict`, `tuple`, `set`, `frozenset`, `type` |
+| `Optional[X]`, `Union[X, Y]`                                                            | `X \| None`, `X \| Y`                               |
+| `Callable`, `Mapping`, `MutableMapping`, `Sequence`, `Iterable`, `Iterator`, `Hashable` | `collections.abc` equivalents                       |
+
+Still import from `typing` when there is no builtin/`collections.abc` stand-in: `TypedDict`, `NamedTuple`, `Literal`, `TypeVar`, `Protocol`, `NotRequired`, `Required`, `Annotated`, `ClassVar`, `Final`, `TYPE_CHECKING`, `overload`, etc.
+
+```python
+# ❌ BAD
+from typing import Dict, List, Optional, Union
+
+def load(rows: List[str]) -> Optional[Dict[str, int]]: ...
+
+# ✅ GOOD
+def load(rows: list[str]) -> dict[str, int] | None: ...
+```
+
+## Structured types only — no `Any` / `object` / bare `dict` / bare `tuple`
+
+Never annotate with `Any`, `object`, bare `dict` / `Dict`, or bare `tuple` / `Tuple`.
+
+Use **`TypedDict`** for record/mapping shapes and **`NamedTuple`** for fixed-position tuples. Homogeneous sequences use `list[SomeTypedDict]`.
+
+```python
+# ❌ BAD
+def load() -> dict: ...
+def parse() -> tuple: ...
+rows: list[Any] = ...
+detail: dict[str, Any] = ...
+
+# ✅ GOOD
+class PriceChange(TypedDict):
+    asset_id: int
+    short_name: str
+
+class EstrReferenceDates(NamedTuple):
+    start: date
+    end: date
+
+def load() -> list[PriceChange]: ...
+def parse() -> EstrReferenceDates: ...
+```
+
+Do **not** use `list[Any]`, `dict[str, Any]`, or `Mapping[Any, Any]` as an escape hatch around pandas / Redis / JSON. Build the TypedDict (or NamedTuple) field-by-field instead.
+
+Open-key framework bags (Django `updates=` / `filter` kwargs, DRF `validated_data`) must still be declared as a **TypedDict** matching the known fields (`total=False` when partial).
+
+DRF **`*ValidatedData` TypedDicts** live in the **view module** that annotates `validated_data` (not in `open_api/request_serializers.py`). Serializers stay in the serializer module.
+
+Allowed exceptions (document in a one-line comment at the site):
+
+- Homogeneous open-key maps of already-typed values, e.g. `dict[str, list[PriceChange]]` when keys are dynamic IDs/names.
+- Polymorphic model serializers such as `BaseModel.convert_to_dict` until per-model TypedDicts exist.
+- Abstract cross-model helpers such as `update_with_logs` / `upsert_with_logs` (`updates=` / `lookup_kwargs=`) — field keys vary by model; use bare `dict` with the polymorphic comment, do **not** invent a union TypedDict of every model’s fields.
+
+## Remove dead code
+
+Always delete unused code when you touch a module or notice it: unused imports, unreferenced private helpers, unreachable branches, commented-out implementations, unused variables/parameters (unless required by a framework signature), and abandoned constants/maps. Do not leave “just in case” copies — recover from git if needed.
+
+`core/deprecated/` (or similarly named trees) is the only place for intentionally retained historical snippets; do not accumulate commented dead code in live modules.
+
+## Type checkers and formatters must pass
+
+Every implementation must leave the tree clean under **pyright**, **flake8**, **black**, and **isort**.
+
+## Typing issues: prefer package types; local stubs last
+
+When pyright fails on a third-party API, resolve in this order:
+
+1. **Types shipped by the package** — upgrade so the library’s own annotations / `py.typed` are used (e.g. redis ≥ 5, freezegun ≥ 1.2.1, pdfplumber). Do **not** add a conflicting `types-*` package when the library already ships types.
+2. **Published stub packages** — only if the library has none: install the matching typeshed / `types-*` / `*-stubs` package (`django-stubs`, …).
+3. **Honest typing in our code** — TypedDict / NamedTuple / generics around the untyped boundary.
+4. **Runtime narrowing** — `isinstance` / `assert isinstance` when the value is truly dynamic.
+5. **Hand-written stubs under `typings/`** — **last resort only**, when none of the above can make pyright clean. Keep them minimal and document why in the stub module docstring.
+6. **Never** `typing.cast`, dummy `_ = …` references, or `# type: ignore` / `# pyright: ignore` (any form).
+
+## No dummy references or silencing aliases
+
+Do not invent fake “uses” or extra names so flake8/pyright stop complaining. Restructure instead.
+
+```python
+# ❌ BAD
+_ = (tool_foo,)
+tool_foo = _get_foo
+
+# ✅ GOOD
+Tool(_get_foo, name="get_foo")
+```
+
+Do not introduce new short aliases (`dt` for `datetime`, etc.). Prefer the real name at the use site.
+
+## Docstrings required
+
+Every module (except `__init__.py`), and every function and class, must have a docstring. **`__init__.py` must not have a module docstring** (leave the file empty, or only re-exports / package wiring with no top-level docstring).
+
+```python
+"""Build market recap payloads for the visualization UI."""
+
+def get_economic_recap_data() -> ...:
+    """Return economic recap rows for the current comparison window."""
+```
+
+Exceptions: methods required by a framework with no useful prose beyond the name (`save`, `__str__`, `__init__` when trivial). Prefer a one-line docstring over none.
+
+### Test docstrings: GIVEN / WHEN / THEN
+
+Every test function/method docstring must use this pattern (exact labels, one idea each):
+
+```python
+def test_get_recap_not_found(self):
+    """
+    GIVEN no DailyRecap for a future reporting date
+    WHEN GET /analysis/recap is called with that date
+    THEN a 404 response is returned
+    """
+```
+
+### Test mocks: decorator only; configure inside the test
+
+Use `@patch("…")` / `@patch.object(…)` / `@patch.dict(…)` as **decorators** on the test method. Do **not** use `with patch(…)` (or other context-manager forms) for mocks.
+
+Do **not** pass `return_value=` / `side_effect=` (or put the stub value) on the decorator. Configure the mock **inside** the test body.
+
+```python
+# ❌ BAD
+@patch("app.services.fetch", return_value={"ok": True})
+def test_fetch(self, mock_fetch):
+    ...
+
+# ❌ BAD
+def test_fetch(self):
+    with patch("app.services.fetch") as mock_fetch:
+        mock_fetch.return_value = {"ok": True}
+        ...
+
+# ✅ GOOD
+@patch("app.services.fetch")
+def test_fetch(self, mock_fetch):
+    mock_fetch.return_value = {"ok": True}
+    ...
+```
+
+Same for hand-built mocks: `mock = Mock()` then `mock.return_value = …` in the test (not `Mock(return_value=…)`).
+

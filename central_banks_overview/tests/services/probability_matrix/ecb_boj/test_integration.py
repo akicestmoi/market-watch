@@ -3,7 +3,7 @@
 from datetime import date, datetime, timezone
 from unittest.mock import patch
 
-import pytest  # type: ignore[reportMissingImports]
+import pytest
 from django.test import TestCase
 
 from central_banks_overview.models import (
@@ -12,10 +12,10 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.cb_inference_services import (
+from central_banks_overview.services.central_banks_inference import (
     get_central_bank_probability_matrices,
 )
-from central_banks_overview.services.cb_meetings_services import CentralBankMeetingDates
+from central_banks_overview.services.central_banks_meetings import CentralBankMeetingDates
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -55,15 +55,16 @@ class TestECBIntegrationScenarios(TestCase):
         )
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_ecb_scenario_1_single_meeting(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 1: Single meeting in 3-month contract
-        Expected: Probabilities calculated using single meeting methodology
+        GIVEN a single ECB meeting in a 3-month contract
+        WHEN the probability matrix is calculated
+        THEN probabilities use the single-meeting methodology
         """
         meeting_date = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
@@ -108,15 +109,16 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_ecb_scenario_2_two_meetings(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 2: Two meetings in 3-month contract
-        Expected: Probabilities calculated using n-meetings methodology
+        GIVEN two ECB meetings in a 3-month contract
+        WHEN the probability matrix is calculated
+        THEN probabilities use the n-meetings methodology
         """
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
@@ -166,15 +168,16 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_ecb_scenario_3_three_meetings(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 3: Three meetings in 3-month contract
-        Expected: Probabilities calculated using n-meetings methodology
+        GIVEN three ECB meetings in a 3-month contract
+        WHEN the probability matrix is calculated
+        THEN probabilities use the n-meetings methodology
         """
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
@@ -229,17 +232,18 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_ecb_scenario_4_multiple_contracts_with_meetings(
         self, mock_get_futures, mock_get_meetings
     ):
         """
-        Scenario 4: Multiple 3-month contracts, each with meetings
-        Expected: Probabilities convolved across contracts
+        GIVEN multiple 3-month ECB contracts each with meetings
+        WHEN the probability matrix is calculated
+        THEN probabilities are convolved across contracts
         """
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 6, 15, 13, 0, tzinfo=timezone.utc)
@@ -305,10 +309,10 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_one_central_bank_ok(
         self, mock_get_futures, mock_get_meetings
@@ -368,10 +372,10 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_success_multiple_banks(
         self, mock_get_futures, mock_get_meetings
@@ -469,10 +473,10 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_no_meeting_dates_error(
         self, mock_get_futures, mock_get_meetings
@@ -506,13 +510,13 @@ class TestECBIntegrationScenarios(TestCase):
         assert str(exc_info.value) == "No meeting dates found for ECB."
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.get_central_bank_effective_rate"
+        "central_banks_overview.services.central_banks_inference.get_central_bank_effective_rate"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_uses_fallback_rate(
         self, mock_get_futures, mock_get_meetings, mock_get_effective_rate
@@ -577,10 +581,10 @@ class TestECBIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_with_meeting_dates_override(
         self, mock_get_futures, mock_get_meetings
@@ -677,15 +681,16 @@ class TestBOJIntegrationScenarios(TestCase):
         )
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_boj_scenario_1_single_meeting(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 1: Single meeting in 3-month contract
-        Expected: Probabilities calculated using single meeting methodology
+        GIVEN a single BOJ meeting in a 3-month contract
+        WHEN the probability matrix is calculated
+        THEN probabilities use the single-meeting methodology
         """
         meeting_date = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
@@ -726,15 +731,16 @@ class TestBOJIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_boj_scenario_2_two_meetings(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 2: Two meetings in 3-month contract
-        Expected: Probabilities calculated using n-meetings methodology
+        GIVEN two BOJ meetings in a 3-month contract
+        WHEN the probability matrix is calculated
+        THEN probabilities use the n-meetings methodology
         """
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
@@ -784,15 +790,16 @@ class TestBOJIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_boj_scenario_3_three_meetings(self, mock_get_futures, mock_get_meetings):
         """
-        Scenario 3: Three meetings in 3-month contract
-        Expected: Probabilities calculated using n-meetings methodology
+        GIVEN three BOJ meetings in a 3-month contract
+        WHEN the probability matrix is calculated
+        THEN probabilities use the n-meetings methodology
         """
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
@@ -847,10 +854,10 @@ class TestBOJIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_no_meeting_dates_error(
         self, mock_get_futures, mock_get_meetings
@@ -884,13 +891,13 @@ class TestBOJIntegrationScenarios(TestCase):
         assert str(exc_info.value) == "No meeting dates found for BOJ."
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.get_central_bank_effective_rate"
+        "central_banks_overview.services.central_banks_inference.get_central_bank_effective_rate"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_uses_fallback_rate(
         self, mock_get_futures, mock_get_meetings, mock_get_effective_rate
@@ -951,10 +958,10 @@ class TestBOJIntegrationScenarios(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.cb_inference_services.cb_meetings_services.get_central_bank_meeting_dates"
+        "central_banks_overview.services.central_banks_inference.central_banks_meetings.get_central_bank_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.cb_inference_services.stir_prices_services.get_futures_prices"
+        "central_banks_overview.services.central_banks_inference.stir_prices_ingestion.get_futures_prices"
     )
     def test_get_central_bank_probability_matrices_with_meeting_dates_override(
         self, mock_get_futures, mock_get_meetings

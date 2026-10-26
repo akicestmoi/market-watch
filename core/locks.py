@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator, Optional
 
 import redis
 from django.conf import settings
+from redis.exceptions import LockError
 from rest_framework.exceptions import APIException
 
 from core.services import logger
@@ -22,17 +23,21 @@ class ResourceLocked(APIException):
     default_code = "resource_locked"
 
 
-def _redis_client() -> redis.Redis:
-    return redis.from_url(settings.CELERY_BROKER_URL)
+def _get_redis_client() -> redis.Redis:
+    """Return a Redis client using the Celery broker URL."""
+    redis_client = redis.from_url(settings.CELERY_BROKER_URL)
+    if not redis_client:
+        raise ValueError("Failed to create Redis client")
+    return redis_client
 
 
 @contextmanager
-def redis_lock(
+def acquire_redis_lock(
     key: str,
     *,
     timeout: int = DEFAULT_LOCK_TIMEOUT_SECONDS,
     raise_if_locked: bool = True,
-    locked_detail: Optional[str] = None,
+    locked_detail: str | None = None,
 ) -> Iterator[bool]:
     """Acquire a Redis lock for ``key``.
 
@@ -40,7 +45,7 @@ def redis_lock(
     ``ResourceLocked`` when ``raise_if_locked`` is True, otherwise yields
     ``False``.
     """
-    client = _redis_client()
+    client = _get_redis_client()
     lock = client.lock(key, timeout=timeout, blocking_timeout=0)
     acquired = lock.acquire(blocking=False)
     if not acquired:
@@ -57,7 +62,7 @@ def redis_lock(
     finally:
         try:
             lock.release()
-        except redis.exceptions.LockError:
+        except LockError:
             logger.warning(
                 "Could not release Redis lock for key=%s "
                 "(expired or already released).",
@@ -70,7 +75,7 @@ def try_acquire_redis_lock(
     timeout: int = DEFAULT_LOCK_TIMEOUT_SECONDS,
 ):
     """Non-context acquire for callers that release explicitly (e.g. Celery)."""
-    client = _redis_client()
+    client = _get_redis_client()
     lock = client.lock(key, timeout=timeout, blocking_timeout=0)
     if lock.acquire(blocking=False):
         return lock
@@ -78,12 +83,12 @@ def try_acquire_redis_lock(
 
 
 @contextmanager
-def redis_locks(
+def acquire_redis_locks(
     keys: list[str],
     *,
     timeout: int = DEFAULT_LOCK_TIMEOUT_SECONDS,
     raise_if_locked: bool = True,
-    locked_detail: Optional[str] = None,
+    locked_detail: str | None = None,
 ) -> Iterator[bool]:
     """Acquire multiple Redis locks (sorted for stable ordering)."""
     unique_keys = sorted(set(keys))
@@ -105,5 +110,5 @@ def redis_locks(
         for lock in reversed(acquired_locks):
             try:
                 lock.release()
-            except redis.exceptions.LockError:
+            except LockError:
                 logger.warning("Could not release one of the Redis locks.")

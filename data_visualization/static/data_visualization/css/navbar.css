@@ -78,7 +78,7 @@
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .navbar-container {
         flex-direction: column;
         padding: 1rem;

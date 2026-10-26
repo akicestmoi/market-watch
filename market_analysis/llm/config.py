@@ -18,7 +18,7 @@ SKILLS_DIR = "market_analysis/llm/skills"
 INSTRUCTIONS_DIR = "market_analysis/llm/instructions"
 
 
-def llm_is_configured() -> bool:
+def is_llm_configured() -> bool:
     """Check if the LLM is configured."""
     return bool((getattr(settings, "OPENAI_API_KEY", None) or "").strip())
 
@@ -40,12 +40,12 @@ def load_instruction(name: str) -> str:
     return _read_required_markdown(INSTRUCTIONS_DIR, name)
 
 
-def skills_as_prompt_block() -> str:
+def format_skills_as_prompt_block() -> str:
     """Always-on market-analysis skill for prompts."""
     return _read_required_markdown(SKILLS_DIR, "market-analysis.md")
 
 
-def safe_untrusted_content_wrapper(text: str) -> str:
+def wrap_untrusted_content_safely(text: str) -> str:
     """Mark scraped content so the model treats it as data, not instructions."""
     return (
         "BEGIN_UNTRUSTED_SOURCE_CONTENT\n"

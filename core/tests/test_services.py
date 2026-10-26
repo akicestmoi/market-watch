@@ -3,15 +3,17 @@
 from datetime import date, datetime, timezone
 from unittest.mock import Mock, patch
 
-import pytest  # type: ignore[reportMissingImports]
+import pytest
+import requests
 from bs4 import BeautifulSoup
 from django.db import IntegrityError
 from django.test import TestCase
-from freezegun import freeze_time  # type: ignore[reportMissingImports]
+from freezegun import freeze_time
 from rest_framework.exceptions import NotFound
 
 from core.services import (
     convert_query_to_dictionary_list,
+    convert_to_display_timezone,
     fetch_html,
     get,
     parse_datetime,
@@ -256,7 +258,10 @@ class TestUpsertWithLogs(TestCase):
         THEN the instance should be updated with logs
         """
         PriceUpdateLogModel.fk_name = "market_price"
-        lookup_kwargs = {"asset": self.asset, "date": "2025-12-15"}
+        lookup_kwargs = {
+            "asset": self.asset,
+            "date": date(2025, 12, 15),
+        }
         updates = {"price": 150.0, "logs": "Update log."}
         logging_on_fields = ["price"]
 
@@ -285,7 +290,10 @@ class TestUpsertWithLogs(TestCase):
         WHEN upsert_with_logs is called with non-matching lookup_kwargs
         THEN a new instance should be created
         """
-        lookup_kwargs = {"asset": self.asset, "date": "2025-12-16"}
+        lookup_kwargs = {
+            "asset": self.asset,
+            "date": date(2025, 12, 16),
+        }
         updates = {"price": 200.0, "logs": "Create log."}
 
         previous_price_in_db = {
@@ -322,44 +330,43 @@ class TestUpsertWithLogs(TestCase):
         # No log should be created for new instances
         assert PriceUpdateLogModel.objects.count() == 0
 
-    def test_upsert_with_logs_cancels_after_integrity_error(self):
+    @patch.object(MarketPriceModel.objects, "create")
+    @patch.object(MarketPriceModel.objects, "get")
+    def test_upsert_with_logs_cancels_after_integrity_error(
+        self, mock_get, mock_create
+    ):
         """
         GIVEN a concurrent create already inserted the row
         WHEN upsert_with_logs hits IntegrityError on create
         THEN it should return the existing row without updating it
         """
-        lookup_kwargs = {"asset": self.asset, "date": "2025-12-16"}
+        lookup_kwargs = {
+            "asset": self.asset,
+            "date": date(2025, 12, 16),
+        }
         updates = {"price": 200.0, "logs": "Raced create."}
-        raced = MarketPriceModel.objects.create(
+        # Avoid MarketPriceModel.objects.create — it is patched on this test.
+        raced = MarketPriceModel(
             asset=self.asset,
-            date="2025-12-16",
+            date=date(2025, 12, 16),
             price=150.0,
         )
+        raced.save()
+        mock_get.side_effect = [
+            MarketPriceModel.DoesNotExist,
+            raced,
+        ]
+        mock_create.side_effect = IntegrityError("unique_market_price_per_asset_date")
 
-        with (
-            patch.object(
-                MarketPriceModel.objects,
-                "get",
-                side_effect=[
-                    MarketPriceModel.DoesNotExist,
-                    raced,
-                ],
-            ),
-            patch.object(
-                MarketPriceModel.objects,
-                "create",
-                side_effect=IntegrityError("unique_market_price_per_asset_date"),
-            ),
-        ):
-            result = upsert_with_logs(
-                model=MarketPriceModel,
-                log_model=PriceUpdateLogModel,
-                lookup_kwargs=lookup_kwargs,
-                updates=updates,
-                logging_on_fields=["price"],
-                none_skip_fields=[],
-                enable_none_updates=True,
-            )
+        result = upsert_with_logs(
+            model=MarketPriceModel,
+            log_model=PriceUpdateLogModel,
+            lookup_kwargs=lookup_kwargs,
+            updates=updates,
+            logging_on_fields=["price"],
+            none_skip_fields=[],
+            enable_none_updates=True,
+        )
 
         assert result.pk == raced.pk
         raced.refresh_from_db()
@@ -501,7 +508,7 @@ class TestConvertQueryToDictionaryList(TestCase):
         WHEN convert_query_to_dictionary_list is called with remove_specific_fields
         THEN specified fields should be removed
         """
-        queryset = AssetModel.objects.all()
+        queryset = AssetModel.objects.order_by("asset_id")
         result = convert_query_to_dictionary_list(
             queryset, remove_specific_fields=["short_name", "full_name"]
         )
@@ -557,7 +564,9 @@ class TestFetchHtml(TestCase):
         result = fetch_html(url)
 
         assert isinstance(result, BeautifulSoup)
-        assert result.find("body").text == "Test"  # type: ignore[reportOptionalMemberAccess-attr]
+        body = result.find("body")
+        assert body is not None
+        assert body.text == "Test"
         mock_get.assert_called_once_with(url, timeout=10)
 
     @patch("core.services.requests.get")
@@ -584,8 +593,6 @@ class TestFetchHtml(TestCase):
         WHEN fetch_html is called
         THEN None should be returned
         """
-        import requests
-
         url = "https://example.com"
         mock_get.side_effect = requests.RequestException("Connection error")
 
@@ -602,8 +609,6 @@ class TestFetchHtml(TestCase):
         THEN None should be returned
         """
         url = "https://example.com"
-        import requests
-
         mock_get.side_effect = requests.Timeout("Request timed out")
 
         result = fetch_html(url)
@@ -619,13 +624,11 @@ class TestParseDatetime(TestCase):
         """
         GIVEN an ISO datetime string with offset
         WHEN parse_datetime is called
-        THEN an aware datetime matching the calendar date is returned
+        THEN an aware datetime normalized to UTC is returned
         """
         parsed = parse_datetime("2026-10-23T22:05:55+02:00")
         assert parsed is not None
-        assert parsed.year == 2026
-        assert parsed.month == 10
-        assert parsed.day == 23
+        assert parsed == datetime(2026, 10, 23, 20, 5, 55, tzinfo=timezone.utc)
 
     def test_parse_datetime_naive_assumes_utc(self):
         """
@@ -645,3 +648,18 @@ class TestParseDatetime(TestCase):
         """
         assert parse_datetime(None) is None
         assert parse_datetime("") is None
+
+
+class TestDisplayTimezone(TestCase):
+    """Test cases for display timezone helpers."""
+
+    def test_convert_to_display_timezone_paris_winter(self):
+        """
+        GIVEN a UTC datetime in winter
+        WHEN converting for display
+        THEN Europe/Paris CET (+01:00) is applied
+        """
+        utc_dt = datetime(2025, 12, 5, 7, 45, 0, tzinfo=timezone.utc)
+        paris = convert_to_display_timezone(utc_dt)
+        assert paris.strftime("%H:%M") == "08:45"
+        assert str(paris.tzinfo) == "Europe/Paris"

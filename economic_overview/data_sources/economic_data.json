@@ -8,7 +8,8 @@
     "technical_name": "Business indicator",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001565530"
+    "ticker": "001565530",
+    "base_unit": ""
   },
   {
     "id": 2,
@@ -19,7 +20,8 @@
     "technical_name": "Monthly survey of services",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001587025"
+    "ticker": "001587025",
+    "base_unit": ""
   },
   {
     "id": 3,
@@ -30,7 +32,8 @@
     "technical_name": "Monthly survey of retailing",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001580428"
+    "ticker": "001580428",
+    "base_unit": ""
   },
   {
     "id": 4,
@@ -41,7 +44,8 @@
     "technical_name": "Monthly business survey (goods-producing industries)",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001585934"
+    "ticker": "001585934",
+    "base_unit": ""
   },
   {
     "id": 5,
@@ -52,7 +56,8 @@
     "technical_name": "Monthly survey of building",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001586890"
+    "ticker": "001586890",
+    "base_unit": ""
   },
   {
     "id": 6,
@@ -63,7 +68,8 @@
     "technical_name": "Monthly consumer confidence survey",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001587668"
+    "ticker": "001587668",
+    "base_unit": ""
   },
   {
     "id": 7,
@@ -74,40 +80,47 @@
     "technical_name": "Business indicator",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "001796629"
+    "ticker": "001796629",
+    "base_unit": ""
   },
   {
     "id": 8,
     "location": "FR",
     "category": "INFLATION",
     "type": "Consumer Price Index",
-    "name": "France HICP",
+    "name": "France HICP (base year: 2025)",
     "technical_name": "Consumer price index - final results",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "011812231"
+    "ticker": "011812231",
+    "base_year": 2025,
+    "base_unit": "INDEX"
   },
   {
     "id": 9,
     "location": "FR",
     "category": "SALES",
     "type": "Retail Sales",
-    "name": "France Retail Sales",
+    "name": "France Retail Sales (base year: 2021)",
     "technical_name": "Sales volume in wholesale and retail trade",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "010769903"
+    "ticker": "010769903",
+    "base_year": 2021,
+    "base_unit": "INDEX"
   },
   {
     "id": 10,
     "location": "FR",
     "category": "PRODUCTION",
     "type": "Industrial Production",
-    "name": "France Industrial Production",
+    "name": "France Industrial Production (base year: 2021)",
     "technical_name": "Industrial production index",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "010768261"
+    "ticker": "010768261",
+    "base_year": 2021,
+    "base_unit": "INDEX"
   },
   {
     "id": 11,
@@ -118,29 +131,34 @@
     "technical_name": "ILO Unemployment and Labour Market-related indicators (Labour Force Survey results)",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "001688527"
+    "ticker": "001688527",
+    "base_unit": "PERCENT"
   },
   {
     "id": 12,
     "location": "FR",
     "category": "LABOUR",
     "type": "Labour Cost Index",
-    "name": "France Labour Cost Index",
+    "name": "France Labour Cost Index (base year: 2020)",
     "technical_name": "Labour cost index (LCI) - Detailed results",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "010761999"
+    "ticker": "010761999",
+    "base_year": 2020,
+    "base_unit": "INDEX"
   },
   {
     "id": 13,
     "location": "FR",
     "category": "HOUSING",
     "type": "Home Prices",
-    "name": "France Second-hand Home Prices",
+    "name": "France Second-hand Home Prices (base year: 2015)",
     "technical_name": "Indexes of prices of second-hand dwellings",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "010567119"
+    "ticker": "010567119",
+    "base_year": 2015,
+    "base_unit": "INDEX"
   },
   {
     "id": 14,
@@ -151,7 +169,8 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794860"
+    "ticker": "011794860",
+    "base_unit": "M"
   },
   {
     "id": 15,
@@ -162,7 +181,8 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794864"
+    "ticker": "011794864",
+    "base_unit": "M"
   },
   {
     "id": 16,
@@ -173,7 +193,8 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794862"
+    "ticker": "011794862",
+    "base_unit": "M"
   },
   {
     "id": 17,
@@ -184,7 +205,8 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794884"
+    "ticker": "011794884",
+    "base_unit": "M"
   },
   {
     "id": 18,
@@ -195,7 +217,8 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794877"
+    "ticker": "011794877",
+    "base_unit": "M"
   },
   {
     "id": 19,
@@ -206,7 +229,8 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794879"
+    "ticker": "011794879",
+    "base_unit": "M"
   },
   {
     "id": 20,
@@ -217,7 +241,8 @@
     "technical_name": "Debt of the general government according to the Maastricht definition",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "010777608"
+    "ticker": "010777608",
+    "base_unit": "PERCENT"
   },
   {
     "id": 21,
@@ -228,7 +253,8 @@
     "technical_name": "Debt of the general government according to the Maastricht definition",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "010777616"
+    "ticker": "010777616",
+    "base_unit": "M"
   },
   {
     "id": 22,
@@ -239,17 +265,20 @@
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
-    "ticker": "011794880"
+    "ticker": "011794880",
+    "base_unit": "M"
   },
   {
     "id": 23,
     "location": "FR",
     "category": "INFLATION",
     "type": "Industrial Raw Materials Prices",
-    "name": "France Industrial Raw Materials Prices",
+    "name": "France Industrial Raw Materials Prices (base year: 2010)",
     "technical_name": "Prices of energy and imported raw materials",
     "frequency": "MONTHLY",
     "source": "INSEE",
-    "ticker": "010002014"
+    "ticker": "010002014",
+    "base_year": 2010,
+    "base_unit": "INDEX"
   }
 ]

@@ -2,14 +2,14 @@
 
 from django.urls import path
 
-from market_overview.views.asset_views import (
+from market_overview.views.assets import (
     AssetDetailsView,
     GenerateBaseAssetsDataView,
     GetAssetNamesView,
 )
-from market_overview.views.holiday_views import HolidaysDetailsView, IngestHolidaysView
-from market_overview.views.logs_views import GetPriceUpdateLogsView
-from market_overview.views.price_views import (
+from market_overview.views.holidays import HolidaysDetailsView, IngestHolidaysView
+from market_overview.views.logs import GetPriceUpdateLogsView
+from market_overview.views.market_prices import (
     BatchIngestMarketPricesView,
     BulkUpdateAssetsPricesView,
     CsvBulkUpdateAssetsPricesView,

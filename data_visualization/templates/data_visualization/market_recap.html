@@ -60,6 +60,46 @@
         </div>
     </div>
 
+    <!-- Upcoming Events -->
+    <div class="upcoming-releases-panel" id="upcomingReleasesPanel">
+        <div class="upcoming-releases-card{% if not upcoming_weeks %} is-empty{% endif %}" id="upcomingReleasesCard">
+            <div class="upcoming-releases-header">
+                <button type="button" class="upcoming-releases-toggle" id="upcomingReleasesToggle"
+                    aria-expanded="false"{% if not upcoming_weeks %} disabled{% endif %}>
+                    <span class="upcoming-releases-toggle-icon" aria-hidden="true">▸</span>
+                    <h2>Upcoming Events</h2>
+                </button>
+            </div>
+            <div class="upcoming-releases-body" id="upcomingReleasesBody">
+                {% if upcoming_weeks %}
+                    {% for week in upcoming_weeks %}
+                    <div class="upcoming-week{% if week.is_current_week %} is-current-week{% endif %}"
+                        data-week-start="{{ week.week_start }}"
+                        {% if not week.is_current_week %}hidden{% endif %}>
+                        <div class="upcoming-week-label">{{ week.week_label }}</div>
+                        <div class="upcoming-week-chips">
+                            {% for day in week.days %}
+                                {% for event in day.events %}
+                                <span class="upcoming-chip" title="{{ day.date_display }}">
+                                    <span class="upcoming-chip-day">{{ day.date_display }}</span>
+                                    <span class="upcoming-chip-time">{{ event.time_str }}</span>
+                                    <span class="upcoming-chip-location">{{ event.location }}</span>
+                                    <span class="upcoming-chip-name">{{ event.name }}</span>
+                                </span>
+                                {% endfor %}
+                            {% empty %}
+                                <span class="upcoming-chip upcoming-chip-empty">No events this week</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="upcoming-releases-empty">No upcoming events.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <!-- Agent Chat Modal -->
     <div class="agent-chat-overlay" id="agentChatOverlay" aria-hidden="true">
         <div class="agent-chat-card" role="dialog" aria-modal="true" aria-labelledby="agentChatTitle">

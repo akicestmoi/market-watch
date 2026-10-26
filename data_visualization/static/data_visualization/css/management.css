@@ -54,7 +54,7 @@ body {
     font-size: 1.5rem;
     font-weight: bold;
     color: #1e293b;
-    margin: 0 0 1rem 0;
+    margin: 0 0 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid #3b82f6;
 }
@@ -71,7 +71,7 @@ body {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1e293b;
-    margin: 0 0 1rem 0;
+    margin: 0 0 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #bae6fd;
 }
@@ -586,7 +586,7 @@ body {
 }
 
 .delete-warning-text {
-    margin: 0 0 1rem 0;
+    margin: 0 0 1rem;
     color: #991b1b;
     font-weight: 600;
     font-size: 0.9rem;
@@ -689,7 +689,7 @@ body {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .management-container {
         padding: 1rem;
     }

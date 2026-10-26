@@ -50,8 +50,6 @@ body {
 
 .header-form .comparison-period-select {
     appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     padding-right: 2.25rem;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231e293b' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -110,7 +108,7 @@ body {
 }
 
 .central-bank-card h2 {
-    margin: 0 0 1rem 0;
+    margin: 0 0 1rem;
     font-size: 1.5rem;
     font-weight: bold;
     color: #1e293b;
@@ -123,7 +121,7 @@ body {
 .cb-data-section h3,
 .probability-matrix-section h3,
 .probability-matrix-diff-section h3 {
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 0.75rem;
     font-size: 1.125rem;
     font-weight: 600;
     color: #1e293b;
@@ -291,7 +289,7 @@ body {
 }
 
 /* Responsive adjustments */
-@media (max-width: 1400px) {
+@media (width <= 1400px) {
     .cards-container {
         flex-direction: column;
     }

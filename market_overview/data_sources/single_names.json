@@ -809,17 +809,21 @@
   },
   {
     "id": 105,
-    "Company": "Mitsubishi UFJ Financial Gr    "Company": "Aeon Co., Ltd.",
-    "YFinance Ticker": "8267.T",
-    "Sector": "Retail",
-    "Company": "Ito Yokado Co., Ltd.",",
-id": 106,
-    "Company": "Mizuho Financial Group, Inc.",
-    "Subcategory": "General Merchandise",
+    "Company": "Mitsubishi UFJ Financial Group, Inc.",
+    "YFinance Ticker": "8306.T",
     "Sector": "Banking",
     "Subcategory": "Banking",
     "Index": "Nikkei225"
   },
+  {
+    "id": 106,
+    "Company": "Mizuho Financial Group, Inc.",
+    "YFinance Ticker": "8411.T",
+    "Sector": "Banking",
+    "Subcategory": "Banking",
+    "Index": "Nikkei225"
+  },
+
   {
     "id": 107,
     "Company": "Sumitomo Mitsui Financial Group, Inc.",
@@ -1804,17 +1808,4 @@ id": 106,
     "Subcategory": "Life Insurance",
     "Index": "Nikkei225"
   }
-]tor": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 215,
-    "Company": "Nomura Real Estate Holdings, Inc.",
-    "YFinance Ticker": "3231.T",
-    "Sector": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 216,
+]

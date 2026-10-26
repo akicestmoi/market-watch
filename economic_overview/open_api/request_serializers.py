@@ -2,6 +2,8 @@
 
 from rest_framework import serializers
 
+from core.open_api.fields import CommaSeparatedIntegerField
+
 
 class LatestEconomicDataIngestionSerializer(serializers.Serializer):
     """Latest Economic Data Ingestion Serializer."""
@@ -34,7 +36,10 @@ class UpdatePublicationScheduleSerializer(serializers.Serializer):
     """Update Publication Schedule Serializer."""
 
     indicator_names = serializers.ListField(
-        child=serializers.CharField(), required=False, default=[]
+        child=serializers.CharField(),
+        required=False,
+        default=[],
+        help_text="Indicator names to update. Omit or pass [] to update all.",
     )
 
 
@@ -63,15 +68,4 @@ class ListEconomicDataSerializer(serializers.Serializer):
 class DeleteEconomicDataSerializer(serializers.Serializer):
     """Delete Economic Data Serializer."""
 
-    ids = serializers.CharField(required=True)
-
-    def validate_ids(self, value):
-        """Convert comma-separated string to list of integers."""
-        if not value or not value.strip():
-            return None
-        try:
-            return [
-                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
-            ]
-        except ValueError:
-            raise serializers.ValidationError("IDs must be comma-separated integers.")
+    ids = CommaSeparatedIntegerField(required=True)

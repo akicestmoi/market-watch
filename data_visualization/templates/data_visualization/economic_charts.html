@@ -30,6 +30,14 @@
             <form method="get">
                 <input type="hidden" id="zone" name="zone" value="{{ zone }}">
             </form>
+            <div class="period-window-section">
+                <label for="period-window" class="period-window-label">Chart Period:</label>
+                <select id="period-window" class="chart-select" name="period_window" aria-label="Chart period">
+                    {% for option in period_window_options %}
+                    <option value="{{ option }}"{% if option == period_window %} selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
     </div>
 

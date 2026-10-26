@@ -5,14 +5,14 @@
  */
 (function (global) {
   function parseISODate(iso) {
-    const [year, month, day] = iso.split('-').map(Number);
+    const [year, month, day] = iso.split("-").map(Number);
     return new Date(year, month - 1, day);
   }
 
   function formatISODate(date) {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
 
@@ -74,28 +74,28 @@
     let previous;
 
     switch (period) {
-      case 'day':
-        if (global.defaultPreviousDate) {
-          previous = parseISODate(global.defaultPreviousDate);
-        } else {
-          previous = addBusinessDays(target, -1);
-        }
-        break;
-      case 'week':
-        previous = new Date(
-          target.getFullYear(),
-          target.getMonth(),
-          target.getDate() - 7
-        );
-        break;
-      case 'month':
-        previous = lastBusinessDayOnOrBefore(shiftCalendarMonths(target, -1));
-        break;
-      case 'year':
-        previous = lastBusinessDayOnOrBefore(shiftCalendarYears(target, -1));
-        break;
-      default:
-        return null;
+    case "day":
+      if (global.defaultPreviousDate) {
+        previous = parseISODate(global.defaultPreviousDate);
+      } else {
+        previous = addBusinessDays(target, -1);
+      }
+      break;
+    case "week":
+      previous = new Date(
+        target.getFullYear(),
+        target.getMonth(),
+        target.getDate() - 7
+      );
+      break;
+    case "month":
+      previous = lastBusinessDayOnOrBefore(shiftCalendarMonths(target, -1));
+      break;
+    case "year":
+      previous = lastBusinessDayOnOrBefore(shiftCalendarYears(target, -1));
+      break;
+    default:
+      return null;
     }
 
     return {
@@ -124,12 +124,12 @@
    */
   function initializeComparisonPeriodSelect(options) {
     const opts = options || {};
-    const select = document.getElementById(opts.selectId || 'comparisonPeriod');
+    const select = document.getElementById(opts.selectId || "comparisonPeriod");
     if (!select) {
       return;
     }
 
-    select.addEventListener('change', function () {
+    select.addEventListener("change", function () {
       const period = select.value;
       if (!period) {
         return;
@@ -140,8 +140,8 @@
         return;
       }
 
-      const referenceDateInput = document.getElementById('reference_date');
-      const previousDateInput = document.getElementById('previous_date');
+      const referenceDateInput = document.getElementById("reference_date");
+      const previousDateInput = document.getElementById("previous_date");
       if (!referenceDateInput || !previousDateInput) {
         return;
       }
@@ -151,7 +151,7 @@
 
       const form =
         (opts.formSelector && document.querySelector(opts.formSelector)) ||
-        select.closest('form');
+        select.closest("form");
       if (form) {
         form.submit();
       }

@@ -9,7 +9,7 @@ Verify that the Postman collection for this repo matches the Django/DRF endpoint
 
 `$ARGUMENTS`: an endpoint name, path, or view class (e.g. `prices`, `POST /markets/prices/ingest`, `IngestMarketPricesView`). When omitted, check **every** endpoint in the project.
 
-**Target:** read `.cursor/postman.local.json` first (gitignored, per machine), then [POSTMAN.md](../../../POSTMAN.md). Default workspace name `Perso`, collection name `market-watch`. Prefer `id`/`uid` when present. Extra keys in the local file are machine-specific — honor them. The **whole collection** is this repo (no extra parent folder).
+**Target:** read `.cursor/postman.local.json` first (gitignored, per machine), then [docs/POSTMAN.md](../../../docs/POSTMAN.md). Default workspace name `Perso`, collection name `market-watch`. Prefer `id`/`uid` when present. Extra keys in the local file are machine-specific — honor them. The **whole collection** is this repo (no extra parent folder).
 
 MCP connection is `.cursor/mcp.json` (full profile `https://mcp.postman.com/mcp`). Per-PC MCP overrides belong in `~/.cursor/mcp.json`, not git.
 

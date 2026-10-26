@@ -11,6 +11,7 @@ A Django-based market monitoring platform that ingests market, economic, and cen
 | **Database** | PostgreSQL (`psycopg2`) |
 | **Cache / broker** | Redis (Celery broker/result backend, distributed locks, LLM article digests) |
 | **Async jobs** | Celery + Celery Beat (Europe/Paris schedules); Flower for monitoring |
+| **Timezone Management** | Store UTC-aware; display Europe/Paris — see [docs/GUIDELINES.md](docs/GUIDELINES.md) |
 | **LLM** | PydanticAI + OpenAI (`OPENAI_API_KEY`, `LLM_MODEL_NAME`) |
 | **Data / scraping** | pandas, yfinance, BeautifulSoup, requests, curl-cffi, pdfplumber |
 | **Frontend (ops UI)** | Server-rendered Django templates + static CSS/JS (`data_visualization`) |
@@ -299,7 +300,7 @@ Owns Django settings, Celery app bootstrap, Redis locks, abstract base models, O
 Catalogs equities, rates, FX, crypto, and commodities; ingests daily prices from multiple public sources; tracks market holidays and price-update audit logs. Successful weekday ingestion is also the trigger that queues the market-analysis pipeline for that price date.
 
 - **Models:** `AssetModel` (metadata, ticker, source, location, class); `MarketPriceModel` (per-asset daily price, unique on asset+date); `PriceUpdateLogModel`; `HolidayModel`.
-- **Services:** `price_ingestion_services` — scrape/ingest closes (Yahoo, US Treasury, NY Fed, Webstat, Bundesbank, BoJ, BB, GlobalRates, etc.); `market_data_services` — queries, missing prices, bulk/CSV updates, log cleanup; `holiday_services` — public holidays (e.g. Nager.Date for supported countries).
+- **Services:** `price_ingestion_services` — scrape/ingest closes (Yahoo, US Treasury, NY Fed, Webstat, Bundesbank, BoJ, BB, GlobalRates, etc.); `market_data` — queries, missing prices, bulk/CSV updates, log cleanup; `holidays` — public holidays (e.g. Nager.Date for supported countries).
 - **Data sources:** `data_sources/market_data.json` (seed assets), `data_sources/single_names.json`.
 - **HTTP (`/markets/`):** `asset/*` (generate base data, names, details); `prices/*` (ingest, batch ingest, list, missing prices, bulk/CSV update, logs, mark-as-holiday); `holidays/*`.
 - **Tasks:** `scheduled_market_data_ingestion` (then queues market analysis); `scheduled_price_update_logs_cleanup`; `scheduled_holidays_ingestion`.
@@ -325,7 +326,7 @@ Maintains the economic calendar and observation history used by the economic rec
 Stores meeting dates, CB data series, and STIR futures prices, then derives meeting-by-meeting **probability matrices** for rate moves. That powers the central-banks recap and upcoming-events views, and complements market prices with a policy-path lens.
 
 - **Models:** `CentralBankMeetingModel`; `CentralBankDataModel`; `StirFuturesModel` (e.g. Fed funds / ESTR / mutan futures); `StirFuturesPriceUpdateLogModel`. Reuses `market_overview` location enums via a CB location map.
-- **Services:** `cb_data_services` — ingest/query CB series; `cb_meetings_services` — scrape FOMC/ECB/BoJ calendars; `stir_prices_ingestion_services` — Yahoo, TFX, ESTR PDF, bulk/CSV; `cb_inference_services` — probability matrices from STIR (Fed vs 3M futures methodologies).
+- **Services:** `central_banks_data` — ingest/query CB series; `central_banks_meetings` — scrape FOMC/ECB/BoJ calendars; `stir_prices_ingestion_services` — Yahoo, TFX, ESTR PDF, bulk/CSV; `central_banks_inference` — probability matrices from STIR (Fed vs 3M futures methodologies).
 - **Data sources:** `data_sources/central_banks_data.json`; Fed/ECB/BoJ sites; Yahoo; TFX; ESTR PDF; some rate scrapers shared with market overview.
 - **HTTP (`/central-banks/`):** `data`, `data/ingest`; `meeting-dates`, `meeting-dates/ingest`; `stir-futures` (+ ingest, ESTR PDF, bulk/CSV); `probability-matrix`.
 - **Tasks:** `scheduled_stir_prices_ingestion`; `scheduled_stir_futures_price_update_logs_cleanup`; `scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`.
@@ -399,7 +400,7 @@ generate_daily_recap(reporting_date, analyses)
   • persist / overwrite DailyRecapModel
 ```
 
-Orchestration: `market_analysis.services.market_analysis_services.run_daily_analysis_pipeline`.
+Orchestration: `market_analysis.services.market_analysis.run_daily_analysis_pipeline`.
 Celery entry: `market_analysis.tasks.scheduled_analysis_pipeline` (requires ISO `reporting_date` string).
 Queued after successful price ingestion from `market_overview.tasks`.
 
@@ -455,7 +456,7 @@ OpenAPI: tag **Market Analysis** on Swagger UI (`/api/docs/`). Serializers live 
 
 #### Chat
 
-- Shared agent instance (`get_chat_agent`) with fixed tools/instructions.
+- Shared agent instance (`_get_chat_agent`) with fixed tools/instructions.
 - Conversation continuity = client-sent `messages` in the request body.
 - Tools: recent daily recaps, market prices for a reporting date, economic context, gated recap update.
 - Skills stay in the prompt (not a tool).

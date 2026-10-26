@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from django.test import TestCase
 
 from core.tests import MockResponse, read_file_content
-from market_overview.services.price_ingestion_services import (
+from market_overview.services.price_ingestion import (
     ScrapingResult,
     _get_bund_yield_from_bundesbank,
     _get_jgb_yield_from_bb,
@@ -45,7 +45,7 @@ class TestYahooFinanceScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         get_yahoo_finance_closing_prices.cache_clear()
 
-    @patch("market_overview.services.price_ingestion_services.yf.Ticker")
+    @patch("market_overview.services.price_ingestion.yf.Ticker")
     def test_yahoo_finance_success(self, mock_ticker):
         """
         GIVEN a successful yfinance API response
@@ -65,7 +65,7 @@ class TestYahooFinanceScraping(TestCase):
 
         assert result == ScrapingResult(price=110.0, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.yf.Ticker")
+    @patch("market_overview.services.price_ingestion.yf.Ticker")
     def test_yahoo_finance_empty_dataframe(self, mock_ticker):
         """
         GIVEN a yfinance API with empty DataFrame
@@ -87,7 +87,7 @@ class TestYahooFinanceScraping(TestCase):
             price=None, comment="Yahoo Finance: No prices found."
         )
 
-    @patch("market_overview.services.price_ingestion_services.yf.Ticker")
+    @patch("market_overview.services.price_ingestion.yf.Ticker")
     def test_yahoo_finance_date_not_found(self, mock_ticker):
         """
         GIVEN a yfinance API with a DataFrame but no data for the target date
@@ -247,7 +247,7 @@ class TestGlobalRatesScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Rate cell is empty")
 
-    @patch("market_overview.services.price_ingestion_services.fetch_html")
+    @patch("market_overview.services.price_ingestion.fetch_html")
     def test_global_rates_fetch_failed(self, mock_fetch_html):
         """
         GIVEN a failed HTML fetch (fetch_html returns None)
@@ -266,7 +266,7 @@ class TestGlobalRatesScraping(TestCase):
             comment="Failed to fetch HTML from https://www.global-rates.com/en/interest-rates",
         )
 
-    @patch("market_overview.services.price_ingestion_services.fetch_html")
+    @patch("market_overview.services.price_ingestion.fetch_html")
     def test_global_rates_no_table(self, mock_fetch_html):
         """
         GIVEN a Global Rates HTML response with no table
@@ -285,7 +285,7 @@ class TestGlobalRatesScraping(TestCase):
             price=None, comment="Could not find interest rates table on page"
         )
 
-    @patch("market_overview.services.price_ingestion_services.fetch_html")
+    @patch("market_overview.services.price_ingestion.fetch_html")
     def test_global_rates_unsupported_rate_type(self, mock_fetch_html):
         """
         GIVEN a Global Rates HTML response with an unsupported rate type
@@ -316,7 +316,7 @@ class TestNYFedScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         _scrap_rate_from_nyfed_xml.cache_clear()
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_nyfed_success(self, mock_get):
         """
         GIVEN a NY Fed XML with a success response
@@ -334,7 +334,7 @@ class TestNYFedScraping(TestCase):
 
         assert result == ScrapingResult(price=3.96, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_nyfed_not_found(self, mock_get):
         """
         GIVEN a NY Fed XML with a success response
@@ -352,7 +352,7 @@ class TestNYFedScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Rate not found.")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_nyfed_http_error(self, mock_get):
         """
         GIVEN a NY Fed XML with a HTTP error response
@@ -382,7 +382,7 @@ class TestTreasuryDeptScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_treasury_yield_curve_from_dep_treasury.cache_clear()
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_treasury_yield_success(self, mock_get):
         """
         GIVEN a Treasury department XML with a success response
@@ -400,7 +400,7 @@ class TestTreasuryDeptScraping(TestCase):
 
         assert result == ScrapingResult(price=4.62, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_treasury_yield_not_found(self, mock_get):
         """
         GIVEN a Treasury department XML with a success response
@@ -418,7 +418,7 @@ class TestTreasuryDeptScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Yield curve not found.")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_treasury_yield_invalid_ticker(self, mock_get):
         """
         GIVEN a Treasury department XML with a success response
@@ -438,7 +438,7 @@ class TestTreasuryDeptScraping(TestCase):
             price=None, comment="Ticker not found in mapping."
         )
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_treasury_yield_http_error(self, mock_get):
         """
         GIVEN a Treasury department XML with an HTTP error response
@@ -476,7 +476,7 @@ class TestWebstatScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         get_webstat_rates.cache_clear()
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_webstat_success(self, mock_get):
         """
         GIVEN a successful Webstat CSV response with rate data
@@ -494,7 +494,7 @@ class TestWebstatScraping(TestCase):
 
         assert result == ScrapingResult(price=2.7, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_webstat_not_found(self, mock_get):
         """
         GIVEN a Webstat CSV response without data for the target date
@@ -512,7 +512,7 @@ class TestWebstatScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Webstat rate not found.")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_webstat_not_french_decimal_format(self, mock_get):
         """
         GIVEN a Webstat CSV response with non-French decimal format (dot)
@@ -530,7 +530,7 @@ class TestWebstatScraping(TestCase):
 
         assert result == ScrapingResult(price=3.45, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_webstat_invalid_value(self, mock_get):
         """
         GIVEN a Webstat CSV response with an invalid rate value
@@ -550,7 +550,7 @@ class TestWebstatScraping(TestCase):
             price=None, comment="Could not convert rate to float: invalid"
         )
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_webstat_http_error(self, mock_get):
         """
         GIVEN a Webstat HTTP error response
@@ -580,7 +580,7 @@ class TestBundesbankScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_bund_yield_from_bundesbank.cache_clear()
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_bundesbank_success(self, mock_get):
         """
         GIVEN a successful Bundesbank XML response with yield data
@@ -598,7 +598,7 @@ class TestBundesbankScraping(TestCase):
 
         assert result == ScrapingResult(price=-0.56, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_bundesbank_not_found(self, mock_get):
         """
         GIVEN a Bundesbank XML response without data for the target date
@@ -616,7 +616,7 @@ class TestBundesbankScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Bunds rate not found.")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_bundesbank_http_error(self, mock_get):
         """
         GIVEN a Bundesbank HTTP error response
@@ -649,7 +649,7 @@ class TestBOJScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_mutan_rate_from_boj.cache_clear()
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_boj_certified_success(self, mock_get):
         """
         GIVEN a successful BOJ Excel file response (certified) with Mutan rate data
@@ -666,7 +666,7 @@ class TestBOJScraping(TestCase):
 
         assert result == ScrapingResult(price=0.478, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_boj_prevision_fallback(self, mock_get):
         """
         GIVEN a BOJ certified file request that fails and a successful prevision file
@@ -686,7 +686,7 @@ class TestBOJScraping(TestCase):
 
         assert result == ScrapingResult(price=0.477, comment="")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_boj_both_fail(self, mock_get):
         """
         GIVEN BOJ certified and prevision file requests that both fail
@@ -704,7 +704,7 @@ class TestBOJScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Not Found")
 
-    @patch("market_overview.services.price_ingestion_services.requests.get")
+    @patch("market_overview.services.price_ingestion.requests.get")
     def test_boj_multiple_averages(self, mock_get):
         """
         GIVEN a BOJ Excel file with multiple 'Average' cells

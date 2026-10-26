@@ -10,31 +10,55 @@ const currentZone = window.currentZone;
 // Store chart instances
 const chartInstances = {};
 
+function parseIndicatorEntry(raw) {
+  const text = (raw || "").trim();
+  if (!text) {
+    return null;
+  }
+  if (text.includes("|")) {
+    const [type, mode] = text.split("|", 2);
+    const modeUpper = (mode || "ABS").trim().toUpperCase();
+    return {
+      type: type.trim(),
+      mode: ["ABS", "QOQ", "YOY"].includes(modeUpper) ? modeUpper : "ABS",
+      encoded: `${type.trim()}|${["ABS", "QOQ", "YOY"].includes(modeUpper) ? modeUpper : "ABS"}`,
+    };
+  }
+  return { type: text, mode: "ABS", encoded: `${text}|ABS` };
+}
+
+function encodeIndicatorEntry(type, mode) {
+  return `${type}|${(mode || "ABS").toUpperCase()}`;
+}
+
 // Parse selectedValues - query params come as strings, need to parse lists
 const selectedValues = {};
 for (const [key, value] of Object.entries(selectedValuesRaw)) {
-  if (key === "zone") {
+  if (key === "zone" || key === "period_window") {
     selectedValues[key] = value;
   } else if (key.endsWith("_indicator")) {
     // Parse list from string (could be JSON array string or comma-separated)
+    let entries = [];
     if (typeof value === "string") {
       try {
-        // Try parsing as JSON first
         const parsed = JSON.parse(value);
-        selectedValues[key] = Array.isArray(parsed) ? parsed : [parsed].filter(v => v);
+        entries = Array.isArray(parsed) ? parsed : [parsed];
       } catch (e) {
-        // If not JSON, try comma-separated or single value
-        if (value.includes(",")) {
-          selectedValues[key] = value.split(",").map(v => v.trim()).filter(v => v);
-        } else {
-          selectedValues[key] = value ? [value] : [""];
-        }
+        entries = value.includes(",")
+          ? value.split(",").map((v) => v.trim())
+          : value
+            ? [value]
+            : [];
       }
     } else if (Array.isArray(value)) {
-      selectedValues[key] = value.filter(v => v);
-    } else {
-      selectedValues[key] = value ? [value] : [""];
+      entries = value;
+    } else if (value) {
+      entries = [value];
     }
+    selectedValues[key] = entries
+      .map(parseIndicatorEntry)
+      .filter(Boolean)
+      .map((entry) => entry.encoded);
   } else {
     selectedValues[key] = value;
   }
@@ -86,11 +110,11 @@ if (dropdownValues && dropdownValues.indicators_by_category) {
     const indicators = item.indicators || [];
     // Extract types for filtering
     indicatorsByCategoryMap[categoryStr] = indicators.map(ind =>
-      typeof ind === 'string' ? ind : ind.type
+      typeof ind === "string" ? ind : ind.type
     );
     // Create type -> name mapping
     indicators.forEach(ind => {
-      if (typeof ind === 'object' && ind.type && ind.name) {
+      if (typeof ind === "object" && ind.type && ind.name) {
         indicatorsByCategoryTypeMap[ind.type] = ind.name;
       }
     });
@@ -141,13 +165,30 @@ function getSelectedIndicatorsForCategory(category) {
   const key = `${zoneValue}_${categoryValue}_indicator`;
 
   const indicators = selectedValues[key] || [];
-  // Filter out empty strings
-  return indicators.filter(ind => ind && ind !== "");
+  // Filter out empty strings; values are Type|MODE encoded
+  return indicators.filter((ind) => ind && ind !== "");
+}
+
+function getModeForType(category, indicatorType) {
+  const entry = getSelectedIndicatorsForCategory(category)
+    .map(parseIndicatorEntry)
+    .find((item) => item && item.type === indicatorType);
+  return entry ? entry.mode : "ABS";
 }
 
 function getDefaultIndicatorForCategory(category) {
   const indicators = getSelectedIndicatorsForCategory(category);
   return indicators.length > 0 ? indicators[0] : "";
+}
+
+function initializePeriodWindowSelect() {
+  const select = document.getElementById("period-window");
+  if (!select) return;
+  select.addEventListener("change", () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("period_window", select.value);
+    window.location.search = params.toString();
+  });
 }
 
 // ==========================================
@@ -272,12 +313,16 @@ function updateIndicatorSelection(category) {
   const selectedIndicators = getSelectedIndicatorsForCategory(category);
   const defaultIndicator = getDefaultIndicatorForCategory(category);
 
-  // Determine which indicators should be checked
+  // Determine which encoded Type|MODE entries should be selected
   const indicatorsToCheck = selectedIndicators.length > 0
     ? selectedIndicators
     : (defaultIndicator ? [defaultIndicator] : []);
+  const typesToCheck = indicatorsToCheck
+    .map(parseIndicatorEntry)
+    .filter(Boolean)
+    .map((entry) => entry.type);
 
-  // Store initial pending selection
+  // Store initial pending selection (encoded Type|MODE)
   pendingSelections[categorySafe] = [...indicatorsToCheck];
 
   // Clear existing content
@@ -293,7 +338,7 @@ function updateIndicatorSelection(category) {
   dropdownButton.type = "button";
   const selectedCount = indicatorsToCheck.length;
   dropdownButton.textContent = selectedCount > 0
-    ? `${selectedCount} indicator${selectedCount > 1 ? 's' : ''} selected`
+    ? `${selectedCount} indicator${selectedCount > 1 ? "s" : ""} selected`
     : "-- Select Indicators --";
   dropdownButton.onclick = () => toggleDropdown(category);
 
@@ -339,7 +384,7 @@ function updateIndicatorSelection(category) {
     checkbox.type = "checkbox";
     checkbox.id = `${categorySafe}-indicator-${indicator.name}`;
     checkbox.value = indicator.name;
-    checkbox.checked = indicatorsToCheck.includes(indicator.name);
+    checkbox.checked = typesToCheck.includes(indicator.name);
     checkbox.onchange = () => updatePendingSelection(category);
 
     const label = document.createElement("label");
@@ -347,8 +392,26 @@ function updateIndicatorSelection(category) {
     label.textContent = indicator.full_name;
     label.onclick = (e) => e.stopPropagation();
 
+    const modeSelect = document.createElement("select");
+    modeSelect.className = "multiselect-mode-select";
+    modeSelect.id = `${categorySafe}-mode-${indicator.name}`;
+    modeSelect.setAttribute("aria-label", `Mode for ${indicator.full_name}`);
+    ["ABS", "QOQ", "YOY"].forEach((mode) => {
+      const option = document.createElement("option");
+      option.value = mode;
+      option.textContent = mode === "ABS" ? "Abs" : mode === "QOQ" ? "QoQ" : "YoY";
+      modeSelect.appendChild(option);
+    });
+    modeSelect.value = getModeForType(category, indicator.name);
+    modeSelect.onclick = (e) => e.stopPropagation();
+    modeSelect.onchange = (e) => {
+      e.stopPropagation();
+      updatePendingSelection(category);
+    };
+
     checkboxItem.appendChild(checkbox);
     checkboxItem.appendChild(label);
+    checkboxItem.appendChild(modeSelect);
     checkboxList.appendChild(checkboxItem);
   });
 
@@ -441,8 +504,10 @@ function updatePendingSelection(category) {
   const selected = [];
   availableIndicators.forEach((indicatorType) => {
     const checkbox = document.getElementById(`${categorySafe}-indicator-${indicatorType}`);
+    const modeSelect = document.getElementById(`${categorySafe}-mode-${indicatorType}`);
     if (checkbox && checkbox.checked) {
-      selected.push(indicatorType);
+      const mode = modeSelect ? modeSelect.value : "ABS";
+      selected.push(encodeIndicatorEntry(indicatorType, mode));
     }
   });
 
@@ -473,20 +538,30 @@ function cancelIndicatorSelection(category) {
   const selectedIndicators = getSelectedIndicatorsForCategory(category);
   const defaultIndicator = getDefaultIndicatorForCategory(category);
 
-  // Restore to original selection
+  // Restore to original selection (encoded Type|MODE)
   const indicatorsToCheck = selectedIndicators.length > 0
     ? selectedIndicators
     : (defaultIndicator ? [defaultIndicator] : []);
 
   pendingSelections[categorySafe] = [...indicatorsToCheck];
+  const parsed = indicatorsToCheck.map(parseIndicatorEntry).filter(Boolean);
+  const typesToCheck = parsed.map((entry) => entry.type);
+  const modeByType = {};
+  parsed.forEach((entry) => {
+    modeByType[entry.type] = entry.mode;
+  });
 
-  // Update checkboxes to match original selection
+  // Update checkboxes / modes to match original selection
   const categoryStr = getCategoryString(category);
   const availableIndicators = indicatorsByCategoryMap[categoryStr] || [];
   availableIndicators.forEach((indicatorType) => {
     const checkbox = document.getElementById(`${categorySafe}-indicator-${indicatorType}`);
+    const modeSelect = document.getElementById(`${categorySafe}-mode-${indicatorType}`);
     if (checkbox) {
-      checkbox.checked = indicatorsToCheck.includes(indicatorType);
+      checkbox.checked = typesToCheck.includes(indicatorType);
+    }
+    if (modeSelect) {
+      modeSelect.value = modeByType[indicatorType] || "ABS";
     }
   });
 
@@ -624,5 +699,6 @@ function renderCharts() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initializeZoneButtons();
+  initializePeriodWindowSelect();
   renderCharts();
 });

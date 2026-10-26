@@ -42,6 +42,7 @@ exclude = [
 pythonVersion = "3.12"
 venvPath = "."
 venv = "venv"
+stubPath = "typings"
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 reportMissingTypeStubs = false

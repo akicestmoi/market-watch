@@ -1,11 +1,9 @@
 """Central bank, meeting, STIR futures, and related data models."""
 
-from typing import List
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from core.models import BaseLogModel, BaseModel
+from core.models import BaseLogModel, BaseModel, get_choice_from_label, get_choice_labels
 from market_overview.models import LocationChoices
 
 
@@ -17,10 +15,20 @@ class CentralBankChoices(models.TextChoices):
     ECB = "ECB", _("European Central Bank (ECB)")
 
     @classmethod
-    def ordered(cls) -> List["CentralBankChoices"]:
-        """Ordered list of economic data location choices."""
+    def from_label(cls, label: str) -> "CentralBankChoices":
+        """Return the central-bank choice matching the given display label."""
+        return get_choice_from_label(cls, label)
+
+    @classmethod
+    def ordered(cls) -> list["CentralBankChoices"]:
+        """Ordered list of central bank choices."""
         order = ["FRB", "ECB", "BOJ"]
         return [cls[value] for value in order]
+
+    @classmethod
+    def get_labels(cls) -> list[str]:
+        """Display labels in ``ordered()`` order."""
+        return get_choice_labels(cls)
 
 
 CENTRAL_BANK_LOCATION_MAP = {

@@ -7,7 +7,7 @@ from datetime import date
 from celery import shared_task
 
 from core.services import logger
-from market_analysis.services import market_analysis_services
+from market_analysis.services import market_analysis
 
 
 @shared_task
@@ -23,7 +23,7 @@ def scheduled_analysis_pipeline(reporting_date: str, force: bool = False):
         force,
     )
     try:
-        result = market_analysis_services.run_daily_analysis_pipeline_with_lock(
+        result = market_analysis.run_daily_analysis_pipeline_with_lock(
             date.fromisoformat(reporting_date), force=force
         )
         logger.info(

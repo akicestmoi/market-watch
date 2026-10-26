@@ -3,10 +3,12 @@
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
-import pytest  # type: ignore[reportMissingImports]
+import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
+
+from core.management.commands.trigger_task import TASK_MAP
 
 
 class TestTriggerTask(TestCase):
@@ -17,8 +19,8 @@ class TestTriggerTask(TestCase):
         self.stdout = StringIO()
         self.stderr = StringIO()
 
-    @patch("core.management.commands.trigger_task.get_task_map")
-    def test_trigger_task_success_sync(self, mock_get_task_map):
+    @patch.dict("core.management.commands.trigger_task.TASK_MAP", clear=True)
+    def test_trigger_task_success_sync(self):
         """
         GIVEN a valid task name
         WHEN trigger_task is called without --async flag
@@ -26,10 +28,7 @@ class TestTriggerTask(TestCase):
         """
         mock_task = MagicMock()
         mock_task.return_value = {"status": "success", "message": "Task completed"}
-        mock_task_map = {
-            "scheduled_market_data_ingestion": mock_task,
-        }
-        mock_get_task_map.return_value = mock_task_map
+        TASK_MAP["scheduled_market_data_ingestion"] = mock_task
 
         call_command(
             "trigger_task",
@@ -44,8 +43,8 @@ class TestTriggerTask(TestCase):
         assert "Task 'scheduled_market_data_ingestion' completed successfully" in output
         mock_task.assert_called_once()
 
-    @patch("core.management.commands.trigger_task.get_task_map")
-    def test_trigger_task_success_async(self, mock_get_task_map):
+    @patch.dict("core.management.commands.trigger_task.TASK_MAP", clear=True)
+    def test_trigger_task_success_async(self):
         """
         GIVEN a valid task name
         WHEN trigger_task is called with --async flag
@@ -55,10 +54,7 @@ class TestTriggerTask(TestCase):
         mock_result = MagicMock()
         mock_result.id = "task-123"
         mock_task.delay.return_value = mock_result
-        mock_task_map = {
-            "scheduled_market_data_ingestion": mock_task,
-        }
-        mock_get_task_map.return_value = mock_task_map
+        TASK_MAP["scheduled_market_data_ingestion"] = mock_task
 
         call_command(
             "trigger_task",
@@ -80,8 +76,6 @@ class TestTriggerTask(TestCase):
         WHEN trigger_task is called
         THEN a CommandError should be raised
         """
-        from django.core.management.base import CommandError
-
         with pytest.raises(CommandError):
             call_command(
                 "trigger_task",
@@ -90,8 +84,8 @@ class TestTriggerTask(TestCase):
                 stderr=self.stderr,
             )
 
-    @patch("core.management.commands.trigger_task.get_task_map")
-    def test_trigger_task_error(self, mock_get_task_map):
+    @patch.dict("core.management.commands.trigger_task.TASK_MAP", clear=True)
+    def test_trigger_task_error(self):
         """
         GIVEN a task that raises an exception
         WHEN trigger_task is called
@@ -99,10 +93,7 @@ class TestTriggerTask(TestCase):
         """
         mock_task = MagicMock()
         mock_task.side_effect = Exception("Task execution error")
-        mock_task_map = {
-            "scheduled_market_data_ingestion": mock_task,
-        }
-        mock_get_task_map.return_value = mock_task_map
+        TASK_MAP["scheduled_market_data_ingestion"] = mock_task
 
         with pytest.raises(CommandError) as exc_info:
             call_command(
@@ -117,25 +108,23 @@ class TestTriggerTask(TestCase):
         )
         assert "Task execution error" in str(exc_info.value)
 
-    @patch("core.management.commands.trigger_task.get_task_map")
-    def test_trigger_task_all_available_tasks(self, mock_get_task_map):
+    @patch.dict("core.management.commands.trigger_task.TASK_MAP", clear=True)
+    def test_trigger_task_all_available_tasks(self):
         """
         GIVEN all available tasks in the task map
         WHEN trigger_task help is displayed
         THEN all task names should be listed
         """
-        mock_task_map = {
+        mock_tasks = {
             "scheduled_market_data_ingestion": MagicMock(),
             "scheduled_stir_prices_ingestion": MagicMock(),
             "scheduled_economic_data_and_schedule_update": MagicMock(),
         }
-        mock_get_task_map.return_value = mock_task_map
-
-        # Test that each task can be triggered
-        for task_name in mock_task_map.keys():
-            mock_task = mock_task_map[task_name]
+        for task_name, mock_task in mock_tasks.items():
             mock_task.return_value = {"status": "success"}
+            TASK_MAP[task_name] = mock_task
 
+        for task_name, mock_task in mock_tasks.items():
             call_command(
                 "trigger_task",
                 task_name,
@@ -145,4 +134,4 @@ class TestTriggerTask(TestCase):
 
             assert f"Triggering task: {task_name}" in self.stdout.getvalue()
             mock_task.assert_called_once()
-            self.stdout = StringIO()  # Reset for next iteration
+            self.stdout = StringIO()

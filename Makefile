@@ -34,8 +34,9 @@ install:
 
 # Lint
 lint:
-	$(DOCKER_COMPOSE) exec webapp black . & isort .
-	$(DOCKER_COMPOSE) exec webapp npm run lint:all
+	$(DOCKER_COMPOSE) exec webapp black .
+	$(DOCKER_COMPOSE) exec webapp isort .
+	npm run lint:all
 
 # Flake8
 flake8:

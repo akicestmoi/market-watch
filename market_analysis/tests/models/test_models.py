@@ -10,6 +10,7 @@ from market_analysis.models import DailyRecapModel
 
 
 def _recap_kwargs(**overrides):
+    """Build DailyRecapModel create kwargs with optional overrides."""
     base = {
         "reporting_date": date(2024, 1, 2),
         "title": "t",
@@ -27,6 +28,8 @@ def _recap_kwargs(**overrides):
 
 
 class RecapUniquenessTests(TestCase):
+    """Tests for DailyRecap uniqueness constraints."""
+
     def test_one_recap_per_reporting_date(self):
         """
         GIVEN a DailyRecap already exists for a reporting date
@@ -45,7 +48,9 @@ class RecapUniquenessTests(TestCase):
         WHEN update_or_create is called for the same date with new fields
         THEN the existing row is updated and only one row remains
         """
-        DailyRecapModel.objects.create(**_recap_kwargs(title="old", main_summary="old body"))
+        DailyRecapModel.objects.create(
+            **_recap_kwargs(title="old", main_summary="old body")
+        )
         recap, created = DailyRecapModel.objects.update_or_create(
             reporting_date=date(2024, 1, 2),
             defaults={
@@ -63,4 +68,6 @@ class RecapUniquenessTests(TestCase):
         assert created is False
         assert recap.title == "new"
         assert recap.main_summary == "new body"
-        assert DailyRecapModel.objects.filter(reporting_date=date(2024, 1, 2)).count() == 1
+        assert (
+            DailyRecapModel.objects.filter(reporting_date=date(2024, 1, 2)).count() == 1
+        )

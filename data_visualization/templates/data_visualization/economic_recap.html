@@ -13,28 +13,36 @@
 
 <body>
     {% include "data_visualization/_navbar.html" %}
-    <div class="header">
-    </div>
 
-    <div class="columns">
-        <!-- LEFT: Economic Table -->
-        <div class="economic-table-card" style="flex: 3;">
-            <h2>Economic Data</h2>
+    <div class="economic-table-card">
+        <h2>Economic Data</h2>
+        <div class="economic-table-scroll">
             <table>
+                <colgroup>
+                    <col class="col-category">
+                    <col class="col-name">
+                    <col class="col-mode">
+                    {% for loc in locations %}
+                    <col class="col-metric">
+                    <col class="col-metric">
+                    <col class="col-metric">
+                    <col class="col-metric-period">
+                    {% endfor %}
+                </colgroup>
                 <thead>
-                    <tr>
-                        <th rowspan="2">Category</th>
-                        <th rowspan="2">Name</th>
+                    <tr class="thead-primary">
+                        <th rowspan="2" class="col-category">Category</th>
+                        <th rowspan="2" colspan="2" class="col-name-header">Name</th>
                         {% for loc in locations %}
-                        <th colspan="4" class="{% if not forloop.first %}location-separator{% endif %}">{{ loc }}</th>
+                        <th colspan="4" class="loc-group-header{% if not forloop.first %} location-separator{% endif %}">{{ loc }}</th>
                         {% endfor %}
                     </tr>
-                    <tr>
+                    <tr class="thead-secondary">
                         {% for loc in locations %}
-                        <th>Curr</th>
-                        <th>Prev</th>
-                        <th>Chg</th>
-                        <th class="{% if not forloop.last %}period-separator{% endif %}">Period</th>
+                        <th class="col-current{% if not forloop.first %} location-separator{% endif %}">Current</th>
+                        <th class="col-previous">Previous</th>
+                        <th class="col-change">Change</th>
+                        <th class="col-period">Period</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -44,34 +52,45 @@
                     {% regroup group by name as name_groups %}
 
                     {% for name_group in name_groups %}
-                    <tr>
+                    {% with first_record=name_group.list.0 %}
+                    <tr class="indicator-row{% if forloop.last %} category-last-row{% endif %}"
+                        data-indicator-name="{{ name_group.grouper }}"
+                        data-category="{{ category }}"
+                        data-default-mode="{% if category == 'GROWTH' or name_group.grouper == 'Consumer Price Index' or name_group.grouper == 'Retail Sales' %}YOY{% else %}ABS{% endif %}">
                         {% if forloop.first %}
                         <td rowspan="{{ name_groups|length }}" class="category-cell">{{ category }}</td>
                         {% endif %}
 
-                        <td class="name-cell">{{ name_group.grouper }}</td>
+                        <td class="name-cell" data-base-name="{{ name_group.grouper }}">{{ name_group.grouper }}</td>
+                        <td class="mode-cell">
+                            <select class="recap-mode-select" aria-label="Display for {{ name_group.grouper }}">
+                                <option value="ABS">Abs</option>
+                                <option value="QOQ">QoQ</option>
+                                <option value="YOY">YoY</option>
+                            </select>
+                        </td>
 
                         {% for location in locations %}
                         {% for record in name_group.list %}
                         {% if record.location == location %}
-                        <td class="{% if location != locations.0 %}location-separator{% endif %}">
+                        <td class="loc-curr{% if location != locations.0 %} location-separator{% endif %}"
+                            data-location="{{ location }}">
                             <span class="{% if record.current is None %}empty-data{% endif %}">
                                 {{ record.current|default:"—" }}
                             </span>
                         </td>
-                        <td>
+                        <td class="loc-prev" data-location="{{ location }}">
                             <span class="{% if record.previous is None %}empty-data{% endif %}">
                                 {{ record.previous|default:"—" }}
                             </span>
                         </td>
-                        <td class="{% if record.change > 0 %}table-change-positive
-                                        {% elif record.change < 0 %}table-change-negative
-                                        {% endif %}">
+                        <td class="loc-chg{% if record.change > 0 %} table-change-positive{% elif record.change < 0 %} table-change-negative{% endif %}"
+                            data-location="{{ location }}">
                             <span class="{% if record.change is None %}empty-data{% endif %}">
-                                {% if record.change is not None %}{{ record.change|floatformat:1 }}{% else %}—{% endif%}
+                                {% if record.change is not None %}{{ record.change|floatformat:1 }}{% else %}—{% endif %}
                             </span>
                         </td>
-                        <td>
+                        <td class="loc-period" data-location="{{ location }}">
                             <span class="{% if record.period is None %}empty-data{% endif %}">
                                 {{ record.period|default:"—" }}
                             </span>
@@ -80,43 +99,25 @@
                         {% endfor %}
                         {% endfor %}
                     </tr>
+                    {% endwith %}
                     {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-
-        <!-- RIGHT: Upcoming Events -->
-        <div class="event-card" style="flex: 1;">
-            <h2>Upcoming Releases</h2>
-            <div class="event-list">
-                {% for date_group in upcoming_events %}
-                <div class="date-group-card">
-                    <div class="date-header">{{ date_group.date_display }}</div>
-                    <div class="events-for-date">
-                        {% for event in date_group.events %}
-                        <div class="event-item">
-                            <div class="event-time-location">
-                                <span class="event-time">{{ event.time_str }}</span>:
-                                <span class="event-location">{{ event.location }}</span>
-                            </div>
-                            <div class="event-name">{{ event.name }}</div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% empty %}
-                <div class="no-events">No upcoming events.</div>
-                {% endfor %}
-            </div>
-        </div>
     </div>
+
+    <script>
+        window.economicRecapDataJSON = {{ economic_data_json|safe }};
+        window.economicRecapLocationsJSON = {{ locations_json|safe }};
+    </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
     {% if error_messages %}
     <script>
         window.errorMessages = {{ error_messages|safe }};
     </script>
     {% endif %}
+    <script src="{% static 'data_visualization/js/economic_recap.js' %}"></script>
 </body>
 
 </html>

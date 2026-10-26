@@ -5,13 +5,13 @@ from datetime import date, timedelta
 from celery import shared_task
 from pandas.tseries.offsets import BDay
 
-import market_overview.services.holiday_services as holiday_services
-import market_overview.services.market_data_services as market_data_services
-import market_overview.services.price_ingestion_services as price_ingestion_services
 import market_analysis.tasks as market_analysis_tasks
+import market_overview.services.holidays as holidays
+import market_overview.services.market_data as market_data
+import market_overview.services.price_ingestion as price_ingestion
 from core.locks import try_acquire_redis_lock
 from core.services import logger
-from market_overview.services.holiday_services import HOLIDAY_COUNTRIES
+from market_overview.services.holidays import HOLIDAY_COUNTRIES
 
 
 @shared_task
@@ -26,7 +26,7 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
         case False:
             price_date = (date.today() - BDay(1)).date()
 
-    lock_key = price_ingestion_services.market_price_ingestion_lock_key(price_date)
+    lock_key = price_ingestion.get_market_price_ingestion_lock_key(price_date)
     lock = try_acquire_redis_lock(lock_key)
     if lock is None:
         logger.warning(
@@ -43,8 +43,8 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
 
     try:
         logger.info(f"Ingesting market data for {price_date}")
-        market_data = price_ingestion_services.get_market_data(price_date)
-        ingestion_result = price_ingestion_services.ingest_market_data(market_data)
+        prices_to_ingest = price_ingestion.get_market_data(price_date)
+        ingestion_result = price_ingestion.ingest_market_data(prices_to_ingest)
         result = {
             "status": "success",
             "message": f"Market data ingested successfully for {price_date}",
@@ -86,7 +86,7 @@ def scheduled_price_update_logs_cleanup():
     )
     try:
         logger.info(f"Cleaning up price update logs for {logs_date}")
-        market_data_services.delete_price_update_logs_before_date(logs_date)
+        market_data.delete_price_update_logs_before_date(logs_date)
         return {
             "status": "success",
             "message": f"Price update logs deleted successfully for {logs_date}",
@@ -111,8 +111,8 @@ def scheduled_holidays_ingestion():
     before_date = today - timedelta(days=30)
     try:
         for country in HOLIDAY_COUNTRIES:
-            holiday_services.ingest_one_year_holidays(today, country)
-        holiday_services.delete_holidays_before_date(before_date)
+            holidays.ingest_one_year_holidays(today, country)
+        holidays.delete_holidays_before_date(before_date)
         return {
             "status": "success",
             "message": "Holidays successfully ingested.",

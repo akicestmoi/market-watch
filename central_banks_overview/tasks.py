@@ -5,9 +5,9 @@ from datetime import date, datetime, timedelta, timezone
 from celery import shared_task
 from pandas.tseries.offsets import BDay
 
-import central_banks_overview.services.cb_data_services as cb_data_services
-import central_banks_overview.services.cb_meetings_services as cb_meetings_services
-import central_banks_overview.services.stir_prices_ingestion_services as stir_futures_services
+import central_banks_overview.services.central_banks_data as central_banks_data
+import central_banks_overview.services.central_banks_meetings as central_banks_meetings
+import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices
 from core.locks import try_acquire_redis_lock
 from core.services import logger
@@ -26,7 +26,7 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
             price_date = (date.today() - BDay(1)).date()
 
     lock = try_acquire_redis_lock(
-        stir_futures_services.stir_price_ingestion_lock_key(price_date)
+        stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date)
     )
     if lock is None:
         logger.warning(
@@ -44,10 +44,10 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
 
     try:
         logger.info(f"Ingesting STIR Futures prices for {price_date}")
-        stir_futures_prices = stir_futures_services.extract_all_stir_futures_prices(
+        stir_futures_prices = stir_prices_ingestion.extract_all_stir_futures_prices(
             price_date
         )
-        stir_futures_updated = stir_futures_services.ingest_stir_futures_prices(
+        stir_futures_updated = stir_prices_ingestion.ingest_stir_futures_prices(
             stir_futures_prices
         )
         return {
@@ -91,7 +91,7 @@ def scheduled_stir_futures_price_update_logs_cleanup():
     )
     try:
         logger.info(f"Cleaning up stir futures price update logs for {logs_date}")
-        stir_futures_services.delete_stir_futures_price_update_logs_before_date(
+        stir_prices_ingestion.delete_stir_futures_price_update_logs_before_date(
             logs_date
         )
         return {
@@ -119,7 +119,7 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
     try:
         for central_bank in CentralBankChoices:
             logger.info(f"Checking Central Bank: {central_bank.label}")
-            meeting_date = cb_meetings_services.get_central_bank_next_meeting_date(
+            meeting_date = central_banks_meetings.get_central_bank_next_meeting_date(
                 central_bank
             )
             if not meeting_date or meeting_date >= datetime.now(timezone.utc):
@@ -133,12 +133,12 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
             logger.info(
                 f"Cleaning up stir futures prices for Central Bank: {central_bank.label} on {price_date}"
             )
-            stir_futures_services.delete_stir_futures_prices_before_date(
+            stir_prices_ingestion.delete_stir_futures_prices_before_date(
                 central_bank, price_date
             )
             cb_data_date = (date.today() - BDay(1)).date()
             cb_lock = try_acquire_redis_lock(
-                cb_data_services.cb_data_ingestion_lock_key(central_bank, cb_data_date)
+                central_banks_data.get_cb_data_ingestion_lock_key(central_bank, cb_data_date)
             )
             if cb_lock is None:
                 logger.warning(
@@ -148,7 +148,7 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
                 )
             else:
                 try:
-                    cb_data_services.ingest_central_bank_data(
+                    central_banks_data.ingest_central_bank_data(
                         central_bank=central_bank,
                         date_to_ingest=cb_data_date,
                     )
@@ -161,7 +161,7 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
                             central_bank.value,
                             cb_data_date.isoformat(),
                         )
-            cb_meetings_services.ingest_central_bank_meeting_dates(central_bank)
+            central_banks_meetings.ingest_central_bank_meeting_dates(central_bank)
 
         return {
             "status": "success",

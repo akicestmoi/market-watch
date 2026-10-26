@@ -2,14 +2,14 @@
 
 from django.urls import path
 
-from economic_overview.views.economic_data_views import (
+from economic_overview.views.economic_data import (
     EconomicDataDetailedView,
     GenerateBaseEconomicIndicatorInformationView,
     IngestHistoricalEconomicDataView,
     IngestLatestEconomicDataView,
     IngestSpecificEconomicDataView,
 )
-from economic_overview.views.publication_schedules_views import (
+from economic_overview.views.publication_schedules import (
     UpdatePublicationScheduleView,
 )
 

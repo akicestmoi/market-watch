@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 from unittest.mock import patch
 
 from django.test import TestCase
-from freezegun import freeze_time  # type: ignore[reportMissingImports]
+from freezegun import freeze_time
 
 import economic_overview.tasks as tasks
 from core.tests import MockResponse, parse_query_for_testing, read_file_content
@@ -19,8 +19,8 @@ from economic_overview.models import (
     EconomicPublicationFrequencyChoices,
     PublicationScheduleModel,
 )
-from economic_overview.services.data_ingestion_services import _get_data_from_insee
-from economic_overview.services.publication_services import (
+from economic_overview.services.data_ingestion import _get_data_from_insee
+from economic_overview.services.publication import (
     _get_insee_publication_schedule,
     _get_publication_dates_from_insee,
 )
@@ -82,8 +82,8 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         _get_publication_dates_from_insee.cache_clear()
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication_services.requests.post")
-    @patch("economic_overview.services.data_ingestion_services.requests.get")
+    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.data_ingestion.requests.get")
     def test_scheduled_economic_data_update_success_update_publication_schedule(
         self, mock_requests_get, mock_requests_post
     ):
@@ -122,14 +122,14 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
             {
                 "indicator_id": self.indicator.pk,
                 "previous_publication_date": "2025-11-14 10:00:00+0000",
-                "current_publication_date": "2025-12-15 09:00:00+0000",
-                "next_publication_date": "2026-01-15 09:00:00+0000",
+                "current_publication_date": "2025-12-15 10:00:00+0000",
+                "next_publication_date": "2026-01-15 10:00:00+0000",
             }
         ]
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication_services.requests.post")
-    @patch("economic_overview.services.data_ingestion_services.requests.get")
+    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.data_ingestion.requests.get")
     def test_scheduled_economic_data_update_creates_publication_schedule(
         self, mock_requests_get, mock_requests_post
     ):
@@ -164,9 +164,9 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         assert parse_query_for_testing(PublicationScheduleModel.objects.all()) == [
             {
                 "indicator_id": self.indicator.pk,
-                "current_publication_date": "2025-12-15 09:00:00+0000",
+                "current_publication_date": "2025-12-15 10:00:00+0000",
                 "previous_publication_date": None,
-                "next_publication_date": "2026-01-15 09:00:00+0000",
+                "next_publication_date": "2026-01-15 10:00:00+0000",
             }
         ]
         assert parse_query_for_testing(EconomicDataModel.objects.all()) == [
@@ -179,7 +179,7 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         ]
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_scheduled_economic_data_update_no_indicators(self, mock_requests_post):
         """
         GIVEN no economic indicators to update exist
@@ -202,8 +202,8 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         assert PublicationScheduleModel.objects.all().count() == 0
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication_services.requests.post")
-    @patch("economic_overview.services.data_ingestion_services.requests.get")
+    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.data_ingestion.requests.get")
     def test_scheduled_economic_data_update_error_during_ingestion(
         self, mock_requests_get, mock_requests_post
     ):
@@ -248,16 +248,16 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         assert mock_requests_post.call_count == 0
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication_services.requests.post")
-    @patch("economic_overview.services.data_ingestion_services.requests.get")
+    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.data_ingestion.requests.get")
     def test_scheduled_economic_data_update_error_during_schedule_update(
         self, mock_requests_get, mock_requests_post
     ):
         """
         GIVEN an error occurs during publication schedule update
         WHEN scheduled_economic_data_and_schedule_update is called
-        THEN the task should return an error status
-        Note: Data ingestion may still succeed before the error
+        THEN data ingest still succeeds and the schedule is left unchanged
+        (per-indicator schedule failures are logged, not fatal to the task)
         """
         PublicationScheduleModel.objects.create(
             indicator=self.indicator,
@@ -284,9 +284,9 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
 
         result = tasks.scheduled_economic_data_and_schedule_update()
         assert result == {
-            "status": "error",
+            "status": "success",
             "date": "2025-12-15",
-            "message": "Error: Publication schedule error",
+            "message": "Economic data ingested successfully.",
         }
         assert (
             parse_query_for_testing(PublicationScheduleModel.objects.all())
@@ -435,7 +435,7 @@ class TestScheduledEconomicDataUpdateLogsCleanup(TestCase):
 
     @freeze_time("2025-12-15")
     @patch(
-        "economic_overview.tasks.economic_data_services.delete_economic_data_update_logs_before_date"
+        "economic_overview.tasks.economic_data.delete_economic_data_update_logs_before_date"
     )
     def test_scheduled_economic_data_update_logs_cleanup_error(self, mock_delete):
         """

@@ -2,9 +2,9 @@
 
 from django.urls import path
 
-from market_analysis.views.analysis_cache_views import GetArticleAnalysisCacheView
-from market_analysis.views.llm_chat_views import AnalysisChatView
-from market_analysis.views.market_analysis_views import (
+from market_analysis.views.analysis_cache import GetArticleAnalysisCacheView
+from market_analysis.views.llm_chat import AnalysisChatView
+from market_analysis.views.market_analysis import (
     GenerateDailyRecapView,
     GetDailyRecapView,
 )

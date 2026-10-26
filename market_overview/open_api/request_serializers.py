@@ -2,12 +2,27 @@
 
 from rest_framework import serializers
 
+from core.open_api.fields import CommaSeparatedIntegerField
 from market_overview.models import (
     AssetClassChoices,
     AssetTypeChoices,
     LocationChoices,
     PriceSourceChoices,
 )
+
+
+class MonthListField(CommaSeparatedIntegerField):
+    """CSV of calendar months (1–12) with a month-specific error message."""
+
+    def to_internal_value(self, data) -> list[int] | None:
+        """Validate month tokens; map integer errors to ``Invalid month.``."""
+        try:
+            return super().to_internal_value(data)
+        except serializers.ValidationError as exc:
+            messages = exc.detail if isinstance(exc.detail, list) else [exc.detail]
+            if any("integer" in str(message).lower() for message in messages):
+                raise serializers.ValidationError("Invalid month.") from exc
+            raise
 
 
 class BaseAssetSerializer(serializers.Serializer):
@@ -113,7 +128,7 @@ class BulkUpdateAssetsPricesItemSerializer(serializers.Serializer):
     short_name = serializers.CharField()
     date = serializers.DateField()
     price = serializers.FloatField()
-    logs = serializers.CharField(required=False)
+    logs = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
 
 class BulkUpdateAssetsPricesSerializer(serializers.ListSerializer):
@@ -140,16 +155,13 @@ class ListHolidaysSerializer(serializers.Serializer):
 
     location = serializers.ChoiceField(choices=LocationChoices.choices, required=False)
     year = serializers.IntegerField(required=False)
-    months = serializers.CharField(required=False)
-
-    def validate_months(self, value):
-        """Validate months is a valid list of months."""
-        if value:
-            months = value.split(",")
-            for month in months:
-                if not month.isdigit() or int(month) < 1 or int(month) > 12:
-                    raise serializers.ValidationError("Invalid month.")
-        return value
+    months = MonthListField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        min_value=1,
+        max_value=12,
+    )
 
 
 class DeleteHolidaysSerializer(serializers.Serializer):
@@ -161,18 +173,7 @@ class DeleteHolidaysSerializer(serializers.Serializer):
 class DeleteMarketPricesSerializer(serializers.Serializer):
     """Delete Market Prices Serializer."""
 
-    ids = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
-    def validate_ids(self, value):
-        """Convert comma-separated string to list of integers."""
-        if not value or not value.strip():
-            return None
-        try:
-            return [
-                int(id_str.strip()) for id_str in value.split(",") if id_str.strip()
-            ]
-        except ValueError:
-            raise serializers.ValidationError("IDs must be comma-separated integers.")
+    ids = CommaSeparatedIntegerField(required=False, allow_blank=True, allow_null=True)
 
 
 class MarkAsHolidayItemSerializer(serializers.Serializer):

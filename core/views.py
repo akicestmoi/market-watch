@@ -1,9 +1,8 @@
 """Base API view classes shared by domain endpoints."""
 
-from typing import Any, Dict, Optional
+from typing import NotRequired, TypedDict
 
 from django.http import Http404
-from pydantic import BaseModel
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
@@ -12,13 +11,31 @@ from rest_framework.views import APIView
 from core.services import logger
 
 
-class BaseErrorResponseModel(BaseModel):
-    """Base Error Response Model."""
+class FieldValidationError(TypedDict):
+    """One field-level validation error (field name + message)."""
+
+    field: str
+    message: str
+
+
+class ErrorResponseDetail(TypedDict, total=False):
+    """Optional structured error detail."""
+
+    exception: str
+    field_errors: list[FieldValidationError]
+
+
+class ErrorResponseBody(TypedDict):
+    """Standardized API error response body."""
 
     error: str
     message: str
     status_code: int
-    detail: Optional[Dict[str, Any]] = None
+    detail: NotRequired[ErrorResponseDetail | None]
+
+
+class BaseErrorResponseModel:
+    """Factory for standardized error response dictionaries."""
 
     @classmethod
     def create_error_response(
@@ -26,12 +43,17 @@ class BaseErrorResponseModel(BaseModel):
         error_type: str,
         message: str,
         status_code: int,
-        detail: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        detail: ErrorResponseDetail | None = None,
+    ) -> ErrorResponseBody:
         """Create a standardized error response dictionary."""
-        return cls(
-            error=error_type, message=message, status_code=status_code, detail=detail
-        ).model_dump()
+        body: ErrorResponseBody = {
+            "error": error_type,
+            "message": message,
+            "status_code": status_code,
+        }
+        if detail is not None:
+            body["detail"] = detail
+        return body
 
 
 class BaseAPIView(APIView):
@@ -42,28 +64,46 @@ class BaseAPIView(APIView):
         Handle any exception that occurs in the view.
         Always returns a JSON response instead of HTML.
         """
+        detail: ErrorResponseDetail | None = None
         if isinstance(exc, Http404):
             error_type = "Not Found"
             message = str(exc) if str(exc) else "The requested resource was not found."
             status_code = status.HTTP_404_NOT_FOUND
-            detail = None
         elif isinstance(exc, APIException):
             error_type = exc.__class__.__name__.replace("Exception", "").replace(
                 "Error", ""
             )
-            message = str(exc.detail) if hasattr(exc, "detail") else str(exc)
             status_code = exc.status_code
-            detail = exc.detail if isinstance(exc, ValidationError) else None
+            # Field-level ValidationError uses a dict; a bare string becomes a list.
+            if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
+                field_errors: list[FieldValidationError] = []
+                for field, value in exc.detail.items():
+                    if isinstance(value, list):
+                        field_message = "; ".join(str(item) for item in value)
+                    else:
+                        field_message = str(value)
+                    field_errors.append(
+                        FieldValidationError(field=str(field), message=field_message)
+                    )
+                message = "; ".join(
+                    f"{error['field']}: {error['message']}" for error in field_errors
+                )
+                detail = ErrorResponseDetail(field_errors=field_errors)
+            elif isinstance(exc, ValidationError) and isinstance(exc.detail, list):
+                message = "; ".join(str(item) for item in exc.detail)
+            else:
+                message = str(exc.detail) if hasattr(exc, "detail") else str(exc)
         elif isinstance(exc, (TypeError, ValueError, KeyError, AttributeError)):
             error_type = exc.__class__.__name__.replace("Error", "")
             message = "Invalid request data. Please check your input."
             status_code = status.HTTP_400_BAD_REQUEST
-            detail = {"exception": str(exc)}
+            detail = ErrorResponseDetail(exception=str(exc))
         else:
             error_type = "Internal Server Error"
             message = "An unexpected error occurred. Please try again later."
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-            detail = {"exception": str(exc)} if hasattr(exc, "__dict__") else None
+            if hasattr(exc, "__dict__"):
+                detail = ErrorResponseDetail(exception=str(exc))
 
         logger.error(
             f"{error_type}: {exc}",
@@ -75,7 +115,7 @@ class BaseAPIView(APIView):
             error_type=error_type,
             message=message,
             status_code=status_code,
-            detail=detail,  # type: ignore[reportArgumentType]
+            detail=detail,
         )
         return Response(error_data, status=status_code)
 

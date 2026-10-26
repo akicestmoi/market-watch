@@ -74,6 +74,45 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.period-window-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.period-window-label {
+  color: white;
+  font-weight: 500;
+  font-size: 1.2rem;
+}
+
+#period-window.chart-select,
+select.chart-select,
+.multiselect-mode-select {
+  appearance: none;
+  padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #0f172a;
+  background-color: #e0f2fe;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231e293b' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.75rem;
+  color: #1e293b;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.multiselect-mode-select {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 0.25rem 1.5rem 0.25rem 0.4rem;
+  background-position: right 0.4rem center;
+  background-size: 0.65rem;
+}
+
 /* ==========================================
    ZONE BUTTONS
    ========================================== */
@@ -414,14 +453,20 @@ canvas {
 /* Ensure all chart-select elements have consistent styling */
 select.chart-select,
 input[type="date"].chart-select {
-  padding: 0.25rem 0.5rem;
+  appearance: none;
+  padding: 0.5rem 2.25rem 0.5rem 0.75rem;
   border-radius: 0.5rem;
   border: 1px solid #0f172a;
   background-color: #e0f2fe;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231e293b' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.75rem;
   color: #1e293b;
   font-size: 0.9rem;
   transition: all 0.2s ease;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 select.chart-select:hover,
@@ -430,13 +475,13 @@ input[type="date"].chart-select:hover {
 }
 
 /* Responsive design */
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .chart-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .chart-grid {
     grid-template-columns: 1fr;
   }

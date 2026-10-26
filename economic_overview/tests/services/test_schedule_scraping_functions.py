@@ -1,7 +1,7 @@
 """Tests for publication schedule scraping helpers."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pandas as pd
@@ -9,7 +9,7 @@ from django.test import TestCase
 from pandas.testing import assert_frame_equal
 
 from core.tests import MockResponse, load_json_mock
-from economic_overview.services.publication_services import (
+from economic_overview.services.publication import (
     _get_insee_publication_schedule,
     _get_publication_dates_from_insee,
 )
@@ -27,7 +27,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         _get_insee_publication_schedule.cache_clear()
         _get_publication_dates_from_insee.cache_clear()
 
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_get_insee_publication_schedule_success(self, mock_post):
         """
         GIVEN a successful INSEE publication schedule API response
@@ -61,7 +61,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         )
         assert_frame_equal(result, expected)
 
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_get_insee_publication_schedule_http_error(self, mock_post):
         """
         GIVEN an HTTP error response from INSEE API
@@ -75,7 +75,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_get_insee_publication_schedule_empty_documents(self, mock_post):
         """
         GIVEN an INSEE API response with empty documents
@@ -92,7 +92,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_get_publication_dates_from_insee_success(self, mock_post):
         """
         GIVEN a publication schedule with matching indicator name
@@ -106,11 +106,11 @@ class TestInseePublicationScheduleScraping(TestCase):
 
         result = _get_publication_dates_from_insee("Foreign trade results")
         assert result == [
-            datetime(2025, 12, 5, 7, 45),
-            datetime(2026, 3, 10, 7, 45),
+            datetime(2025, 12, 5, 7, 45, tzinfo=timezone.utc),
+            datetime(2026, 3, 10, 7, 45, tzinfo=timezone.utc),
         ]
 
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_get_publication_dates_from_insee_not_found(self, mock_post):
         """
         GIVEN a publication schedule without matching indicator name
@@ -126,7 +126,7 @@ class TestInseePublicationScheduleScraping(TestCase):
 
         assert result == []
 
-    @patch("economic_overview.services.publication_services.requests.post")
+    @patch("economic_overview.services.publication.requests.post")
     def test_get_publication_dates_from_insee_empty_schedule(self, mock_post):
         """
         GIVEN an empty publication schedule

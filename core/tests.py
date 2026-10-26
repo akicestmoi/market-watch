@@ -2,7 +2,6 @@
 
 import json
 from datetime import datetime
-from typing import List, Optional, Union
 from unittest.mock import MagicMock
 
 from django.db.models import QuerySet
@@ -10,7 +9,9 @@ from django.db.models import QuerySet
 from core.services import convert_query_to_dictionary_list
 
 
-def load_json_mock(file_path: str) -> dict:
+def load_json_mock(
+    file_path: str,
+) -> dict:  # Polymorphic mock JSON until per-fixture TypedDicts exist.
     """Load JSON mock file and return dictionary."""
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -24,9 +25,9 @@ def read_file_content(file_path: str) -> bytes:
 
 def parse_query_for_testing(
     queryset: QuerySet,
-    sort_keys: List[str] = [],
+    sort_keys: list[str] = [],
     date_format: str = "%Y-%m-%d %H:%M:%S%z",
-) -> List[dict]:
+) -> list[dict]:  # Polymorphic: wraps convert_to_dict until per-model TypedDicts exist.
     """
     Convert queryset to dictionary list, normalize datetime objects, and sort."""
     result = convert_query_to_dictionary_list(queryset)
@@ -51,9 +52,9 @@ class MockResponse:
     def __init__(
         self,
         status_code: int,
-        content: Optional[bytes] = None,
-        text: Optional[str] = None,
-        json_data: Optional[Union[dict, list]] = None,
+        content: bytes | None = None,
+        text: str | None = None,
+        json_data: (dict | list) | None = None,
     ):
         self.mock = MagicMock()
         self.mock.status_code = status_code
@@ -69,7 +70,9 @@ class MockResponse:
 
         # Support for JSON responses
         if json_data is not None:
-            self.mock.json = MagicMock(return_value=json_data)
+            json_mock = MagicMock()
+            json_mock.return_value = json_data
+            self.mock.json = json_mock
         else:
             self.mock.json = MagicMock()
 

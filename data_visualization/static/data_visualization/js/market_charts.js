@@ -478,7 +478,7 @@ createLineChart(
   "rgb(255,99,132)"
 );
 
-const yieldCurveChartInstance = createYieldCurveChart(
+createYieldCurveChart(
   "yieldCurveChart",
   marketData.reference_yield_curve,
   marketData.previous_yield_curve,
@@ -555,31 +555,31 @@ if (previousCurveDateInput) {
  */
 function initializeDurationButtons() {
   // Get all duration button containers
-  const durationContainers = document.querySelectorAll('.duration-buttons');
+  const durationContainers = document.querySelectorAll(".duration-buttons");
 
   durationContainers.forEach(container => {
-    const chartType = container.getAttribute('data-chart-type');
-    const buttons = container.querySelectorAll('.duration-btn');
+    const chartType = container.getAttribute("data-chart-type");
+    const buttons = container.querySelectorAll(".duration-btn");
 
     // Set active button based on current chart duration from selectedValues
     const currentDuration = selectedValues[`${chartType}_chart_duration`];
     buttons.forEach(button => {
-      if (button.getAttribute('data-duration') === currentDuration) {
-        button.classList.add('active');
+      if (button.getAttribute("data-duration") === currentDuration) {
+        button.classList.add("active");
       } else {
-        button.classList.remove('active');
+        button.classList.remove("active");
       }
     });
 
     buttons.forEach(button => {
-      button.addEventListener('click', function() {
-        const duration = this.getAttribute('data-duration');
+      button.addEventListener("click", function() {
+        const duration = this.getAttribute("data-duration");
 
         // Remove active class from all buttons in this container
-        buttons.forEach(btn => btn.classList.remove('active'));
+        buttons.forEach(btn => btn.classList.remove("active"));
 
         // Add active class to clicked button
-        this.classList.add('active');
+        this.classList.add("active");
 
         // Update specific chart duration
         updateChartDuration(chartType, duration);
@@ -617,18 +617,18 @@ initializeDurationButtons();
  * Update zone button highlighting based on current zone
  */
 function updateZoneButtonHighlighting() {
-  const zoneButtons = document.querySelectorAll('.zone-btn');
+  const zoneButtons = document.querySelectorAll(".zone-btn");
   const params = new URLSearchParams(window.location.search);
-  const currentZone = params.get('zone');
+  const currentZone = params.get("zone");
 
   // Remove active class from all zone buttons
-  zoneButtons.forEach(btn => btn.classList.remove('active'));
+  zoneButtons.forEach(btn => btn.classList.remove("active"));
 
   // Add active class to current zone button (if not CUSTOM)
-  if (currentZone && currentZone !== 'CUSTOM') {
+  if (currentZone && currentZone !== "CUSTOM") {
     const activeButton = document.querySelector(`[data-zone="${currentZone}"]`);
     if (activeButton) {
-      activeButton.classList.add('active');
+      activeButton.classList.add("active");
     }
   }
 }
@@ -637,11 +637,11 @@ function updateZoneButtonHighlighting() {
  * Initialize zone buttons
  */
 function initializeZoneButtons() {
-  const zoneButtons = document.querySelectorAll('.zone-btn');
+  const zoneButtons = document.querySelectorAll(".zone-btn");
 
   zoneButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const zone = this.getAttribute('data-zone');
+    button.addEventListener("click", function() {
+      const zone = this.getAttribute("data-zone");
 
       // Update zone and reload page
       updateZone(zone);
@@ -658,41 +658,41 @@ function initializeZoneButtons() {
 
 // Zone values mapping - defines default values for each zone
 const ZONE_VALUES = {
-  'US': {
-    'stock_name': 'DJIA',
-    'fx_name': 'EURUSD',
-    'crypto_name': 'BTC',
-    'commodity_name': 'Gold',
-    'main_rate': 'UST10Y',
-    'spread_rate': null,
-    'yield_curve_location': 'United States'
+  "US": {
+    "stock_name": "DJIA",
+    "fx_name": "EURUSD",
+    "crypto_name": "BTC",
+    "commodity_name": "Gold",
+    "main_rate": "UST10Y",
+    "spread_rate": null,
+    "yield_curve_location": "United States"
   },
-  'FR': {
-    'stock_name': 'CAC40',
-    'fx_name': 'EURUSD',
-    'crypto_name': 'BTC',
-    'commodity_name': 'Gold',
-    'main_rate': 'OAT10Y',
-    'spread_rate': null,
-    'yield_curve_location': 'France'
+  "FR": {
+    "stock_name": "CAC40",
+    "fx_name": "EURUSD",
+    "crypto_name": "BTC",
+    "commodity_name": "Gold",
+    "main_rate": "OAT10Y",
+    "spread_rate": null,
+    "yield_curve_location": "France"
   },
-  'JP': {
-    'stock_name': 'NIKKEI225',
-    'fx_name': 'USDJPY',
-    'crypto_name': 'BTC',
-    'commodity_name': 'Gold',
-    'main_rate': 'JGB10Y',
-    'spread_rate': null,
-    'yield_curve_location': 'Japan'
+  "JP": {
+    "stock_name": "NIKKEI225",
+    "fx_name": "USDJPY",
+    "crypto_name": "BTC",
+    "commodity_name": "Gold",
+    "main_rate": "JGB10Y",
+    "spread_rate": null,
+    "yield_curve_location": "Japan"
   }
 };
 
 // Location to 10Y yield mapping
 const LOCATION_TO_10Y = {
-  'United States': 'UST10Y',
-  'France': 'OAT10Y',
-  'Germany': 'BUND10Y',
-  'Japan': 'JGB10Y'
+  "United States": "UST10Y",
+  "France": "OAT10Y",
+  "Germany": "BUND10Y",
+  "Japan": "JGB10Y"
 };
 
 /**
@@ -703,7 +703,7 @@ function updateZone(zone) {
   const params = new URLSearchParams(window.location.search);
 
   // Set the zone parameter
-  params.set('zone', zone);
+  params.set("zone", zone);
 
   // Apply zone values to URL parameters
   const zoneValues = ZONE_VALUES[zone];
@@ -729,25 +729,25 @@ function updateZone(zone) {
 function initializeCustomFieldHandlers() {
   // Map of dropdown IDs to their corresponding URL parameter names
   const dropdownMappings = {
-    'stockSelect': 'stock_name',
-    'fxSelect': 'fx_name',
-    'cryptoSelect': 'crypto_name',
-    'commoditySelect': 'commodity_name',
-    'mainRateSelect': 'main_rate',
-    'spreadRateSelect': 'spread_rate',
-    'yieldCurveLocationSelect': 'yield_curve_location'
+    "stockSelect": "stock_name",
+    "fxSelect": "fx_name",
+    "cryptoSelect": "crypto_name",
+    "commoditySelect": "commodity_name",
+    "mainRateSelect": "main_rate",
+    "spreadRateSelect": "spread_rate",
+    "yieldCurveLocationSelect": "yield_curve_location"
   };
 
   // Add change listeners to each dropdown
   Object.keys(dropdownMappings).forEach(dropdownId => {
     const element = document.getElementById(dropdownId);
     if (element) {
-      element.addEventListener('change', function() {
+      element.addEventListener("change", function() {
         // Get current parameters from URL
         const params = new URLSearchParams(window.location.search);
 
         // Set zone to CUSTOM when any field is changed
-        params.set('zone', 'CUSTOM');
+        params.set("zone", "CUSTOM");
 
         // Add the selected value to the URL parameters
         const paramName = dropdownMappings[dropdownId];
@@ -766,13 +766,13 @@ function initializeCustomFieldHandlers() {
  * Initialize Last button handler
  */
 function initializeLastButton() {
-  const lastBtn = document.getElementById('lastBtn');
+  const lastBtn = document.getElementById("lastBtn");
   if (lastBtn && window.defaultReferenceDate) {
-    lastBtn.addEventListener('click', function() {
-      const referenceDateInput = document.getElementById('reference_date');
+    lastBtn.addEventListener("click", function() {
+      const referenceDateInput = document.getElementById("reference_date");
       if (referenceDateInput) {
         referenceDateInput.value = window.defaultReferenceDate;
-        document.querySelector('form').submit();
+        document.querySelector("form").submit();
       }
     });
   }

@@ -1,9 +1,40 @@
 """Shared base models used by domain apps."""
 
-from typing import List
+from collections.abc import Sequence
+from typing import TypeVar
 
 from django.db import models
+from django.db.models.enums import Choices
 from django.db.models.fields.related import ForeignKey
+
+ChoiceT = TypeVar("ChoiceT", bound=Choices)
+
+
+def get_choice_from_label(choices: type[ChoiceT], label: str) -> ChoiceT:
+    """Return the member of ``choices`` whose display label matches ``label``."""
+    for choice in choices:
+        if str(choice.label) == label:
+            return choice
+    available = [str(member.label) for member in choices]
+    raise ValueError(
+        f"Choice does not exist for label {label!r}, available labels: {available}"
+    )
+
+
+def get_choice_labels(choices: type[ChoiceT]) -> list[str]:
+    """Display labels in ``ordered()`` order when defined, else declaration order."""
+    ordered_attr = getattr(choices, "ordered", None)
+    if callable(ordered_attr):
+        ordered_members = ordered_attr()
+        if isinstance(ordered_members, Sequence) and not isinstance(
+            ordered_members, (str, bytes)
+        ):
+            return [
+                str(item.label)
+                for item in ordered_members
+                if isinstance(item, choices)
+            ]
+    return [str(choice.label) for choice in choices]
 
 
 class BaseModel(models.Model):
@@ -13,6 +44,8 @@ class BaseModel(models.Model):
     last_modified = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Base model metadata."""
+
         abstract = True
 
     def convert_to_dict(
@@ -20,8 +53,8 @@ class BaseModel(models.Model):
         remove_foreign_key: bool = False,
         remove_auto_fields: bool = True,
         remove_cache_fields: bool = True,
-        remove_specific_fields: List[str] = [],
-    ) -> dict:
+        remove_specific_fields: list[str] = [],
+    ) -> dict:  # Polymorphic model serializer until per-model TypedDicts exist.
         """Convert Model to Dictionary."""
         auto_fields = ["id", "date_added", "last_modified"]
         cache_fields = ["_prefetched_objects_cache", "_state"]
@@ -57,5 +90,7 @@ class BaseLogModel(BaseModel):
     logs = models.TextField()
 
     class Meta:
+        """Base log model metadata (newest first)."""
+
         abstract = True
         ordering = ["-date_added"]

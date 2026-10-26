@@ -13,6 +13,11 @@ docker-compose.yml text eol=lf
 # Python files
 *.py text eol=lf
 
+# Frontend (keep LF so ESLint / Stylelint stay OS-agnostic)
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+
 # Configuration files
 *.yml text eol=lf
 *.yaml text eol=lf

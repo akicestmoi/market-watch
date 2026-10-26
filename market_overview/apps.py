@@ -4,5 +4,7 @@ from django.apps import AppConfig
 
 
 class MarketOverviewConfig(AppConfig):
+    """App configuration for market overview."""
+
     default_auto_field = "django.db.models.BigAutoField"
     name = "market_overview"

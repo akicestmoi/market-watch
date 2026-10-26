@@ -54,6 +54,8 @@ class EconomicIndicatorInformationSerializer(serializers.ModelSerializer):
     """Economic Indicator Information Serializer."""
 
     class Meta:
+        """Economic indicator information serializer metadata."""
+
         model = EconomicIndicatorInformationModel
         fields = [
             "name",
@@ -74,6 +76,8 @@ class EconomicDataResponseSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="pk", read_only=True)
 
     class Meta:
+        """Economic data response serializer metadata."""
+
         model = EconomicDataModel
         fields = [
             "id",

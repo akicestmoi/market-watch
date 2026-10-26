@@ -2,7 +2,7 @@
 
 from datetime import date, datetime, timezone
 
-import pytest  # type: ignore[reportMissingImports]
+import pytest
 from django.test import TestCase
 
 from central_banks_overview.models import (
@@ -11,13 +11,14 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.cb_inference_services import (
+from central_banks_overview.services.central_banks_inference import (
     FedFundsFuturesProbabilityMatrixService,
     FedFuturesRateType,
 )
 
 
 class TestProbabilityMatrixCalculationBaseTestCase(TestCase):
+    """Base fixtures for FRB probability matrix methodology tests."""
 
     def setUp(self):
         """Set up test fixtures."""
