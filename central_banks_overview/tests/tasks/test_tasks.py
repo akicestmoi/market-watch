@@ -25,7 +25,7 @@ from central_banks_overview.services.stir_prices_ingestion import (
     _get_mutan_futures_accrual_dates,
     _get_mutan_futures_prices_from_tfx,
 )
-from core.tests import MockResponse, parse_query_for_testing, read_file_content
+from core.conftest import MockResponse, parse_query_for_testing, read_file_content
 from market_overview.services.price_ingestion import ScrapingResult
 
 

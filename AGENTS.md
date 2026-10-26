@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Git
+
+**Never run any git command** (`status`, `diff`, `add`, `commit`, `push`, `pull`, `checkout`, `rebase`, etc.) unless the user explicitly asks for that git action in the current message. Do not stage, commit, or push as a side effect of finishing other work.
+
 ## Coding conventions
 
 App layout, `@open_api` / serializers / `error_responses`, module clustering, typing, and tests: [`.cursor/rules/coding-conventions.mdc`](.cursor/rules/coding-conventions.mdc).

@@ -36,7 +36,7 @@ from central_banks_overview.services.stir_prices_ingestion import (
     get_futures_prices,
     ingest_stir_futures_prices,
 )
-from core.tests import MockResponse, parse_query_for_testing, read_file_content
+from core.conftest import MockResponse, parse_query_for_testing, read_file_content
 from market_overview.services import price_ingestion
 
 

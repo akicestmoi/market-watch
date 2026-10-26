@@ -1,4 +1,4 @@
-"""Legacy/placeholder tests module for the core package."""
+"""Shared helpers for Django app tests (mocks, fixtures, queryset asserts)."""
 
 import json
 from datetime import datetime
@@ -28,8 +28,7 @@ def parse_query_for_testing(
     sort_keys: list[str] = [],
     date_format: str = "%Y-%m-%d %H:%M:%S%z",
 ) -> list[dict]:  # Polymorphic: wraps convert_to_dict until per-model TypedDicts exist.
-    """
-    Convert queryset to dictionary list, normalize datetime objects, and sort."""
+    """Convert queryset to dictionary list, normalize datetime objects, and sort."""
     result = convert_query_to_dictionary_list(queryset)
 
     parsed_result = []

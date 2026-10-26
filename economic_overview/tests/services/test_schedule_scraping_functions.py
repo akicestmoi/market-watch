@@ -8,7 +8,7 @@ import pandas as pd
 from django.test import TestCase
 from pandas.testing import assert_frame_equal
 
-from core.tests import MockResponse, load_json_mock
+from core.conftest import MockResponse, load_json_mock
 from economic_overview.services.publication import (
     _get_insee_publication_schedule,
     _get_publication_dates_from_insee,

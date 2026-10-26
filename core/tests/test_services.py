@@ -20,7 +20,7 @@ from core.services import (
     update_with_logs,
     upsert_with_logs,
 )
-from core.tests import parse_query_for_testing
+from core.conftest import parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

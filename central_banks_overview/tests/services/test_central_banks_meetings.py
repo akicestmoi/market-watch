@@ -21,7 +21,7 @@ from central_banks_overview.services.central_banks_meetings import (
     ingest_all_central_bank_meeting_dates,
     ingest_central_bank_meeting_dates,
 )
-from core.tests import MockResponse, parse_query_for_testing, read_file_content
+from core.conftest import MockResponse, parse_query_for_testing, read_file_content
 
 
 class TestCentralBankMeetingsServices(TestCase):

@@ -290,7 +290,7 @@ Do not introduce new short aliases (`dt` for `datetime`, etc.). Prefer the real 
 
 ## Docstrings required
 
-Every module (except `__init__.py`), and every function and class, must have a docstring. **`__init__.py` must not have a module docstring** (leave the file empty, or only re-exports / package wiring with no top-level docstring).
+Every module (except `__init__.py`), and every function and class, must have a docstring. **`__init__.py` must be left empty** — no module docstring, no re-exports, no `__all__`, no package wiring.
 
 ```python
 """Build market recap payloads for the visualization UI."""

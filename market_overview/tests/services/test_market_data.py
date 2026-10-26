@@ -6,7 +6,7 @@ import pytest
 from django.test import TestCase
 
 import core.services as core_services
-from core.tests import parse_query_for_testing
+from core.conftest import parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

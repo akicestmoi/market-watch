@@ -7,7 +7,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 
 import market_overview.tasks as tasks
-from core.tests import MockResponse, parse_query_for_testing
+from core.conftest import MockResponse, parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

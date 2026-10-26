@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.tests import load_json_mock
+from core.conftest import load_json_mock
 from market_overview.models import HolidayModel, LocationChoices
 
 HOLIDAY_API_RESPONSE_FR = load_json_mock(

@@ -8,7 +8,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from django.test import TestCase
 
-from core.tests import MockResponse, read_file_content
+from core.conftest import MockResponse, read_file_content
 from market_overview.services.price_ingestion import (
     ScrapingResult,
     _get_bund_yield_from_bundesbank,

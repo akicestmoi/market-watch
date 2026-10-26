@@ -9,7 +9,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.tests import MockResponse, load_json_mock
+from core.conftest import MockResponse, load_json_mock
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
