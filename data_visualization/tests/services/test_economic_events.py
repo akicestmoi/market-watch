@@ -74,10 +74,13 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         assert len(result[0]["days"]) == 5
         assert result[0]["days"][0]["date"] == "2025-12-15"
         assert result[0]["days"][0]["events"] == []
+        assert result[0]["days"][0]["is_today"] is False
         assert result[0]["days"][1]["date"] == "2025-12-16"
+        assert result[0]["days"][1]["is_today"] is True
         assert result[0]["days"][1]["events"][0]["name"] == "This Week"
         assert result[1]["week_start"] == "2025-12-22"
         assert result[1]["days"][0]["date"] == "2025-12-22"
+        assert result[1]["days"][0]["is_today"] is False
         assert result[1]["days"][0]["events"][0]["name"] == "Next Week"
 
     def test_group_upcoming_events_focus_week_after_friday(self):
@@ -109,6 +112,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         assert result[0]["week_start"] == "2025-12-22"
         assert result[0]["is_current_week"] is True
         assert result[0]["days"][0]["events"][0]["name"] == "Next Week"
+        assert all(day["is_today"] is False for week in result for day in week["days"])
         assert result[1]["week_start"] == "2025-12-29"
         assert all(day["events"] == [] for day in result[1]["days"])
 

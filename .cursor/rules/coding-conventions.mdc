@@ -218,7 +218,45 @@ def load(rows: list[str]) -> dict[str, int] | None: ...
 
 Never annotate with `Any`, `object`, bare `dict` / `Dict`, or bare `tuple` / `Tuple`.
 
-Use **`TypedDict`** for record/mapping shapes and **`NamedTuple`** for fixed-position tuples. Homogeneous sequences use `list[SomeTypedDict]`.
+### TypedDict vs Pydantic `BaseModel` vs Django `BaseModel`
+
+Three different “model” concepts — do not mix them:
+
+| Tool | Runtime? | Use for |
+| ---- | -------- | ------- |
+| **`TypedDict`** | No (typing only; value is a plain `dict`) | Internal record/mapping shapes we **build and trust**: service payloads, template/UI context, chat/tool return dicts, scraper/ingestion rows after we picked fields, DRF `*ValidatedData` **after** serializers ran |
+| **Pydantic `BaseModel`** (`pydantic.BaseModel`) | Yes (parse / coerce / validate) | **Trust boundaries** that admit messy or model-generated input — especially **LLM structured outputs** under `market_analysis/llm/schemas.py` (`output_type=…`). Prefer Field constraints at that edge |
+| **Django `core.models.BaseModel`** | ORM | Persisted DB models only. Unrelated to Pydantic |
+
+**HTTP JSON APIs** validate with **DRF serializers** (`<app>/open_api/`), not Pydantic. Map `validated_data` into a view-local `*ValidatedData` TypedDict, then call services with typed values (enums converted at the view boundary).
+
+**LLM pipeline pattern (required):** Pydantic schema at the agent boundary → map into a **TypedDict** (or ORM fields) for process memory, cache, and persistence. Do not thread Pydantic instances through services/UI; do not re-validate trusted internal dicts with Pydantic.
+
+```python
+# ✅ LLM edge — Pydantic
+class ArticleAnalysisOutput(BaseModel):
+    title: str = Field(..., max_length=500)
+    ...
+
+# ✅ After the agent — TypedDict for the rest of the app
+class AnalyzedArticle(TypedDict):
+    title: str
+    ...
+```
+
+```python
+# ❌ BAD — Pydantic for an internal service row we construct ourselves
+class PriceChange(BaseModel):
+    asset_id: int
+    short_name: str
+
+# ❌ BAD — TypedDict as the only gate for untrusted LLM JSON
+class DailyRecapOutput(TypedDict):
+    title: str
+    main_summary: str
+```
+
+Use **`NamedTuple`** for fixed-position tuples (not for open JSON objects). Homogeneous sequences use `list[SomeTypedDict]`. Small frozen `@dataclass` configs with defaults are allowed when a TypedDict would be awkward; do not use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records.
 
 ```python
 # ❌ BAD
@@ -249,7 +287,7 @@ DRF **`*ValidatedData` TypedDicts** live in the **view module** that annotates `
 Allowed exceptions (document in a one-line comment at the site):
 
 - Homogeneous open-key maps of already-typed values, e.g. `dict[str, list[PriceChange]]` when keys are dynamic IDs/names.
-- Polymorphic model serializers such as `BaseModel.convert_to_dict` until per-model TypedDicts exist.
+- Polymorphic model serializers such as Django `BaseModel.convert_to_dict` until per-model TypedDicts exist.
 - Abstract cross-model helpers such as `update_with_logs` / `upsert_with_logs` (`updates=` / `lookup_kwargs=`) — field keys vary by model; use bare `dict` with the polymorphic comment, do **not** invent a union TypedDict of every model’s fields.
 
 ## Remove dead code

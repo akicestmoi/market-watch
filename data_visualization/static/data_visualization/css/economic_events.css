@@ -134,11 +134,40 @@ body {
     margin-bottom: 0;
 }
 
+.upcoming-day.is-today {
+    background-color: #fffbeb;
+    border: 2px solid #f59e0b;
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
 .upcoming-day-label {
     margin: 0 0 0.45rem;
     font-size: 0.95rem;
     font-weight: 700;
     color: #0f172a;
+}
+
+.upcoming-day.is-today .upcoming-day-label {
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.upcoming-day-today-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #78350f;
+    background-color: #fde68a;
+    border: 1px solid #f59e0b;
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.4rem;
 }
 
 .upcoming-day-holidays {

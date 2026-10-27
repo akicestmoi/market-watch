@@ -23,8 +23,8 @@
                         data-week-start="{{ week.week_start }}">
                         <div class="upcoming-week-label">{{ week.week_label }}</div>
                         {% for day in week.days %}
-                        <section class="upcoming-day">
-                            <h3 class="upcoming-day-label">{{ day.date_display }}</h3>
+                        <section class="upcoming-day{% if day.is_today %} is-today{% endif %}">
+                            <h3 class="upcoming-day-label">{{ day.date_display }}{% if day.is_today %} <span class="upcoming-day-today-badge">Today</span>{% endif %}</h3>
                             {% if day.events %}
                             <div class="upcoming-day-holidays">
                                 {% for event in day.events %}

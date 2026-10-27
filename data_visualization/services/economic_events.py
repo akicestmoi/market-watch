@@ -1,7 +1,7 @@
 """Build upcoming economic events for the Economic Events visualization page."""
 
 from datetime import date, datetime, timedelta, timezone
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import market_overview.services.holidays as holidays
@@ -31,6 +31,7 @@ class UpcomingEventGroup(TypedDict):
     date: str
     date_display: str
     events: list[UpcomingEvent]
+    is_today: NotRequired[bool]  # Europe/Paris calendar day; set on week day slots
 
 
 def _format_day_label(day: date) -> str:
@@ -219,6 +220,7 @@ def _format_week_label(week_start: date) -> str:
 def _build_week_days(
     week_start: date,
     days_by_date: dict[str, UpcomingEventGroup],
+    today: date,
 ) -> list[UpcomingEventGroup]:
     """Always return Mon–Fri day slots for a week (empty days included)."""
     days: list[UpcomingEventGroup] = []
@@ -231,6 +233,7 @@ def _build_week_days(
                 "date": day_key,
                 "date_display": _format_day_label(day),
                 "events": existing["events"] if existing is not None else [],
+                "is_today": day == today,
             }
         )
     return days
@@ -268,7 +271,7 @@ def group_upcoming_events_by_week(
                 "week_start": week_start.isoformat(),
                 "week_label": _format_week_label(week_start),
                 "is_current_week": week_start == focus_week_start,
-                "days": _build_week_days(week_start, days_by_date),
+                "days": _build_week_days(week_start, days_by_date, today),
             }
         )
         week_start += timedelta(days=7)
@@ -280,7 +283,7 @@ def group_upcoming_events_by_week(
                 "week_start": pad_week_start.isoformat(),
                 "week_label": _format_week_label(pad_week_start),
                 "is_current_week": False,
-                "days": _build_week_days(pad_week_start, days_by_date),
+                "days": _build_week_days(pad_week_start, days_by_date, today),
             }
         )
 

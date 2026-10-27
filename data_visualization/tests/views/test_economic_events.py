@@ -28,8 +28,15 @@ class TestEconomicEventsView(TestCase):
         assert len(upcoming_weeks) % 2 == 0
         assert upcoming_weeks[0].get("is_current_week") is True
         assert len(upcoming_weeks[0]["days"]) == 5
+        today_slots = [
+            day for week in upcoming_weeks for day in week["days"] if day.get("is_today")
+        ]
+        assert len(today_slots) == 1
+        assert today_slots[0]["date"] == "2025-12-16"
         assert b"Upcoming Economic Events" in response.content
         assert b"upcoming-week-pair" in response.content
+        assert b"is-today" in response.content
+        assert b"Today" in response.content
         assert b"No events" in response.content
         assert b"location_flags." in response.content
         assert b"economic_events." in response.content
