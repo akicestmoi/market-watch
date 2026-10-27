@@ -11,6 +11,16 @@
                 </a>
             </li>
             <li class="navbar-item">
+                <a href="{% url 'sector-analysis' %}" class="navbar-link {% if request.resolver_match.url_name == 'sector-analysis' %}active{% endif %}">
+                    Sector analysis
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="{% url 'economic-events' %}" class="navbar-link {% if request.resolver_match.url_name == 'economic-events' %}active{% endif %}">
+                    Economic Events
+                </a>
+            </li>
+            <li class="navbar-item">
                 <a href="{% url 'market-charts' %}" class="navbar-link {% if request.resolver_match.url_name == 'market-charts' %}active{% endif %}">
                     Market Charts
                 </a>
@@ -38,4 +48,3 @@
         </ul>
     </div>
 </nav>
-

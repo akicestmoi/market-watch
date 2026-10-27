@@ -1,25 +1,21 @@
 """Tests for market recap visualization services."""
 
-from datetime import date, datetime, time, timedelta, timezone
-from unittest.mock import patch
+from datetime import date, datetime, timezone
 
 from django.test import TestCase
-from django.utils import timezone as django_timezone
 from freezegun import freeze_time
 
+from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
 from data_visualization.services.market_recap import (
     FX_MATRIX_ORDER,
-    UpcomingEventGroup,
-    _get_upcoming_events_from_publication_schedules,
-    _get_upcoming_holidays_events,
     format_data_for_market_recap_display,
+    get_day_events_grouped_by_location,
     get_fx_prices_matrix,
-    _get_upcoming_events,
-    group_upcoming_events_by_week,
 )
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
+    EconomicDataModel,
     EconomicDataSourceChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
@@ -573,317 +569,101 @@ class TestMarketRecapServices(TestCase):
                 assert float(value) == 0.0
 
 
-class TestGroupUpcomingEventsByWeek(TestCase):
-    """Tests for ISO-week grouping of upcoming events on the market recap."""
-
-    def test_group_upcoming_events_by_week(self):
-        """
-        GIVEN day-level upcoming events spanning two ISO weeks
-        WHEN grouping by week
-        THEN weeks are sorted and the current week is flagged
-        """
-        today = date(2025, 12, 16)  # Tuesday; ISO week starts 2025-12-15
-        upcoming: list[UpcomingEventGroup] = [
-            {
-                "date": "2025-12-16",
-                "date_display": "2025-12-16",
-                "events": [
-                    {
-                        "name": "This Week",
-                        "location": "France",
-                        "publication_date": datetime(
-                            2025, 12, 16, 10, 0, 0, tzinfo=timezone.utc
-                        ),
-                        "time_str": "10:00",
-                    }
-                ],
-            },
-            {
-                "date": "2025-12-22",
-                "date_display": "2025-12-22",
-                "events": [
-                    {
-                        "name": "Next Week",
-                        "location": "United States",
-                        "publication_date": datetime(
-                            2025, 12, 22, 14, 0, 0, tzinfo=timezone.utc
-                        ),
-                        "time_str": "14:00",
-                    }
-                ],
-            },
-        ]
-        result = group_upcoming_events_by_week(upcoming, today=today)
-        assert len(result) == 2
-        assert result[0]["week_start"] == "2025-12-15"
-        assert result[0]["is_current_week"] is True
-        assert result[0]["days"][0]["date"] == "2025-12-16"
-        assert result[1]["week_start"] == "2025-12-22"
-        assert result[1]["is_current_week"] is False
-        assert result[0]["week_label"] == "15 Dec 2025 – 19 Dec 2025"
-        assert "Week of" not in result[0]["week_label"]
-
-    def test_group_upcoming_events_focus_week_after_friday(self):
-        """
-        GIVEN today is Saturday and only next-week events exist
-        WHEN grouping by week
-        THEN the focus week is next Monday–Friday and is always included
-        """
-        today = date(2025, 12, 20)  # Saturday
-        upcoming: list[UpcomingEventGroup] = [
-            {
-                "date": "2025-12-22",
-                "date_display": "Mon 22 Dec",
-                "events": [
-                    {
-                        "name": "Next Week",
-                        "location": "France",
-                        "publication_date": datetime(
-                            2025, 12, 22, 10, 0, 0, tzinfo=timezone.utc
-                        ),
-                        "time_str": "10:00",
-                    }
-                ],
-            },
-        ]
-        result = group_upcoming_events_by_week(upcoming, today=today)
-        assert result[0]["week_start"] == "2025-12-22"
-        assert result[0]["is_current_week"] is True
-        assert result[0]["week_label"] == "22 Dec 2025 – 26 Dec 2025"
-
-    def test_group_upcoming_events_includes_empty_focus_week(self):
-        """
-        GIVEN no events in the focus week
-        WHEN grouping by week
-        THEN an empty focus week is still returned for the collapsed card
-        """
-        today = date(2025, 12, 16)  # Tuesday → week of 15 Dec
-        upcoming: list[UpcomingEventGroup] = [
-            {
-                "date": "2025-12-22",
-                "date_display": "Mon 22 Dec",
-                "events": [
-                    {
-                        "name": "Later",
-                        "location": "France",
-                        "publication_date": datetime(
-                            2025, 12, 22, 10, 0, 0, tzinfo=timezone.utc
-                        ),
-                        "time_str": "10:00",
-                    }
-                ],
-            },
-        ]
-        result = group_upcoming_events_by_week(upcoming, today=today)
-        assert result[0]["week_start"] == "2025-12-15"
-        assert result[0]["is_current_week"] is True
-        assert result[0]["days"] == []
-        assert result[1]["week_start"] == "2025-12-22"
-
-
 @freeze_time("2025-12-16")
-class TestUpcomingEvents(TestCase):
-    """Tests for market-recap upcoming event aggregation."""
+class TestDayEvents(TestCase):
+    """Tests for same-day events shown on the market recap card."""
 
     def setUp(self):
         """Set up test fixtures."""
+        self.event_date = date(2025, 12, 15)
         self.indicator = EconomicIndicatorInformationModel.objects.create(
             id=1,
-            location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
-            technical_name="test_indicator",
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.INFLATION,
+            type="CPI",
+            name="Consumer Price Index",
+            technical_name="cpi",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
-            ticker="001565530",
+            ticker="CPI",
         )
 
-    @patch(
-        "data_visualization.services.market_recap._get_upcoming_events_from_publication_schedules"
-    )
-    @patch(
-        "data_visualization.services.market_recap._get_upcoming_central_bank_events"
-    )
-    @patch(
-        "data_visualization.services.market_recap._get_upcoming_holidays_events"
-    )
-    def test_get_upcoming_events_success(
-        self, mock_holidays, mock_cb, mock_publications
-    ):
+    def test_get_day_events_empty(self):
         """
-        GIVEN upcoming events from different sources
-        WHEN getting market recap upcoming events
-        THEN all events are merged and grouped by date
+        GIVEN no holidays, releases, or CB meetings on the target date
+        WHEN getting day events grouped by location
+        THEN an empty list is returned
         """
-        event_date = datetime.now(timezone.utc) + timedelta(days=1)
-        mock_publications.return_value = {
-            event_date.strftime("%Y-%m-%d"): [
-                {
-                    "name": "Test Indicator",
-                    "location": "France",
-                    "publication_date": event_date,
-                    "time_str": "10:00",
-                }
-            ]
-        }
-        mock_cb.return_value = {}
-        mock_holidays.return_value = {}
+        assert get_day_events_grouped_by_location(self.event_date) == []
 
-        result = _get_upcoming_events()
+    def test_get_day_events_holidays_first_grouped_by_location(self):
+        """
+        GIVEN a holiday and an economic release on the same date and location
+        WHEN getting day events grouped by location
+        THEN holidays are listed before releases and both include name/value/location
+        """
+        HolidayModel.objects.create(
+            id=1,
+            name="Bank Holiday",
+            date=self.event_date,
+            location=LocationChoices.US,
+        )
+        PublicationScheduleModel.objects.create(
+            indicator=self.indicator,
+            current_publication_date=datetime(
+                2025, 12, 15, 13, 30, 0, tzinfo=timezone.utc
+            ),
+        )
+        EconomicDataModel.objects.create(
+            indicator=self.indicator,
+            period=date(2025, 11, 1),
+            data_value=3.2,
+        )
+
+        result = get_day_events_grouped_by_location(self.event_date)
         assert result == [
             {
-                "date": "2025-12-17",
-                "date_display": "Wed 17 Dec",
+                "location": "United States",
                 "events": [
                     {
-                        "name": "Test Indicator",
-                        "location": "France",
-                        "publication_date": event_date,
-                        "time_str": "10:00",
-                    }
+                        "name": "Bank Holiday",
+                        "location": "United States",
+                        "value": "",
+                        "is_holiday": True,
+                    },
+                    {
+                        "name": "CPI",
+                        "location": "United States",
+                        "value": "3.2",
+                        "is_holiday": False,
+                    },
                 ],
             }
         ]
 
-    @patch(
-        "data_visualization.services.market_recap._get_upcoming_events_from_publication_schedules"
-    )
-    @patch(
-        "data_visualization.services.market_recap._get_upcoming_central_bank_events"
-    )
-    @patch(
-        "data_visualization.services.market_recap._get_upcoming_holidays_events"
-    )
-    def test_get_upcoming_events_merged(
-        self, mock_holidays, mock_cb, mock_publications
-    ):
+    def test_get_day_events_includes_central_bank_meeting(self):
         """
-        GIVEN upcoming events from multiple sources on the same date
-        WHEN getting market recap upcoming events
-        THEN events are merged correctly
+        GIVEN a central bank meeting on the target date
+        WHEN getting day events grouped by location
+        THEN the rate decision is included under that location
         """
-        event_date = datetime.now(timezone.utc) + timedelta(days=1)
-        holiday_date = datetime.now(timezone.utc) + timedelta(days=2)
-        mock_publications.return_value = {
-            event_date.strftime("%Y-%m-%d"): [
-                {
-                    "name": "Test Indicator",
-                    "location": "France",
-                    "publication_date": event_date,
-                    "time_str": "10:00",
-                }
-            ]
-        }
-        mock_cb.return_value = {
-            event_date.strftime("%Y-%m-%d"): [
-                {
-                    "name": "ECB Rates Decision",
-                    "location": "Europe",
-                    "publication_date": event_date,
-                    "time_str": "14:00",
-                }
-            ]
-        }
-        mock_holidays.return_value = {
-            holiday_date.strftime("%Y-%m-%d"): [
-                {
-                    "name": "Holiday",
-                    "location": "Japan",
-                    "publication_date": holiday_date,
-                    "time_str": "HOLIDAYS",
-                }
-            ]
-        }
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            order=1,
+            date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
+        )
 
-        result = _get_upcoming_events()
+        result = get_day_events_grouped_by_location(self.event_date)
         assert result == [
             {
-                "date": "2025-12-17",
-                "date_display": "Wed 17 Dec",
+                "location": "Europe",
                 "events": [
                     {
-                        "name": "Test Indicator",
-                        "location": "France",
-                        "publication_date": event_date,
-                        "time_str": "10:00",
-                    },
-                    {
-                        "name": "ECB Rates Decision",
+                        "name": "European Central Bank (ECB) Rates Decision",
                         "location": "Europe",
-                        "publication_date": event_date,
-                        "time_str": "14:00",
-                    },
-                ],
-            },
-            {
-                "date": "2025-12-18",
-                "date_display": "Thu 18 Dec",
-                "events": [
-                    {
-                        "name": "Holiday",
-                        "location": "Japan",
-                        "publication_date": holiday_date,
-                        "time_str": "HOLIDAYS",
+                        "value": "",
+                        "is_holiday": False,
                     }
                 ],
-            },
+            }
         ]
-
-    def test_get_upcoming_events_from_publication_schedules(self):
-        """
-        GIVEN publication schedules with upcoming dates
-        WHEN getting upcoming events from publication schedules
-        THEN events are returned correctly
-        """
-        today = date(2025, 12, 16)
-        future_date = datetime.combine(today, time(10, 30, 0)).replace(
-            tzinfo=timezone.utc
-        ) + timedelta(days=5)
-        PublicationScheduleModel.objects.create(
-            indicator=self.indicator,
-            current_publication_date=future_date,
-            next_publication_date=future_date + timedelta(days=30),
-        )
-
-        result = _get_upcoming_events_from_publication_schedules(today)
-        assert result == {
-            "2025-12-21": [
-                {
-                    "name": "Test Indicator",
-                    "location": "France",
-                    "publication_date": datetime(
-                        2025, 12, 21, 10, 30, 0, tzinfo=timezone.utc
-                    ),
-                    # Stored UTC 10:30 → Europe/Paris winter (CET) 11:30
-                    "time_str": "11:30",
-                }
-            ]
-        }
-
-    def test_get_upcoming_holidays_events(self):
-        """
-        GIVEN upcoming holidays
-        WHEN getting upcoming holidays events
-        THEN events are returned correctly
-        """
-        today = date(2025, 12, 16)
-        HolidayModel.objects.create(
-            id=1,
-            name="Holiday",
-            date=django_timezone.now() + timedelta(days=2),
-            location=LocationChoices.JP,
-        )
-        result = _get_upcoming_holidays_events(today)
-        assert result == {
-            "2025-12-18": [
-                {
-                    "name": "Holiday",
-                    "location": "Japan",
-                    "publication_date": datetime(
-                        2025, 12, 18, 0, 0, 0, tzinfo=timezone.utc
-                    ),
-                    "time_str": "HOLIDAYS",
-                }
-            ]
-        }

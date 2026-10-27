@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sector analysis</title>
+    <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
+    <link href="{% static 'data_visualization/css/sector_analysis.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    {% include "data_visualization/_navbar.html" %}
+    <div class="sector-analysis-panel">
+        <div class="sector-analysis-card">
+            <h2>Sector analysis</h2>
+            <p class="sector-analysis-empty">No data yet.</p>
+        </div>
+    </div>
+</body>
+
+</html>

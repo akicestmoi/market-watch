@@ -317,20 +317,20 @@ Maintains the economic calendar and observation history used by the economic rec
 - **Data sources:** `data_sources/economic_data.json` (seed indicators); series catalog and methodology notes in `docs/INDICATORS.md`.
 - **HTTP (`/economics/`):** `indicator/generate-base-information`, `indicator/ingest` (latest), `indicator/ingest-historical`, `indicator/ingest-specific`, `indicator` (detail); `schedule/update`.
 - **Tasks:** `scheduled_economic_data_and_schedule_update`; `scheduled_economic_data_update_logs_cleanup`.
-- **Relations:** Consumed by `data_visualization` economic recap/charts; location concepts align with market holidays / CB calendar in upcoming-events UI.
+- **Relations:** Consumed by `data_visualization` economic recap/charts; location concepts align with market holidays / CB calendar in the economic-events UI.
 
 ### Central Banks Overview (`central_banks_overview`)
 
 **Purpose:** central-bank calendar and market-implied policy path for Fed / ECB / BoJ.
 
-Stores meeting dates, CB data series, and STIR futures prices, then derives meeting-by-meeting **probability matrices** for rate moves. That powers the central-banks recap and upcoming-events views, and complements market prices with a policy-path lens.
+Stores meeting dates, CB data series, and STIR futures prices, then derives meeting-by-meeting **probability matrices** for rate moves. That powers the central-banks recap and economic-events views, and complements market prices with a policy-path lens.
 
 - **Models:** `CentralBankMeetingModel`; `CentralBankDataModel`; `StirFuturesModel` (e.g. Fed funds / ESTR / mutan futures); `StirFuturesPriceUpdateLogModel`. Reuses `market_overview` location enums via a CB location map.
 - **Services:** `central_banks_data` — ingest/query CB series; `central_banks_meetings` — scrape FOMC/ECB/BoJ calendars; `stir_prices_ingestion_services` — Yahoo, TFX, ESTR PDF, bulk/CSV; `central_banks_inference` — probability matrices from STIR (Fed vs 3M futures methodologies).
 - **Data sources:** `data_sources/central_banks_data.json`; Fed/ECB/BoJ sites; Yahoo; TFX; ESTR PDF; some rate scrapers shared with market overview.
 - **HTTP (`/central-banks/`):** `data`, `data/ingest`; `meeting-dates`, `meeting-dates/ingest`; `stir-futures` (+ ingest, ESTR PDF, bulk/CSV); `probability-matrix`.
 - **Tasks:** `scheduled_stir_prices_ingestion`; `scheduled_stir_futures_price_update_logs_cleanup`; `scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`.
-- **Relations:** Depends on `market_overview` for locations / some scrapes; powers CB recap and upcoming events in visualization.
+- **Relations:** Depends on `market_overview` for locations / some scrapes; powers CB recap and economic events in visualization.
 
 ### Data Visualization (`data_visualization`)
 

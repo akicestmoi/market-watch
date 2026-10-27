@@ -58,10 +58,9 @@ class TestMarketRecapView(TestCase):
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        assert "upcoming_weeks" in response.context
-        upcoming_weeks = response.context.get("upcoming_weeks")
-        assert isinstance(upcoming_weeks, list)
-        assert any(week.get("is_current_week") for week in upcoming_weeks)
+        assert "upcoming_weeks" not in response.context
+        assert "day_events_by_location" in response.context
+        assert response.context.get("day_events_by_location") == []
         assert response.context.get("data_to_display") == [
             {
                 "asset_class": "Stocks",

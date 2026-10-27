@@ -9,6 +9,7 @@ from pandas.tseries.offsets import BDay
 import data_visualization.services.central_banks_recap as central_banks_recap
 import data_visualization.services.database_management as database_management
 import data_visualization.services.economic_charts as economic_charts
+import data_visualization.services.economic_events as economic_events
 import data_visualization.services.economic_recap as economic_recap
 import data_visualization.services.market_charts as market_charts
 import data_visualization.services.market_recap as market_recap
@@ -89,8 +90,9 @@ def market_recap_view(request):
     ]
 
     fx_matrix = market_recap.get_fx_prices_matrix(reference_date, previous_date)
-
-    upcoming_weeks = market_recap.group_upcoming_events_by_week()
+    day_events_by_location = market_recap.get_day_events_grouped_by_location(
+        reference_date
+    )
 
     context = {
         **base_context,
@@ -99,11 +101,25 @@ def market_recap_view(request):
         "right_asset_classes": right_asset_classes,
         "fx_matrix": fx_matrix,
         "fx_matrix_order": market_recap.FX_MATRIX_ORDER,
-        "upcoming_weeks": upcoming_weeks,
+        "day_events_by_location": day_events_by_location,
     }
     if errors:
         context["error_messages"] = json.dumps(errors)
     return render(request, "data_visualization/market_recap.html", context)
+
+
+def sector_analysis_view(request):
+    """Sector analysis view."""
+    return render(request, "data_visualization/sector_analysis.html")
+
+
+def economic_events_view(request):
+    """Economic events calendar view."""
+    upcoming_weeks = economic_events.group_upcoming_events_by_week()
+    context = {
+        "upcoming_weeks": upcoming_weeks,
+    }
+    return render(request, "data_visualization/economic_events.html", context)
 
 
 def market_charts_view(request):

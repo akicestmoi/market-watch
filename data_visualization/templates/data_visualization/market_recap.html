@@ -56,46 +56,10 @@
                     </button>
                 </div>
             </div>
-            <div class="daily-recap-body" id="dailyRecapBody">Loading…</div>
-        </div>
-    </div>
-
-    <!-- Upcoming Events -->
-    <div class="upcoming-releases-panel" id="upcomingReleasesPanel">
-        <div class="upcoming-releases-card{% if not upcoming_weeks %} is-empty{% endif %}" id="upcomingReleasesCard">
-            <div class="upcoming-releases-header">
-                <button type="button" class="upcoming-releases-toggle" id="upcomingReleasesToggle"
-                    aria-expanded="false"{% if not upcoming_weeks %} disabled{% endif %}>
-                    <span class="upcoming-releases-toggle-icon" aria-hidden="true">▸</span>
-                    <h2>Upcoming Events</h2>
-                </button>
-            </div>
-            <div class="upcoming-releases-body" id="upcomingReleasesBody">
-                {% if upcoming_weeks %}
-                    {% for week in upcoming_weeks %}
-                    <div class="upcoming-week{% if week.is_current_week %} is-current-week{% endif %}"
-                        data-week-start="{{ week.week_start }}"
-                        {% if not week.is_current_week %}hidden{% endif %}>
-                        <div class="upcoming-week-label">{{ week.week_label }}</div>
-                        <div class="upcoming-week-chips">
-                            {% for day in week.days %}
-                                {% for event in day.events %}
-                                <span class="upcoming-chip" title="{{ day.date_display }}">
-                                    <span class="upcoming-chip-day">{{ day.date_display }}</span>
-                                    <span class="upcoming-chip-time">{{ event.time_str }}</span>
-                                    <span class="upcoming-chip-location">{{ event.location }}</span>
-                                    <span class="upcoming-chip-name">{{ event.name }}</span>
-                                </span>
-                                {% endfor %}
-                            {% empty %}
-                                <span class="upcoming-chip upcoming-chip-empty">No events this week</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="upcoming-releases-empty">No upcoming events.</p>
-                {% endif %}
+            <div class="daily-recap-body" id="dailyRecapBody">
+                <div id="dailyRecapContent">Loading…</div>
+                {% include "data_visualization/_day_economic_events.html" %}
+                <div class="daily-recap-detail" id="dailyRecapDetail" hidden></div>
             </div>
         </div>
     </div>
@@ -194,6 +158,7 @@
     </script>
     {% endif %}
     <script src="{% static 'data_visualization/js/comparison_period.js' %}"></script>
+    <script src="{% static 'data_visualization/js/location_flags.js' %}"></script>
     <script src="{% static 'data_visualization/js/market_recap.js' %}"></script>
 </body>
 

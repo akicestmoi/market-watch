@@ -85,23 +85,39 @@ function setDailyRecapActionsEnabled(enabled) {
   }
 }
 
+function getDailyRecapContentEl() {
+  return document.getElementById("dailyRecapContent");
+}
+
+function getDailyRecapDetailEl() {
+  return document.getElementById("dailyRecapDetail");
+}
+
+function getDailyRecapEventsEl() {
+  return document.getElementById("dailyRecapEvents");
+}
+
 function renderDailyRecapUnavailableForComparison() {
   const card = document.getElementById("dailyRecapCard");
   const titleEl = document.getElementById("dailyRecapTitle");
-  const bodyEl = document.getElementById("dailyRecapBody");
+  const contentEl = getDailyRecapContentEl();
   if (card) {
     card.classList.add("is-unavailable");
   }
   if (titleEl) {
     titleEl.textContent = "Daily Market Recap";
   }
-  if (bodyEl) {
-    bodyEl.classList.remove("error");
-    bodyEl.classList.add("unavailable");
-    bodyEl.style.whiteSpace = "normal";
-    bodyEl.textContent =
+  if (contentEl) {
+    contentEl.classList.remove("error");
+    contentEl.classList.add("unavailable");
+    contentEl.style.whiteSpace = "normal";
+    contentEl.textContent =
       "The written daily recap covers a single session day. " +
       "It is only available for day comparisons — choose Day under Comparison Date to view or generate it.";
+  }
+  const detailEl = getDailyRecapDetailEl();
+  if (detailEl) {
+    detailEl.innerHTML = "";
   }
   setRecapExpanded(false);
   setDailyRecapActionsEnabled(false);
@@ -332,46 +348,33 @@ function buildArticleSourcesSection(sourceUrls) {
 function setRecapExpanded(expanded) {
   const card = document.getElementById("dailyRecapCard");
   const toggle = document.getElementById("dailyRecapToggle");
+  const detailEl = getDailyRecapDetailEl();
+  const eventsEl = getDailyRecapEventsEl();
   if (!card || !toggle) {
     return;
   }
   card.classList.toggle("is-expanded", expanded);
   toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-  const detailSections = card.querySelectorAll(".daily-recap-detail");
-  detailSections.forEach((section) => {
-    section.hidden = !expanded;
-  });
-}
-
-function setUpcomingReleasesExpanded(expanded) {
-  const card = document.getElementById("upcomingReleasesCard");
-  const toggle = document.getElementById("upcomingReleasesToggle");
-  if (!card || !toggle || toggle.disabled) {
-    return;
+  if (detailEl) {
+    detailEl.hidden = !expanded;
   }
-  card.classList.toggle("is-expanded", expanded);
-  toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-  card.querySelectorAll(".upcoming-week").forEach((week) => {
-    if (week.classList.contains("is-current-week")) {
-      week.hidden = false;
-      return;
-    }
-    week.hidden = !expanded;
-  });
+  if (eventsEl) {
+    eventsEl.hidden = !expanded;
+  }
 }
 
 function renderDailyRecap(data) {
   const card = document.getElementById("dailyRecapCard");
   const titleEl = document.getElementById("dailyRecapTitle");
-  const bodyEl = document.getElementById("dailyRecapBody");
-  if (!bodyEl) {
+  const contentEl = getDailyRecapContentEl();
+  if (!contentEl) {
     return;
   }
 
   if (card) {
     card.classList.remove("is-unavailable");
   }
-  bodyEl.classList.remove("error", "unavailable");
+  contentEl.classList.remove("error", "unavailable");
   setDailyRecapActionsEnabled(true);
   if (titleEl) {
     titleEl.textContent = "Daily Market Recap";
@@ -382,40 +385,45 @@ function renderDailyRecap(data) {
     : "";
   const summarySection = buildRecapSection("Summary", data.main_summary || "");
   const articleSourcesSection = buildArticleSourcesSection(data.source_urls || []);
-  const detailHtml =
-    "<div class=\"daily-recap-detail\" hidden>" +
-    buildRecapSection("United States", data.us_summary || "") +
-    buildRecapSection("Europe", data.eur_summary || "") +
-    buildRecapSection("Japan", data.jp_summary || "") +
-    buildRecapSection("Additional", data.additional_summary || "") +
-    articleSourcesSection +
-    "</div>";
+  const detailEl = getDailyRecapDetailEl();
 
-  bodyEl.innerHTML = headline + summarySection + detailHtml;
+  contentEl.innerHTML = headline + summarySection;
+  if (detailEl) {
+    detailEl.innerHTML =
+      buildRecapSection("United States", data.us_summary || "") +
+      buildRecapSection("Europe", data.eur_summary || "") +
+      buildRecapSection("Japan", data.jp_summary || "") +
+      buildRecapSection("Additional", data.additional_summary || "") +
+      articleSourcesSection;
+  }
   setRecapExpanded(false);
 }
 
 function renderDailyRecapError(message) {
   const card = document.getElementById("dailyRecapCard");
   const titleEl = document.getElementById("dailyRecapTitle");
-  const bodyEl = document.getElementById("dailyRecapBody");
+  const contentEl = getDailyRecapContentEl();
   if (card) {
     card.classList.remove("is-unavailable");
   }
   if (titleEl) {
     titleEl.textContent = "Daily Market Recap";
   }
-  if (bodyEl) {
-    bodyEl.classList.remove("unavailable");
-    bodyEl.classList.add("error");
-    bodyEl.textContent = message;
+  if (contentEl) {
+    contentEl.classList.remove("unavailable");
+    contentEl.classList.add("error");
+    contentEl.textContent = message;
+  }
+  const detailEl = getDailyRecapDetailEl();
+  if (detailEl) {
+    detailEl.innerHTML = "";
   }
   setRecapExpanded(false);
 }
 
 async function loadDailyRecap() {
-  const bodyEl = document.getElementById("dailyRecapBody");
-  if (!bodyEl) {
+  const contentEl = getDailyRecapContentEl();
+  if (!contentEl) {
     return;
   }
 
@@ -428,9 +436,9 @@ async function loadDailyRecap() {
   if (card) {
     card.classList.remove("is-unavailable");
   }
-  bodyEl.classList.remove("error", "unavailable");
+  contentEl.classList.remove("error", "unavailable");
   setDailyRecapActionsEnabled(true);
-  bodyEl.textContent = "Loading daily recap…";
+  contentEl.textContent = "Loading daily recap…";
 
   const reportingDate = getReportingDate();
   const params = new URLSearchParams();
@@ -447,10 +455,14 @@ async function loadDailyRecap() {
       if (document.getElementById("dailyRecapTitle")) {
         document.getElementById("dailyRecapTitle").textContent = "Daily Market Recap";
       }
-      bodyEl.classList.remove("error");
-      bodyEl.style.whiteSpace = "pre-wrap";
-      bodyEl.textContent =
+      contentEl.classList.remove("error");
+      contentEl.style.whiteSpace = "pre-wrap";
+      contentEl.textContent =
         "No daily recap for this date yet.\nUse “Generate new recap” to create one.";
+      const detailEl = getDailyRecapDetailEl();
+      if (detailEl) {
+        detailEl.innerHTML = "";
+      }
       return;
     }
     if (!response.ok) {
@@ -511,7 +523,7 @@ function closeGenerateRecapConfirm() {
 
 async function generateDailyRecap() {
   const generateBtn = document.getElementById("generateRecapBtn");
-  const bodyEl = document.getElementById("dailyRecapBody");
+  const contentEl = getDailyRecapContentEl();
   const reportingDate = getReportingDate();
   if (!reportingDate) {
     renderDailyRecapError("Select a Target Date before generating a recap.");
@@ -522,9 +534,9 @@ async function generateDailyRecap() {
   if (generateBtn) {
     generateBtn.disabled = true;
   }
-  if (bodyEl) {
-    bodyEl.classList.remove("error");
-    bodyEl.textContent = "Generating daily recap (this can take a while)…";
+  if (contentEl) {
+    contentEl.classList.remove("error");
+    contentEl.textContent = "Generating daily recap (this can take a while)…";
   }
   showLoadingModal("Generating daily recap…");
 
@@ -883,16 +895,6 @@ function initializeDailyRecapControls() {
       }
       const expanded = dailyRecapCard.classList.contains("is-expanded");
       setRecapExpanded(!expanded);
-    });
-  }
-  const upcomingReleasesCard = document.getElementById("upcomingReleasesCard");
-  if (upcomingReleasesCard) {
-    upcomingReleasesCard.addEventListener("click", () => {
-      if (upcomingReleasesCard.classList.contains("is-empty")) {
-        return;
-      }
-      const expanded = upcomingReleasesCard.classList.contains("is-expanded");
-      setUpcomingReleasesExpanded(!expanded);
     });
   }
   if (closeChatBtn) {

@@ -5,14 +5,18 @@ from django.urls import path
 from data_visualization.views import (
     central_banks_recap_view,
     economic_charts_view,
+    economic_events_view,
     economic_recap_view,
     management_view,
     market_charts_view,
     market_recap_view,
+    sector_analysis_view,
 )
 
 urlpatterns = [
     path("market-recap/", market_recap_view, name="market-recap"),
+    path("sector-analysis/", sector_analysis_view, name="sector-analysis"),
+    path("economic-events/", economic_events_view, name="economic-events"),
     path("market-charts/", market_charts_view, name="market-charts"),
     path("economic-recap/", economic_recap_view, name="economic-recap-view"),
     path("economic-charts/", economic_charts_view, name="economic-charts-view"),

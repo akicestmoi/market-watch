@@ -6,12 +6,16 @@ from typing import Literal, NamedTuple, TypedDict
 
 import pandas as pd
 
-import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import market_overview.services.holidays as holidays
-from central_banks_overview.models import CENTRAL_BANK_LOCATION_MAP, CentralBankChoices
-from core.services import convert_to_display_timezone, get_local_today
+from central_banks_overview.models import (
+    CENTRAL_BANK_LOCATION_MAP,
+    CentralBankChoices,
+    CentralBankMeetingModel,
+)
+from core.services import convert_to_display_timezone
 from economic_overview.models import (
     EconomicDataLocationChoices,
+    EconomicDataModel,
     PublicationScheduleModel,
 )
 from market_overview.models import (
@@ -320,230 +324,153 @@ def get_fx_prices_matrix(
     return rows
 
 
-class UpcomingEvent(TypedDict):
-    """Single upcoming calendar event for the market recap sidebar."""
+class DayEvent(TypedDict):
+    """Event that occurred on the market-recap target date."""
 
     name: str
     location: str  # Display label (Choices.label), not the stored code
-    publication_date: datetime
-    time_str: str
+    value: str  # Formatted release value; empty for holidays / unknown
+    is_holiday: bool
 
 
-class UpcomingEventGroup(TypedDict):
-    """Upcoming events for a single calendar day."""
+class DayEventsLocationGroup(TypedDict):
+    """Same-day events for one location card."""
 
-    date: str
-    date_display: str
-    events: list[UpcomingEvent]
+    location: str
+    events: list[DayEvent]
 
 
-def _get_upcoming_events_from_publication_schedules(
-    start_date: date,
-) -> dict[str, list[UpcomingEvent]]:
-    """Get upcoming events from publication schedules."""
-    events_by_date: dict[str, list[UpcomingEvent]] = {}
-    upcoming_schedules = (
+def _format_day_event_value(data_value: float | None) -> str:
+    """Format an economic release value for the day-events card."""
+    if data_value is None:
+        return ""
+    if data_value == int(data_value):
+        return str(int(data_value))
+    return f"{data_value:.4f}".rstrip("0").rstrip(".")
+
+
+def _get_day_holiday_events(event_date: date) -> list[DayEvent]:
+    """Return holiday events that fall on ``event_date``."""
+    day_events: list[DayEvent] = []
+    for location in HOLIDAY_COUNTRIES:
+        for holiday in holidays.get_holidays(
+            location=location,
+            year=event_date.year,
+            months=[event_date.month],
+        ):
+            if holiday.date != event_date:
+                continue
+            day_events.append(
+                DayEvent(
+                    name=holiday.name,
+                    location=str(LocationChoices(holiday.location).label),
+                    value="",
+                    is_holiday=True,
+                )
+            )
+    return day_events
+
+
+def _get_day_publication_events(event_date: date) -> list[DayEvent]:
+    """Return economic releases scheduled for ``event_date`` (display TZ)."""
+    day_start = datetime.combine(
+        event_date - timedelta(days=1), datetime.min.time()
+    ).replace(tzinfo=timezone.utc)
+    day_end = datetime.combine(
+        event_date + timedelta(days=1), datetime.max.time()
+    ).replace(tzinfo=timezone.utc)
+    schedules = (
         PublicationScheduleModel.objects.filter(
-            current_publication_date__gte=start_date
+            current_publication_date__gte=day_start,
+            current_publication_date__lte=day_end,
         )
         .select_related("indicator")
-        .order_by("next_publication_date")[:100]
+        .order_by("indicator__location", "indicator__type")
     )
 
-    for schedule in upcoming_schedules:
+    day_events: list[DayEvent] = []
+    for schedule in schedules:
         publication_date = schedule.current_publication_date
         if not publication_date:
             continue
-
         display_dt = convert_to_display_timezone(publication_date)
-        event = UpcomingEvent(
-            name=schedule.indicator.type,
-            location=str(
-                EconomicDataLocationChoices(schedule.indicator.location).label
-            ),
-            publication_date=publication_date,
-            time_str=display_dt.strftime("%H:%M"),
+        if display_dt.date() != event_date:
+            continue
+
+        latest = (
+            EconomicDataModel.objects.filter(indicator=schedule.indicator)
+            .order_by("-period", "-last_modified")
+            .first()
         )
-
-        date_key = display_dt.strftime("%Y-%m-%d")
-        if date_key not in events_by_date:
-            events_by_date[date_key] = []
-        events_by_date[date_key].append(event)
-
-    return events_by_date
-
-
-def _get_upcoming_central_bank_events() -> dict[str, list[UpcomingEvent]]:
-    """Get upcoming central bank events."""
-    events_by_date: dict[str, list[UpcomingEvent]] = {}
-    for (
-        central_bank_meeting_date
-    ) in central_banks_meetings.get_central_bank_meeting_dates():
-        central_bank = CentralBankChoices(central_bank_meeting_date["central_bank"])
-        central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
-        meeting_date = central_bank_meeting_date["meeting_dates"][0]
-        display_dt = convert_to_display_timezone(meeting_date)
-
-        event = UpcomingEvent(
-            name=f"{central_bank.label} Rates Decision",
-            location=str(EconomicDataLocationChoices(central_bank_location).label),
-            publication_date=meeting_date,
-            time_str=display_dt.strftime("%H:%M"),
-        )
-
-        date_key = display_dt.strftime("%Y-%m-%d")
-        if date_key not in events_by_date:
-            events_by_date[date_key] = []
-        events_by_date[date_key].append(event)
-
-    return events_by_date
-
-
-def _get_upcoming_holidays_events(start_date: date) -> dict[str, list[UpcomingEvent]]:
-    """Get upcoming holidays events."""
-    events_by_date: dict[str, list[UpcomingEvent]] = {}
-    current_month = start_date.month
-    current_year = start_date.year
-    next_month = current_month + 1 if current_month < 12 else 1
-    next_year = current_year if current_month < 12 else current_year + 1
-
-    for location in HOLIDAY_COUNTRIES:
-        current_month_holidays = holidays.get_holidays(
-            location=location,
-            year=current_year,
-            months=[current_month],
-        )
-        next_month_holidays = holidays.get_holidays(
-            location=location,
-            year=next_year,
-            months=[next_month],
-        )
-
-        for holiday in list(current_month_holidays) + list(next_month_holidays):
-            if holiday.date < start_date:
-                continue
-
-            holiday_datetime = datetime.combine(
-                holiday.date, datetime.min.time()
-            ).replace(tzinfo=timezone.utc)
-
-            event = UpcomingEvent(
-                name=holiday.name,
-                location=str(LocationChoices(holiday.location).label),
-                publication_date=holiday_datetime,
-                time_str="HOLIDAYS",
+        day_events.append(
+            DayEvent(
+                name=schedule.indicator.type,
+                location=str(
+                    EconomicDataLocationChoices(schedule.indicator.location).label
+                ),
+                value=_format_day_event_value(latest.data_value if latest else None),
+                is_holiday=False,
             )
-
-            date_key = holiday.date.strftime("%Y-%m-%d")
-            if date_key not in events_by_date:
-                events_by_date[date_key] = []
-            events_by_date[date_key].append(event)
-
-    return events_by_date
-
-
-def _merge_events_by_date(
-    base: dict[str, list[UpcomingEvent]],
-    new: dict[str, list[UpcomingEvent]],
-) -> dict[str, list[UpcomingEvent]]:
-    """Merge events dictionaries by extending lists when keys exist."""
-    for date_key, events in new.items():
-        if date_key in base:
-            base[date_key].extend(events)
-        else:
-            base[date_key] = events
-    return base
-
-
-def _get_upcoming_events() -> list[UpcomingEventGroup]:
-    """Build day-level upcoming events for the market recap sidebar."""
-    events_by_date: dict[str, list[UpcomingEvent]] = {}
-    today = get_local_today()
-
-    _merge_events_by_date(
-        events_by_date, _get_upcoming_events_from_publication_schedules(today)
-    )
-    _merge_events_by_date(events_by_date, _get_upcoming_central_bank_events())
-    _merge_events_by_date(events_by_date, _get_upcoming_holidays_events(today))
-    upcoming_events: list[UpcomingEventGroup] = []
-    for date_key in sorted(events_by_date.keys()):
-        events_for_date = sorted(
-            events_by_date[date_key], key=lambda event: event["publication_date"]
         )
-
-        display_dt = convert_to_display_timezone(events_for_date[0]["publication_date"])
-        date_group: UpcomingEventGroup = {
-            "date": date_key,
-            "date_display": display_dt.strftime("%a %d %b"),
-            "events": events_for_date,
-        }
-        upcoming_events.append(date_group)
-
-    return upcoming_events
+    return day_events
 
 
-class UpcomingWeekGroup(TypedDict):
-    """Upcoming events grouped by ISO week (Mon–Fri label)."""
+def _get_day_central_bank_events(event_date: date) -> list[DayEvent]:
+    """Return central-bank rate decisions that fall on ``event_date``."""
+    day_events: list[DayEvent] = []
+    for meeting in CentralBankMeetingModel.objects.all().order_by(
+        "central_bank", "date"
+    ):
+        display_dt = convert_to_display_timezone(meeting.date)
+        if display_dt.date() != event_date:
+            continue
+        central_bank = CentralBankChoices(meeting.central_bank)
+        central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
+        day_events.append(
+            DayEvent(
+                name=f"{central_bank.label} Rates Decision",
+                location=str(LocationChoices(central_bank_location).label),
+                value="",
+                is_holiday=False,
+            )
+        )
+    return day_events
 
-    week_start: str
-    week_label: str
-    is_current_week: bool
-    days: list[UpcomingEventGroup]
 
+def get_day_events_grouped_by_location(
+    event_date: date,
+) -> list[DayEventsLocationGroup]:
+    """Build same-day economic releases for the market recap card by location.
 
-def _get_week_start_date(day: date) -> date:
-    """Return Monday of the ISO week containing day."""
-    return day - timedelta(days=day.weekday())
-
-
-def _get_focus_week_start(today: date) -> date:
-    """Monday of the week to show when the events card is collapsed.
-
-    Mon–Fri: current ISO week. Sat–Sun (after Friday): next Monday's week.
+    Holidays are listed first within each location. Returns an empty list when
+    there are no major events that day (UI shows "No major event").
     """
-    if today.weekday() >= 5:  # Saturday or Sunday
-        return today + timedelta(days=(7 - today.weekday()))
-    return _get_week_start_date(today)
+    events_by_location: dict[str, list[DayEvent]] = {}
+    for day_event in (
+        _get_day_holiday_events(event_date)
+        + _get_day_publication_events(event_date)
+        + _get_day_central_bank_events(event_date)
+    ):
+        events_by_location.setdefault(day_event["location"], []).append(day_event)
 
-
-def _format_week_label(week_start: date) -> str:
-    """Mon–Fri date range label without a 'Week of' prefix."""
-    week_friday = week_start + timedelta(days=4)
-    return f"{week_start.strftime('%d %b %Y')}" f" – {week_friday.strftime('%d %b %Y')}"
-
-
-def group_upcoming_events_by_week(
-    upcoming_events: list[UpcomingEventGroup] | None = None,
-    today: date | None = None,
-) -> list[UpcomingWeekGroup]:
-    """Group day-level upcoming events into ISO weeks.
-
-    Always includes the focus week (even when empty) so the collapsed card
-    still shows Mon–Fri of the current (or next, after Friday) week.
-    """
-    if upcoming_events is None:
-        upcoming_events = _get_upcoming_events()
-    if today is None:
-        today = get_local_today()
-
-    focus_week_start = _get_focus_week_start(today)
-    weeks: dict[date, list[UpcomingEventGroup]] = {}
-    for day_group in upcoming_events:
-        day = date.fromisoformat(day_group["date"])
-        week_start = _get_week_start_date(day)
-        weeks.setdefault(week_start, []).append(day_group)
-
-    # Ensure the focus week is always present for the collapsed view.
-    weeks.setdefault(focus_week_start, [])
-
-    result: list[UpcomingWeekGroup] = []
-    for week_start in sorted(weeks.keys()):
+    result: list[DayEventsLocationGroup] = []
+    for location in LocationChoices.ordered():
+        location_label = str(location.label)
+        location_events = events_by_location.pop(location_label, None)
+        if not location_events:
+            continue
+        location_events.sort(
+            key=lambda event: (not event["is_holiday"], event["name"].lower())
+        )
         result.append(
-            {
-                "week_start": week_start.isoformat(),
-                "week_label": _format_week_label(week_start),
-                "is_current_week": week_start == focus_week_start,
-                "days": weeks[week_start],
-            }
+            DayEventsLocationGroup(location=location_label, events=location_events)
+        )
+    for location_label in sorted(events_by_location.keys()):
+        location_events = events_by_location[location_label]
+        location_events.sort(
+            key=lambda event: (not event["is_holiday"], event["name"].lower())
+        )
+        result.append(
+            DayEventsLocationGroup(location=location_label, events=location_events)
         )
     return result

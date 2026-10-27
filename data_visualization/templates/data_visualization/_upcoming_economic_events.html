@@ -1,0 +1,66 @@
+{# Two-column upcoming-events panel, paged two weeks at a time. #}
+<div class="upcoming-releases-panel" id="upcomingReleasesPanel">
+    <div class="upcoming-releases-card" id="upcomingReleasesCard">
+        <div class="upcoming-releases-header">
+            <h2>Upcoming Economic Events</h2>
+            {% if upcoming_weeks|length > 2 %}
+            <div class="upcoming-week-pager" id="upcomingWeekPager">
+                <button type="button" class="upcoming-week-pager-btn" id="upcomingWeekPrev"
+                    aria-label="Previous two weeks" disabled>&lsaquo;</button>
+                <span class="upcoming-week-pager-label" id="upcomingWeekPagerLabel"></span>
+                <button type="button" class="upcoming-week-pager-btn" id="upcomingWeekNext"
+                    aria-label="Next two weeks">&rsaquo;</button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="upcoming-releases-body" id="upcomingReleasesBody">
+            {% if upcoming_weeks %}
+                {% for week in upcoming_weeks %}
+                    {% if forloop.counter0|divisibleby:2 %}
+                    <div class="upcoming-week-pair upcoming-weeks-columns"{% if not forloop.first %} hidden{% endif %}>
+                    {% endif %}
+                    <div class="upcoming-week-column{% if week.is_current_week %} is-current-week{% endif %}"
+                        data-week-start="{{ week.week_start }}">
+                        <div class="upcoming-week-label">{{ week.week_label }}</div>
+                        {% for day in week.days %}
+                        <section class="upcoming-day">
+                            <h3 class="upcoming-day-label">{{ day.date_display }}</h3>
+                            {% if day.events %}
+                            <div class="upcoming-day-holidays">
+                                {% for event in day.events %}
+                                {% if event.is_holiday %}
+                                <div class="upcoming-event-row is-holiday">
+                                    <span class="upcoming-event-time">{{ event.time_str }}</span>
+                                    <span class="upcoming-event-location" data-location="{{ event.location }}"></span>
+                                    <span class="upcoming-event-name">{{ event.name }}</span>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="upcoming-day-releases">
+                                {% for event in day.events %}
+                                {% if not event.is_holiday %}
+                                <div class="upcoming-event-row">
+                                    <span class="upcoming-event-time">{{ event.time_str }}</span>
+                                    <span class="upcoming-event-location" data-location="{{ event.location }}"></span>
+                                    <span class="upcoming-event-name">{{ event.name }}</span>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="upcoming-day-empty">No events</p>
+                            {% endif %}
+                        </section>
+                        {% endfor %}
+                    </div>
+                    {% if forloop.counter|divisibleby:2 or forloop.last %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p class="upcoming-releases-empty">No upcoming events.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>

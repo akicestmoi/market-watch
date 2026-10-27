@@ -1,0 +1,35 @@
+/* Page background gradient */
+body {
+    background: linear-gradient(to right, #1e40af, #3b82f6, #93c5fd);
+    color: #1e293b;
+    min-height: 100vh;
+    padding: 2rem;
+    padding-top: 0;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+.sector-analysis-panel {
+    margin: 2rem 0;
+}
+
+.sector-analysis-card {
+    background-color: #e0f2fe;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+}
+
+.sector-analysis-card h2 {
+    margin: 0 0 0.75rem;
+    color: #0f172a;
+    font-size: 1.35rem;
+}
+
+.sector-analysis-empty {
+    margin: 0;
+    color: #6b7280;
+    font-style: italic;
+}

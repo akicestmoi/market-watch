@@ -1,0 +1,218 @@
+/* Page background gradient */
+body {
+    background: linear-gradient(to right, #1e40af, #3b82f6, #93c5fd);
+    color: #1e293b;
+    min-height: 100vh;
+    padding: 2rem;
+    padding-top: 0;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Upcoming releases */
+.upcoming-releases-panel {
+    margin: 2rem 0;
+}
+
+.upcoming-releases-card {
+    background-color: #e0f2fe;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+}
+
+.upcoming-releases-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.upcoming-releases-header h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.35rem;
+}
+
+.upcoming-week-pager {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.upcoming-week-pager-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #93c5fd;
+    border-radius: 0.375rem;
+    background: #f8fafc;
+    color: #0369a1;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.upcoming-week-pager-btn:hover:not(:disabled) {
+    background: #e0f2fe;
+    border-color: #0284c7;
+}
+
+.upcoming-week-pager-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.upcoming-week-pager-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1e293b;
+    min-width: 8rem;
+    text-align: center;
+}
+
+.upcoming-releases-body {
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 0.95rem;
+}
+
+.upcoming-releases-empty {
+    margin: 0;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.upcoming-day-empty {
+    margin: 0;
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.upcoming-weeks-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+/* Author `display: grid` must not override the HTML hidden attribute. */
+.upcoming-week-pair[hidden] {
+    display: none !important;
+}
+
+.upcoming-week-column {
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 0.65rem;
+    padding: 0.9rem 1rem;
+    min-width: 0;
+}
+
+.upcoming-week-label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0c4a6e;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #7dd3fc;
+}
+
+.upcoming-day {
+    margin-bottom: 1rem;
+}
+
+.upcoming-day:last-child {
+    margin-bottom: 0;
+}
+
+.upcoming-day-label {
+    margin: 0 0 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.upcoming-day-holidays {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.upcoming-day-holidays:empty {
+    display: none;
+    margin: 0;
+}
+
+.upcoming-day-releases {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.upcoming-event-row {
+    display: grid;
+    grid-template-columns: 4.25rem minmax(5.5rem, 8rem) 1fr;
+    gap: 0.55rem;
+    align-items: baseline;
+    background-color: #f8fafc;
+    border: 1px solid #bae6fd;
+    border-radius: 0.375rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.825rem;
+    line-height: 1.35;
+}
+
+.upcoming-event-row.is-holiday {
+    background-color: #fff7ed;
+    border-color: #fdba74;
+}
+
+.upcoming-event-time {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.upcoming-event-row.is-holiday .upcoming-event-time {
+    color: #9a3412;
+}
+
+.upcoming-event-location {
+    font-weight: 500;
+    color: #374151;
+}
+
+.upcoming-event-name {
+    color: #6b7280;
+    word-break: break-word;
+}
+
+.upcoming-event-row.is-holiday .upcoming-event-name {
+    color: #9a3412;
+    font-weight: 600;
+}
+
+@media (max-width: 900px) {
+    .upcoming-weeks-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .upcoming-event-row {
+        grid-template-columns: 3.75rem 1fr;
+    }
+
+    .upcoming-event-name {
+        grid-column: 1 / -1;
+    }
+}
