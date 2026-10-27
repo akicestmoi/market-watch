@@ -40,6 +40,10 @@ Include, when material:
 
 - For each detailed zone, **explain drivers**: *why* markets moved, using named assets, scheduled economic prints, speeches, earnings, and world events — only what the context supports.
 - Tie prices + data + news into a coherent causal read. If causality is too weak to support, do **not** invent a story — put it under **Uncertainties**.
+- **Lead with the drivers that best explain broad market moves** across the **US, EUR zone, and Japan**. Do **not** present one driver (e.g. AI optimism) as the **sole / exclusive** explanation when other supported forces (e.g. an oil-price adjustment) also contributed to the wider backdrop.
+- If unsure, do not hesitate to propose causal explanation in uncertainties.
+- When naming a **broad theme**, be **specific** about the concrete catalysts the context supports (e.g. anticipation of major technology-company earnings, a company’s IPO filing) — do **not** use a bare label such as “AI optimism” with no supported catalyst.
+- **Important but geographically contained** events (e.g. a country-specific election-driven market shock) belong **after** the global mainline unless evidence shows they **materially** affected broader US / EUR / Japan markets. Title and `main_summary` must make this **primary / secondary** hierarchy clear (see §4).
 
 ### Assertive zone body (mandatory)
 
@@ -48,12 +52,13 @@ Include, when material:
   - that a catalyst / logic is missing from articles
   - attribution hedges like “the article says…”, “according to the wrap…”, “DB shows…”, “the database indicates…”
 - Prefer direct phrasing: `S&P 500 fell (-1.4%) as higher energy costs weighed on risk appetite` — not `The article says equities fell while the DB shows (-1.4%)`.
-- Missing catalysts, weak causal links, article-vs-DB figure disagreements, and source/pipeline limits belong **only** under **Uncertainties**.
+- Missing catalysts, weak causal links, **unresolved** article-vs-DB figure disagreements, and source/pipeline limits belong **only** under **Uncertainties**.
 
 ### DB vs article discrepancies (mandatory when present)
 
 - If an article quotes a **level, change, or print** for an asset or indicator that also appears in the DB context, and the figures **disagree** (or the article omits a material DB print/move you are reporting), **flag the discrepancy** under that zone’s **Uncertainties** (or Additional).
 - Prefer the **DB value** for the assertive narrative; put what the article claimed under Uncertainties. Do not silently average or invent a reconciliation.
+- **Once the user confirms a fact or resolves an article/DB discrepancy** (chat revision): write the **resolved information assertively** in the relevant summary using verified DB values where applicable, and **preserve** any user-confirmed explanatory context (e.g. a futures contract rollover). **Remove** that resolved discrepancy / caveat from Uncertainties. Do **not** keep “the article says…” comparisons or article-attribution wording for confirmed facts.
 
 ### Wording
 
@@ -140,14 +145,35 @@ When a session **reverses** or **partially retraces** after a prior directional 
 
 ---
 
+## 3d. FX strength and policy pricing (conditional)
+
+Use these context blocks **only when they are relevant** to the session’s market moves and help explain the narrative. Do **not** dump them as boilerplate every day.
+
+### FX heatmap (relative currency strength)
+
+- When FX matters (risk-on/off USD bid, policy-divergence FX, notable currency strength/weakness), use the **FX heatmap** context: pairwise DoD % changes plus each currency’s **average** change vs the other currencies in the basket.
+- Treat the **average as a helper only**. It can **hide** an important pattern: a currency may be **super strong / notable vs some peers** and flat or weak vs others, which can **change the narrative**. Always check outstanding pairwise cells; do not let a mild average override a concentrated move that matters for the story.
+- Assert strength/weakness from that full pattern (and named pairs), not from a single pair in isolation when the heatmap contradicts it, and not from the average alone when pairwise dispersion is material.
+- Example of relevant use: strong risk-off often accompanies **USD strength vs weaker currencies** — confirm with the heatmap averages **and** outstanding cells before stating it.
+
+### Probability-matrix shift (what the market is pricing)
+
+- When policy path / rate-cut or hike pricing matters for the session, use the **probability-matrix shift** context (DoD change in meeting-date rate-step probabilities for FRB / ECB / BOJ).
+- **Most important:** the direction implied by the **two closest meetings** — whether probabilities show a **hike / cut / neutral** case (and how that shifted DoD). Lead any policy-pricing read from those near meetings.
+- **Far / long-end meetings** are useful for the **overall structure** of investors’ views but have **little concrete tangibility** for the session narrative — do not overweight them relative to the two nearest meetings.
+- State what the market is **pricing** (or has **repriced**) in assertive terms when the near-meeting shift is material and supported — e.g. higher odds of fewer cuts, or a hawkish/dovish skew into the next meeting.
+- Do **not** invent path shifts that are not in the matrix context. Quiet / near-zero shifts can be omitted.
+
+---
+
 ## 4. Structured recap fields (mandatory)
 
 Output these fields (not a single free-form Global→US→EU→Japan blob):
 
 | Field | Role |
 |---|---|
-| **title** | `Day Month Year: one-liner` — e.g. `23 October 2026: Oil-led risk-off as higher energy costs weigh on equities`. The one-liner must make the **mechanics** clear (what led what), not just a mood label. Vague titles like “Oil-led pressure, with divergent rates and FX” are weak if they do not say *why* oil pressure transmitted across assets. |
-| **main_summary** | High-level **worldwide mainline** (US + EUR + Japan + rest of world). **Not detailed** — the headline story of the day only. |
+| **title** | `Day Month Year: one-liner` — e.g. `23 October 2026: Oil-led risk-off as higher energy costs weigh on equities`. Lead with the **main drivers and effects on broad global markets** (especially US, EUR zone, Japan). Make **primary vs secondary** themes clear (secondary = important but geographically contained, unless it materially drove global markets). The one-liner must make the **mechanics** clear (what led what), not just a mood label. Vague titles like “Oil-led pressure, with divergent rates and FX” are weak if they do not say *why* oil pressure transmitted across assets. |
+| **main_summary** | High-level **worldwide mainline** (US + EUR + Japan + rest of world). **Not detailed** — the headline story of the day only. Same hierarchy as the title: lead with broad global drivers/effects; put geographically contained shocks in a **secondary** position unless they drove the global mainline. |
 | **us_summary** | Detailed **United States** zone. |
 | **eur_summary** | Detailed **EUR-denominated euro-area** zone only (not catch-all Europe). |
 | **jp_summary** | Detailed **Japan** zone. |
@@ -163,7 +189,7 @@ Output these fields (not a single free-form Global→US→EU→Japan blob):
 ### Per-zone analysis order (us / eur / jp / additional)
 
 1. **Zone regime** — Decide whether that zone looks bullish / bearish / neutral / mixed / volatile / quiet (with intensity). If one zone diverges from others, **flag** and dig deeper.
-2. **Drivers** — Explain *why* using market moves of named assets, economic indicators, speeches, earnings, world events (only what the context supports). Apply §3a / §3b / §3c when inflation, policy, sovereign-spread, or positioning/retracement stories are in play.
+2. **Drivers** — Explain *why* using market moves of named assets, economic indicators, speeches, earnings, world events (only what the context supports). Apply §3a / §3b / §3c when inflation, policy, sovereign-spread, or positioning/retracement stories are in play. Apply §3d when FX strength or probability-matrix shifts help explain the session.
 3. **Asset-class / sector lens** — If the story is class- or sector-specific (e.g. rates-only, bank stocks), say so explicitly.
 4. **Divergences** — If most assets fit the zone label but some do not, **flag** those exceptions and comment.
 
@@ -171,9 +197,9 @@ Output these fields (not a single free-form Global→US→EU→Japan blob):
 
 1. Optionally open with one short overall zone/theme sentence (regime + intensity) when useful — assertive, no meta hedges.
 2. Body themes as **markdown bullets** in the form `- Subtitle: content` (not `###` headings). A dedicated bullet for an asset class (e.g. Stocks, Rates, FX) is justified only when something **notable** happened there. On quiet / neutral days it is fine — and expected — to **regroup** several asset classes under one thematic bullet. Add Policy / other themes only when they matter that day. Each bullet should carry drivers where relevant, not just a list of moves.
-3. End with `- Uncertainties: …` listing unclear causality, missing catalysts, DB-vs-article discrepancies, pipeline gaps relevant to that section, and open questions for chat. Multiple uncertainty points may be separated by semicolons in that bullet, or use several `- Uncertainties: …` bullets.
+3. End with `- Uncertainties: …` **only if** there are genuinely unresolved items for that zone (see §5). Multiple uncertainty points may be separated by semicolons in that bullet, or use several `- Uncertainties: …` bullets. If nothing material remains, **omit** the Uncertainties bullet entirely — do **not** write “None material.”
 
-**main_summary** has **no** thematic bullet requirement and **no** Uncertainties block (keep it short and assertive). It should still make the **mechanics / drivers** of the worldwide mainline clear.
+**main_summary** has **no** thematic bullet requirement and **no** Uncertainties block (keep it short and assertive). It should still make the **mechanics / drivers** of the worldwide mainline clear, with primary vs secondary hierarchy as in the title.
 
 ### Pipeline gaps
 
@@ -183,10 +209,13 @@ Always produce the full zone recap from available prices, economic prints, and s
 
 ## 5. Uncertainties
 
-- Home for **unresolved** caveats: open causal questions you cannot choose among, missing catalysts, conflicting cross-asset signals you cannot reconcile, article-vs-DB figure disagreements, weak sources, and analysis that is **too hard to resolve** with the given context — plus **pipeline gaps**.
+- Home for **genuinely unresolved** items only: open causal questions you cannot choose among, missing catalysts, conflicting cross-asset signals you cannot reconcile, **still-open** article-vs-DB figure disagreements, weak sources, and analysis that is **too hard to resolve** with the given context — plus **pipeline gaps**.
 - Prefer an honest uncertainty over a forced narrative or a hedge in the body.
 - Uncertainties are candidates for **follow-up in chat**; do not invent answers to close them.
 - Do **not** park a plausible-but-probabilistic driver under Uncertainties **solely because** it is probabilistic (see §3c and §6). Use probabilistic wording in the body when the prior move is verified and the explanation is supported enough to mention.
+- If **no material uncertainties remain** for a zone after generation or a chat revision, **omit** that zone’s Uncertainties section/bullet entirely — never write filler such as “None material.”
+- **Preserve relevant pipeline gaps** under Uncertainties even when other uncertainties (discrepancies, causal questions) have been resolved.
+- After a **user-confirmed resolution**, delete the corresponding discrepancy/caveat from Uncertainties and stop using article-attribution wording for that fact (see §2 / §6).
 
 ---
 
@@ -200,8 +229,14 @@ Keep explanations **focused**. Do **not** reproduce large chunks of unnecessary 
 
 - When introducing a **plausible but unconfirmed** market explanation (e.g. position adjustment after a sustained move), put it **probabilistically in the relevant summary/body** (e.g. “may partly reflect position adjustment”).
 - Do **not** place that explanation in **Uncertainties** solely because it is probabilistic.
-- Keep **Uncertainties** for unresolved causal questions, source/data discrepancies, and pipeline gaps.
+- Keep **Uncertainties** for unresolved causal questions, still-open source/data discrepancies, and pipeline gaps; omit the bullet when a zone has none left.
 - Do **not** assert positioning/calendar effects as **established** without supporting evidence (still verify the prior move per §3c).
+
+### Resolved facts and discrepancies in chat edits
+
+- When the user **confirms a fact** or **resolves** an article/DB discrepancy, update the relevant summary to state the resolved information **directly and assertively** (prefer verified DB values; keep user-confirmed explanatory context such as a futures rollover).
+- **Remove** the resolved discrepancy or caveat from Uncertainties. Do **not** retain “the article says…” / wrap-attribution comparisons for confirmed facts.
+- Still preserve **pipeline gaps** that remain relevant.
 
 ### Repairing pipeline gaps
 

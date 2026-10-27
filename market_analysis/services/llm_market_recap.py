@@ -3,16 +3,24 @@
 from __future__ import annotations
 
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import TypedDict
 
 from django.conf import settings
+from pandas.tseries.offsets import BDay
 from pydantic_ai import Agent
 
 from central_banks_overview.models import CentralBankChoices
 from core.services import logger
 from data_visualization.services.central_banks_recap import (
     get_central_bank_data_item,
+    get_central_bank_formatted_probability_matrix,
+    get_formatted_probability_matrix_changes,
+)
+from data_visualization.services.market_recap import (
+    FX_MATRIX_ORDER,
+    FxMatrixRow,
+    get_fx_prices_matrix,
 )
 from economic_overview.models import (
     EconomicDataCategoryChoices,
@@ -283,6 +291,180 @@ def build_central_bank_context(as_of: date) -> list[CentralBankContextRow]:
     return rows
 
 
+def _get_previous_business_day(as_of: date) -> date:
+    """Return the previous weekday business day before ``as_of``."""
+    return (as_of - BDay(1)).date()
+
+
+def _format_meeting_dates_for_context(
+    meeting_dates: list[date | datetime],
+) -> list[str]:
+    """Serialize meeting dates as ISO date strings for LLM JSON context."""
+    formatted: list[str] = []
+    for meeting_date in meeting_dates:
+        if isinstance(meeting_date, datetime):
+            formatted.append(meeting_date.date().isoformat())
+        else:
+            formatted.append(meeting_date.isoformat())
+    return formatted
+
+
+class FxCurrencyStrengthRow(TypedDict):
+    """Average pairwise FX DoD % change for one currency vs the heatmap basket."""
+
+    currency: str
+    average_change_pct: float
+
+
+class FxHeatmapContext(TypedDict):
+    """FX heatmap (pairwise DoD %) plus per-currency average strength."""
+
+    as_of: str
+    previous_date: str
+    currencies: list[str]
+    matrix: list[FxMatrixRow]
+    currency_strength: list[FxCurrencyStrengthRow]
+
+
+def _get_fx_matrix_pair_change(matrix_row: FxMatrixRow, quote_currency: str) -> float:
+    """Return the pairwise DoD % change for one quote currency in a matrix row."""
+    if quote_currency == "EUR":
+        return matrix_row["EUR"]
+    if quote_currency == "USD":
+        return matrix_row["USD"]
+    if quote_currency == "GBP":
+        return matrix_row["GBP"]
+    if quote_currency == "JPY":
+        return matrix_row["JPY"]
+    if quote_currency == "CHF":
+        return matrix_row["CHF"]
+    if quote_currency == "AUD":
+        return matrix_row["AUD"]
+    if quote_currency == "CNY":
+        return matrix_row["CNY"]
+    raise ValueError(f"Unsupported FX matrix quote currency: {quote_currency}")
+
+
+def _compute_fx_currency_strength(
+    matrix: list[FxMatrixRow],
+) -> list[FxCurrencyStrengthRow]:
+    """Average off-diagonal pairwise % changes for each base currency row."""
+    strength_rows: list[FxCurrencyStrengthRow] = []
+    for matrix_row in matrix:
+        base_currency = matrix_row["currency"]
+        pairwise_changes: list[float] = []
+        for quote_currency in FX_MATRIX_ORDER:
+            if quote_currency == base_currency:
+                continue
+            pairwise_changes.append(
+                _get_fx_matrix_pair_change(matrix_row, quote_currency)
+            )
+        average_change_pct = (
+            sum(pairwise_changes) / len(pairwise_changes) if pairwise_changes else 0.0
+        )
+        strength_rows.append(
+            FxCurrencyStrengthRow(
+                currency=base_currency,
+                average_change_pct=round(average_change_pct, 4),
+            )
+        )
+    return strength_rows
+
+
+def build_fx_heatmap_context(as_of: date) -> FxHeatmapContext:
+    """FX heatmap DoD % matrix and average currency strength for LLM prompts."""
+    previous_date = _get_previous_business_day(as_of)
+    matrix = get_fx_prices_matrix(as_of, previous_date)
+    return FxHeatmapContext(
+        as_of=as_of.isoformat(),
+        previous_date=previous_date.isoformat(),
+        currencies=list(FX_MATRIX_ORDER),
+        matrix=matrix,
+        currency_strength=_compute_fx_currency_strength(matrix),
+    )
+
+
+class ProbabilityStepRow(TypedDict):
+    """One rate-step row of probabilities or probability changes."""
+
+    expected_rate_step: int
+    probabilities: list[float]
+
+
+class ProbabilityMatrixShiftContextRow(TypedDict):
+    """Current policy-path probabilities and DoD shifts for one central bank."""
+
+    central_bank: CentralBankChoices
+    as_of: str
+    previous_date: str
+    meeting_dates: list[str]
+    current_probabilities: list[ProbabilityStepRow]
+    probability_changes: list[ProbabilityStepRow]
+
+
+def build_probability_matrix_shift_context(
+    as_of: date,
+) -> list[ProbabilityMatrixShiftContextRow]:
+    """FRB / ECB / BOJ probability matrices and DoD shifts for LLM prompts."""
+    previous_date = _get_previous_business_day(as_of)
+    rows: list[ProbabilityMatrixShiftContextRow] = []
+    for central_bank in CENTRAL_BANKS_FOR_CONTEXT:
+        try:
+            current_matrix = get_central_bank_formatted_probability_matrix(
+                central_bank, as_of
+            )
+            previous_matrix = get_central_bank_formatted_probability_matrix(
+                central_bank, previous_date
+            )
+            change_matrix = get_formatted_probability_matrix_changes(
+                current_matrix,
+                previous_matrix,
+                previous_date=previous_date,
+            )
+        except Exception as error:
+            logger.warning(
+                "Skipping probability-matrix context for %s on %s: %s",
+                central_bank,
+                as_of.isoformat(),
+                error,
+            )
+            continue
+
+        if current_matrix is None:
+            continue
+
+        meeting_dates = _format_meeting_dates_for_context(
+            current_matrix["meeting_dates"]
+        )
+        current_probabilities = [
+            ProbabilityStepRow(
+                expected_rate_step=entry["expected_rate_step"],
+                probabilities=list(entry["probabilities"]),
+            )
+            for entry in current_matrix["probability_matrix"]
+        ]
+        probability_changes = [
+            ProbabilityStepRow(
+                expected_rate_step=entry["expected_rate_step"],
+                probabilities=list(entry["probabilities"]),
+            )
+            for entry in (
+                change_matrix["probability_matrix"] if change_matrix is not None else []
+            )
+        ]
+        rows.append(
+            ProbabilityMatrixShiftContextRow(
+                central_bank=central_bank,
+                as_of=as_of.isoformat(),
+                previous_date=previous_date.isoformat(),
+                meeting_dates=meeting_dates,
+                current_probabilities=current_probabilities,
+                probability_changes=probability_changes,
+            )
+        )
+    return rows
+
+
 class EvidenceEntry(TypedDict):
     """Evidence entry dictionnary."""
 
@@ -518,13 +700,20 @@ def generate_daily_recap(
     market_context = build_market_context(reporting_date)
     economic_context = build_economic_context(reporting_date)
     central_bank_context = build_central_bank_context(reporting_date)
+    fx_heatmap_context = build_fx_heatmap_context(reporting_date)
+    probability_matrix_shift_context = build_probability_matrix_shift_context(
+        reporting_date
+    )
     logger.info(
         "Daily recap context ready for %s "
-        "(market_rows=%s, economic_rows=%s, central_bank_rows=%s)",
+        "(market_rows=%s, economic_rows=%s, central_bank_rows=%s, "
+        "fx_heatmap_currencies=%s, probability_matrix_banks=%s)",
         reporting_date.isoformat(),
         len(market_context),
         len(economic_context),
         len(central_bank_context),
+        len(fx_heatmap_context["currency_strength"]),
+        len(probability_matrix_shift_context),
     )
     source_urls = [
         analyse["source_url"] for analyse in analyses if analyse.get("source_url")
@@ -541,6 +730,13 @@ def generate_daily_recap(
         "(authoritative policy baseline — effective rates, CB macro prints, "
         "next meeting; use when assessing policy outlook / future CB moves):\n"
         f"{json.dumps(central_bank_context, ensure_ascii=False)}\n\n"
+        "FX heatmap DoD % changes and per-currency average strength "
+        "(use only when FX strength/weakness helps explain the session):\n"
+        f"{json.dumps(fx_heatmap_context, ensure_ascii=False)}\n\n"
+        "Central-bank probability matrices and DoD probability shifts "
+        "(what the market is pricing — use only when policy-path repricing "
+        "helps explain the session):\n"
+        f"{json.dumps(probability_matrix_shift_context, ensure_ascii=False)}\n\n"
         "In-memory analyzed news for this run:\n"
         f"{json.dumps(analyses[:40], ensure_ascii=False)}\n\n"
         "Pipeline issues (authoritative — must be reported if has_issues is true):\n"
@@ -549,8 +745,9 @@ def generate_daily_recap(
         "title (Day Month Year: one-liner), main_summary, us_summary, "
         "eur_summary, jp_summary, additional_summary. "
         "Do not withhold the recap because of gaps. Put pipeline gaps and "
-        "DB-vs-article discrepancies under Uncertainties in the relevant zone "
-        "(or additional_summary)."
+        "unresolved DB-vs-article discrepancies under Uncertainties in the "
+        "relevant zone (or additional_summary); omit Uncertainties when a "
+        "zone has none material."
     )
 
     agent = Agent(

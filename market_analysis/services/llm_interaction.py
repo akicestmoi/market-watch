@@ -23,10 +23,14 @@ from market_analysis.services.llm_market_recap import (
     CentralBankContextRow,
     EconomicContextRow,
     EvidenceEntry,
+    FxHeatmapContext,
     MarketContextRow,
+    ProbabilityMatrixShiftContextRow,
     build_central_bank_context,
     build_economic_context,
+    build_fx_heatmap_context,
     build_market_context,
+    build_probability_matrix_shift_context,
 )
 
 _chat_agent: Agent[None, ChatAnswerOutput] | None = None
@@ -126,6 +130,20 @@ def _get_central_bank_context(reporting_date: str) -> list[CentralBankContextRow
     return list(build_central_bank_context(day))
 
 
+def _get_fx_heatmap_context(reporting_date: str) -> FxHeatmapContext:
+    """Return FX heatmap DoD % matrix and average currency strength for an ISO date."""
+    day = date.fromisoformat(reporting_date)
+    return build_fx_heatmap_context(day)
+
+
+def _get_probability_matrix_shift_context(
+    reporting_date: str,
+) -> list[ProbabilityMatrixShiftContextRow]:
+    """Return FRB / ECB / BOJ probability matrices and DoD shifts for an ISO date."""
+    day = date.fromisoformat(reporting_date)
+    return list(build_probability_matrix_shift_context(day))
+
+
 def _update_daily_recap(
     reporting_date: str,
     title: str | None = None,
@@ -204,6 +222,11 @@ def _get_chat_agent() -> Agent[None, ChatAnswerOutput]:
                 Tool(_get_market_context, name="get_market_context"),
                 Tool(_get_economic_context, name="get_economic_context"),
                 Tool(_get_central_bank_context, name="get_central_bank_context"),
+                Tool(_get_fx_heatmap_context, name="get_fx_heatmap_context"),
+                Tool(
+                    _get_probability_matrix_shift_context,
+                    name="get_probability_matrix_shift_context",
+                ),
                 Tool(_update_daily_recap, name="update_daily_recap"),
             ],
         )
