@@ -18,6 +18,15 @@ from data_visualization.services.central_banks_recap import (
     get_central_bank_formatted_probability_matrix,
     get_formatted_probability_matrix_changes,
 )
+from economic_overview.models import (
+    EconomicDataCategoryChoices,
+    EconomicDataLocationChoices,
+    EconomicDataModel,
+    EconomicDataSourceChoices,
+    EconomicIndicatorInformationModel,
+    EconomicPublicationFrequencyChoices,
+    IndicatorBaseUnitChoices,
+)
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -103,14 +112,14 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "Effective Rate", "value": "5.25 %"},
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
             {"label": "Next Meeting", "value": "2024-03-20"},
-            {"label": "US Inflation Rate", "value": "3.0 %"},
+            {"label": "US Inflation Rate", "value": "-"},
         ]
 
     def test_get_central_bank_data_item_ecb_success(self):
         """
-        GIVEN central bank data, effective rate, and meeting date for ECB
+        GIVEN central bank data, effective rate, meeting date, and HICP YoY inputs
         WHEN getting central bank data item
-        THEN the correct data items are returned with ECB-specific additional data
+        THEN ECB-specific additional data uses live France/Eurozone YoY rates
         """
         CentralBankDataModel.objects.create(
             cb_data_id=2,
@@ -131,14 +140,60 @@ class TestCentralBankRecapServices(TestCase):
             order=1,
             date=datetime(2024, 4, 15, 13, 15, 0, tzinfo=timezone.utc),
         )
+        france_hicp = EconomicIndicatorInformationModel.objects.create(
+            id=8,
+            location=EconomicDataLocationChoices.FR,
+            category=EconomicDataCategoryChoices.INFLATION,
+            type="Consumer Price Index",
+            name="France HICP",
+            technical_name="Consumer price index - final results",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.INSEE,
+            ticker="011812231",
+            base_year=2025,
+            base_unit=IndicatorBaseUnitChoices.INDEX,
+        )
+        euro_hicp = EconomicIndicatorInformationModel.objects.create(
+            id=24,
+            location=EconomicDataLocationChoices.EU,
+            category=EconomicDataCategoryChoices.INFLATION,
+            type="Consumer Price Index",
+            name="Euro Area HICP",
+            technical_name="Inflation (HICP)",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.EUROSTAT,
+            ticker="prc_hicp_minr",
+            base_year=2015,
+            base_unit=IndicatorBaseUnitChoices.INDEX,
+        )
+        EconomicDataModel.objects.create(
+            indicator=france_hicp,
+            period=date(2025, 9, 1),
+            data_value=100.9,
+        )
+        EconomicDataModel.objects.create(
+            indicator=france_hicp,
+            period=date(2024, 9, 1),
+            data_value=100.0,
+        )
+        EconomicDataModel.objects.create(
+            indicator=euro_hicp,
+            period=date(2025, 9, 1),
+            data_value=102.1,
+        )
+        EconomicDataModel.objects.create(
+            indicator=euro_hicp,
+            period=date(2024, 9, 1),
+            data_value=100.0,
+        )
 
         result = get_central_bank_data_item(CentralBankChoices.ECB, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "4.0 %"},
             {"label": "ECB Deposit Facility Rate", "value": "4.0 %"},
             {"label": "Next Meeting", "value": "2024-04-15"},
-            {"label": "France Inflation Rate", "value": "0.9 %"},
-            {"label": "Eurozone Inflation Rate", "value": "2.1 %"},
+            {"label": "France Inflation Rate", "value": "0.9 % (Sep 25)"},
+            {"label": "Eurozone Inflation Rate", "value": "2.1 % (Sep 25)"},
         ]
 
     def test_get_central_bank_data_item_boj_success(self):
@@ -172,7 +227,7 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "Effective Rate", "value": "0.1 %"},
             {"label": "BOJ Target Uncollateralized Overnight Rate", "value": "0.1 %"},
             {"label": "Next Meeting", "value": "2024-05-01"},
-            {"label": "Japan Inflation Rate", "value": "2.9 %"},
+            {"label": "Japan Inflation Rate", "value": "-"},
         ]
 
     @patch(
@@ -190,7 +245,7 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "Effective Rate", "value": "5.25 %"},
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
             {"label": "Next Meeting", "value": "N/A"},
-            {"label": "US Inflation Rate", "value": "3.0 %"},
+            {"label": "US Inflation Rate", "value": "-"},
         ]
 
     def test_get_central_bank_data_item_no_value(self):
@@ -216,7 +271,7 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
             {"label": "FRB Test Rate", "value": "N/A"},
             {"label": "Next Meeting", "value": "2024-03-20"},
-            {"label": "US Inflation Rate", "value": "3.0 %"},
+            {"label": "US Inflation Rate", "value": "-"},
         ]
 
     @patch(

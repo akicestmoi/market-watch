@@ -313,7 +313,7 @@ Catalogs equities, rates, FX, crypto, and commodities; ingests daily prices from
 Maintains the economic calendar and observation history used by the economic recap/charts and by market analysis when building daily context. Scheduled jobs refresh due indicators and scrape publication schedules so the UI and LLM stay aligned with official calendars.
 
 - **Models:** `EconomicIndicatorInformationModel`; `PublicationScheduleModel`; `EconomicDataModel`; `EconomicDataUpdateLogModel`.
-- **Services:** `data_ingestion_services` — scrape/ingest series (e.g. INSEE; JP Cabinet Office stubs); `economic_data_services` — due indicators, CRUD helpers, log cleanup; `publication_services` — scrape/update publication schedules.
+- **Services:** `data_ingestion_services` — scrape/ingest series (e.g. INSEE, Eurostat; JP Cabinet Office stubs); `economic_data_services` — due indicators, CRUD helpers, log cleanup; `publication_services` — scrape/update publication schedules.
 - **Data sources:** `data_sources/economic_data.json` (seed indicators); series catalog and methodology notes in `docs/INDICATORS.md`.
 - **HTTP (`/economics/`):** `indicator/generate-base-information`, `indicator/ingest` (latest), `indicator/ingest-historical`, `indicator/ingest-specific`, `indicator` (detail); `schedule/update`.
 - **Tasks:** `scheduled_economic_data_and_schedule_update`; `scheduled_economic_data_update_logs_cleanup`.

@@ -11,8 +11,8 @@ from core.services import convert_query_to_dictionary_list
 
 def load_json_mock(
     file_path: str,
-) -> dict:  # Polymorphic mock JSON until per-fixture TypedDicts exist.
-    """Load JSON mock file and return dictionary."""
+) -> dict | list:  # Polymorphic mock JSON until per-fixture TypedDicts exist.
+    """Load JSON mock file (object or array root)."""
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

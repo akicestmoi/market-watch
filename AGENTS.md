@@ -6,7 +6,7 @@
 
 ## Coding conventions
 
-App layout, `@open_api` / serializers / `error_responses`, module clustering, typing (**TypedDict** vs Pydantic **`BaseModel`** vs Django **`BaseModel`**), and tests: [`.cursor/rules/coding-conventions.mdc`](.cursor/rules/coding-conventions.mdc).
+App layout, `@open_api` / serializers / `error_responses`, module clustering, typing (**TypedDict** vs Pydantic **`BaseModel`** / **`TypeAdapter`** vs Django **`BaseModel`**; third-party / Redis JSON → `TypeAdapter(TypedDict).validate_python`, not bare `dict` / `Protocol` / hand coerce), and tests: [`.cursor/rules/coding-conventions.mdc`](.cursor/rules/coding-conventions.mdc).
 
 ## Timezone Management
 

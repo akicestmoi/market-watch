@@ -1,0 +1,63 @@
+[
+  {
+    "recordid": "1",
+    "allDay": true,
+    "title": "Flash estimate inflation euro area",
+    "start": "2026-10-30T11:00Z",
+    "theme": "Economy and finance",
+    "euroind": true,
+    "preliminary": false,
+    "period": "October 2026",
+    "datasetCodes": "prc_hicp_fpd,prc_hicp_minr",
+    "types": [
+      {"label": "Data release", "order": 1},
+      {"label": "Euro indicators release", "order": 2}
+    ],
+    "unit": "C4"
+  },
+  {
+    "recordid": "2",
+    "allDay": true,
+    "title": "Inflation (HICP)",
+    "start": "2026-11-17T11:00Z",
+    "theme": "Economy and finance",
+    "euroind": true,
+    "preliminary": false,
+    "period": "October 2026",
+    "datasetCodes": "prc_hicp_ainr,prc_hicp_minr",
+    "types": [
+      {"label": "Data release", "order": 1},
+      {"label": "Euro indicators release", "order": 2}
+    ],
+    "unit": "C4"
+  },
+  {
+    "recordid": "3",
+    "allDay": true,
+    "title": "Unemployment",
+    "start": "2026-11-03T11:00Z",
+    "theme": "Economy and finance",
+    "euroind": true,
+    "preliminary": false,
+    "period": "September 2026",
+    "datasetCodes": "une_rt_m",
+    "types": [{"label": "Data release", "order": 1}],
+    "unit": "C4"
+  },
+  {
+    "recordid": "4",
+    "allDay": true,
+    "title": "Inflation (HICP)",
+    "start": "2026-12-17T11:00Z",
+    "theme": "Economy and finance",
+    "euroind": true,
+    "preliminary": false,
+    "period": "November 2026",
+    "datasetCodes": "prc_hicp_ainr,prc_hicp_minr",
+    "types": [
+      {"label": "Data release", "order": 1},
+      {"label": "Euro indicators release", "order": 2}
+    ],
+    "unit": "C4"
+  }
+]

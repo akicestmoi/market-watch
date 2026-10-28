@@ -61,6 +61,25 @@ Methodology: [Quarterly national accounts (EN)](https://www.insee.fr/en/statisti
 - [HICP statistical presentation](https://www.insee.fr/en/metadonnees/source/indicateur/p1654/presentation)
 - Related national CPI: [p1653](https://www.insee.fr/en/metadonnees/source/indicateur/p1653)
 
+**Central Banks recap.** The ECB card shows France Inflation Rate as the latest monthly **YoY %** of this index, formatted like `0.9 % (Sep 26)`.
+
+### Euro Area HICP (Harmonised Index of Consumer Prices)
+
+| Field | Value |
+| --- | --- |
+| Id / ticker | `24` / `prc_hicp_minr` |
+| Category / frequency | INFLATION / MONTHLY |
+| Location / source | EU / EUROSTAT |
+| Base Unit / Base Year | `INDEX` / `2025` |
+| Series | Eurostat `prc_hicp_minr` (ECOICOP v2) — geo=`EA`, coicop18=`TOTAL`, unit=`I25`, freq=`M` |
+| Agenda `technical_name` | `Inflation (HICP)` |
+
+Publication schedules are matched on `technical_name` against the FullCalendar event `title` from the [Eurostat release calendar](https://ec.europa.eu/eurostat/news/release-calendar/) (`eventsJson`). Prefer the final **Inflation (HICP)** release over **Flash estimate inflation euro area**.
+
+**What it is.** EU-harmonised consumer price index for the euro area (all items), base 2025 = 100. Eurostat retired `prc_hicp_midx` / `I15` (2015=100) after 2025-12; live monthly indices live under `prc_hicp_minr`.
+
+**Central Banks recap.** The ECB card shows Eurozone Inflation Rate as the latest monthly **YoY %** of this index, same `0.9 % (Sep 26)` format as France.
+
 ### Industrial raw materials prices
 
 | Field | Value |

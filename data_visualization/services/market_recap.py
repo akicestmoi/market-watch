@@ -12,7 +12,7 @@ from central_banks_overview.models import (
     CentralBankChoices,
     CentralBankMeetingModel,
 )
-from core.services import convert_to_display_timezone
+from core.services import calculate_value_change, convert_to_display_timezone
 from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicDataModel,
@@ -324,12 +324,23 @@ def get_fx_prices_matrix(
     return rows
 
 
+class DayEventChangeClass(str, Enum):
+    """CSS modifier for day-event change direction."""
+
+    POSITIVE = "is-positive"
+    NEGATIVE = "is-negative"
+    NONE = ""
+
+
 class DayEvent(TypedDict):
     """Event that occurred on the market-recap target date."""
 
     name: str
     location: str  # Display label (Choices.label), not the stored code
-    value: str  # Formatted release value; empty for holidays / unknown
+    value: str  # Formatted current release value; empty for holidays / unknown
+    previous: str  # Formatted prior-period value; empty when unavailable
+    change: str  # Signed level change vs previous; empty when unavailable
+    change_class: DayEventChangeClass
     is_holiday: bool
 
 
@@ -340,6 +351,13 @@ class DayEventsLocationGroup(TypedDict):
     events: list[DayEvent]
 
 
+class DayEventChangeDisplay(NamedTuple):
+    """Formatted change text and CSS class for a day-event card."""
+
+    change: str
+    change_class: DayEventChangeClass
+
+
 def _format_day_event_value(data_value: float | None) -> str:
     """Format an economic release value for the day-events card."""
     if data_value is None:
@@ -347,6 +365,30 @@ def _format_day_event_value(data_value: float | None) -> str:
     if data_value == int(data_value):
         return str(int(data_value))
     return f"{data_value:.4f}".rstrip("0").rstrip(".")
+
+
+def _format_day_event_change(change: float | None) -> DayEventChangeDisplay:
+    """Format signed change and CSS class for the day-events card."""
+    if change is None:
+        return DayEventChangeDisplay(
+            change="",
+            change_class=DayEventChangeClass.NONE,
+        )
+    formatted = _format_day_event_value(change)
+    if change > 0:
+        return DayEventChangeDisplay(
+            change=f"+{formatted}",
+            change_class=DayEventChangeClass.POSITIVE,
+        )
+    if change < 0:
+        return DayEventChangeDisplay(
+            change=formatted,
+            change_class=DayEventChangeClass.NEGATIVE,
+        )
+    return DayEventChangeDisplay(
+        change=formatted,
+        change_class=DayEventChangeClass.NONE,
+    )
 
 
 def _get_day_holiday_events(event_date: date) -> list[DayEvent]:
@@ -365,6 +407,9 @@ def _get_day_holiday_events(event_date: date) -> list[DayEvent]:
                     name=holiday.name,
                     location=str(LocationChoices(holiday.location).label),
                     value="",
+                    previous="",
+                    change="",
+                    change_class=DayEventChangeClass.NONE,
                     is_holiday=True,
                 )
             )
@@ -397,10 +442,19 @@ def _get_day_publication_events(event_date: date) -> list[DayEvent]:
         if display_dt.date() != event_date:
             continue
 
-        latest = (
-            EconomicDataModel.objects.filter(indicator=schedule.indicator)
-            .order_by("-period", "-last_modified")
-            .first()
+        records = list(
+            EconomicDataModel.objects.filter(
+                indicator=schedule.indicator,
+                data_value__isnull=False,
+                period__isnull=False,
+            ).order_by("-period", "-last_modified")[:2]
+        )
+        current_row = records[0] if records else None
+        previous_row = records[1] if len(records) > 1 else None
+        current_value = current_row.data_value if current_row else None
+        previous_value = previous_row.data_value if previous_row else None
+        change_display = _format_day_event_change(
+            calculate_value_change(current_value, previous_value).absolute
         )
         day_events.append(
             DayEvent(
@@ -408,7 +462,10 @@ def _get_day_publication_events(event_date: date) -> list[DayEvent]:
                 location=str(
                     EconomicDataLocationChoices(schedule.indicator.location).label
                 ),
-                value=_format_day_event_value(latest.data_value if latest else None),
+                value=_format_day_event_value(current_value),
+                previous=_format_day_event_value(previous_value),
+                change=change_display.change,
+                change_class=change_display.change_class,
                 is_holiday=False,
             )
         )
@@ -431,6 +488,9 @@ def _get_day_central_bank_events(event_date: date) -> list[DayEvent]:
                 name=f"{central_bank.label} Rates Decision",
                 location=str(LocationChoices(central_bank_location).label),
                 value="",
+                previous="",
+                change="",
+                change_class=DayEventChangeClass.NONE,
                 is_holiday=False,
             )
         )

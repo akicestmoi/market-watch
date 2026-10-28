@@ -8,6 +8,7 @@ from freezegun import freeze_time
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
 from data_visualization.services.market_recap import (
     FX_MATRIX_ORDER,
+    DayEventChangeClass,
     format_data_for_market_recap_display,
     get_day_events_grouped_by_location,
     get_fx_prices_matrix,
@@ -600,7 +601,7 @@ class TestDayEvents(TestCase):
         """
         GIVEN a holiday and an economic release on the same date and location
         WHEN getting day events grouped by location
-        THEN holidays are listed before releases and both include name/value/location
+        THEN holidays are listed before releases with current/previous/change values
         """
         HolidayModel.objects.create(
             id=1,
@@ -619,6 +620,11 @@ class TestDayEvents(TestCase):
             period=date(2025, 11, 1),
             data_value=3.2,
         )
+        EconomicDataModel.objects.create(
+            indicator=self.indicator,
+            period=date(2025, 10, 1),
+            data_value=3.0,
+        )
 
         result = get_day_events_grouped_by_location(self.event_date)
         assert result == [
@@ -629,12 +635,18 @@ class TestDayEvents(TestCase):
                         "name": "Bank Holiday",
                         "location": "United States",
                         "value": "",
+                        "previous": "",
+                        "change": "",
+                        "change_class": DayEventChangeClass.NONE,
                         "is_holiday": True,
                     },
                     {
                         "name": "CPI",
                         "location": "United States",
                         "value": "3.2",
+                        "previous": "3",
+                        "change": "+0.2",
+                        "change_class": DayEventChangeClass.POSITIVE,
                         "is_holiday": False,
                     },
                 ],
@@ -662,6 +674,9 @@ class TestDayEvents(TestCase):
                         "name": "European Central Bank (ECB) Rates Decision",
                         "location": "Europe",
                         "value": "",
+                        "previous": "",
+                        "change": "",
+                        "change_class": DayEventChangeClass.NONE,
                         "is_holiday": False,
                     }
                 ],

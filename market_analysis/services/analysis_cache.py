@@ -10,6 +10,7 @@ from urllib.parse import quote
 import redis
 from django.conf import settings
 from django.utils import timezone as dj_timezone
+from pydantic import TypeAdapter, ValidationError
 
 from core.services import logger
 from market_analysis.llm.config import PROMPT_VERSION
@@ -29,6 +30,33 @@ class CachedAnalysisPayload(TypedDict):
     cached_at: str
     prompt_version: str
     analysis: AnalyzedArticle
+
+
+class CachedAnalysisWireAnalysis(TypedDict, total=False):
+    """Wire-format analysis object as stored in Redis JSON (fields we read)."""
+
+    title: str
+    summary: str
+    event_types: list[str]
+    event_type: str
+    companies: list[str]
+    sectors: list[str]
+    sentiment: str
+    key_facts: list[str]
+    uncertainties: list[str]
+    source_url: str
+
+
+class CachedAnalysisWirePayload(TypedDict, total=False):
+    """Wire-format Redis cache JSON root (fields we read before mapping inward)."""
+
+    source_url: str
+    cached_at: str
+    prompt_version: str
+    analysis: CachedAnalysisWireAnalysis
+
+
+_CACHED_ANALYSIS_WIRE_ADAPTER = TypeAdapter(CachedAnalysisWirePayload)
 
 
 def _get_redis_client() -> redis.Redis:
@@ -69,63 +97,44 @@ def _deserialize_payload(raw: str) -> CachedAnalysisPayload | None:
     from market_analysis.services.llm_market_recap import AnalyzedArticle
 
     try:
-        data = json.loads(raw)
-    except (TypeError, json.JSONDecodeError):
+        data = _CACHED_ANALYSIS_WIRE_ADAPTER.validate_python(json.loads(raw))
+    except (TypeError, json.JSONDecodeError, ValidationError):
         return None
-    if not isinstance(data, dict) or "analysis" not in data:
+    raw_analysis = data.get("analysis") or {}
+    if not raw_analysis and "analysis" not in data:
         return None
-    raw_analysis = data["analysis"]
-    if not isinstance(raw_analysis, dict):
-        return None
-    source_url = str(data.get("source_url") or "")
+    source_url = data.get("source_url") or ""
 
     event_types_raw = raw_analysis.get("event_types")
-    if not event_types_raw and raw_analysis.get("event_type"):
-        event_types_raw = [raw_analysis["event_type"]]
+    legacy_event_type = raw_analysis.get("event_type")
+    if not event_types_raw and legacy_event_type:
+        event_types_raw = [legacy_event_type]
     event_types: list[EventType] = []
-    if isinstance(event_types_raw, list):
+    if event_types_raw:
         for event_type in event_types_raw:
             try:
                 event_types.append(EventType(str(event_type)))
             except ValueError:
                 continue
-    companies_raw = raw_analysis.get("companies")
-    sectors_raw = raw_analysis.get("sectors")
-    key_facts_raw = raw_analysis.get("key_facts")
-    uncertainties_raw = raw_analysis.get("uncertainties")
     try:
         sentiment = Sentiment(str(raw_analysis.get("sentiment") or "NEUTRAL"))
     except ValueError:
         sentiment = Sentiment.NEUTRAL
     analysis = AnalyzedArticle(
-        title=str(raw_analysis.get("title") or ""),
-        summary=str(raw_analysis.get("summary") or ""),
+        title=raw_analysis.get("title") or "",
+        summary=raw_analysis.get("summary") or "",
         event_types=event_types,
-        companies=(
-            [str(item) for item in companies_raw]
-            if isinstance(companies_raw, list)
-            else []
-        ),
-        sectors=(
-            [str(item) for item in sectors_raw] if isinstance(sectors_raw, list) else []
-        ),
+        companies=list(raw_analysis.get("companies") or []),
+        sectors=list(raw_analysis.get("sectors") or []),
         sentiment=sentiment,
-        key_facts=(
-            [str(item) for item in key_facts_raw]
-            if isinstance(key_facts_raw, list)
-            else []
-        ),
-        uncertainties=(
-            [str(item) for item in uncertainties_raw]
-            if isinstance(uncertainties_raw, list)
-            else []
-        ),
-        source_url=str(raw_analysis.get("source_url") or source_url or ""),
+        key_facts=list(raw_analysis.get("key_facts") or []),
+        uncertainties=list(raw_analysis.get("uncertainties") or []),
+        source_url=raw_analysis.get("source_url") or source_url or "",
     )
     return CachedAnalysisPayload(
         source_url=source_url,
-        cached_at=str(data.get("cached_at") or ""),
-        prompt_version=str(data.get("prompt_version") or ""),
+        cached_at=data.get("cached_at") or "",
+        prompt_version=data.get("prompt_version") or "",
         analysis=analysis,
     )
 

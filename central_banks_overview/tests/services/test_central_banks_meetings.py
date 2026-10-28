@@ -199,77 +199,77 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             {
                 "central_bank": "FRB",
                 "order": 1,
-                "date": "2024-01-31 13:00:00+0000",
+                "date": "2024-01-31 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 2,
-                "date": "2024-03-20 13:00:00+0000",
+                "date": "2024-03-20 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 3,
-                "date": "2024-05-01 13:00:00+0000",
+                "date": "2024-05-01 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 4,
-                "date": "2024-06-12 13:00:00+0000",
+                "date": "2024-06-12 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 5,
-                "date": "2024-07-31 13:00:00+0000",
+                "date": "2024-07-31 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 6,
-                "date": "2024-09-18 13:00:00+0000",
+                "date": "2024-09-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 7,
-                "date": "2024-11-07 13:00:00+0000",
+                "date": "2024-11-07 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 8,
-                "date": "2024-12-18 13:00:00+0000",
+                "date": "2024-12-18 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 9,
-                "date": "2025-01-29 13:00:00+0000",
+                "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 10,
-                "date": "2025-03-19 13:00:00+0000",
+                "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 11,
-                "date": "2025-05-07 13:00:00+0000",
+                "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 12,
-                "date": "2025-06-18 13:00:00+0000",
+                "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 13,
-                "date": "2025-07-30 13:00:00+0000",
+                "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 14,
-                "date": "2025-09-17 13:00:00+0000",
+                "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 15,
-                "date": "2025-10-29 13:00:00+0000",
+                "date": "2025-10-29 18:00:00+0000",
             },
         ]
 
@@ -321,22 +321,22 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             {
                 "central_bank": "ECB",
                 "order": 4,
-                "date": "2026-04-30 13:15:00+0000",
+                "date": "2026-04-30 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
                 "order": 5,
-                "date": "2026-06-11 13:15:00+0000",
+                "date": "2026-06-11 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
                 "order": 6,
-                "date": "2026-07-23 13:15:00+0000",
+                "date": "2026-07-23 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
                 "order": 7,
-                "date": "2026-09-10 13:15:00+0000",
+                "date": "2026-09-10 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
@@ -383,77 +383,77 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             {
                 "central_bank": "BOJ",
                 "order": 1,
-                "date": "2025-01-24 04:00:00+0000",
+                "date": "2025-01-24 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 2,
-                "date": "2025-03-19 04:00:00+0000",
+                "date": "2025-03-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 3,
-                "date": "2025-05-01 04:00:00+0000",
+                "date": "2025-05-01 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 4,
-                "date": "2025-06-17 04:00:00+0000",
+                "date": "2025-06-17 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 5,
-                "date": "2025-07-31 04:00:00+0000",
+                "date": "2025-07-31 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 6,
-                "date": "2025-09-19 04:00:00+0000",
+                "date": "2025-09-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 7,
-                "date": "2025-10-30 04:00:00+0000",
+                "date": "2025-10-30 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 8,
-                "date": "2025-12-19 04:00:00+0000",
+                "date": "2025-12-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 9,
-                "date": "2026-01-23 04:00:00+0000",
+                "date": "2026-01-23 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 10,
-                "date": "2026-03-19 04:00:00+0000",
+                "date": "2026-03-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 11,
-                "date": "2026-04-28 04:00:00+0000",
+                "date": "2026-04-28 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 12,
-                "date": "2026-06-16 04:00:00+0000",
+                "date": "2026-06-16 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 13,
-                "date": "2026-07-31 04:00:00+0000",
+                "date": "2026-07-31 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 14,
-                "date": "2026-09-18 04:00:00+0000",
+                "date": "2026-09-18 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
                 "order": 15,
-                "date": "2026-10-30 04:00:00+0000",
+                "date": "2026-10-30 06:30:00+0000",
             },
         ]
 
@@ -511,7 +511,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         WHEN ingesting the same meeting date from HTML
         THEN the existing record is updated (order may change)
         """
-        existing_date = datetime(2024, 1, 31, 13, 0, 0, tzinfo=timezone.utc)
+        existing_date = datetime(2024, 1, 31, 19, 0, 0, tzinfo=timezone.utc)
         existing_meeting = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=existing_date,
@@ -545,77 +545,77 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             {
                 "central_bank": "FRB",
                 "order": 1,
-                "date": "2024-01-31 13:00:00+0000",
+                "date": "2024-01-31 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 2,
-                "date": "2024-03-20 13:00:00+0000",
+                "date": "2024-03-20 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 3,
-                "date": "2024-05-01 13:00:00+0000",
+                "date": "2024-05-01 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 4,
-                "date": "2024-06-12 13:00:00+0000",
+                "date": "2024-06-12 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 5,
-                "date": "2024-07-31 13:00:00+0000",
+                "date": "2024-07-31 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 6,
-                "date": "2024-09-18 13:00:00+0000",
+                "date": "2024-09-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 7,
-                "date": "2024-11-07 13:00:00+0000",
+                "date": "2024-11-07 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 8,
-                "date": "2024-12-18 13:00:00+0000",
+                "date": "2024-12-18 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 9,
-                "date": "2025-01-29 13:00:00+0000",
+                "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 10,
-                "date": "2025-03-19 13:00:00+0000",
+                "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 11,
-                "date": "2025-05-07 13:00:00+0000",
+                "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 12,
-                "date": "2025-06-18 13:00:00+0000",
+                "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 13,
-                "date": "2025-07-30 13:00:00+0000",
+                "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 14,
-                "date": "2025-09-17 13:00:00+0000",
+                "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 15,
-                "date": "2025-10-29 13:00:00+0000",
+                "date": "2025-10-29 18:00:00+0000",
             },
         ]
 
@@ -674,77 +674,77 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             {
                 "central_bank": "FRB",
                 "order": 1,
-                "date": "2025-01-29 13:00:00+0000",
+                "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 2,
-                "date": "2025-03-19 13:00:00+0000",
+                "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 3,
-                "date": "2025-05-07 13:00:00+0000",
+                "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 4,
-                "date": "2025-06-18 13:00:00+0000",
+                "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 5,
-                "date": "2025-07-30 13:00:00+0000",
+                "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 6,
-                "date": "2025-09-17 13:00:00+0000",
+                "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 7,
-                "date": "2025-10-29 13:00:00+0000",
+                "date": "2025-10-29 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 8,
-                "date": "2025-12-10 13:00:00+0000",
+                "date": "2025-12-10 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 9,
-                "date": "2026-01-28 13:00:00+0000",
+                "date": "2026-01-28 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 10,
-                "date": "2026-03-18 13:00:00+0000",
+                "date": "2026-03-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 11,
-                "date": "2026-04-29 13:00:00+0000",
+                "date": "2026-04-29 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 12,
-                "date": "2026-06-17 13:00:00+0000",
+                "date": "2026-06-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 13,
-                "date": "2026-07-29 13:00:00+0000",
+                "date": "2026-07-29 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 14,
-                "date": "2026-09-16 13:00:00+0000",
+                "date": "2026-09-16 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
                 "order": 15,
-                "date": "2026-10-28 13:00:00+0000",
+                "date": "2026-10-28 18:00:00+0000",
             },
         ]
 

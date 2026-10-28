@@ -11,16 +11,20 @@ from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework.exceptions import NotFound
 
+from core.conftest import parse_query_for_testing
 from core.services import (
+    ValueChange,
+    calculate_value_change,
+    convert_local_wall_time_to_utc,
     convert_query_to_dictionary_list,
     convert_to_display_timezone,
     fetch_html,
     get,
+    get_source_timezone,
     parse_datetime,
     update_with_logs,
     upsert_with_logs,
 )
-from core.conftest import parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -617,6 +621,51 @@ class TestFetchHtml(TestCase):
         mock_get.assert_called_once_with(url, timeout=10)
 
 
+class TestCalculateValueChange(TestCase):
+    """Test cases for calculate_value_change."""
+
+    def test_calculate_value_change_percent_and_bps(self):
+        """
+        GIVEN current and previous levels
+        WHEN calculate_value_change is called
+        THEN absolute, percent, and bps fields are populated
+        """
+        assert calculate_value_change(110.0, 100.0) == ValueChange(
+            absolute=10.0,
+            percent=10.0,
+            bps=1000.0,
+        )
+
+    def test_calculate_value_change_undefined_when_previous_zero(self):
+        """
+        GIVEN a zero previous value
+        WHEN calculate_value_change is called
+        THEN percent is None while absolute and bps remain defined
+        """
+        assert calculate_value_change(5.0, 0.0) == ValueChange(
+            absolute=5.0,
+            percent=None,
+            bps=500.0,
+        )
+
+    def test_calculate_value_change_missing_inputs(self):
+        """
+        GIVEN a missing current or previous value
+        WHEN calculate_value_change is called
+        THEN all fields are None
+        """
+        assert calculate_value_change(None, 100.0) == ValueChange(
+            absolute=None,
+            percent=None,
+            bps=None,
+        )
+        assert calculate_value_change(100.0, None) == ValueChange(
+            absolute=None,
+            percent=None,
+            bps=None,
+        )
+
+
 class TestParseDatetime(TestCase):
     """Test cases for parse_datetime."""
 
@@ -640,6 +689,18 @@ class TestParseDatetime(TestCase):
         assert parsed is not None
         assert parsed.tzinfo == timezone.utc
 
+    def test_parse_datetime_naive_with_source_timezone(self):
+        """
+        GIVEN a naive datetime and America/New_York as the source zone
+        WHEN parse_datetime is called
+        THEN the wall clock is localized then stored as UTC
+        """
+        parsed = parse_datetime(
+            "2025-01-29T14:00:00",
+            naive_timezone="America/New_York",
+        )
+        assert parsed == datetime(2025, 1, 29, 19, 0, 0, tzinfo=timezone.utc)
+
     def test_parse_datetime_empty_returns_none(self):
         """
         GIVEN an empty value
@@ -648,6 +709,71 @@ class TestParseDatetime(TestCase):
         """
         assert parse_datetime(None) is None
         assert parse_datetime("") is None
+
+
+class TestSourceTimezone(TestCase):
+    """Test cases for source wall-clock → UTC helpers."""
+
+    def test_get_source_timezone_us_is_new_york(self):
+        """
+        GIVEN the US location code
+        WHEN get_source_timezone is called
+        THEN America/New_York is returned
+        """
+        assert str(get_source_timezone("US")) == "America/New_York"
+
+    def test_convert_local_wall_time_to_utc_fomc_winter(self):
+        """
+        GIVEN a 14:00 America/New_York wall clock in January
+        WHEN converting to UTC
+        THEN 19:00 UTC (EST) is returned
+        """
+        utc_datetime = convert_local_wall_time_to_utc(
+            2025,
+            1,
+            29,
+            14,
+            source_timezone="America/New_York",
+        )
+        assert utc_datetime == datetime(2025, 1, 29, 19, 0, 0, tzinfo=timezone.utc)
+
+    def test_convert_local_wall_time_to_utc_fomc_summer(self):
+        """
+        GIVEN a 14:00 America/New_York wall clock in June
+        WHEN converting to UTC
+        THEN 18:00 UTC (EDT) is returned
+        """
+        utc_datetime = convert_local_wall_time_to_utc(
+            2025,
+            6,
+            18,
+            14,
+            source_timezone="America/New_York",
+        )
+        assert utc_datetime == datetime(2025, 6, 18, 18, 0, 0, tzinfo=timezone.utc)
+
+    def test_fomc_new_york_displays_as_paris_20_00(self):
+        """
+        GIVEN an FOMC announcement stored from 14:00 New York time
+        WHEN converting for display
+        THEN Paris shows 20:00 in both winter and summer
+        """
+        winter_utc = convert_local_wall_time_to_utc(
+            2025,
+            1,
+            29,
+            14,
+            source_timezone="America/New_York",
+        )
+        summer_utc = convert_local_wall_time_to_utc(
+            2025,
+            6,
+            18,
+            14,
+            source_timezone="America/New_York",
+        )
+        assert convert_to_display_timezone(winter_utc).strftime("%H:%M") == "20:00"
+        assert convert_to_display_timezone(summer_utc).strftime("%H:%M") == "20:00"
 
 
 class TestDisplayTimezone(TestCase):

@@ -2,7 +2,7 @@
 
 import logging
 from datetime import date, datetime, timezone
-from typing import TypeVar
+from typing import NamedTuple, TypeVar
 from zoneinfo import ZoneInfo
 
 import requests
@@ -26,6 +26,46 @@ L = TypeVar("L", bound=BaseLogModel)
 # Used by @ttl_cache decorators across the codebase for consistent caching behavior
 CACHE_MAXSIZE = 128  # Maximum number of cached entries per function
 CACHE_TTL_SECONDS = 10 * 60  # Time-to-live: 10 minutes (600 seconds)
+
+# Source wall-clock zones for location codes (economic / market location choices).
+# Naive publish times from a source are interpreted in this zone, then stored as UTC.
+SOURCE_TIMEZONE_BY_LOCATION_CODE: dict[str, str] = {
+    "US": "America/New_York",
+    "EU": "Europe/Berlin",
+    "FR": "Europe/Paris",
+    "JP": "Asia/Tokyo",
+    "DE": "Europe/Berlin",
+}
+
+
+class ValueChange(NamedTuple):
+    """Absolute, percent, and basis-point change from previous to current.
+
+    Period labels (DoD / WoW / MoM / QoQ / YoY) are caller concerns: pick the
+    comparison value, then call ``calculate_value_change``. ``bps`` is
+    ``absolute * 100`` (yields quoted in percent). Point changes for vol use
+    ``absolute``.
+    """
+
+    absolute: float | None
+    percent: float | None
+    bps: float | None
+
+
+def calculate_value_change(
+    current: float | None,
+    previous: float | None,
+) -> ValueChange:
+    """Compute level / % / bps change from ``previous`` to ``current``.
+
+    Returns None fields when either input is None. ``percent`` is also None when
+    ``previous`` is 0 (undefined ratio).
+    """
+    if current is None or previous is None:
+        return ValueChange(absolute=None, percent=None, bps=None)
+    absolute = current - previous
+    percent = None if previous == 0 else (absolute / previous) * 100
+    return ValueChange(absolute=absolute, percent=percent, bps=absolute * 100)
 
 
 def get(model: type[T], *args, **kwargs) -> T:
@@ -151,11 +191,16 @@ def fetch_html(url: str) -> BeautifulSoup | None:
         return
 
 
-def parse_datetime(value: str | None) -> datetime | None:
+def parse_datetime(
+    value: str | None,
+    *,
+    naive_timezone: str | ZoneInfo | None = None,
+) -> datetime | None:
     """Parse an ISO / RFC-ish datetime string to UTC-aware datetime when possible.
 
-    Naive inputs are treated as UTC (backend storage convention). See
-    ``docs/GUIDELINES.md``.
+    Aware inputs keep their offset and are normalized to UTC. Naive inputs use
+    ``naive_timezone`` when given (source wall clock, e.g. America/New_York for
+    US releases); otherwise they are treated as UTC. See ``docs/GUIDELINES.md``.
     """
     if not value:
         return None
@@ -164,8 +209,47 @@ def parse_datetime(value: str | None) -> datetime | None:
     except (TypeError, ValueError, OverflowError):
         return None
     if parsed_datetime.tzinfo is None:
-        parsed_datetime = parsed_datetime.replace(tzinfo=timezone.utc)
+        if naive_timezone is None:
+            parsed_datetime = parsed_datetime.replace(tzinfo=timezone.utc)
+        else:
+            source_zone = (
+                ZoneInfo(naive_timezone)
+                if isinstance(naive_timezone, str)
+                else naive_timezone
+            )
+            parsed_datetime = parsed_datetime.replace(tzinfo=source_zone)
     return parsed_datetime.astimezone(timezone.utc)
+
+
+def get_source_timezone(location_code: str) -> ZoneInfo:
+    """Return the source wall-clock zone for a location code (e.g. US → New York)."""
+    timezone_name = SOURCE_TIMEZONE_BY_LOCATION_CODE.get(location_code)
+    if timezone_name is None:
+        raise ValueError(f"No source timezone mapped for location {location_code!r}")
+    return ZoneInfo(timezone_name)
+
+
+def convert_local_wall_time_to_utc(
+    year: int,
+    month: int,
+    day: int,
+    hour: int,
+    minute: int = 0,
+    *,
+    source_timezone: str | ZoneInfo,
+) -> datetime:
+    """Interpret a source-local civil time and return the matching UTC instant.
+
+    Use at ingest when a calendar publishes a wall clock in a known zone
+    (e.g. FOMC 14:00 America/New_York) but storage must be UTC-aware.
+    """
+    source_zone = (
+        ZoneInfo(source_timezone)
+        if isinstance(source_timezone, str)
+        else source_timezone
+    )
+    local_datetime = datetime(year, month, day, hour, minute, tzinfo=source_zone)
+    return local_datetime.astimezone(timezone.utc)
 
 
 def _get_display_timezone() -> ZoneInfo:

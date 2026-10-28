@@ -11,7 +11,7 @@ from pandas.tseries.offsets import BDay
 from pydantic_ai import Agent
 
 from central_banks_overview.models import CentralBankChoices
-from core.services import logger
+from core.services import calculate_value_change, logger
 from data_visualization.services.central_banks_recap import (
     get_central_bank_data_item,
     get_central_bank_formatted_probability_matrix,
@@ -102,20 +102,6 @@ class MarketContextRow(TypedDict):
     change_mom_pts: float | None
 
 
-def _compute_pct_change(new: float, old: float | None) -> float | None:
-    """Return the percent change from ``old`` to ``new``, or None if undefined."""
-    if old in (None, 0):
-        return None
-    return ((new - old) / old) * 100.0
-
-
-def _compute_bps_change(new: float, old: float | None) -> float | None:
-    """Return the basis-point change from ``old`` to ``new`` (yield * 100)."""
-    if old is None:
-        return None
-    return (new - old) * 100.0
-
-
 def _get_closest_as_of_price_in_row(
     price_rows: list[MarketPriceModel], as_of: date
 ) -> MarketPriceModel | None:
@@ -152,13 +138,11 @@ def build_market_context(as_of: date) -> list[MarketContextRow]:
         wow_row = _get_closest_as_of_price_in_row(price_rows, wow_target)
         mom_row = _get_closest_as_of_price_in_row(price_rows, mom_target)
         previous_price = previous_row.price if previous_row else None
-        change_dod = (
-            price_row.price - previous_price if previous_price is not None else None
-        )
         wow_price = wow_row.price if wow_row else None
         mom_price = mom_row.price if mom_row else None
-        change_wow = price_row.price - wow_price if wow_price is not None else None
-        change_mom = price_row.price - mom_price if mom_price is not None else None
+        dod_change = calculate_value_change(price_row.price, previous_price)
+        wow_change = calculate_value_change(price_row.price, wow_price)
+        mom_change = calculate_value_change(price_row.price, mom_price)
         is_rates = asset.asset_class == AssetClassChoices.RATES
         is_vol = asset.asset_type == AssetTypeChoices.VOLATILITY_INDEX
         rows.append(
@@ -171,40 +155,16 @@ def build_market_context(as_of: date) -> list[MarketContextRow]:
                 source=PriceSourceChoices(asset.source),
                 previous_date=(previous_row.date.isoformat() if previous_row else None),
                 previous_price=previous_price,
-                change_dod=change_dod,
-                change_dod_pct=(
-                    None
-                    if is_rates or is_vol
-                    else _compute_pct_change(price_row.price, previous_price)
-                ),
-                change_dod_bps=(
-                    _compute_bps_change(price_row.price, previous_price)
-                    if is_rates
-                    else None
-                ),
-                change_dod_pts=change_dod if is_vol else None,
-                change_wow_pct=(
-                    None
-                    if is_rates or is_vol
-                    else _compute_pct_change(price_row.price, wow_price)
-                ),
-                change_wow_bps=(
-                    _compute_bps_change(price_row.price, wow_price)
-                    if is_rates
-                    else None
-                ),
-                change_wow_pts=change_wow if is_vol else None,
-                change_mom_pct=(
-                    None
-                    if is_rates or is_vol
-                    else _compute_pct_change(price_row.price, mom_price)
-                ),
-                change_mom_bps=(
-                    _compute_bps_change(price_row.price, mom_price)
-                    if is_rates
-                    else None
-                ),
-                change_mom_pts=change_mom if is_vol else None,
+                change_dod=dod_change.absolute,
+                change_dod_pct=(None if is_rates or is_vol else dod_change.percent),
+                change_dod_bps=dod_change.bps if is_rates else None,
+                change_dod_pts=dod_change.absolute if is_vol else None,
+                change_wow_pct=(None if is_rates or is_vol else wow_change.percent),
+                change_wow_bps=wow_change.bps if is_rates else None,
+                change_wow_pts=wow_change.absolute if is_vol else None,
+                change_mom_pct=(None if is_rates or is_vol else mom_change.percent),
+                change_mom_bps=mom_change.bps if is_rates else None,
+                change_mom_pts=mom_change.absolute if is_vol else None,
             )
         )
     return rows

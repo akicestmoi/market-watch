@@ -5,6 +5,7 @@ from typing import TypedDict
 
 import requests
 from django.db.models import QuerySet
+from pydantic import TypeAdapter, ValidationError
 
 from core.services import logger
 from market_overview.models import HolidayModel, LocationChoices
@@ -25,21 +26,18 @@ class HolidayApiItem(TypedDict):
     countryCode: str
 
 
+_HOLIDAY_API_ITEMS_ADAPTER = TypeAdapter(list[HolidayApiItem])
+
+
 def _call_holiday_api(year: int, location: LocationChoices) -> list[HolidayApiItem]:
     """Call the holiday API for a given year and location."""
     url = f"{HOLIDAY_API_URL}{year}/{location.value}"
     response = requests.get(url)
     response.raise_for_status()
-    items: list[HolidayApiItem] = []
-    for entry in response.json():
-        items.append(
-            HolidayApiItem(
-                date=entry["date"],
-                localName=entry["localName"],
-                countryCode=entry["countryCode"],
-            )
-        )
-    return items
+    try:
+        return _HOLIDAY_API_ITEMS_ADAPTER.validate_python(response.json())
+    except ValidationError:
+        return []
 
 
 def _ingest_holidays(

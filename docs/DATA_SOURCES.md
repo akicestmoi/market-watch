@@ -63,6 +63,14 @@ This document lists all external data sources used in the Market Watch project, 
 - **Series documentation**: [`INDICATORS.md`](INDICATORS.md) — what each seeded series measures, why it was chosen, and INSEE methodology links
 - **Per-series page**: https://www.insee.fr/en/statistiques/serie/{ticker}
 
+### - Eurostat
+
+- **Base Source**: https://ec.europa.eu/eurostat
+- **URL**: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/{dataset}
+- **Publication URL**: https://ec.europa.eu/eurostat/news/release-calendar/ (JSON feed: https://ec.europa.eu/eurostat/o/calendars/eventsJson — event times are UTC; UI labels Europe/Luxembourg)
+- **Data Type**: Eurostat Statistics API datasets configured in `EUROSTAT_DATASET_PARAMS` (currently `prc_hicp_minr` euro-area HICP, ECOICOP v2 / `I25`; add a ticker entry to wire more series)
+- **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
+
 ### - Japan Cabinet Office
 
 - **Base Source**: Not Implemented

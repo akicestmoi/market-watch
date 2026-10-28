@@ -10,7 +10,14 @@ from central_banks_overview.services.central_banks_data import get_central_bank_
 from central_banks_overview.services.central_banks_inference import (
     CentralBankProbabilityMatrix,
 )
-from core.services import convert_to_display_timezone, logger
+from core.services import calculate_value_change, convert_to_display_timezone, logger
+from economic_overview.models import (
+    EconomicDataCategoryChoices,
+    EconomicDataLocationChoices,
+    EconomicDataModel,
+    EconomicIndicatorInformationModel,
+    EconomicPublicationFrequencyChoices,
+)
 
 
 class CentralBankDataItem(TypedDict):
@@ -18,6 +25,68 @@ class CentralBankDataItem(TypedDict):
 
     label: str
     value: str
+
+
+class InflationRateObservation(TypedDict):
+    """Latest YoY inflation rate and the observation period it refers to."""
+
+    yoy_pct: float
+    period: date
+
+
+def _format_inflation_rate_display(observation: InflationRateObservation | None) -> str:
+    """Format YoY inflation as ``0.9 % (Sep 26)``, or ``-`` when unavailable."""
+    if observation is None:
+        return "-"
+    period = observation["period"]
+    return (
+        f"{observation['yoy_pct']:.1f} % "
+        f"({period.strftime('%b')} {period.strftime('%y')})"
+    )
+
+
+def _get_latest_yoy_inflation_rate(
+    location: EconomicDataLocationChoices,
+) -> InflationRateObservation | None:
+    """Compute latest monthly YoY % from stored inflation index levels.
+
+    Needs the latest observation and the same calendar month one year earlier.
+    """
+    indicator = EconomicIndicatorInformationModel.objects.filter(
+        location=location,
+        category=EconomicDataCategoryChoices.INFLATION,
+        type="Consumer Price Index",
+    ).first()
+    if indicator is None:
+        return None
+    if indicator.frequency != EconomicPublicationFrequencyChoices.MONTHLY:
+        return None
+
+    latest = (
+        EconomicDataModel.objects.filter(
+            indicator=indicator,
+            period__isnull=False,
+            data_value__isnull=False,
+        )
+        .order_by("-period")
+        .first()
+    )
+    if latest is None or latest.period is None or latest.data_value is None:
+        return None
+
+    prior_period = date(latest.period.year - 1, latest.period.month, 1)
+    prior_row = EconomicDataModel.objects.filter(
+        indicator=indicator,
+        period=prior_period,
+        data_value__isnull=False,
+    ).first()
+    if prior_row is None or prior_row.data_value is None:
+        return None
+
+    yoy_pct = calculate_value_change(latest.data_value, prior_row.data_value).percent
+    if yoy_pct is None:
+        return None
+    return InflationRateObservation(yoy_pct=yoy_pct, period=latest.period)
 
 
 def get_central_bank_data_item(
@@ -60,16 +129,26 @@ def get_central_bank_data_item(
     match central_bank:
         case CentralBankChoices.FRB:
             additional_data = [
-                CentralBankDataItem(label="US Inflation Rate", value="3.0 %"),
+                CentralBankDataItem(label="US Inflation Rate", value="-"),
             ]
         case CentralBankChoices.BOJ:
             additional_data = [
-                CentralBankDataItem(label="Japan Inflation Rate", value="2.9 %"),
+                CentralBankDataItem(label="Japan Inflation Rate", value="-"),
             ]
         case CentralBankChoices.ECB:
+            france_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.FR)
+            )
+            eurozone_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.EU)
+            )
             additional_data = [
-                CentralBankDataItem(label="France Inflation Rate", value="0.9 %"),
-                CentralBankDataItem(label="Eurozone Inflation Rate", value="2.1 %"),
+                CentralBankDataItem(
+                    label="France Inflation Rate", value=france_inflation
+                ),
+                CentralBankDataItem(
+                    label="Eurozone Inflation Rate", value=eurozone_inflation
+                ),
             ]
     return base_data + additional_data
 

@@ -1,26 +1,36 @@
 """Manage central bank meeting calendars and related metadata."""
 
 import re
-from datetime import datetime, time, timezone
+from datetime import datetime, timezone
 from typing import NamedTuple, TypedDict
 
 from bs4 import Tag
 from cachetools.func import ttl_cache
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
-from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, fetch_html, logger
+from core.services import (
+    CACHE_MAXSIZE,
+    CACHE_TTL_SECONDS,
+    convert_local_wall_time_to_utc,
+    fetch_html,
+    logger,
+)
 
 FOMC_MEETING_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 BOJ_MPM_URL = "https://www.boj.or.jp/mopo/mpmsche_minu/index.htm"
 ECB_MEETING_URL = "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html"
 
-# FOMC meetings typically start at 2:00 PM ET (13:00 UTC during standard time)
-FOMC_MEETING_HOUR_UTC = 13
-# BoJ meetings typically start at 9:00 AM JST (4:00 UTC during standard time)
-BOJ_MEETING_HOUR_UTC = 4
-# ECB meetings typically start at 2:15 PM CET (13:15 UTC during standard time)
-ECB_MEETING_HOUR_UTC = 13
-ECB_MEETING_MINUTE_UTC = 15
+# Announcement wall clocks in each bank's source timezone (DST-aware → UTC on ingest).
+FOMC_ANNOUNCEMENT_HOUR = 14
+FOMC_ANNOUNCEMENT_MINUTE = 0
+FOMC_SOURCE_TIMEZONE = "America/New_York"
+ECB_ANNOUNCEMENT_HOUR = 14
+ECB_ANNOUNCEMENT_MINUTE = 15
+ECB_SOURCE_TIMEZONE = "Europe/Berlin"
+# Press conference typically 15:30 JST → 07:30 Europe/Paris in winter (08:30 in summer).
+BOJ_ANNOUNCEMENT_HOUR = 15
+BOJ_ANNOUNCEMENT_MINUTE = 30
+BOJ_SOURCE_TIMEZONE = "Asia/Tokyo"
 
 MONTH_ABBREVIATIONS = {
     "jan": 1,
@@ -116,12 +126,13 @@ def _extract_fomc_meeting_dates() -> list[datetime]:
 
             try:
                 meeting_dates.append(
-                    datetime(
+                    convert_local_wall_time_to_utc(
                         meeting_year,
                         end_month,
                         end_day,
-                        FOMC_MEETING_HOUR_UTC,
-                        tzinfo=timezone.utc,
+                        FOMC_ANNOUNCEMENT_HOUR,
+                        FOMC_ANNOUNCEMENT_MINUTE,
+                        source_timezone=FOMC_SOURCE_TIMEZONE,
                     )
                 )
             except ValueError:
@@ -152,11 +163,15 @@ def _extract_ecb_meeting_dates() -> list[datetime]:
         description_text = dd.get_text(strip=True)
 
         if "Day 2" in description_text:
+            meeting_day = datetime.strptime(date_text, "%d/%m/%Y").date()
             meeting_dates.append(
-                datetime.combine(
-                    datetime.strptime(date_text, "%d/%m/%Y").date(),
-                    time(ECB_MEETING_HOUR_UTC, ECB_MEETING_MINUTE_UTC),
-                    tzinfo=timezone.utc,
+                convert_local_wall_time_to_utc(
+                    meeting_day.year,
+                    meeting_day.month,
+                    meeting_day.day,
+                    ECB_ANNOUNCEMENT_HOUR,
+                    ECB_ANNOUNCEMENT_MINUTE,
+                    source_timezone=ECB_SOURCE_TIMEZONE,
                 )
             )
     return sorted(meeting_dates)
@@ -180,7 +195,7 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
         Meeting end date as datetime, or None if parsing fails.
 
     Example:
-        '4月30日（水）・5月 1日（木）' → datetime(2025, 5, 1, 4, tzinfo=timezone.utc)
+        '4月30日（水）・5月 1日（木）' → 2025-05-01 15:30 Asia/Tokyo (06:30 UTC)
     """
     MONTH_PATTERN = re.compile(r"(\d{1,2})月")
     DAY_PATTERN = re.compile(r"(\d{1,2})日")
@@ -221,8 +236,13 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
     end_year = year + 1 if end_month < start_month else year
 
     try:
-        return datetime(
-            end_year, end_month, end_day, BOJ_MEETING_HOUR_UTC, tzinfo=timezone.utc
+        return convert_local_wall_time_to_utc(
+            end_year,
+            end_month,
+            end_day,
+            BOJ_ANNOUNCEMENT_HOUR,
+            BOJ_ANNOUNCEMENT_MINUTE,
+            source_timezone=BOJ_SOURCE_TIMEZONE,
         )
     except ValueError:
         return None

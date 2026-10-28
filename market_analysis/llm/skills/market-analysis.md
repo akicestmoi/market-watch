@@ -23,6 +23,8 @@ Include, when material:
 - **Verified DB market prices**: if a move is **worth noting** — e.g. more than **±1.25%** (price assets), more than **±5bps** (rates / yields), or more than **±5pts** (volatility indices) on DoD, **or** a strong **WoW** / **MoM** move in the context fields — **include it** in the relevant zone even if **no article mentions it**. Articles do **not** gate what DB moves you report. Do **not** list every asset; only notable ones (the UI already shows the full price table below).
 - **Volatility** (e.g. VIX / `VOLATILITY_INDEX`): judge and cite moves by **absolute point change** (`change_*_pts` in context), **not** percent. Write `(+2.1pts)` / `(-1.4pts)`.
 - **Economic indicators** scheduled for release on the reporting date in the economic context: **name the release and state its DB value** even if **no article mentions it**. Articles do **not** gate what DB prints you report. Do **not** invent older prints or dig for non-scheduled “recent observations”. When **no** indicators are scheduled for that date, simply omit that topic — do **not** add filler such as “no indicators were scheduled.”
+- When an article provides an **economic-data consensus**, include that **consensus value alongside the verified realized (DB) value** in the relevant summary. Clearly **distinguish the realized result from consensus**, and describe the **observed market response** when relevant. **Never invent** consensus figures when they are not provided.
+- When a scheduled release is **below consensus** and the indicator also **deteriorates** (e.g. confidence or GDP **falls**, or prices **rise** when that is the adverse direction), describe it as a **negative economic signal**. The **other way around** — **above consensus** and the indicator also **improves** (e.g. confidence or GDP **rises**, or prices **fall** when that is the favorable direction) — describe it as a **positive economic signal**. In either case, then assess its **observed** market impact: state whether relevant assets **fell**, **rose**, or showed **little response**. Do **not** invent causality. Prefer **verified DB release values** over conflicting article values; after the user resolves a data point, write it assertively and **do not** leave that resolved item in **Uncertainties**.
 - Central-bank decisions, speeches, and policy signals.
 - **Central bank key figures** from the prompt’s CB context (effective rate, CB macro prints, next meeting): include them **only when they materially help** explain the session or the near-term policy outlook. Do **not** dump them as boilerplate every day. Never invent CB prints or meeting dates.
 - Earnings or corporate news only when they move markets or the zone narrative.
@@ -33,6 +35,7 @@ Include, when material:
 
 - Any DoD / WoW / MoM change cited in prose must appear **in parentheses** after the asset.
 - **No space** between the number and the unit: write `(+6bps)`, `(-1.4%)`, `(+2.1pts)` — never `(+6 bps)`, `(-1.4 %)`, or `(+2.1 pts)`.
+- Use **`bps`** consistently for yield / rate / spread changes, including **single-basis-point** moves — write `(+1bps)` / `(-1bps)`, never “1bp” or “one basis point” as the unit form when a figure is given.
 - Examples: `S&P 500 (-1.4%)`, `UST 10Y (+6bps)`, `Volatility (+2.1pts)`, `Brent (-2.1% DoD, -5.0% WoW)`.
 - Negative moves use a leading minus inside the parentheses: `(-xx%)`, `(-xxbps)`, or `(-xxpts)` — never “down 1.4%” without the parenthetical form when a figure is given.
 
@@ -40,11 +43,12 @@ Include, when material:
 
 - For each detailed zone, **explain drivers**: *why* markets moved, using named assets, scheduled economic prints, speeches, earnings, and world events — only what the context supports.
 - Tie prices + data + news into a coherent causal read. If causality is too weak to support, do **not** invent a story — put it under **Uncertainties**.
+- **Assess the whole cross-market narrative** (US / EUR / Japan and key cross-asset moves) **before** describing a **broad equity advance** or **risk-on** session. Distinguish a **quiet / wait-and-see** session in one major zone from **gains in other zones**; do **not** turn **modest** index gains into a **broad global rally**.
 - **Lead with the drivers that best explain broad market moves** across the **US, EUR zone, and Japan**. Do **not** present one driver (e.g. AI optimism) as the **sole / exclusive** explanation when other supported forces (e.g. an oil-price adjustment) also contributed to the wider backdrop.
 - If unsure, do not hesitate to propose causal explanation in uncertainties.
 - When naming a **broad theme**, be **specific** about the concrete catalysts the context supports (e.g. anticipation of major technology-company earnings, a company’s IPO filing) — do **not** use a bare label such as “AI optimism” with no supported catalyst.
 - **Important but geographically contained** events (e.g. a country-specific election-driven market shock) belong **after** the global mainline unless evidence shows they **materially** affected broader US / EUR / Japan markets. Title and `main_summary` must make this **primary / secondary** hierarchy clear (see §4).
-
+- Ahead of a **meaningful scheduled event** (e.g. a central-bank decision or political election), treat **subdued trading** as a **plausible wait-and-see baseline** when the **observed** cross-asset moves support it. Do **not** assume this pattern or present it as a **deterministic** rule.
 ### Assertive zone body (mandatory)
 
 - Zone narratives (`main_summary` and the body before Uncertainties) are a **recap of the market analysis only**. Write them **assertively**: state what moved, the drivers, and the best-supported read of the session.
@@ -57,8 +61,8 @@ Include, when material:
 ### DB vs article discrepancies (mandatory when present)
 
 - If an article quotes a **level, change, or print** for an asset or indicator that also appears in the DB context, and the figures **disagree** (or the article omits a material DB print/move you are reporting), **flag the discrepancy** under that zone’s **Uncertainties** (or Additional).
-- Prefer the **DB value** for the assertive narrative; put what the article claimed under Uncertainties. Do not silently average or invent a reconciliation.
-- **Once the user confirms a fact or resolves an article/DB discrepancy** (chat revision): write the **resolved information assertively** in the relevant summary using verified DB values where applicable, and **preserve** any user-confirmed explanatory context (e.g. a futures contract rollover). **Remove** that resolved discrepancy / caveat from Uncertainties. Do **not** keep “the article says…” comparisons or article-attribution wording for confirmed facts.
+- Prefer the **DB value** for the assertive narrative (including economic releases); put what the article claimed under Uncertainties. Do not silently average or invent a reconciliation.
+- **Once the user confirms a fact or resolves an article/DB discrepancy** (chat revision): write the **resolved information assertively** in the relevant summary using verified DB values where applicable, and **preserve** any user-confirmed explanatory context (e.g. a futures contract rollover). **Remove** that resolved discrepancy / caveat from Uncertainties — **do not leave a user-resolved data point in Uncertainties**. Do **not** keep “the article says…” comparisons or article-attribution wording for confirmed facts.
 
 ### Wording
 
@@ -93,6 +97,7 @@ If explaining a move, exception, or regime is **too difficult** with the availab
 ### Neutral / quiet
 
 - Limited moves, thin catalysts, or range-bound session with no clear regime.
+- Ahead of a **meaningful scheduled event**, a quiet session may be a **wait-and-see** or **observation** read **only when** observed moves support it — see Drivers above; do not force that label.
 
 ### Mixed
 
@@ -131,6 +136,7 @@ Use these explanations **only when supported** by the available context; otherwi
 - For **EUR rates**, assess **German–French** (and other relevant) **spreads separately** from the **level and direction of core yields**.
 - A **widening national spread is not, by itself**, evidence of **ECB-wide tightening**.
 - Consider fiscal, political, credit, liquidity, inflation, and term-premium explanations **only when supported**; otherwise state the uncertainty under **Uncertainties**.
+- For the **OAT–Bund** (or other user-specified sovereign) spread, follow the **user’s specified materiality rule** for whether to report it. Do **not** add the spread to the recap when the day’s move **does not meet** that threshold.
 
 ---
 
@@ -161,8 +167,20 @@ Use these context blocks **only when they are relevant** to the session’s mark
 - When policy path / rate-cut or hike pricing matters for the session, use the **probability-matrix shift** context (DoD change in meeting-date rate-step probabilities for FRB / ECB / BOJ).
 - **Most important:** the direction implied by the **two closest meetings** — whether probabilities show a **hike / cut / neutral** case (and how that shifted DoD). Lead any policy-pricing read from those near meetings.
 - **Far / long-end meetings** are useful for the **overall structure** of investors’ views but have **little concrete tangibility** for the session narrative — do not overweight them relative to the two nearest meetings.
+- For probability matrices, **omit** changes smaller than **25pts**. Describe **material** moves as pricing of **one or more rate hikes/cuts**, with **one rate step = 25bps**.
+- On a **central-bank decision day**, compare the decision with the **prior day’s market pricing** to assess whether it was **in line** or a **surprise**.
 - State what the market is **pricing** (or has **repriced**) in assertive terms when the near-meeting shift is material and supported — e.g. higher odds of fewer cuts, or a hawkish/dovish skew into the next meeting.
 - Do **not** invent path shifts that are not in the matrix context. Quiet / near-zero shifts can be omitted.
+
+---
+
+## 3e. Yield-curve moves (conditional)
+
+When rates matter for the session and the curve context supports it:
+
+- Add the **10-year minus 2-year** spread when its daily change exceeds **±7bps**.
+- Describe curve shapes **only when supported** by the moves: **bull flattening**, **bear steepening**, **twist flattening**, or **twist steepening**.
+- Use **“butterfly”** only when a meaningful **5y / 7y belly** move (at least **±5bps**) runs **opposite** to the **2s/10s** move (also at least **±5bps**) in a **bull-flattening** or **bear-steepening** pattern. Do not label a butterfly from a belly wiggle alone.
 
 ---
 
@@ -189,7 +207,7 @@ Output these fields (not a single free-form Global→US→EU→Japan blob):
 ### Per-zone analysis order (us / eur / jp / additional)
 
 1. **Zone regime** — Decide whether that zone looks bullish / bearish / neutral / mixed / volatile / quiet (with intensity). If one zone diverges from others, **flag** and dig deeper.
-2. **Drivers** — Explain *why* using market moves of named assets, economic indicators, speeches, earnings, world events (only what the context supports). Apply §3a / §3b / §3c when inflation, policy, sovereign-spread, or positioning/retracement stories are in play. Apply §3d when FX strength or probability-matrix shifts help explain the session.
+2. **Drivers** — Explain *why* using market moves of named assets, economic indicators, speeches, earnings, world events (only what the context supports). Apply §3a / §3b / §3c when inflation, policy, sovereign-spread, or positioning/retracement stories are in play. Apply §3d when FX strength or probability-matrix shifts help explain the session. Apply §3e when yield-curve shape / 2s10s / butterfly labels are warranted.
 3. **Asset-class / sector lens** — If the story is class- or sector-specific (e.g. rates-only, bank stocks), say so explicitly.
 4. **Divergences** — If most assets fit the zone label but some do not, **flag** those exceptions and comment.
 

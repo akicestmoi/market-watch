@@ -11,6 +11,7 @@ import pandas as pd
 import requests
 from cachetools.func import ttl_cache
 from django.db.models import QuerySet
+from pydantic import TypeAdapter, ValidationError
 
 import core.services as core_services
 from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, logger
@@ -36,9 +37,32 @@ SOURCE_SCRAP_MAP: dict[
     ],
 ] = {
     EconomicDataSourceChoices.INSEE: lambda t, p, f: _get_data_from_insee(t, p, f),
+    EconomicDataSourceChoices.EUROSTAT: lambda t, p, f: _get_data_from_eurostat(
+        t, p, f
+    ),
     EconomicDataSourceChoices.JP_CABINET_OFFICE: lambda t, p, f: _get_data_from_japan_cabinet_office(
         t, p, f
     ),
+}
+
+
+# Shared Eurostat Statistics API query args (every dataset).
+EUROSTAT_API_DEFAULT_PARAMS: dict[str, str] = {
+    "format": "JSON",
+    "lang": "en",
+}
+
+# Per-dataset dimension filters keyed by Eurostat dataset code (``ticker``).
+# Add a new entry when wiring another Eurostat series.
+EUROSTAT_DATASET_PARAMS: dict[str, dict[str, str]] = {
+    # ECOICOP v2 monthly indices (replaces frozen prc_hicp_midx / I15 after 2025-12).
+    "prc_hicp_minr": {
+        "geo": "EA",
+        "coicop18": "TOTAL",
+        "unit": "I25",
+        "freq": "M",
+        "sinceTimePeriod": "2015-01",
+    },
 }
 
 
@@ -219,6 +243,172 @@ def _get_data_from_insee(
     )
     data_value = float(str(load_result.dataframe.iloc[target_row, 1]))
     return [ScrapingResult(period=period, data_value=data_value, comment="")]
+
+
+class EurostatJsonStatCategory(TypedDict, total=False):
+    """JSON-stat category block (period labels → flat positions)."""
+
+    index: dict[str, int]
+
+
+class EurostatJsonStatDimension(TypedDict, total=False):
+    """JSON-stat dimension block."""
+
+    category: EurostatJsonStatCategory
+
+
+class EurostatJsonStatPayload(TypedDict):
+    """Eurostat Statistics API JSON-stat subset used for scraping."""
+
+    id: list[str]
+    size: list[int]
+    # Flat-index keys are dynamic strings — open-key map of already-typed values.
+    value: dict[str, float | int | None]
+    # Dimension ids are dynamic (freq, unit, time, …).
+    dimension: dict[str, EurostatJsonStatDimension]
+
+
+_EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(EurostatJsonStatPayload)
+
+
+def _decode_eurostat_flat_index(flat_index: int, sizes: list[int]) -> list[int]:
+    """Decode a JSON-stat flat index into per-dimension coordinates."""
+    coordinates: list[int] = []
+    remaining = flat_index
+    for size in reversed(sizes):
+        coordinates.append(remaining % size)
+        remaining //= size
+    return list(reversed(coordinates))
+
+
+def _parse_eurostat_jsonstat_values(
+    payload: EurostatJsonStatPayload,
+) -> list[ScrapingResult]:
+    """Parse Eurostat Statistics API JSON-stat ``value`` / ``dimension`` payload."""
+    dimension_ids = payload["id"]
+    sizes = payload["size"]
+    values = payload["value"]
+    dimensions = payload["dimension"]
+    if "time" not in dimension_ids:
+        return [
+            ScrapingResult(
+                period=None, data_value=None, comment="Eurostat payload missing time."
+            )
+        ]
+
+    time_dimension = dimensions.get("time", EurostatJsonStatDimension())
+    time_category = time_dimension.get("category", EurostatJsonStatCategory())
+    time_index = time_category.get("index")
+    if time_index is None:
+        return [
+            ScrapingResult(
+                period=None,
+                data_value=None,
+                comment="Eurostat time index is not a mapping.",
+            )
+        ]
+    position_to_period = {
+        position: period_label for period_label, position in time_index.items()
+    }
+    time_dimension_offset = dimension_ids.index("time")
+
+    economic_data: list[ScrapingResult] = []
+    for flat_index_str, raw_value in values.items():
+        try:
+            flat_index = int(flat_index_str)
+            coordinates = _decode_eurostat_flat_index(flat_index, sizes)
+            time_position = coordinates[time_dimension_offset]
+            period_label = position_to_period[time_position]
+            period = datetime.strptime(period_label, "%Y-%m").date()
+            data_value = float(raw_value) if raw_value is not None else None
+            if data_value is None:
+                continue
+        except (KeyError, TypeError, ValueError):
+            continue
+        economic_data.append(
+            ScrapingResult(period=period, data_value=data_value, comment="")
+        )
+
+    economic_data.sort(
+        key=lambda row: row["period"] or date.min,
+        reverse=True,
+    )
+    return economic_data
+
+
+@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
+def _get_data_from_eurostat(
+    ticker: str,
+    target_period: str | None = None,
+    frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.MONTHLY,
+) -> list[ScrapingResult]:
+    """Get Eurostat economic data (all rows, or a single matching ``YYYY-MM`` period).
+
+    Dataset filters come from ``EUROSTAT_DATASET_PARAMS`` (keyed by ``ticker``).
+
+    Source: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/
+    """
+    if frequency != EconomicPublicationFrequencyChoices.MONTHLY:
+        return [
+            ScrapingResult(
+                period=None,
+                data_value=None,
+                comment=f"Unsupported frequency for Eurostat scrape: {frequency}",
+            )
+        ]
+    dataset_params = EUROSTAT_DATASET_PARAMS.get(ticker)
+    if dataset_params is None:
+        return [
+            ScrapingResult(
+                period=None,
+                data_value=None,
+                comment=f"Unsupported Eurostat ticker: {ticker}",
+            )
+        ]
+
+    eurostat_url = (
+        f"https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/{ticker}"
+    )
+    response = requests.get(
+        eurostat_url,
+        params={**EUROSTAT_API_DEFAULT_PARAMS, **dataset_params},
+        timeout=60,
+    )
+    if response.status_code >= 400:
+        logger.warning(f"Error scraping Eurostat data: {response.text}")
+        return [ScrapingResult(period=None, data_value=None, comment=response.text)]
+
+    try:
+        payload = _EUROSTAT_JSONSTAT_ADAPTER.validate_python(response.json())
+    except (ValueError, ValidationError) as exc:
+        return [
+            ScrapingResult(
+                period=None,
+                data_value=None,
+                comment=f"Invalid Eurostat JSON-stat: {exc}",
+            )
+        ]
+
+    economic_data = _parse_eurostat_jsonstat_values(payload)
+    if not economic_data:
+        return [
+            ScrapingResult(
+                period=None, data_value=None, comment="No Eurostat values found."
+            )
+        ]
+    if economic_data[0]["data_value"] is None and economic_data[0]["period"] is None:
+        return economic_data
+
+    if not target_period:
+        return economic_data
+
+    for row in economic_data:
+        period = row["period"]
+        if period is not None and period.strftime("%Y-%m") == target_period:
+            return [row]
+    return [
+        ScrapingResult(period=None, data_value=None, comment="Target period not found.")
+    ]
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

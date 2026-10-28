@@ -16,11 +16,6 @@
                 </a>
             </li>
             <li class="navbar-item">
-                <a href="{% url 'economic-events' %}" class="navbar-link {% if request.resolver_match.url_name == 'economic-events' %}active{% endif %}">
-                    Economic Events
-                </a>
-            </li>
-            <li class="navbar-item">
                 <a href="{% url 'market-charts' %}" class="navbar-link {% if request.resolver_match.url_name == 'market-charts' %}active{% endif %}">
                     Market Charts
                 </a>
@@ -38,6 +33,11 @@
             <li class="navbar-item">
                 <a href="{% url 'central-banks-recap' %}" class="navbar-link {% if request.resolver_match.url_name == 'central-banks-recap' %}active{% endif %}">
                     Central Banks
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="{% url 'economic-events' %}" class="navbar-link {% if request.resolver_match.url_name == 'economic-events' %}active{% endif %}">
+                    Economic Events
                 </a>
             </li>
             <li class="navbar-item">

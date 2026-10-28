@@ -35,6 +35,7 @@ class EconomicDataSourceChoices(models.TextChoices):
     """Economic Data Source Choices."""
 
     INSEE = "INSEE", _("INSEE")
+    EUROSTAT = "EUROSTAT", _("Eurostat")
     JP_CABINET_OFFICE = "JP_CABINET_OFFICE", _("Japan Cabinet Office")
 
 

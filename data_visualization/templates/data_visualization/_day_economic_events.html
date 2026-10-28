@@ -6,12 +6,22 @@
         {% for location_group in day_events_by_location %}
         <div class="day-events-location-card">
             <h4 class="day-events-location-title" data-location="{{ location_group.location }}"></h4>
-            <div class="day-events-rows">
+            <div class="day-events-indicator-row">
                 {% for event in location_group.events %}
-                <div class="day-events-row{% if event.is_holiday %} is-holiday{% endif %}">
+                <div class="day-events-indicator-card{% if event.is_holiday %} is-holiday{% endif %}">
                     <span class="day-events-name">{{ event.name }}</span>
-                    {% if event.value %}
-                    <span class="day-events-value">{{ event.value }}</span>
+                    {% if event.value or event.previous or event.change %}
+                    <span class="day-events-metrics">
+                        {% if event.value %}
+                        <span class="day-events-value">{{ event.value }}</span>
+                        {% endif %}
+                        {% if event.previous %}
+                        <span class="day-events-previous">({{ event.previous }})</span>
+                        {% endif %}
+                        {% if event.change %}
+                        <span class="day-events-change {{ event.change_class.value }}">{{ event.change }}</span>
+                        {% endif %}
+                    </span>
                     {% endif %}
                 </div>
                 {% endfor %}

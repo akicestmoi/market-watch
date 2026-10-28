@@ -224,11 +224,13 @@ Three different “model” concepts — do not mix them:
 
 | Tool | Runtime? | Use for |
 | ---- | -------- | ------- |
-| **`TypedDict`** | No (typing only; value is a plain `dict`) | Internal record/mapping shapes we **build and trust**: service payloads, template/UI context, chat/tool return dicts, scraper/ingestion rows after we picked fields, DRF `*ValidatedData` **after** serializers ran |
-| **Pydantic `BaseModel`** (`pydantic.BaseModel`) | Yes (parse / coerce / validate) | **Trust boundaries** that admit messy or model-generated input — especially **LLM structured outputs** under `market_analysis/llm/schemas.py` (`output_type=…`). Prefer Field constraints at that edge |
+| **`TypedDict`** | No (typing only; value is a plain `dict`) | Internal record/mapping shapes we **build and trust**: service payloads, template/UI context, chat/tool return dicts, scraper/ingestion rows after we picked fields, DRF `*ValidatedData` **after** serializers ran; **and** the shape of third-party / Redis / HTTP JSON **after** validation |
+| **Pydantic `BaseModel`** / **`TypeAdapter`** | Yes (parse / coerce / validate) | **Trust boundaries** that admit messy input — **LLM structured outputs** (`BaseModel` + Field under `market_analysis/llm/schemas.py`) **and** third-party / cache JSON (`TypeAdapter(SomeTypedDict).validate_python(raw)` is preferred when the shape is a TypedDict) |
 | **Django `core.models.BaseModel`** | ORM | Persisted DB models only. Unrelated to Pydantic |
 
 **HTTP JSON APIs** validate with **DRF serializers** (`<app>/open_api/`), not Pydantic. Map `validated_data` into a view-local `*ValidatedData` TypedDict, then call services with typed values (enums converted at the view boundary).
+
+**Third-party / cache JSON (required):** Do **not** annotate scraped or loaded JSON as bare `dict`, `dict[str, Any]`, or a **`Protocol`**. `Protocol` is for behavioral duck typing (methods), not JSON object shapes. Declare a **`TypedDict`** (nested as needed; `total=False` when fields may be absent) for the keys we read, then validate once at the edge with **`TypeAdapter(ThatTypedDict).validate_python(raw)`** (catch `ValidationError`). Pass only the TypedDict inward. Do **not** hand-write nested field-by-field coerce trees. Open-key maps inside that payload (e.g. JSON-stat flat indexes) stay `dict[str, …]` of already-typed values with the usual one-line comment.
 
 **LLM pipeline pattern (required):** Pydantic schema at the agent boundary → map into a **TypedDict** (or ORM fields) for process memory, cache, and persistence. Do not thread Pydantic instances through services/UI; do not re-validate trusted internal dicts with Pydantic.
 
@@ -256,12 +258,16 @@ class DailyRecapOutput(TypedDict):
     main_summary: str
 ```
 
-Use **`NamedTuple`** for fixed-position tuples (not for open JSON objects). Homogeneous sequences use `list[SomeTypedDict]`. Small frozen `@dataclass` configs with defaults are allowed when a TypedDict would be awkward; do not use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records.
+Use **`NamedTuple`** for fixed-position multi-field returns (not for open JSON objects). Homogeneous sequences use `list[SomeTypedDict]`. Small frozen `@dataclass` configs with defaults are allowed when a TypedDict would be awkward; do not use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records.
+
+**Do not** return or annotate `tuple[…]` / `Tuple[…]` for a pair or n-tuple of named fields — even when the element types are already enums / TypedDicts. Give it a `NamedTuple` (or a TypedDict if it is JSON-shaped).
 
 ```python
 # ❌ BAD
 def load() -> dict: ...
 def parse() -> tuple: ...
+def format_change(change: float | None) -> tuple[str, DayEventChangeClass]: ...
+def parse_eurostat(payload: dict): ...  # bare dict / Protocol for JSON
 rows: list[Any] = ...
 detail: dict[str, Any] = ...
 
@@ -274,11 +280,23 @@ class EstrReferenceDates(NamedTuple):
     start: date
     end: date
 
+class DayEventChangeDisplay(NamedTuple):
+    change: str
+    change_class: DayEventChangeClass
+
+class EurostatJsonStatPayload(TypedDict):
+    id: list[str]
+    size: list[int]
+    value: dict[str, float | int | None]  # open flat-index keys
+    dimension: dict[str, EurostatJsonStatDimension]
+
 def load() -> list[PriceChange]: ...
 def parse() -> EstrReferenceDates: ...
+def format_change(change: float | None) -> DayEventChangeDisplay: ...
+def parse_eurostat(payload: EurostatJsonStatPayload): ...
 ```
 
-Do **not** use `list[Any]`, `dict[str, Any]`, or `Mapping[Any, Any]` as an escape hatch around pandas / Redis / JSON. Build the TypedDict (or NamedTuple) field-by-field instead.
+Do **not** use `list[Any]`, `dict[str, Any]`, or `Mapping[Any, Any]` as an escape hatch around pandas / Redis / JSON. For untrusted JSON use `TypeAdapter(TypedDict)`; for values we already trust, build the TypedDict / NamedTuple from known fields.
 
 Open-key framework bags (Django `updates=` / `filter` kwargs, DRF `validated_data`) must still be declared as a **TypedDict** matching the known fields (`total=False` when partial).
 

@@ -5,6 +5,7 @@ from enum import Enum
 from typing import NamedTuple, TypedDict
 
 import economic_overview.services.economic_data as economic_data
+from core.services import calculate_value_change
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
@@ -157,13 +158,6 @@ def _get_lag_for_mode(
     return 1
 
 
-def _compute_pct_change(curr: float, prev: float) -> float | None:
-    """Return percent change from ``prev`` to ``curr``, or None if undefined."""
-    if prev == 0:
-        return None
-    return (curr - prev) / prev * 100
-
-
 def _transform_level_series(
     points: list[ChartLevelPoint],
     frequency: EconomicPublicationFrequencyChoices,
@@ -181,7 +175,7 @@ def _transform_level_series(
     for index in range(lag, len(ordered)):
         curr = ordered[index]
         prev = ordered[index - lag]
-        change = _compute_pct_change(curr.value, prev.value)
+        change = calculate_value_change(curr.value, prev.value).percent
         if change is None:
             continue
         result.append(ChartLevelPoint(period=curr.period, value=change))
