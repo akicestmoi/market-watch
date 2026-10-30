@@ -1,4 +1,4 @@
-"""Shared helpers for Django app tests (mocks, fixtures, queryset asserts)."""
+"""Shared helpers for Django app tests (mocks, queryset asserts)."""
 
 import json
 from datetime import datetime

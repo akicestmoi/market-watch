@@ -22,13 +22,15 @@ from economic_overview.services.data_ingestion import (
 )
 
 
-def _scraper_side_effect(ticker, period, frequency=None):
+def _scraper_side_effect(ticker, period, frequency=None, location=None):
     if ticker == "TEST":
         return [{"period": date(2024, 1, 15), "data_value": 100.0, "comment": ""}]
     return [{"period": None, "data_value": None, "comment": "No data"}]
 
 
-def _scraper_multiple_periods_side_effect(ticker, period, frequency=None):
+def _scraper_multiple_periods_side_effect(
+    ticker, period, frequency=None, location=None
+):
     if period == "2024-01":
         return [{"period": date(2024, 1, 15), "data_value": 100.0, "comment": ""}]
     return [{"period": date(2024, 2, 15), "data_value": 200.0, "comment": ""}]
@@ -483,7 +485,10 @@ class TestDataIngestionServices(TestCase):
 
         assert result == []
         mock_scraper.assert_called_once_with(
-            self.indicator.ticker, None, self.indicator.frequency
+            self.indicator.ticker,
+            None,
+            self.indicator.frequency,
+            self.indicator.location,
         )
         economic_data = EconomicDataModel.objects.filter(
             indicator=self.indicator

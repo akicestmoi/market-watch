@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pandas as pd
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from market_overview.services.scrapers.boj_mutan import get_mutan_rate_from_boj
 from market_overview.services.scrapers.common import ScrapingResult
 

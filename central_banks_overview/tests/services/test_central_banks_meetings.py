@@ -8,9 +8,6 @@ from django.test import TestCase
 from freezegun import freeze_time
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
-from central_banks_overview.services.scrapers.boj_meetings import extract_boj_meeting_dates
-from central_banks_overview.services.scrapers.ecb_meetings import extract_ecb_meeting_dates
-from central_banks_overview.services.scrapers.fomc_meetings import extract_fomc_meeting_dates
 from central_banks_overview.services.central_banks_meetings import (
     CentralBankMeetingDates,
     get_central_bank_meeting_dates,
@@ -23,7 +20,16 @@ from central_banks_overview.services.config import (
     ECB_MEETING_URL,
     FOMC_MEETING_URL,
 )
-from core.conftest import MockResponse, parse_query_for_testing, read_file_content
+from central_banks_overview.services.scrapers.boj_meetings import (
+    extract_boj_meeting_dates,
+)
+from central_banks_overview.services.scrapers.ecb_meetings import (
+    extract_ecb_meeting_dates,
+)
+from central_banks_overview.services.scrapers.fomc_meetings import (
+    extract_fomc_meeting_dates,
+)
+from core.testing import MockResponse, parse_query_for_testing, read_file_content
 
 
 class TestCentralBankMeetingsServices(TestCase):
@@ -494,16 +500,203 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "order"]
         )
-        # Check that we have meetings for all three banks
-        boj_meetings = [m for m in result if m["central_bank"] == "BOJ"]
-        ecb_meetings = [m for m in result if m["central_bank"] == "ECB"]
-        frb_meetings = [m for m in result if m["central_bank"] == "FRB"]
-        assert len(boj_meetings) > 0
-        assert len(ecb_meetings) > 0
-        assert len(frb_meetings) > 0
-        assert boj_meetings[0]["order"] == 1
-        assert ecb_meetings[0]["order"] == 1
-        assert frb_meetings[0]["order"] == 1
+        assert result == [
+            {
+                "central_bank": "BOJ",
+                "order": 1,
+                "date": "2025-01-24 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 2,
+                "date": "2025-03-19 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 3,
+                "date": "2025-05-01 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 4,
+                "date": "2025-06-17 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 5,
+                "date": "2025-07-31 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 6,
+                "date": "2025-09-19 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 7,
+                "date": "2025-10-30 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 8,
+                "date": "2025-12-19 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 9,
+                "date": "2026-01-23 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 10,
+                "date": "2026-03-19 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 11,
+                "date": "2026-04-28 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 12,
+                "date": "2026-06-16 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 13,
+                "date": "2026-07-31 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 14,
+                "date": "2026-09-18 06:30:00+0000",
+            },
+            {
+                "central_bank": "BOJ",
+                "order": 15,
+                "date": "2026-10-30 06:30:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 1,
+                "date": "2025-12-18 13:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 2,
+                "date": "2026-02-05 13:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 3,
+                "date": "2026-03-19 13:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 4,
+                "date": "2026-04-30 12:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 5,
+                "date": "2026-06-11 12:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 6,
+                "date": "2026-07-23 12:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 7,
+                "date": "2026-09-10 12:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 8,
+                "date": "2026-10-29 13:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 9,
+                "date": "2026-12-17 13:15:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 1,
+                "date": "2024-01-31 19:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 2,
+                "date": "2024-03-20 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 3,
+                "date": "2024-05-01 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 4,
+                "date": "2024-06-12 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 5,
+                "date": "2024-07-31 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 6,
+                "date": "2024-09-18 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 7,
+                "date": "2024-11-07 19:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 8,
+                "date": "2024-12-18 19:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 9,
+                "date": "2025-01-29 19:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 10,
+                "date": "2025-03-19 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 11,
+                "date": "2025-05-07 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 12,
+                "date": "2025-06-18 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 13,
+                "date": "2025-07-30 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 14,
+                "date": "2025-09-17 18:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "order": 15,
+                "date": "2025-10-29 18:00:00+0000",
+            },
+        ]
 
     @patch("core.services.requests.get")
     @freeze_time("2024-01-01 12:00:00")

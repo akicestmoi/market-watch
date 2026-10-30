@@ -14,8 +14,12 @@ from central_banks_overview.models import (
     StirFuturesPriceUpdateLogModel,
 )
 from central_banks_overview.services.scrapers.common import StirFutures
-from central_banks_overview.services.scrapers.fedfunds_futures import get_fedfunds_futures_prices
-from central_banks_overview.services.scrapers.tfx_mutan_futures import get_mutan_futures_prices
+from central_banks_overview.services.scrapers.fedfunds_futures import (
+    get_fedfunds_futures_prices,
+)
+from central_banks_overview.services.scrapers.tfx_mutan_futures import (
+    get_mutan_futures_prices,
+)
 from core.services import logger
 
 EXPECTED_CSV_COLUMNS: tuple[

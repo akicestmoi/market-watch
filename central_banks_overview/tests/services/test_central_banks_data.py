@@ -18,7 +18,7 @@ from central_banks_overview.services.central_banks_data import (
     ingest_central_bank_data,
     ingest_requested_central_bank_data,
 )
-from core.conftest import parse_query_for_testing
+from core.testing import parse_query_for_testing
 from market_overview.models import PriceSourceChoices
 from market_overview.services.scrapers.common import ScrapingResult
 

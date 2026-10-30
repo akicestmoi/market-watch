@@ -9,7 +9,8 @@ from bs4 import BeautifulSoup
 from django.db import IntegrityError
 from django.test import TestCase
 from freezegun import freeze_time
-from core.conftest import parse_query_for_testing
+from rest_framework.exceptions import NotFound
+
 from core.services import (
     ValueChangeOutput,
     calculate_value_change,
@@ -22,6 +23,7 @@ from core.services import (
     update_with_logs,
     upsert_with_logs,
 )
+from core.testing import parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -317,7 +319,7 @@ class TestUpsertWithLogs(TestCase):
         )
         raced.save()
         mock_get.side_effect = [
-            MarketPriceModel.DoesNotExist,
+            NotFound(detail="No MarketPriceModel found matching lookup"),
             raced,
         ]
         mock_create.side_effect = IntegrityError("unique_market_price_per_asset_date")

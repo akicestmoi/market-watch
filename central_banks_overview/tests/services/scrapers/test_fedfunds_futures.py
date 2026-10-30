@@ -12,13 +12,13 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
+from central_banks_overview.services.scrapers.common import StirFutures
 from central_banks_overview.services.scrapers.fedfunds_futures import (
     YFinanceTickerInfo,
     _get_fedfunds_futures_price,
     _get_ticker_info_from_maturity_month,
     get_fedfunds_futures_prices,
 )
-from central_banks_overview.services.scrapers.common import StirFutures
 from market_overview.services.scrapers.yahoo import get_yahoo_finance_closing_prices
 
 

@@ -8,12 +8,12 @@ from cachetools.func import ttl_cache
 
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import logger, parse_datetime
-from market_analysis.services.scrapers.common import ArticleLink, ScrapingResult
-from market_analysis.services.scrapers.html_text import extract_main_text
 from market_analysis.services.config import (
     HTTP_REQUEST_TIMEOUT_SECONDS,
     SWISSINFO_LIST_URL,
 )
+from market_analysis.services.scrapers.common import ArticleLink, ScrapingResult
+from market_analysis.services.scrapers.html_text import extract_main_text
 
 
 def _parse_swissinfo_market_wrap_card(

@@ -140,9 +140,11 @@ class TestAssetsViews(TestCase):
         response = self.client.post(f"{self.base_url}{self.GENERATE_BASE_ASSETS_URL}")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert (
-            response.json()["message"] == "Duplicate asset short_name found: ['TEST']"
-        )
+        assert response.json() == {
+            "error": "Validation",
+            "message": "Duplicate asset short_name found: ['TEST']",
+            "status_code": 400,
+        }
 
     @patch("builtins.open")
     @patch("json.load")
@@ -165,7 +167,11 @@ class TestAssetsViews(TestCase):
         response = self.client.post(f"{self.base_url}{self.GENERATE_BASE_ASSETS_URL}")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json()["message"] == "short_name is required"
+        assert response.json() == {
+            "error": "Validation",
+            "message": "short_name is required",
+            "status_code": 400,
+        }
 
     def test_get_asset_names_success(self):
         """
@@ -295,10 +301,11 @@ class TestAssetsViews(TestCase):
         response = self.client.get(self.base_url, params)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert (
-            response.json()["message"]
-            == "No AssetModel found matching {'short_name': 'NONEXISTENT'}"
-        )
+        assert response.json() == {
+            "error": "NotFound",
+            "message": "No AssetModel found matching {'short_name': 'NONEXISTENT'}",
+            "status_code": 404,
+        }
 
     def test_delete_asset_success(self):
         """
@@ -310,6 +317,7 @@ class TestAssetsViews(TestCase):
         response = self.client.delete(f"{self.base_url}?{query_params}")
 
         assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"message": "Asset deleted successfully."}
         assert not AssetModel.objects.filter(short_name="TEST").exists()
 
     def test_delete_asset_not_found(self):
@@ -322,10 +330,11 @@ class TestAssetsViews(TestCase):
         response = self.client.delete(f"{self.base_url}?{query_params}")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert (
-            response.json()["message"]
-            == "No AssetModel found matching {'short_name': 'NONEXISTENT'}"
-        )
+        assert response.json() == {
+            "error": "NotFound",
+            "message": "No AssetModel found matching {'short_name': 'NONEXISTENT'}",
+            "status_code": 404,
+        }
 
     def test_get_asset_details_missing_short_name(self):
         """
@@ -336,8 +345,8 @@ class TestAssetsViews(TestCase):
         response = self.client.get(f"{self.base_url}")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json()["error_message"] == {
-            "short_name": ["This field is required."]
+        assert response.json() == {
+            "error_message": {"short_name": ["This field is required."]}
         }
 
     def test_delete_asset_with_related_market_price(self):
@@ -360,5 +369,6 @@ class TestAssetsViews(TestCase):
         response = self.client.delete(f"{self.base_url}?short_name=TEST")
 
         assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"message": "Asset deleted successfully."}
         assert not AssetModel.objects.filter(short_name="TEST").exists()
         assert MarketPriceModel.objects.filter(asset__short_name="TEST").count() == 0

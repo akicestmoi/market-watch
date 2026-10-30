@@ -35,7 +35,6 @@ class CachedAnalysisWireAnalysis(TypedDict, total=False):
     title: str
     summary: str
     event_types: list[str]
-    event_type: str
     companies: list[str]
     sectors: list[str]
     sentiment: str
@@ -82,9 +81,6 @@ def _map_wire_payload_to_cached(
     source_url = data.get("source_url") or ""
 
     event_types_raw = raw_analysis.get("event_types")
-    legacy_event_type = raw_analysis.get("event_type")
-    if not event_types_raw and legacy_event_type:
-        event_types_raw = [legacy_event_type]
     event_types: list[EventType] = []
     if event_types_raw:
         for event_type in event_types_raw:

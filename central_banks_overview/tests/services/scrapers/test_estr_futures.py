@@ -17,7 +17,7 @@ from central_banks_overview.services.scrapers.estr_futures import (
     calculate_estr_reference_dates,
     extract_estr_prices_from_pdf,
 )
-from core.conftest import read_file_content
+from core.testing import read_file_content
 
 
 class TestEstrFuturesPricesIngestion(TestCase):

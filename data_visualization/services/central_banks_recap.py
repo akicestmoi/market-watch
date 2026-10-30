@@ -186,20 +186,20 @@ def get_central_bank_formatted_probability_matrix(
                 not entry.get("probabilities", []) for entry in probability_matrix
             )
             if is_empty:
-                return {
-                    "central_bank": prob_matrix["central_bank"],
-                    "meeting_dates": prob_matrix["meeting_dates"],
-                    "probability_matrix": [],
-                }
+                return CentralBankProbabilityMatrix(
+                    central_bank=prob_matrix["central_bank"],
+                    meeting_dates=prob_matrix["meeting_dates"],
+                    probability_matrix=[],
+                )
             sorted_probability_matrix = sorted(
                 probability_matrix,
                 key=lambda x: x["expected_rate_step"],
             )
-            return {
-                "central_bank": prob_matrix["central_bank"],
-                "meeting_dates": prob_matrix["meeting_dates"],
-                "probability_matrix": sorted_probability_matrix,
-            }
+            return CentralBankProbabilityMatrix(
+                central_bank=prob_matrix["central_bank"],
+                meeting_dates=prob_matrix["meeting_dates"],
+                probability_matrix=sorted_probability_matrix,
+            )
 
 
 def _recalculate_previous_probability_matrix(
@@ -262,11 +262,11 @@ def get_formatted_probability_matrix_changes(
         return None
 
     if current_is_empty or previous_is_empty:
-        return {
-            "central_bank": probability_matrix["central_bank"],
-            "meeting_dates": probability_matrix["meeting_dates"],
-            "probability_matrix": [],
-        }
+        return CentralBankProbabilityMatrix(
+            central_bank=probability_matrix["central_bank"],
+            meeting_dates=probability_matrix["meeting_dates"],
+            probability_matrix=[],
+        )
 
     probability_change_matrix = central_banks_inference.calculate_probability_changes(
         probability_matrix, previous_probability_matrix
@@ -276,8 +276,8 @@ def get_formatted_probability_matrix_changes(
         probability_change_matrix["probability_matrix"],
         key=lambda x: x["expected_rate_step"],
     )
-    return {
-        "central_bank": probability_change_matrix["central_bank"],
-        "meeting_dates": probability_change_matrix["meeting_dates"],
-        "probability_matrix": sorted_probability_change_matrix,
-    }
+    return CentralBankProbabilityMatrix(
+        central_bank=probability_change_matrix["central_bank"],
+        meeting_dates=probability_change_matrix["meeting_dates"],
+        probability_matrix=sorted_probability_change_matrix,
+    )

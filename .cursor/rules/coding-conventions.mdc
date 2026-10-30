@@ -54,7 +54,7 @@ Public scraper entry points are verb-led and **without** a leading `_` when impo
 
 App-wide **static** values used by services — URLs, timeouts, series/ticker maps, release-id tables, layout constants, frozen dataclass / TypedDict templates — belong in **`<app>/services/config.py`**, not scattered as globals across service modules. Import them from there.
 
-**Prefer global dict mappers over `match` / `get_*` lookup helpers — everywhere, not only in `config.py`.** When a closed set of keys maps to static values, declare `SOME_NAME_BY_KEY: dict[…] = {…}` and use `.get(...)` / `[...]` at the call site. Do **not** wrap that table in a `match` statement or a one-line `get_*` function.
+**Prefer global dict mappers over `match` / `get_*` lookup helpers when the branch only returns a static value.** When a closed set of keys maps to static values (strings, constants, config rows), declare `SOME_NAME_BY_KEY: dict[…] = {…}` and use `.get(...)` / `[...]` at the call site. Do **not** wrap that table in a `match` statement or a one-line `get_*` function.
 
 ```python
 # ❌ BAD — match / get_* wrapper around a fixed table (any module)
@@ -86,6 +86,21 @@ INSEE_CSV_NAME_BY_FREQUENCY: dict[EconomicPublicationFrequencyChoices, str] = {
 
 message = DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE.get(status_code)
 expected = INSEE_CSV_NAME_BY_FREQUENCY.get(frequency)
+```
+
+**Exception — `match` for per-branch computation is fine.** When each arm runs different logic (formulas, guards, multi-step work) rather than looking up a precomputed value, keep a `match` (or `if`/`elif`) in the function. Do **not** invent a mapper of lambdas / callables just to avoid `match`. Example: `calculate_value_change` switching on `ValueChangeOutput` to compute absolute / bps / percent / annualized percent.
+
+```python
+# ✅ GOOD — match arms compute; not a static lookup table
+match output:
+    case ValueChangeOutput.ABSOLUTE:
+        return absolute
+    case ValueChangeOutput.BPS:
+        return absolute * 100
+    case ValueChangeOutput.PERCENT:
+        return None if previous == 0 else (absolute / previous) * 100
+    case ValueChangeOutput.ANNUALIZED_PERCENT:
+        ...
 ```
 
 **`config.py` holds data only** — same rule, strictly: no `get_*` / `match` lookup helpers there. Composition that **builds** a request from several tables (e.g. Eurostat dataset + geo) lives in the **scraper / service module**, not in `config.py`.
@@ -529,15 +544,33 @@ def test_get_recap_not_found(self):
 
 ### Test assertions: hardcode the full expected value
 
-Assert the **entire** expected payload (response context, service return, …) in one equality check with a hardcoded literal. Do **not** cherry-pick individual fields — partial asserts hide drift and are harder to debug when something else in the structure changes.
+Assert the **entire** expected payload (response context, service return, nested TypedDict / list of rows, …) in **one** equality check with a hardcoded literal (or TypedDict / NamedTuple constructor). Do **not** cherry-pick individual fields with a chain of `assert result[…][…] == …` / `.get(…)` — partial asserts hide drift in sibling fields and are harder to debug when the shape changes.
+
+Build the expected value in the test (locals / small helpers are fine) and compare once:
 
 ```python
 # ❌ BAD — field-by-field; misses unrelated regressions
+assert result[0]["week_start"] == "2025-12-15"
+assert result[0]["is_current_week"] is True
+assert result[0]["days"][1].get("is_today") is True
+assert result[0]["days"][1]["events"][0]["name"] == "This Week"
+
+# ❌ BAD — same problem on nested service payloads
 assert response_context["period_window"] == "5Y"
 assert selected["fr_growth_indicator"] == "GDP|YOY"
 assert selected["fr_confidence_indicator"] == "Aggregate Business Confidence|ABS"
 
-# ✅ GOOD — full hardcoded expected value
+# ✅ GOOD — full hardcoded expected value (one equality)
+assert result == [
+    UpcomingWeekGroup(
+        week_start="2025-12-15",
+        week_label="15 Dec 2025 – 19 Dec 2025",
+        is_current_week=True,
+        days=[ ... every Mon–Fri slot ... ],
+    ),
+    ...
+]
+
 assert response_context == {
     "region": "France",
     "period_window": "5Y",
@@ -548,7 +581,17 @@ assert response_context == {
 }
 ```
 
-Status-code checks (`assert response.status_code == 200`) may stay separate. Tiny unit helpers that return a single scalar or a small fixed tuple may assert that value directly.
+**Allowed to stay separate from the full-payload equality:**
+
+- HTTP status: `assert response.status_code == 200`
+- Mock call verification: `assert_called_once_with(...)`, `assert_not_called()`
+- Tiny unit helpers that return a **single scalar** (or a small fixed NamedTuple / enum) — assert that value directly
+- Inequalities / ordering checks in methodology tests (`assert x > y`) when the contract is relative, not an exact payload
+- **Very large** homogeneous sequences (e.g. 100+ scraped observations) where hardcoding every row is impractical: assert `len(result)` plus full equality on a few sentinel rows (`result[0]`, `result[-1]`, …). Prefer full-list equality whenever the list is small or medium
+
+Do **not** use the large-sequence exception to justify field-by-field checks on week grids, recap rows, cache payloads, LLM context TypedDicts, or other closed-shape objects — those always get one full equality.
+
+**HTML / template views:** assert the full template **context** when the view passes one (same rule as JSON). Also assert the full rendered body with ``assert response.content == expected_html`` (bytes or a fixture file of the exact markup) — never ``assert needle in response.content`` / other partial membership checks. Update the expected HTML when the template or hashed static URLs change.
 
 ### Test mocks: decorator only; configure inside the test
 

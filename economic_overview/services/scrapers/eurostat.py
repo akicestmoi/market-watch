@@ -17,10 +17,6 @@ from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicPublicationFrequencyChoices,
 )
-from economic_overview.services.scrapers.common import (
-    ScrapingResult,
-    filter_scraping_results_by_target_period,
-)
 from economic_overview.services.config import (
     EUROSTAT_API_DEFAULT_PARAMS,
     EUROSTAT_GEO_FOR_EU_LOCATION,
@@ -30,6 +26,10 @@ from economic_overview.services.config import (
     EUROSTAT_STATISTICS_API_BASE_URL,
     EurostatQueryParams,
     EurostatTickerParams,
+)
+from economic_overview.services.scrapers.common import (
+    ScrapingResult,
+    filter_scraping_results_by_target_period,
 )
 
 

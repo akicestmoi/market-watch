@@ -12,9 +12,9 @@ from typing import TypedDict
 
 from core.services import logger
 from market_analysis.models import NewsSourceChoices
+from market_analysis.services.config import NEWS_SOURCES_JSON
 from market_analysis.services.scrapers.boursier import scrap_boursier_cloture_paris
 from market_analysis.services.scrapers.swissinfo import scrap_swissinfo_market_wrap
-from market_analysis.services.config import NEWS_SOURCES_JSON
 
 SOURCE_SCRAP_MAP = {
     NewsSourceChoices.BOURSIER_CLOTURE_PARIS.value: lambda d: scrap_boursier_cloture_paris(

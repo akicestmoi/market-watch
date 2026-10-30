@@ -7,10 +7,13 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from economic_overview.models import EconomicPublicationFrequencyChoices
 from economic_overview.services.scrapers.common import ScrapingResult
-from economic_overview.services.scrapers.insee import _parse_insee_period, get_data_from_insee
+from economic_overview.services.scrapers.insee import (
+    _parse_insee_period,
+    get_data_from_insee,
+)
 
 
 def _create_mock_zip_with_csv(csv_name: str, csv_content: str) -> bytes:

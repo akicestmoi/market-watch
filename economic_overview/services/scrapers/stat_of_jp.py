@@ -11,14 +11,14 @@ from pydantic import TypeAdapter, ValidationError
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import logger
 from economic_overview.models import EconomicPublicationFrequencyChoices
-from economic_overview.services.scrapers.common import (
-    ScrapingResult,
-    filter_scraping_results_by_target_period,
-)
 from economic_overview.services.config import (
     STAT_OF_JP_DATA_URL,
     STAT_OF_JP_DEFAULT_PARAMS,
     STAT_OF_JP_SERIES_BY_TICKER,
+)
+from economic_overview.services.scrapers.common import (
+    ScrapingResult,
+    filter_scraping_results_by_target_period,
 )
 
 

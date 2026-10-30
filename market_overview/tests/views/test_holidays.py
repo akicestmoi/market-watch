@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.conftest import load_json_mock
+from core.testing import load_json_mock
 from market_overview.models import HolidayModel, LocationChoices
 
 HOLIDAY_API_RESPONSE_FR = load_json_mock(
@@ -36,7 +36,7 @@ class TestHolidaysIngestionViews(TestCase):
         self.base_url = "/markets/holidays"
 
     @freeze_time("2025-01-01")
-    @patch("market_overview.services.holidays.call_holiday_api")
+    @patch("market_overview.services.holidays._call_holiday_api")
     def test_ingest_holidays_success(self, mock_call_holiday_api):
         """
         GIVEN a holiday API response
@@ -54,7 +54,7 @@ class TestHolidaysIngestionViews(TestCase):
         )
 
     @freeze_time("2025-01-01")
-    @patch("market_overview.services.holidays.call_holiday_api")
+    @patch("market_overview.services.holidays._call_holiday_api")
     def test_ingest_holidays_with_location(self, mock_call_holiday_api):
         """
         GIVEN a holiday API response
@@ -78,7 +78,7 @@ class TestHolidaysIngestionViews(TestCase):
         assert other_holidays_nb == 0
 
     @freeze_time("2025-01-01")
-    @patch("market_overview.services.holidays.call_holiday_api")
+    @patch("market_overview.services.holidays._call_holiday_api")
     def test_ingest_holidays_with_date_parameter(self, mock_call_holiday_api):
         """
         GIVEN a holiday API response
@@ -106,7 +106,7 @@ class TestHolidaysIngestionViews(TestCase):
         assert HolidayModel.objects.filter(date__lt=test_date).count() == 0
 
     @freeze_time("2025-11-01")
-    @patch("market_overview.services.holidays.call_holiday_api")
+    @patch("market_overview.services.holidays._call_holiday_api")
     def test_ingest_holidays_over_year(self, mock_call_holiday_api):
         """
         GIVEN a holiday API response

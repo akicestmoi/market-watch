@@ -19,7 +19,7 @@ from central_banks_overview.services.scrapers.tfx_mutan_futures import (
     _get_mutan_futures_prices_from_tfx,
     get_mutan_futures_prices,
 )
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 
 
 class TestMutanFuturesPricesIngestion(TestCase):

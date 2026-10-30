@@ -12,7 +12,6 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.scrapers.common import StirFutures
 from central_banks_overview.services.central_banks_meetings import (
     get_central_bank_next_meeting_date,
 )
@@ -22,6 +21,7 @@ from central_banks_overview.services.config import (
     FF_FUTURES_PREFIX,
     FF_FUTURES_SUFFIX,
 )
+from central_banks_overview.services.scrapers.common import StirFutures
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.scrapers.yahoo import get_yahoo_finance_closing_prices
 

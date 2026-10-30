@@ -15,12 +15,12 @@ from pydantic import TypeAdapter, ValidationError
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import logger
 from economic_overview.models import EconomicPublicationFrequencyChoices
-from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.config import (
     INSEE_CSV_NAME_BY_FREQUENCY,
     INSEE_PUBLICATION_SCHEDULE_URL,
     INSEE_SERIES_CSV_URL_TEMPLATE,
 )
+from economic_overview.services.scrapers.common import ScrapingResult
 
 
 class InseeValuesLoadResult(NamedTuple):

@@ -20,7 +20,10 @@ class TestChoiceLabelHelpers(SimpleTestCase):
         WHEN get_choice_from_label (or Choices.from_label) is called
         THEN the matching members are returned
         """
-        assert get_choice_from_label(LocationChoices, "United States") == LocationChoices.US
+        assert (
+            get_choice_from_label(LocationChoices, "United States")
+            == LocationChoices.US
+        )
         assert LocationChoices.from_label("Germany") == LocationChoices.DE
         assert (
             EconomicDataLocationChoices.from_label("France")
@@ -57,6 +60,9 @@ class TestChoiceLabelHelpers(SimpleTestCase):
             "Europe",
             "France",
             "Japan",
+            "Germany",
+            "Spain",
+            "Italy",
         ]
         assert LocationChoices.get_labels() == [
             "United States",

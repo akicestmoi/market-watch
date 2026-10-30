@@ -2,7 +2,9 @@
 
 from datetime import date
 
-from market_analysis.services.scrapers.swissinfo import _parse_swissinfo_market_wrap_card
+from market_analysis.services.scrapers.swissinfo import (
+    _parse_swissinfo_market_wrap_card,
+)
 
 
 def test_parse_swissinfo_market_wrap_for_date():

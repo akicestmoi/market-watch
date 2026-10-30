@@ -13,8 +13,8 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.scrapers.common import StirFutures
 from central_banks_overview.services.config import MONTH_NUMBER_BY_ABBREVIATION
+from central_banks_overview.services.scrapers.common import StirFutures
 
 
 def _parse_maturity_from_estr_pdf(maturity: str) -> str:

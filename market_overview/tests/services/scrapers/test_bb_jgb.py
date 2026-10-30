@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from market_overview.services.scrapers.bb_jgb import (
     _scrap_jgb_yield_curve_from_bb,
     get_jgb_yield_from_bb,

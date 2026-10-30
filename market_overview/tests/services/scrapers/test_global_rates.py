@@ -6,7 +6,7 @@ from unittest.mock import patch
 from bs4 import BeautifulSoup
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from market_overview.services.scrapers.common import ScrapingResult
 from market_overview.services.scrapers.global_rates import scrap_from_global_rates
 

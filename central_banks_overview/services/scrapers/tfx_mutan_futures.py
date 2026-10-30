@@ -14,12 +14,12 @@ from central_banks_overview.models import (
     StirFuturesNameChoices,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.scrapers.common import StirFutures
 from central_banks_overview.services.config import (
     TFX_HISTORICAL_FUTURES_DATA_URL,
     TFX_HISTORICAL_FUTURES_TRADING_CALENDAR_URL,
     TFX_HISTORICAL_LOOKBACK_DAYS,
 )
+from central_banks_overview.services.scrapers.common import StirFutures
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 
 

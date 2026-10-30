@@ -347,9 +347,11 @@ class GetSpecificAssetMarketDataTest(TestCase):
         """
         GIVEN a non-existent asset short name
         WHEN getting specific asset market data
-        THEN a DoesNotExist exception is raised
+        THEN a NotFound exception is raised
         """
-        with pytest.raises(AssetModel.DoesNotExist):
+        from rest_framework.exceptions import NotFound
+
+        with pytest.raises(NotFound):
             _get_specific_asset_market_data(
                 "NONEXISTENT", self.start_date, self.end_date
             )

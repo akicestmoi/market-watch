@@ -2,6 +2,12 @@
 
 from django.test import Client, TestCase
 
+from core.testing import read_file_content
+
+_EXPECTED_HTML = read_file_content(
+    "data_visualization/tests/mock_web_data/sector_analysis/placeholder.html"
+)
+
 
 class TestSectorAnalysisView(TestCase):
     """Test cases for sector_analysis_view."""
@@ -19,5 +25,4 @@ class TestSectorAnalysisView(TestCase):
         """
         response = self.client.get(self.base_url)
         assert response.status_code == 200
-        assert b"Sector analysis" in response.content
-        assert b"No data yet." in response.content
+        assert response.content == _EXPECTED_HTML

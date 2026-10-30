@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from market_overview.services.scrapers.bundesbank import get_bund_yield_from_bundesbank
 from market_overview.services.scrapers.common import ScrapingResult
 

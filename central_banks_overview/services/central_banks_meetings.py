@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import TypedDict
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
+from central_banks_overview.services.config import NB_MEETINGS_TO_INGEST
 from central_banks_overview.services.scrapers.boj_meetings import (
     extract_boj_meeting_dates,
 )
@@ -13,7 +14,6 @@ from central_banks_overview.services.scrapers.ecb_meetings import (
 from central_banks_overview.services.scrapers.fomc_meetings import (
     extract_fomc_meeting_dates,
 )
-from central_banks_overview.services.config import NB_MEETINGS_TO_INGEST
 from core.services import logger
 
 CB_MEETINGS_EXTRACT_MAP = {

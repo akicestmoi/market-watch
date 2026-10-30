@@ -13,15 +13,15 @@ from pydantic import TypeAdapter, ValidationError
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import logger
 from economic_overview.models import EconomicPublicationFrequencyChoices
-from economic_overview.services.scrapers.common import (
-    ScrapingResult,
-    filter_scraping_results_by_target_period,
-)
 from economic_overview.services.config import (
     FRED_OBSERVATION_START,
     FRED_OBSERVATIONS_URL,
     FRED_RELEASE_DATES_URL,
     FRED_RELEASE_ID_BY_TECHNICAL_NAME,
+)
+from economic_overview.services.scrapers.common import (
+    ScrapingResult,
+    filter_scraping_results_by_target_period,
 )
 
 

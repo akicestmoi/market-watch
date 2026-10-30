@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
-from core.conftest import MockResponse, load_json_mock
+from core.testing import MockResponse, load_json_mock
 from economic_overview.models import EconomicPublicationFrequencyChoices
 from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.scrapers.fred import get_data_from_fred

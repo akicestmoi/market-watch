@@ -20,7 +20,9 @@ from market_overview.services.scrapers.bb_jgb import get_jgb_yield_from_bb
 from market_overview.services.scrapers.boj_mutan import get_mutan_rate_from_boj
 from market_overview.services.scrapers.bundesbank import get_bund_yield_from_bundesbank
 from market_overview.services.scrapers.common import ScrapingResult
-from market_overview.services.scrapers.dept_treasury import get_treasury_yield_from_dep_treasury
+from market_overview.services.scrapers.dept_treasury import (
+    get_treasury_yield_from_dep_treasury,
+)
 from market_overview.services.scrapers.global_rates import scrap_from_global_rates
 from market_overview.services.scrapers.nyfed import scrap_rate_from_nyfed_xml
 from market_overview.services.scrapers.webstat import get_webstat_rates

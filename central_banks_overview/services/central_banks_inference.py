@@ -1563,9 +1563,7 @@ def get_central_bank_probability_matrices(
     """Get probability matrices for specified central banks."""
     logger.info(f"Getting probability matrices for {central_banks} on {target_date}")
     central_banks_to_process = (
-        central_banks
-        if central_banks
-        else list(TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK)
+        central_banks if central_banks else list(TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK)
     )
 
     all_meeting_dates = central_banks_meetings.get_central_bank_meeting_dates(

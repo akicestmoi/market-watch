@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from economic_overview.models import EconomicPublicationFrequencyChoices
 from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.scrapers.mlit import (

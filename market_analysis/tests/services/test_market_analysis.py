@@ -7,6 +7,7 @@ from django.test import TestCase
 
 from market_analysis.models import DailyRecapModel
 from market_analysis.services.market_analysis import (
+    MarketAnalysisResult,
     run_daily_analysis_pipeline,
     run_daily_analysis_pipeline_with_lock,
 )
@@ -43,9 +44,11 @@ class RunDailyAnalysisPipelineTests(TestCase):
         day = date(2025, 12, 12)
         _make_recap(day)
         result = run_daily_analysis_pipeline(day, force=False)
-        assert result["status"] == "skipped"
-        assert result.get("reason") == "Daily recap already exists"
-        assert result["reporting_date"] == day.isoformat()
+        assert result == MarketAnalysisResult(
+            status="skipped",
+            reason="Daily recap already exists",
+            reporting_date=day.isoformat(),
+        )
         mock_extract.assert_not_called()
 
     @patch(
@@ -79,9 +82,20 @@ class RunDailyAnalysisPipelineTests(TestCase):
             "cache_hits": 0,
             "cache_misses": 0,
         }
-        mock_generate.return_value = DailyRecapModel.objects.get(reporting_date=day)
+        daily_recap = DailyRecapModel.objects.get(reporting_date=day)
+        mock_generate.return_value = daily_recap
         result = run_daily_analysis_pipeline(day, force=True)
-        assert result["status"] == "success"
+        assert result == MarketAnalysisResult(
+            status="success",
+            reporting_date=day.isoformat(),
+            sources=[],
+            analyzed=0,
+            analysis_failed=[],
+            cache_hits=0,
+            cache_misses=0,
+            recap_id=daily_recap.pk,
+            recap_title=daily_recap.title,
+        )
         mock_extract.assert_called_once()
 
     @patch("market_analysis.services.market_analysis.try_acquire_redis_lock")
@@ -95,6 +109,10 @@ class RunDailyAnalysisPipelineTests(TestCase):
         mock_lock.return_value = None
         day = date(2025, 12, 12)
         result = run_daily_analysis_pipeline_with_lock(day, force=True)
-        assert result["status"] == "skipped"
-        assert "already in progress" in (result.get("reason") or "")
+        assert result == MarketAnalysisResult(
+            status="skipped",
+            reason="Market analysis pipeline already in progress",
+            message="Market analysis pipeline already in progress",
+            reporting_date=day.isoformat(),
+        )
         mock_pipeline.assert_not_called()

@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from market_overview.services.scrapers.common import ScrapingResult
 from market_overview.services.scrapers.dept_treasury import (
     _get_treasury_yield_curve_from_dep_treasury,

@@ -15,15 +15,23 @@ from central_banks_overview.models import (
     StirFuturesPriceUpdateLogModel,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.scrapers.boj_meetings import extract_boj_meeting_dates
-from central_banks_overview.services.scrapers.ecb_meetings import extract_ecb_meeting_dates
-from central_banks_overview.services.scrapers.fedfunds_futures import _get_fedfunds_futures_price
-from central_banks_overview.services.scrapers.fomc_meetings import extract_fomc_meeting_dates
+from central_banks_overview.services.scrapers.boj_meetings import (
+    extract_boj_meeting_dates,
+)
+from central_banks_overview.services.scrapers.ecb_meetings import (
+    extract_ecb_meeting_dates,
+)
+from central_banks_overview.services.scrapers.fedfunds_futures import (
+    _get_fedfunds_futures_price,
+)
+from central_banks_overview.services.scrapers.fomc_meetings import (
+    extract_fomc_meeting_dates,
+)
 from central_banks_overview.services.scrapers.tfx_mutan_futures import (
     _get_mutan_futures_accrual_dates,
     _get_mutan_futures_prices_from_tfx,
 )
-from core.conftest import MockResponse, parse_query_for_testing, read_file_content
+from core.testing import MockResponse, parse_query_for_testing, read_file_content
 from market_overview.services.scrapers.common import ScrapingResult
 
 

@@ -120,32 +120,26 @@ def get_market_charts_labels(
             else None
         )
 
-    return {
-        "stocks": _get_generic_asset_label("stocks", front_data["stock_name"]),
-        "fx": _get_generic_asset_label("fx", front_data["fx_name"]),
-        "crypto": _get_generic_asset_label("crypto", front_data["crypto_name"]),
-        "commodity": _get_generic_asset_label(
-            "commodity", front_data["commodity_name"]
-        ),
-        "yield_curve_location": front_data["yield_curve_location"],
-        "main_rate": front_data["main_rate"],
-        "main_rate_full_name": _get_generic_asset_label(
-            "rates", front_data["main_rate"]
-        ),
-        "stock_name_compare": _get_generic_asset_label(
+    return MarketChartsLabels(
+        stocks=_get_generic_asset_label("stocks", front_data["stock_name"]),
+        fx=_get_generic_asset_label("fx", front_data["fx_name"]),
+        crypto=_get_generic_asset_label("crypto", front_data["crypto_name"]),
+        commodity=_get_generic_asset_label("commodity", front_data["commodity_name"]),
+        yield_curve_location=front_data["yield_curve_location"],
+        main_rate=front_data["main_rate"],
+        main_rate_full_name=_get_generic_asset_label("rates", front_data["main_rate"]),
+        stock_name_compare=_get_generic_asset_label(
             "stocks", front_data["stock_name_compare"]
         ),
-        "fx_name_compare": _get_generic_asset_label(
-            "fx", front_data["fx_name_compare"]
-        ),
-        "crypto_name_compare": _get_generic_asset_label(
+        fx_name_compare=_get_generic_asset_label("fx", front_data["fx_name_compare"]),
+        crypto_name_compare=_get_generic_asset_label(
             "crypto", front_data["crypto_name_compare"]
         ),
-        "commodity_name_compare": _get_generic_asset_label(
+        commodity_name_compare=_get_generic_asset_label(
             "commodity", front_data["commodity_name_compare"]
         ),
-        "spread_rate": front_data["spread_rate"],
-    }
+        spread_rate=front_data["spread_rate"],
+    )
 
 
 class MarketChartsData(TypedDict):
@@ -239,15 +233,15 @@ def get_market_charts_data(
             spread_rates = _to_historical_prices(spread_rate_df)
         else:
             spread_rates = []
-    return {
-        "stock_prices": market_data.get_historical_prices(
+    return MarketChartsData(
+        stock_prices=market_data.get_historical_prices(
             front_data["stock_name"],
             start_date=_get_start_date(
                 reference_date, front_data["stock_chart_duration"]
             ),
             end_date=reference_date,
         ),
-        "stock_prices_compare": (
+        stock_prices_compare=(
             market_data.get_historical_prices(
                 front_data["stock_name_compare"],
                 start_date=_get_start_date(
@@ -258,12 +252,12 @@ def get_market_charts_data(
             if front_data["stock_name_compare"]
             else []
         ),
-        "fx_prices": market_data.get_historical_prices(
+        fx_prices=market_data.get_historical_prices(
             front_data["fx_name"],
             start_date=_get_start_date(reference_date, front_data["fx_chart_duration"]),
             end_date=reference_date,
         ),
-        "fx_prices_compare": (
+        fx_prices_compare=(
             market_data.get_historical_prices(
                 front_data["fx_name_compare"],
                 start_date=_get_start_date(
@@ -274,14 +268,14 @@ def get_market_charts_data(
             if front_data["fx_name_compare"]
             else []
         ),
-        "crypto_prices": market_data.get_historical_prices(
+        crypto_prices=market_data.get_historical_prices(
             front_data["crypto_name"],
             start_date=_get_start_date(
                 reference_date, front_data["crypto_chart_duration"]
             ),
             end_date=reference_date,
         ),
-        "crypto_prices_compare": (
+        crypto_prices_compare=(
             market_data.get_historical_prices(
                 front_data["crypto_name_compare"],
                 start_date=_get_start_date(
@@ -292,14 +286,14 @@ def get_market_charts_data(
             if front_data["crypto_name_compare"]
             else []
         ),
-        "commodity_prices": market_data.get_historical_prices(
+        commodity_prices=market_data.get_historical_prices(
             front_data["commodity_name"],
             start_date=_get_start_date(
                 reference_date, front_data["commodity_chart_duration"]
             ),
             end_date=reference_date,
         ),
-        "commodity_prices_compare": (
+        commodity_prices_compare=(
             market_data.get_historical_prices(
                 front_data["commodity_name_compare"],
                 start_date=_get_start_date(
@@ -310,13 +304,13 @@ def get_market_charts_data(
             if front_data["commodity_name_compare"]
             else []
         ),
-        "reference_yield_curve": market_data.get_yield_curve(
+        reference_yield_curve=market_data.get_yield_curve(
             reference_date,
             LocationChoices.from_label(front_data["yield_curve_location"]),
         ),
-        "previous_yield_curve": market_data.get_yield_curve(
+        previous_yield_curve=market_data.get_yield_curve(
             previous_curve_date,
             LocationChoices.from_label(front_data["yield_curve_location"]),
         ),
-        "spread_rates": spread_rates,
-    }
+        spread_rates=spread_rates,
+    )

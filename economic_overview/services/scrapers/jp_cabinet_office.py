@@ -13,10 +13,6 @@ from cachetools.func import ttl_cache
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import logger
 from economic_overview.models import EconomicPublicationFrequencyChoices
-from economic_overview.services.scrapers.common import (
-    ScrapingResult,
-    filter_scraping_results_by_target_period,
-)
 from economic_overview.services.config import (
     JP_CAO_ANNUAL_ACCOUNTS_TOP_URL,
     JP_CAO_DEBT_OUTSTANDING_TICKER,
@@ -33,6 +29,10 @@ from economic_overview.services.config import (
     JP_CAO_SDDS_PLUS_PAGE_URL,
     JP_CAO_SITE_ORIGIN,
     JP_CAO_YEAR_ARCHIVE_URL,
+)
+from economic_overview.services.scrapers.common import (
+    ScrapingResult,
+    filter_scraping_results_by_target_period,
 )
 
 

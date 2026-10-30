@@ -8,9 +8,9 @@ from django.test import TestCase
 from data_visualization.services.market_charts import (
     ChartDuration,
     MarketChartsFrontData,
+    get_market_charts_data,
     get_market_charts_dropdown_values,
     get_market_charts_labels,
-    get_market_charts_data,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -225,9 +225,7 @@ class TestMarketChartServices(TestCase):
     @patch(
         "data_visualization.services.market_charts.market_data.get_historical_prices"
     )
-    @patch(
-        "data_visualization.services.market_charts.market_data.get_yield_curve"
-    )
+    @patch("data_visualization.services.market_charts.market_data.get_yield_curve")
     def test_get_market_charts_data_success(
         self, mock_get_yield_curve, mock_get_historical_prices
     ):
@@ -349,9 +347,7 @@ class TestMarketChartServices(TestCase):
     @patch(
         "data_visualization.services.market_charts.market_data.get_historical_prices"
     )
-    @patch(
-        "data_visualization.services.market_charts.market_data.get_yield_curve"
-    )
+    @patch("data_visualization.services.market_charts.market_data.get_yield_curve")
     def test_get_market_charts_data_with_spread_rate(
         self, mock_get_yield_curve, mock_get_historical_prices
     ):

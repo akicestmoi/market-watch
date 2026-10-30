@@ -327,15 +327,15 @@ class TestCentralBanksRecapView(TestCase):
         assert error_messages == json.dumps(
             {
                 "reference_date": "Reference date: 2025-12-17 must be before today: 2025-12-16.",
-                "FRB_data_item": "Error getting central bank data item for Federal Reserve (FRB): MarketPriceModel matching query does not exist.",
-                "FRB_probability_matrix": "Error getting probability matrix for Federal Reserve (FRB): MarketPriceModel matching query does not exist.",
-                "FRB_probability_change_matrix": "Error getting probability change matrix for Federal Reserve (FRB): MarketPriceModel matching query does not exist.",
-                "ECB_data_item": "Error getting central bank data item for European Central Bank (ECB): MarketPriceModel matching query does not exist.",
-                "ECB_probability_matrix": "Error getting probability matrix for European Central Bank (ECB): MarketPriceModel matching query does not exist.",
-                "ECB_probability_change_matrix": "Error getting probability change matrix for European Central Bank (ECB): MarketPriceModel matching query does not exist.",
-                "BOJ_data_item": "Error getting central bank data item for Bank of Japan (BOJ): MarketPriceModel matching query does not exist.",
-                "BOJ_probability_matrix": "Error getting probability matrix for Bank of Japan (BOJ): MarketPriceModel matching query does not exist.",
-                "BOJ_probability_change_matrix": "Error getting probability change matrix for Bank of Japan (BOJ): MarketPriceModel matching query does not exist.",
+                "FRB_data_item": "Error getting central bank data item for Federal Reserve (FRB): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 17), 'asset__short_name': 'EFFR'}",
+                "FRB_probability_matrix": "Error getting probability matrix for Federal Reserve (FRB): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 17), 'asset__short_name': 'EFFR'}",
+                "FRB_probability_change_matrix": "Error getting probability change matrix for Federal Reserve (FRB): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 12), 'asset__short_name': 'EFFR'}",
+                "ECB_data_item": "Error getting central bank data item for European Central Bank (ECB): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 17), 'asset__short_name': 'ESTR'}",
+                "ECB_probability_matrix": "Error getting probability matrix for European Central Bank (ECB): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 17), 'asset__short_name': 'ESTR'}",
+                "ECB_probability_change_matrix": "Error getting probability change matrix for European Central Bank (ECB): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 12), 'asset__short_name': 'ESTR'}",
+                "BOJ_data_item": "Error getting central bank data item for Bank of Japan (BOJ): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 17), 'asset__short_name': 'MUTAN'}",
+                "BOJ_probability_matrix": "Error getting probability matrix for Bank of Japan (BOJ): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 17), 'asset__short_name': 'MUTAN'}",
+                "BOJ_probability_change_matrix": "Error getting probability change matrix for Bank of Japan (BOJ): No MarketPriceModel found matching {'date': FakeDate(2025, 12, 12), 'asset__short_name': 'MUTAN'}",
             }
         )
 

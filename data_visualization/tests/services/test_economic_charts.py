@@ -6,17 +6,17 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from data_visualization.services.economic_charts import (
-    TimeSeriesPoint,
     ChartPeriodWindow,
     ChartSeriesMode,
     EconomicChartsData,
     EconomicChartsDropdownValues,
     EconomicChartsFrontData,
     SelectedIndicatorsByCategory,
+    TimeSeriesPoint,
+    _change_series_mode,
     _filter_time_series_by_period_window,
     _format_period,
     _parse_selected_indicator_and_mode,
-    _change_series_mode,
     get_economic_charts_data,
     get_economic_charts_dropdown_values,
     get_selected_indicators_by_category,
@@ -732,5 +732,3 @@ class TestEconomicChartServices(TestCase):
             EconomicChartsData(category="Housing", category_data=[]),
             EconomicChartsData(category="Confidence", category_data=[]),
         ]
-
-

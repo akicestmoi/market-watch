@@ -229,12 +229,12 @@ def _build_week_days(
         day_key = day.isoformat()
         existing = days_by_date.get(day_key)
         days.append(
-            {
-                "date": day_key,
-                "date_display": _format_day_label(day),
-                "events": existing["events"] if existing is not None else [],
-                "is_today": day == today,
-            }
+            UpcomingEventGroup(
+                date=day_key,
+                date_display=_format_day_label(day),
+                events=existing["events"] if existing is not None else [],
+                is_today=day == today,
+            )
         )
     return days
 

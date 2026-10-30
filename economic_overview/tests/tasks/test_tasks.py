@@ -8,7 +8,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 
 import economic_overview.tasks as tasks
-from core.conftest import MockResponse, parse_query_for_testing, read_file_content
+from core.testing import MockResponse, parse_query_for_testing, read_file_content
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,

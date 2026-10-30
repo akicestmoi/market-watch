@@ -38,8 +38,7 @@ DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE: dict[int, str] = {
         "with current state"
     ),
     422: (
-        "Unprocessable Entity - The request was well-formed but "
-        "semantically invalid"
+        "Unprocessable Entity - The request was well-formed but " "semantically invalid"
     ),
 }
 

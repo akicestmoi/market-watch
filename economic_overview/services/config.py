@@ -90,7 +90,8 @@ EUROSTAT_API_DEFAULT_PARAMS: EurostatApiDefaultParams = {
     "format": "JSON",
     "lang": "en",
 }
-# Eurostat ``geo`` for our ``EU`` location (euro area); other locations use their code as-is.
+# Eurostat ``geo`` for our ``EU`` location (euro area);
+# other locations use their code as-is.
 EUROSTAT_GEO_FOR_EU_LOCATION = "EA"
 
 EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [

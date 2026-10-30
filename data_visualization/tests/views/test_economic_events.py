@@ -3,6 +3,16 @@
 from django.test import Client, TestCase
 from freezegun import freeze_time
 
+from core.testing import read_file_content
+from data_visualization.services.economic_events import (
+    UpcomingEventGroup,
+    UpcomingWeekGroup,
+)
+
+_EXPECTED_HTML = read_file_content(
+    "data_visualization/tests/mock_web_data/economic_events/empty_weeks.html"
+)
+
 
 @freeze_time("2025-12-16")
 class TestEconomicEventsView(TestCase):
@@ -15,28 +25,86 @@ class TestEconomicEventsView(TestCase):
 
     def test_economic_events_view_success(self):
         """
-        GIVEN the economic events page
+        GIVEN the economic events page with no scheduled events
         WHEN accessing the view
-        THEN upcoming weeks are in context and the page renders
+        THEN empty focus + next weeks are in context and the page renders
         """
         response = self.client.get(self.base_url)
         assert response.status_code == 200
-        assert "upcoming_weeks" in response.context
-        upcoming_weeks = response.context.get("upcoming_weeks")
-        assert isinstance(upcoming_weeks, list)
-        assert len(upcoming_weeks) >= 2
-        assert len(upcoming_weeks) % 2 == 0
-        assert upcoming_weeks[0].get("is_current_week") is True
-        assert len(upcoming_weeks[0]["days"]) == 5
-        today_slots = [
-            day for week in upcoming_weeks for day in week["days"] if day.get("is_today")
+        assert response.context["upcoming_weeks"] == [
+            UpcomingWeekGroup(
+                week_start="2025-12-15",
+                week_label="15 Dec 2025 – 19 Dec 2025",
+                is_current_week=True,
+                days=[
+                    UpcomingEventGroup(
+                        date="2025-12-15",
+                        date_display="Monday 15 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-16",
+                        date_display="Tuesday 16 December 2025",
+                        events=[],
+                        is_today=True,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-17",
+                        date_display="Wednesday 17 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-18",
+                        date_display="Thursday 18 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-19",
+                        date_display="Friday 19 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                ],
+            ),
+            UpcomingWeekGroup(
+                week_start="2025-12-22",
+                week_label="22 Dec 2025 – 26 Dec 2025",
+                is_current_week=False,
+                days=[
+                    UpcomingEventGroup(
+                        date="2025-12-22",
+                        date_display="Monday 22 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-23",
+                        date_display="Tuesday 23 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-24",
+                        date_display="Wednesday 24 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-25",
+                        date_display="Thursday 25 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                    UpcomingEventGroup(
+                        date="2025-12-26",
+                        date_display="Friday 26 December 2025",
+                        events=[],
+                        is_today=False,
+                    ),
+                ],
+            ),
         ]
-        assert len(today_slots) == 1
-        assert today_slots[0]["date"] == "2025-12-16"
-        assert b"Upcoming Economic Events" in response.content
-        assert b"upcoming-week-pair" in response.content
-        assert b"is-today" in response.content
-        assert b"Today" in response.content
-        assert b"No events" in response.content
-        assert b"location_flags." in response.content
-        assert b"economic_events." in response.content
+        assert response.content == _EXPECTED_HTML

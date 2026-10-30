@@ -10,12 +10,12 @@ from curl_cffi import requests as curl_requests
 
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import logger
-from market_analysis.services.scrapers.common import ArticleLink, ScrapingResult
-from market_analysis.services.scrapers.html_text import extract_main_text
 from market_analysis.services.config import (
     BOURSIER_DAY_URL_TEMPLATE,
     HTTP_REQUEST_TIMEOUT_SECONDS,
 )
+from market_analysis.services.scrapers.common import ArticleLink, ScrapingResult
+from market_analysis.services.scrapers.html_text import extract_main_text
 
 
 def _parse_boursier_cloture_link(html: str, base_url: str) -> ArticleLink | None:

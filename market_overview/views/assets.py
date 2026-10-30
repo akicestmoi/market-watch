@@ -156,7 +156,7 @@ class AssetDetailsView(BaseAPIView):
     def delete(self, validated_data: BaseAssetValidatedData) -> Response:
         """Delete an asset."""
         short_name: str = validated_data["short_name"]
-        asset = core_services.get(AssetModel, short_name=short_name)
+        asset = AssetModel.objects.get(short_name=short_name)
         asset.delete()
         return Response(
             data={"message": "Asset deleted successfully."},

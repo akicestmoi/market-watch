@@ -527,11 +527,9 @@ class TestMarketPricesIngestionViews(TestCase):
                 }
             ],
         }
-        mock_get_data.assert_called_once()
-        call_args = mock_get_data.call_args
-        assert call_args[0][0] == "TEST"
-        assert call_args[0][1] == self.start_date
-        assert call_args[0][2] == (date.today() - BDay(1)).date()
+        mock_get_data.assert_called_once_with(
+            "TEST", self.start_date, (date.today() - BDay(1)).date()
+        )
 
     def test_ingest_specific_asset_prices_empty_list(self):
         """

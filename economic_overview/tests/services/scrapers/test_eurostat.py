@@ -6,8 +6,9 @@ from unittest.mock import patch
 from django.test import TestCase
 from pydantic import TypeAdapter
 
-from core.conftest import MockResponse, load_json_mock
+from core.testing import MockResponse, load_json_mock
 from economic_overview.models import EconomicPublicationFrequencyChoices
+from economic_overview.services.config import EurostatTickerParams
 from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.scrapers.eurostat import (
     EurostatJsonStatPayload,
@@ -154,23 +155,56 @@ class TestEurostatHicpIngestion(TestCase):
         THEN geo comes from location (EU → EA)
         """
         for location in ("FR", "DE", "ES", "IT"):
-            pct = _build_eurostat_request_params("tec00127_pct", location)
-            mio = _build_eurostat_request_params("tec00127_mio", location)
-            assert pct is not None
-            assert mio is not None
-            assert pct["dataset"] == "tec00127"
-            assert pct["params"].get("geo") == location
-            assert pct["params"].get("unit") == "PC_GDP"
-            assert pct["params"].get("na_item") == "B9"
-            assert mio["dataset"] == "tec00127"
-            assert mio["params"].get("geo") == location
-            assert mio["params"].get("unit") == "MIO_EUR"
-        ea_hicp = _build_eurostat_request_params("prc_hicp_minr", "EU")
-        de_hicp = _build_eurostat_request_params("prc_hicp_minr", "DE")
-        assert ea_hicp is not None
-        assert de_hicp is not None
-        assert ea_hicp["params"].get("geo") == "EA"
-        assert de_hicp["params"].get("geo") == "DE"
+            assert _build_eurostat_request_params(
+                "tec00127_pct", location
+            ) == EurostatTickerParams(
+                dataset="tec00127",
+                params={
+                    "freq": "A",
+                    "sinceTimePeriod": "2010",
+                    "unit": "PC_GDP",
+                    "na_item": "B9",
+                    "sector": "S13",
+                    "geo": location,
+                },
+            )
+            assert _build_eurostat_request_params(
+                "tec00127_mio", location
+            ) == EurostatTickerParams(
+                dataset="tec00127",
+                params={
+                    "freq": "A",
+                    "sinceTimePeriod": "2010",
+                    "unit": "MIO_EUR",
+                    "na_item": "B9",
+                    "sector": "S13",
+                    "geo": location,
+                },
+            )
+        assert _build_eurostat_request_params(
+            "prc_hicp_minr", "EU"
+        ) == EurostatTickerParams(
+            dataset="prc_hicp_minr",
+            params={
+                "freq": "M",
+                "sinceTimePeriod": "2015-01",
+                "unit": "I25",
+                "coicop18": "TOTAL",
+                "geo": "EA",
+            },
+        )
+        assert _build_eurostat_request_params(
+            "prc_hicp_minr", "DE"
+        ) == EurostatTickerParams(
+            dataset="prc_hicp_minr",
+            params={
+                "freq": "M",
+                "sinceTimePeriod": "2015-01",
+                "unit": "I25",
+                "coicop18": "TOTAL",
+                "geo": "DE",
+            },
+        )
         assert _build_eurostat_request_params("unknown_series", "DE") is None
 
     @patch("economic_overview.services.scrapers.eurostat.requests.get")

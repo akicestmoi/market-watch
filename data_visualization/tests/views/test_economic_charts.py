@@ -7,11 +7,7 @@ from typing import Protocol, TypedDict
 
 from django.test import Client, TestCase
 from django.test.utils import ContextList
-from django.urls import get_resolver
 from freezegun import freeze_time
-
-# Load root URLConf before freezegun patches datetime (pydantic_ai TypeAdapter).
-get_resolver().urlconf_module
 
 from data_visualization.services.economic_charts import (
     EconomicChartsData,

@@ -5,18 +5,18 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from core.conftest import MockResponse, read_file_content
+from core.testing import MockResponse, read_file_content
 from economic_overview.models import EconomicPublicationFrequencyChoices
+from economic_overview.services.config import (
+    JP_CAO_NET_LENDING_AMOUNT_SHEET,
+    JP_CAO_NET_LENDING_PCT_SHEET,
+)
 from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.scrapers.jp_cabinet_office import (
     _parse_japan_cabinet_office_ggd_workbook,
     _parse_japan_cabinet_office_levels_csv,
     _parse_japan_cabinet_office_net_lending_workbook,
     get_data_from_japan_cabinet_office,
-)
-from economic_overview.services.config import (
-    JP_CAO_NET_LENDING_AMOUNT_SHEET,
-    JP_CAO_NET_LENDING_PCT_SHEET,
 )
 
 
@@ -134,8 +134,9 @@ class TestJapanCabinetOfficeDataIngestion(TestCase):
             "gaku-jk",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
         )
-        assert result[0]["period"] == date(2026, 4, 1)
-        assert result[0]["data_value"] == 599000.0
+        assert result[0] == ScrapingResult(
+            period=date(2026, 4, 1), data_value=599000.0, comment=""
+        )
 
     @patch("economic_overview.services.scrapers.jp_cabinet_office.requests.get")
     def test_get_data_from_japan_cabinet_office_component_ticker(self, mock_get):
@@ -215,8 +216,11 @@ class TestJapanCabinetOfficeDataIngestion(TestCase):
             "ggd_pct_gdp",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
         )
-        assert result[0]["period"] == date(2026, 4, 1)
-        assert result[0]["data_value"] == 1370000.0 / 670000.0 * 100.0
+        assert result[0] == ScrapingResult(
+            period=date(2026, 4, 1),
+            data_value=1370000.0 / 670000.0 * 100.0,
+            comment="",
+        )
 
     @patch("economic_overview.services.scrapers.jp_cabinet_office.requests.get")
     def test_get_data_from_japan_cabinet_office_net_lending(self, mock_get):

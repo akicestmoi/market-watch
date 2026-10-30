@@ -25,7 +25,7 @@ from central_banks_overview.services.stir_prices_ingestion import (
     get_futures_prices,
     ingest_stir_futures_prices,
 )
-from core.conftest import parse_query_for_testing
+from core.testing import parse_query_for_testing
 
 
 class TestStirPricesIngestionServices(TestCase):

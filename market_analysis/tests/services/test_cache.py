@@ -1,14 +1,22 @@
 """Tests for market analysis Redis cache helpers."""
 
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+from freezegun import freeze_time
 
 from market_analysis.llm.config import PROMPT_VERSION
 from market_analysis.llm.schemas import EventType, Sentiment
 from market_analysis.services import cache
+from market_analysis.services.cache import (
+    ARTICLE_CACHE_TTL_SECONDS,
+    CachedAnalysesListResult,
+    CachedAnalysisPayload,
+)
 from market_analysis.services.llm_market_recap import AnalyzedArticle
+
+_FREEZE_TIME = datetime(2025, 12, 12, 15, 30, 0, tzinfo=timezone.utc)
 
 
 def _sample_analyzed() -> AnalyzedArticle:
@@ -29,6 +37,7 @@ def _sample_analyzed() -> AnalyzedArticle:
 class AnalysisCacheServicesTests(TestCase):
     """Tests for article-analysis Redis cache helpers."""
 
+    @freeze_time(_FREEZE_TIME)
     @patch("market_analysis.services.cache.get_redis_client")
     @patch("core.cache.get_redis_client")
     def test_set_get_list_roundtrip(self, mock_core_redis, mock_local_redis):
@@ -75,16 +84,24 @@ class AnalysisCacheServicesTests(TestCase):
 
         day = date(2025, 12, 12)
         article = _sample_analyzed()
+        expected_payload = CachedAnalysisPayload(
+            source_url=article["source_url"],
+            cached_at=_FREEZE_TIME.isoformat(),
+            prompt_version=PROMPT_VERSION,
+            analysis=article,
+        )
         cache.set_cached_analysis(day, article, source_url=article["source_url"])
         key = cache._build_entry_key(day, article["source_url"])
         assert key in store
 
         got = cache.get_cached_analysis(day, article["source_url"])
-        assert got is not None
-        assert got["source_url"] == article["source_url"]
-        assert got["analysis"]["title"] == "t"
-        assert got["prompt_version"] == PROMPT_VERSION
+        assert got == expected_payload
 
         listed = cache.list_cached_analyses(day)
-        assert listed["count"] == 1
-        assert listed["items"][0]["analysis"]["companies"] == ["Acme"]
+        assert listed == CachedAnalysesListResult(
+            reporting_date=day.isoformat(),
+            prompt_version=PROMPT_VERSION,
+            ttl_seconds=ARTICLE_CACHE_TTL_SECONDS,
+            count=1,
+            items=[expected_payload],
+        )

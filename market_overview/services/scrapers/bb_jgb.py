@@ -8,13 +8,13 @@ from cachetools.func import ttl_cache
 
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import fetch_html
+from market_overview.services.config import BB_YIELD_CURVE_URL
 from market_overview.services.scrapers.common import (
     ScrapingResult,
     YieldCurveScrapResult,
     YieldTermRate,
     get_yield_curve_rate,
 )
-from market_overview.services.config import BB_YIELD_CURVE_URL
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

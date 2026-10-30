@@ -140,11 +140,11 @@ def _build_time_series_from_records(
 ) -> list[EconomicRecapTimeSeriesPoint]:
     """Build chronological time-series points from newest-first observation rows."""
     return [
-        {
-            "period": record.get_period_display() or "",
-            "period_date": record.period.isoformat(),
-            "value": float(record.data_value),
-        }
+        EconomicRecapTimeSeriesPoint(
+            period=record.get_period_display() or "",
+            period_date=record.period.isoformat(),
+            value=float(record.data_value),
+        )
         for record in reversed(records)
         if record.period is not None and record.data_value is not None
     ]

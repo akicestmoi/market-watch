@@ -12,10 +12,7 @@ from central_banks_overview.services.config import (
     ECB_SOURCE_TIMEZONE,
 )
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import (
-    convert_local_wall_time_to_utc,
-    fetch_html,
-)
+from core.services import convert_local_wall_time_to_utc, fetch_html
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
