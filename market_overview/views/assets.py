@@ -8,7 +8,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-import core.services as core_services
 import market_overview.services.market_data as market_data
 from core.open_api.schema import (
     ApiTags,
@@ -138,7 +137,7 @@ class AssetDetailsView(BaseAPIView):
     def get(self, validated_data: BaseAssetValidatedData) -> Response:
         """Get an asset."""
         short_name: str = validated_data["short_name"]
-        asset = core_services.get(AssetModel, short_name=short_name)
+        asset = AssetModel.objects.get(short_name=short_name)
         return Response(
             data=AssetResponseSerializer(asset).data,
             status=status.HTTP_200_OK,

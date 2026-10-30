@@ -1,17 +1,12 @@
 """End-to-end market analysis: extract → analyze → save daily recap."""
 
-from __future__ import annotations
-
 from datetime import date
 from typing import NotRequired, TypedDict
 
-from core.locks import try_acquire_redis_lock
+from core.locks import release_redis_lock, try_acquire_redis_lock
 from core.services import logger
 from market_analysis.models import DailyRecapModel
-from market_analysis.services import (
-    article_extraction,
-    llm_market_recap,
-)
+from market_analysis.services import article_extraction, llm_market_recap
 from market_analysis.services.article_extraction import ArticleExtractionResult
 from market_analysis.services.llm_market_recap import ArticleAnalysisFailure
 
@@ -150,10 +145,4 @@ def run_daily_analysis_pipeline_with_lock(
     try:
         return run_daily_analysis_pipeline(reporting_date, force=force)
     finally:
-        try:
-            lock.release()
-        except Exception:
-            logger.warning(
-                "Could not release market analysis pipeline lock for %s",
-                reporting_date.isoformat(),
-            )
+        release_redis_lock(lock, lock_key)

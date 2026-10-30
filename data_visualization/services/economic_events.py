@@ -5,14 +5,14 @@ from typing import NotRequired, TypedDict
 
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import market_overview.services.holidays as holidays
-from central_banks_overview.models import CENTRAL_BANK_LOCATION_MAP, CentralBankChoices
+from central_banks_overview.models import CentralBankChoices
 from core.services import convert_to_display_timezone, get_local_today
 from economic_overview.models import (
     EconomicDataLocationChoices,
     PublicationScheduleModel,
 )
 from market_overview.models import LocationChoices
-from market_overview.services.holidays import HOLIDAY_COUNTRIES
+from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
 class UpcomingEvent(TypedDict):
@@ -83,7 +83,7 @@ def _get_upcoming_central_bank_events() -> dict[str, list[UpcomingEvent]]:
         central_bank_meeting_date
     ) in central_banks_meetings.get_central_bank_meeting_dates():
         central_bank = CentralBankChoices(central_bank_meeting_date["central_bank"])
-        central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
+        central_bank_location = central_bank.get_location()
         meeting_date = central_bank_meeting_date["meeting_dates"][0]
         display_dt = convert_to_display_timezone(meeting_date)
 

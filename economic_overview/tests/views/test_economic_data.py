@@ -403,15 +403,9 @@ class TestIngestLatestEconomicDataView(TestCase):
             ticker="001565530",
         )
 
-    @patch(
-        "economic_overview.services.publication.update_publication_schedules"
-    )
-    @patch(
-        "economic_overview.services.data_ingestion.ingest_latest_economic_data"
-    )
-    @patch(
-        "economic_overview.services.economic_data.get_economic_indicators_by_names"
-    )
+    @patch("economic_overview.services.publication.update_publication_schedules")
+    @patch("economic_overview.services.data_ingestion.ingest_latest_economic_data")
+    @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_latest_economic_data_success(
         self, mock_get_indicators, mock_ingest, mock_update_schedules
     ):
@@ -438,12 +432,8 @@ class TestIngestLatestEconomicDataView(TestCase):
         }
         mock_get_indicators.assert_called_once_with()
 
-    @patch(
-        "economic_overview.services.data_ingestion.ingest_latest_economic_data"
-    )
-    @patch(
-        "economic_overview.services.economic_data.get_economic_indicators_by_names"
-    )
+    @patch("economic_overview.services.data_ingestion.ingest_latest_economic_data")
+    @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_latest_economic_data_without_update_schedule(
         self, mock_get_indicators, mock_ingest
     ):
@@ -468,12 +458,8 @@ class TestIngestLatestEconomicDataView(TestCase):
             "schedule_not_updated": [],
         }
 
-    @patch(
-        "economic_overview.services.data_ingestion.ingest_historical_economic_data"
-    )
-    @patch(
-        "economic_overview.services.economic_data.get_economic_indicators_by_names"
-    )
+    @patch("economic_overview.services.data_ingestion.ingest_historical_economic_data")
+    @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_historical_economic_data_success(
         self, mock_get_indicators, mock_ingest
     ):
@@ -510,12 +496,8 @@ class TestIngestLatestEconomicDataView(TestCase):
             [self.indicator], start_date=start_date, end_date=end_date
         )
 
-    @patch(
-        "economic_overview.services.data_ingestion.ingest_historical_economic_data"
-    )
-    @patch(
-        "economic_overview.services.economic_data.get_economic_indicators_by_names"
-    )
+    @patch("economic_overview.services.data_ingestion.ingest_historical_economic_data")
+    @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_historical_economic_data_all_indicators(
         self, mock_get_indicators, mock_ingest
     ):
@@ -558,12 +540,8 @@ class TestIngestLatestEconomicDataView(TestCase):
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "NonExistent" in response.json()["message"]
 
-    @patch(
-        "economic_overview.services.data_ingestion.ingest_specific_economic_data"
-    )
-    @patch(
-        "economic_overview.services.economic_data.get_economic_indicators_by_names"
-    )
+    @patch("economic_overview.services.data_ingestion.ingest_specific_economic_data")
+    @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_specific_economic_data_success(
         self, mock_get_indicators, mock_ingest
     ):

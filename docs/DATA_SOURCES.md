@@ -68,13 +68,47 @@ This document lists all external data sources used in the Market Watch project, 
 - **Base Source**: https://ec.europa.eu/eurostat
 - **URL**: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/{dataset}
 - **Publication URL**: https://ec.europa.eu/eurostat/news/release-calendar/ (JSON feed: https://ec.europa.eu/eurostat/o/calendars/eventsJson — event times are UTC; UI labels Europe/Luxembourg)
-- **Data Type**: Eurostat Statistics API datasets configured in `EUROSTAT_DATASET_PARAMS` (currently `prc_hicp_minr` euro-area HICP, ECOICOP v2 / `I25`; add a ticker entry to wire more series)
+- **Data Type**: Eurostat Statistics API series in `EUROSTAT_SERIES_TEMPLATES` — seed ticker is the series ID (e.g. `namq_10_gdp`); geo comes from indicator `location` (same codes as Eurostat, except `EU` → `EA` via `EUROSTAT_GEO_FOR_EU_LOCATION`). Covers euro-area and DE/ES/IT HICP/GDP/debt/production/sales/labour/housing/trade, plus FR/DE/ES/IT Maastricht deficit/surplus from [`tec00127`](https://ec.europa.eu/eurostat/databrowser/view/tec00127/default/table) (`PC_GDP` and `MIO_EUR`)
 - **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
 
-### - Japan Cabinet Office
+### - FRED (Federal Reserve Bank of St. Louis)
 
-- **Base Source**: Not Implemented
-- **URL**: Not Implemented
-- **Publication URL**: Not Implemented
-- **Data Type**: Japanese GDP
-- **Documentation**: Not Implemented
+- **Base Source**: https://fred.stlouisfed.org/
+- **URL**: https://api.stlouisfed.org/fred/series/observations?series_id={ticker}&api_key={FRED_API_KEY}&file_type=json
+- **Publication URL**: https://api.stlouisfed.org/fred/release/dates?release_id={id}&api_key={FRED_API_KEY}&file_type=json&include_release_dates_with_no_data=true
+- **Auth**: `FRED_API_KEY` in `.env` / `core.settings`
+- **Data Type**: US economic indicators redistributed by FRED (real GDP and expenditure components, net exports, federal debt outstanding / % of GDP, federal surplus/deficit outstanding / % of GDP, CPI, retail sales, industrial production, unemployment, payrolls, FHFA HPI, University of Michigan consumer sentiment)
+- **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
+
+### - Japan Cabinet Office (ESRI / SNA)
+
+- **Base Source**: https://www.esri.cao.go.jp/en/sna/menu.html
+- **URL**: Latest quarterly estimates CSV resolved from https://www.esri.cao.go.jp/en/sna/data/sokuhou/files/{year}/toukei_{year}.html → release menu → `gaku-jk*.csv` (real SA expenditure levels; ticker selects column) or `gaku-mk*.csv` (nominal SA GDP for debt ratio). General government gross debt from https://www.esri.cao.go.jp/en/sna/sddsplus/sddsplus_top.html → `tables/ggd.xlsx`. Annual general-government net lending from https://www.esri.cao.go.jp/en/sna/kakuhou/kakuhou_top.html → latest `*annual_report_e.html` → `tables/*s18_en.xlsx` (calendar-year amount and % of GDP sheets)
+- **Publication URL**: Not implemented (schedule scrape still pending)
+- **Data Type**: Japanese quarterly real SA GDP and demand components (household / government consumption, GFCF, exports, imports, net exports); general government gross debt outstanding and % of annualized nominal SA GDP; annual general-government net lending (+) / net borrowing (−) outstanding and % of GDP
+- **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
+
+### - Statistics of Japan (e-Stat Dashboard)
+
+- **Base Source**: https://dashboard.e-stat.go.jp/en/
+- **URL**: https://dashboard.e-stat.go.jp/api/1.0/Json/getData?IndicatorCode={ticker}&Lang=EN&RegionCode=00000&…
+- **Publication URL**: Not implemented (schedule scrape still pending)
+- **Data Type**: Official Japanese series redistributed by the Statistics Dashboard (CPI and unemployment from the Statistics Bureau; industrial production and retail sales from METI / Current Survey of Commerce). Configured series: `STAT_OF_JP_SERIES_BY_TICKER` (ticker → IndicatorCode + filters)
+- **Portal**: https://www.e-stat.go.jp/en · https://www.stat.go.jp/english/ · https://www.meti.go.jp/english/
+- **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
+
+### - MLIT (Ministry of Land, Infrastructure, Transport and Tourism)
+
+- **Base Source**: https://www.mlit.go.jp/en/
+- **URL**: Nationwide Residential Property Price Index Excel resolved from https://www.mlit.go.jp/totikensangyo/totikensangyo_tk5_000085.html (sheet `全国Japan季節調整`)
+- **Publication URL**: Not implemented (schedule scrape still pending)
+- **Data Type**: Japan Residential Property Price Index (nationwide, seasonally adjusted, 2010 = 100)
+- **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
+
+### - Bank of Japan (Tankan)
+
+- **Base Source**: https://www.boj.or.jp/en/statistics/tk/index.htm
+- **URL**: Latest summary ZIP resolved from https://www.boj.or.jp/en/statistics/tk/index.htm (`tkaYYMM.zip` under `gaiyo/YYYY/` → `GA_E1.xlsx`)
+- **Publication URL**: Not implemented (schedule scrape still pending)
+- **Data Type**: Tankan Business Conditions DI (current-survey actual) for Large / Medium / Small × Manufacturing / Nonmanufacturing (`BOJ_TANKAN_SERIES_BY_TICKER`). Point-in-time release — historical ingestion only stores the latest survey observation
+- **Series documentation**: [`INDICATORS.md`](INDICATORS.md)

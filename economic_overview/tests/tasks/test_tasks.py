@@ -19,10 +19,10 @@ from economic_overview.models import (
     EconomicPublicationFrequencyChoices,
     PublicationScheduleModel,
 )
-from economic_overview.services.data_ingestion import _get_data_from_insee
-from economic_overview.services.publication import (
+from economic_overview.services.scrapers.insee import (
     _get_insee_publication_schedule,
-    _get_publication_dates_from_insee,
+    get_data_from_insee,
+    get_publication_dates_from_insee,
 )
 
 
@@ -77,13 +77,13 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
     def tearDown(self):
         """Tear down test fixtures."""
         # Clear all caches to prevent state leakage between tests
-        _get_data_from_insee.cache_clear()
+        get_data_from_insee.cache_clear()
         _get_insee_publication_schedule.cache_clear()
-        _get_publication_dates_from_insee.cache_clear()
+        get_publication_dates_from_insee.cache_clear()
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication.requests.post")
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_scheduled_economic_data_update_success_update_publication_schedule(
         self, mock_requests_get, mock_requests_post
     ):
@@ -128,8 +128,8 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         ]
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication.requests.post")
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_scheduled_economic_data_update_creates_publication_schedule(
         self, mock_requests_get, mock_requests_post
     ):
@@ -179,7 +179,7 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         ]
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_scheduled_economic_data_update_no_indicators(self, mock_requests_post):
         """
         GIVEN no economic indicators to update exist
@@ -202,8 +202,8 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         assert PublicationScheduleModel.objects.all().count() == 0
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication.requests.post")
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_scheduled_economic_data_update_error_during_ingestion(
         self, mock_requests_get, mock_requests_post
     ):
@@ -248,8 +248,8 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         assert mock_requests_post.call_count == 0
 
     @freeze_time("2025-12-15")
-    @patch("economic_overview.services.publication.requests.post")
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_scheduled_economic_data_update_error_during_schedule_update(
         self, mock_requests_get, mock_requests_post
     ):

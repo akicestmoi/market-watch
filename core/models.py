@@ -3,11 +3,24 @@
 from collections.abc import Sequence
 from typing import TypeVar
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models.enums import Choices
 from django.db.models.fields.related import ForeignKey
+from rest_framework.exceptions import NotFound
 
 ChoiceT = TypeVar("ChoiceT", bound=Choices)
+
+
+class BaseManager(models.Manager):
+    """Default manager for BaseModel subclasses."""
+
+    def get(self, *args, **kwargs):
+        """Get a row, raising DRF NotFound when it does not exist."""
+        try:
+            return super().get(*args, **kwargs)
+        except ObjectDoesNotExist:
+            raise NotFound(detail=f"No {self.model.__name__} found matching {kwargs}")
 
 
 def get_choice_from_label(choices: type[ChoiceT], label: str) -> ChoiceT:
@@ -30,9 +43,7 @@ def get_choice_labels(choices: type[ChoiceT]) -> list[str]:
             ordered_members, (str, bytes)
         ):
             return [
-                str(item.label)
-                for item in ordered_members
-                if isinstance(item, choices)
+                str(item.label) for item in ordered_members if isinstance(item, choices)
             ]
     return [str(choice.label) for choice in choices]
 
@@ -42,6 +53,8 @@ class BaseModel(models.Model):
 
     date_added = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
+
+    objects = BaseManager()
 
     class Meta:
         """Base model metadata."""

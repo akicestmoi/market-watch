@@ -9,9 +9,9 @@ import market_analysis.tasks as market_analysis_tasks
 import market_overview.services.holidays as holidays
 import market_overview.services.market_data as market_data
 import market_overview.services.price_ingestion as price_ingestion
-from core.locks import try_acquire_redis_lock
+from core.locks import release_redis_lock, try_acquire_redis_lock
 from core.services import logger
-from market_overview.services.holidays import HOLIDAY_COUNTRIES
+from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
 @shared_task
@@ -63,13 +63,7 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
             "date": price_date.isoformat(),
         }
     finally:
-        try:
-            lock.release()
-        except Exception:
-            logger.warning(
-                "Could not release market price ingestion lock for %s",
-                price_date.isoformat(),
-            )
+        release_redis_lock(lock, lock_key)
 
 
 @shared_task

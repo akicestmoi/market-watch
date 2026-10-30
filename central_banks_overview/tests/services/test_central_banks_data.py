@@ -20,7 +20,7 @@ from central_banks_overview.services.central_banks_data import (
 )
 from core.conftest import parse_query_for_testing
 from market_overview.models import PriceSourceChoices
-from market_overview.services.price_ingestion import ScrapingResult
+from market_overview.services.scrapers.common import ScrapingResult
 
 
 class TestCentralBankDataServices(TestCase):

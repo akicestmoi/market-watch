@@ -18,9 +18,9 @@ from economic_overview.models import (
     EconomicPublicationFrequencyChoices,
     PublicationScheduleModel,
 )
-from economic_overview.services.publication import (
+from economic_overview.services.scrapers.insee import (
     _get_insee_publication_schedule,
-    _get_publication_dates_from_insee,
+    get_publication_dates_from_insee,
 )
 
 
@@ -54,9 +54,9 @@ class TestUpdatePublicationScheduleView(TestCase):
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_insee_publication_schedule.cache_clear()
-        _get_publication_dates_from_insee.cache_clear()
+        get_publication_dates_from_insee.cache_clear()
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_update_publication_schedule_success(self, mock_post):
         """
         GIVEN valid indicator names with successful INSEE API response
@@ -93,7 +93,7 @@ class TestUpdatePublicationScheduleView(TestCase):
             ),
         }
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_update_publication_schedule_empty_list_updates_all(self, mock_post):
         """
         GIVEN an empty indicator_names list
@@ -139,7 +139,7 @@ class TestUpdatePublicationScheduleView(TestCase):
             == "indicators: ['NonExistent'] do not exist in database."
         )
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_update_publication_schedule_http_error(self, mock_post):
         """
         GIVEN an HTTP error from INSEE API
@@ -162,7 +162,7 @@ class TestUpdatePublicationScheduleView(TestCase):
             "schedule_not_updated": [self.indicator.name],
         }
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_update_publication_schedule_empty_documents(self, mock_post):
         """
         GIVEN an INSEE API response with empty documents

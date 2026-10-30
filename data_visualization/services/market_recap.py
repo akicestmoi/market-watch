@@ -7,12 +7,17 @@ from typing import Literal, NamedTuple, TypedDict
 import pandas as pd
 
 import market_overview.services.holidays as holidays
-from central_banks_overview.models import (
-    CENTRAL_BANK_LOCATION_MAP,
-    CentralBankChoices,
-    CentralBankMeetingModel,
+from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
+from core.services import (
+    ValueChangeOutput,
+    calculate_value_change,
+    convert_to_display_timezone,
 )
-from core.services import calculate_value_change, convert_to_display_timezone
+from data_visualization.services.config import (
+    FX_MATRIX_ORDER,
+    FX_PAIRS_FILTER,
+    MarketRecapLocationEnum,
+)
 from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicDataModel,
@@ -24,35 +29,8 @@ from market_overview.models import (
     LocationChoices,
     MarketPriceModel,
 )
-from market_overview.services.holidays import HOLIDAY_COUNTRIES
+from market_overview.services.config import HOLIDAY_COUNTRIES
 from market_overview.services.market_data import calculate_price_change
-
-FX_PAIRS_FILTER = [
-    "EURGBP",
-    "EURCHF",
-    "EURAUD",
-    "EURCNY",
-    "GBPJPY",
-    "GBPCHF",
-    "GBPAUD",
-    "GBPCNY",
-    "JPYCHF",
-    "JPYAUD",
-    "JPYCNY",
-    "CHFAUD",
-    "CHFCNY",
-    "AUDCNY",
-]
-FX_MATRIX_ORDER = ["EUR", "USD", "GBP", "JPY", "CHF", "AUD", "CNY"]
-
-
-class LocationEnum(str, Enum):
-    """Location Enum."""
-
-    NA = "North America"
-    EU = "Europe"
-    ASIA = "Asia"
-    NO_LOCATION = "No Location"
 
 
 class DisplayAsset(TypedDict):
@@ -71,7 +49,7 @@ class DisplayAsset(TypedDict):
 class DisplayAssetbyLocation(TypedDict):
     """Display asset classes dictionnary."""
 
-    location: str  # LocationEnum value (e.g. "North America")
+    location: str  # MarketRecapLocationEnum value (e.g. "North America")
     assets: list[DisplayAsset]
 
 
@@ -80,17 +58,6 @@ class DisplayData(TypedDict):
 
     asset_class: str  # human-readable AssetClassChoices label
     locations: list[DisplayAssetbyLocation]
-
-
-LOCATION_MAPPING = {
-    LocationEnum.NA: [LocationChoices.US],
-    LocationEnum.EU: [
-        LocationChoices.EU,
-        LocationChoices.DE,
-        LocationChoices.FR,
-    ],
-    LocationEnum.ASIA: [LocationChoices.JP],
-}
 
 
 def _build_assets(group: pd.DataFrame) -> list[DisplayAsset]:
@@ -117,7 +84,7 @@ def _sort_by_location_and_maturity(
     """Helper to sort a location group by location order and maturity."""
     location_order = {
         loc.value: i
-        for i, loc in enumerate(LOCATION_MAPPING.get(LocationEnum(location_group), []))
+        for i, loc in enumerate(MarketRecapLocationEnum(location_group).get_locations())
     }
     return group.assign(
         location_order=group["location"].map(lambda x: location_order.get(x, 999))
@@ -139,12 +106,12 @@ def format_data_for_market_recap_display(
 
     # Map countries to location groups
     country_to_location = {
-        country: loc.value
-        for loc, countries in LOCATION_MAPPING.items()
-        for country in countries
+        country: location_group.value
+        for location_group in MarketRecapLocationEnum
+        for country in location_group.get_locations()
     }
     df["location_group"] = df["location"].map(
-        lambda x: country_to_location.get(x, LocationEnum.NO_LOCATION.value)
+        lambda x: country_to_location.get(x, MarketRecapLocationEnum.NO_LOCATION.value)
     )
     df = df.sort_values(by="asset_id")
 
@@ -161,7 +128,7 @@ def format_data_for_market_recap_display(
             if assets:
                 locations.append(
                     DisplayAssetbyLocation(
-                        location=LocationEnum(str(location_group)).value,
+                        location=MarketRecapLocationEnum(str(location_group)).value,
                         assets=assets,
                     )
                 )
@@ -454,7 +421,9 @@ def _get_day_publication_events(event_date: date) -> list[DayEvent]:
         current_value = current_row.data_value if current_row else None
         previous_value = previous_row.data_value if previous_row else None
         change_display = _format_day_event_change(
-            calculate_value_change(current_value, previous_value).absolute
+            calculate_value_change(
+                current_value, previous_value, ValueChangeOutput.ABSOLUTE
+            )
         )
         day_events.append(
             DayEvent(
@@ -482,7 +451,7 @@ def _get_day_central_bank_events(event_date: date) -> list[DayEvent]:
         if display_dt.date() != event_date:
             continue
         central_bank = CentralBankChoices(meeting.central_bank)
-        central_bank_location = CENTRAL_BANK_LOCATION_MAP[central_bank]
+        central_bank_location = central_bank.get_location()
         day_events.append(
             DayEvent(
                 name=f"{central_bank.label} Rates Decision",

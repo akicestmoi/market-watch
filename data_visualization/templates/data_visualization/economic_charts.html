@@ -19,16 +19,17 @@
     {% include "data_visualization/_navbar.html" %}
     <div class="header">
         <div class="header-form">
-            <div class="zone-section">
-                <label for="zone-buttons" class="zone-label">Zone:</label>
-                <div class="zone-buttons" id="zone-buttons">
-                    <button class="zone-btn" data-zone="US">US</button>
-                    <button class="zone-btn" data-zone="FR">FR</button>
-                    <button class="zone-btn" data-zone="JP">JP</button>
+            <div class="region-section">
+                <label class="region-label">Region:</label>
+                <div class="region-buttons" id="region-buttons">
+                    <button type="button" class="region-btn" data-region="US">US</button>
+                    <button type="button" class="region-btn" data-region="EU">EU</button>
+                    <button type="button" class="region-btn" data-region="FR">FR</button>
+                    <button type="button" class="region-btn" data-region="JP">JP</button>
                 </div>
             </div>
             <form method="get">
-                <input type="hidden" id="zone" name="zone" value="{{ zone }}">
+                <input type="hidden" id="region" name="region" value="{{ region }}">
             </form>
             <div class="period-window-section">
                 <label for="period-window" class="period-window-label">Chart Period:</label>
@@ -51,7 +52,7 @@
         window.economicDataJSON = {{ economic_data | safe }};
         window.categoriesJSON = {{ categories | safe }};
         window.selectedValuesJSON = {{ selected_values | safe }};
-        window.currentZone = "{{ zone }}";
+        window.currentRegion = "{{ region }}";
     </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
     {% if error_messages %}

@@ -9,7 +9,7 @@ import central_banks_overview.services.central_banks_data as central_banks_data
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices
-from core.locks import try_acquire_redis_lock
+from core.locks import release_redis_lock, try_acquire_redis_lock
 from core.services import logger
 
 
@@ -25,9 +25,8 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
         case False:
             price_date = (date.today() - BDay(1)).date()
 
-    lock = try_acquire_redis_lock(
-        stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date)
-    )
+    lock_key = stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date)
+    lock = try_acquire_redis_lock(lock_key)
     if lock is None:
         logger.warning(
             "Skipping STIR Futures prices ingestion for %s: already in progress.",
@@ -68,13 +67,7 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
             "date": price_date.isoformat(),
         }
     finally:
-        try:
-            lock.release()
-        except Exception:
-            logger.warning(
-                "Could not release STIR price ingestion lock for %s",
-                price_date.isoformat(),
-            )
+        release_redis_lock(lock, lock_key)
 
 
 @shared_task
@@ -137,9 +130,10 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
                 central_bank, price_date
             )
             cb_data_date = (date.today() - BDay(1)).date()
-            cb_lock = try_acquire_redis_lock(
-                central_banks_data.get_cb_data_ingestion_lock_key(central_bank, cb_data_date)
+            cb_lock_key = central_banks_data.get_cb_data_ingestion_lock_key(
+                central_bank, cb_data_date
             )
+            cb_lock = try_acquire_redis_lock(cb_lock_key)
             if cb_lock is None:
                 logger.warning(
                     "Skipping CB data ingestion for %s on %s: already in progress.",
@@ -153,14 +147,7 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
                         date_to_ingest=cb_data_date,
                     )
                 finally:
-                    try:
-                        cb_lock.release()
-                    except Exception:
-                        logger.warning(
-                            "Could not release CB data ingestion lock for %s on %s",
-                            central_bank.value,
-                            cb_data_date.isoformat(),
-                        )
+                    release_redis_lock(cb_lock, cb_lock_key)
             central_banks_meetings.ingest_central_bank_meeting_dates(central_bank)
 
         return {

@@ -8,18 +8,20 @@ from django.test import TestCase
 from freezegun import freeze_time
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
+from central_banks_overview.services.scrapers.boj_meetings import extract_boj_meeting_dates
+from central_banks_overview.services.scrapers.ecb_meetings import extract_ecb_meeting_dates
+from central_banks_overview.services.scrapers.fomc_meetings import extract_fomc_meeting_dates
 from central_banks_overview.services.central_banks_meetings import (
-    BOJ_MPM_URL,
-    ECB_MEETING_URL,
-    FOMC_MEETING_URL,
     CentralBankMeetingDates,
-    _extract_boj_meeting_dates,
-    _extract_ecb_meeting_dates,
-    _extract_fomc_meeting_dates,
     get_central_bank_meeting_dates,
     get_central_bank_next_meeting_date,
     ingest_all_central_bank_meeting_dates,
     ingest_central_bank_meeting_dates,
+)
+from central_banks_overview.services.config import (
+    BOJ_MPM_URL,
+    ECB_MEETING_URL,
+    FOMC_MEETING_URL,
 )
 from core.conftest import MockResponse, parse_query_for_testing, read_file_content
 
@@ -162,9 +164,9 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
-        _extract_fomc_meeting_dates.cache_clear()
-        _extract_ecb_meeting_dates.cache_clear()
-        _extract_boj_meeting_dates.cache_clear()
+        extract_fomc_meeting_dates.cache_clear()
+        extract_ecb_meeting_dates.cache_clear()
+        extract_boj_meeting_dates.cache_clear()
 
     @patch("core.services.requests.get")
     @freeze_time("2024-01-01 12:00:00")
@@ -749,13 +751,13 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_deletes_old_meetings(
@@ -818,13 +820,13 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_only_deletes_same_central_bank(
@@ -882,13 +884,13 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_respects_nb_meetings_limit(
@@ -927,13 +929,13 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         assert meeting_dates_in_db == expected_dates
 
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_filters_past_dates_before_deletion(
@@ -980,13 +982,13 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ]
 
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_updates_order_existing_meetings(

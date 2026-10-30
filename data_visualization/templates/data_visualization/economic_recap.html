@@ -48,17 +48,17 @@
                 </thead>
 
                 <tbody>
-                    {% for category, group in economic_data.items %}
-                    {% regroup group by name as name_groups %}
+                    {% for category_group in economic_data %}
+                    {% regroup category_group.rows by name as name_groups %}
 
                     {% for name_group in name_groups %}
                     {% with first_record=name_group.list.0 %}
                     <tr class="indicator-row{% if forloop.last %} category-last-row{% endif %}"
                         data-indicator-name="{{ name_group.grouper }}"
-                        data-category="{{ category }}"
-                        data-default-mode="{% if category == 'GROWTH' or name_group.grouper == 'Consumer Price Index' or name_group.grouper == 'Retail Sales' %}YOY{% else %}ABS{% endif %}">
+                        data-category="{{ category_group.category }}"
+                        data-default-mode="{% if category_group.category == 'GROWTH' or name_group.grouper == 'Consumer Price Index' or name_group.grouper == 'Retail Sales' %}YOY{% else %}ABS{% endif %}">
                         {% if forloop.first %}
-                        <td rowspan="{{ name_groups|length }}" class="category-cell">{{ category }}</td>
+                        <td rowspan="{{ name_groups|length }}" class="category-cell">{{ category_group.category }}</td>
                         {% endif %}
 
                         <td class="name-cell" data-base-name="{{ name_group.grouper }}">{{ name_group.grouper }}</td>
@@ -66,6 +66,7 @@
                             <select class="recap-mode-select" aria-label="Display for {{ name_group.grouper }}">
                                 <option value="ABS">Abs</option>
                                 <option value="QOQ">QoQ</option>
+                                <option value="QOQY">QoQy</option>
                                 <option value="YOY">YoY</option>
                             </select>
                         </td>

@@ -1,24 +1,25 @@
 """Tests for economic chart visualization services."""
 
 from datetime import date
+from unittest.mock import patch
 
 from django.test import TestCase
 
 from data_visualization.services.economic_charts import (
-    ChartLevelPoint,
+    TimeSeriesPoint,
     ChartPeriodWindow,
     ChartSeriesMode,
     EconomicChartsData,
     EconomicChartsDropdownValues,
     EconomicChartsFrontData,
     SelectedIndicatorsByCategory,
+    _filter_time_series_by_period_window,
     _format_period,
-    _parse_indicator_selection,
-    _apply_period_window,
+    _parse_selected_indicator_and_mode,
+    _change_series_mode,
     get_economic_charts_data,
     get_economic_charts_dropdown_values,
     get_selected_indicators_by_category,
-    _transform_level_series,
 )
 from economic_overview.models import (
     EconomicDataCategoryChoices,
@@ -121,14 +122,14 @@ class TestEconomicChartServices(TestCase):
             == "2024Q3"
         )
 
-    def test_get_selected_indicators_us_zone(self):
+    def test_get_selected_indicators_us_region(self):
         """
-        GIVEN front data with US zone indicators
+        GIVEN front data with US region indicators
         WHEN get_selected_indicators_by_category is called
         THEN correct indicators are extracted for each category
         """
         front_data = {
-            "zone": "United States",
+            "region": "United States",
             "period_window": ChartPeriodWindow.FIVE_YEARS.value,
             "us_growth_indicator": "GDP Growth,Real GDP",
             "us_inflation_indicator": "CPI",
@@ -138,6 +139,14 @@ class TestEconomicChartServices(TestCase):
             "us_labour_indicator": "",
             "us_housing_indicator": "",
             "us_confidence_indicator": "",
+            "eu_growth_indicator": "",
+            "eu_inflation_indicator": "",
+            "eu_government_indicator": "",
+            "eu_production_indicator": "",
+            "eu_sales_indicator": "",
+            "eu_labour_indicator": "",
+            "eu_housing_indicator": "",
+            "eu_confidence_indicator": "",
             "fr_growth_indicator": "",
             "fr_inflation_indicator": "",
             "fr_government_indicator": "",
@@ -214,8 +223,14 @@ class TestEconomicChartServices(TestCase):
             ],
             locations=["United States", "Europe", "France", "Japan"],
             indicators_by_category=[
-                {"category": "Growth", "indicators": ["GDP Growth"]},
-                {"category": "Inflation", "indicators": ["CPI"]},
+                {
+                    "category": "Growth",
+                    "indicators": [{"type": "GDP Growth", "name": "GDP Growth"}],
+                },
+                {
+                    "category": "Inflation",
+                    "indicators": [{"type": "CPI", "name": "CPI"}],
+                },
                 {"category": "Government", "indicators": []},
                 {"category": "Production", "indicators": []},
                 {"category": "Sales", "indicators": []},
@@ -245,7 +260,10 @@ class TestEconomicChartServices(TestCase):
             ],
             locations=["United States", "Europe", "France", "Japan"],
             indicators_by_category=[
-                {"category": "Growth", "indicators": ["GDP Growth"]},
+                {
+                    "category": "Growth",
+                    "indicators": [{"type": "GDP Growth", "name": "GDP Growth"}],
+                },
                 {"category": "Inflation", "indicators": []},
                 {"category": "Government", "indicators": []},
                 {"category": "Production", "indicators": []},
@@ -255,6 +273,39 @@ class TestEconomicChartServices(TestCase):
                 {"category": "Confidence", "indicators": []},
             ],
         )
+
+    @patch("data_visualization.services.economic_charts.get_cached_economic_display")
+    @patch("data_visualization.services.economic_charts.set_cached_economic_display")
+    def test_get_charts_data_uses_redis_cache(self, mock_set_cache, mock_get_cache):
+        """
+        GIVEN a Redis cache hit for the charts fingerprint
+        WHEN getting economic charts data
+        THEN the cached payload is returned without recomputing
+        """
+        cached_payload = [
+            EconomicChartsData(
+                category="Growth",
+                category_data=[
+                    {
+                        "period": "2024Q2",
+                        "data_value": 3.0,
+                        "indicator_name": "GDP Growth",
+                    }
+                ],
+            )
+        ]
+        mock_get_cache.return_value = cached_payload
+        selected_indicators = [
+            SelectedIndicatorsByCategory(
+                category=EconomicDataCategoryChoices.GROWTH,
+                selected_indicators=["GDP Growth"],
+            ),
+        ]
+
+        result = get_economic_charts_data(self.location, selected_indicators)
+
+        assert result == cached_payload
+        mock_set_cache.assert_not_called()
 
     def test_get_charts_data(self):
         """
@@ -417,96 +468,130 @@ class TestEconomicChartServices(TestCase):
             EconomicChartsData(category="Confidence", category_data=[]),
         ]
 
-    def test__parse_indicator_selection(self):
+    def test__parse_selected_indicator_and_mode(self):
         """
-        GIVEN Type or Type|MODE strings
+        GIVEN [Location|]Type[|MODE] strings
         WHEN parsing
-        THEN type and mode are extracted with ABS when no mode; invalid mode raises
+        THEN an optional location prefix and mode suffix are peeled off
         """
-        assert _parse_indicator_selection("GDP") == {
+        assert _parse_selected_indicator_and_mode("GDP") == {
             "type": "GDP",
             "mode": ChartSeriesMode.ABS,
+            "location": None,
         }
-        assert _parse_indicator_selection("GDP|YOY") == {
+        assert _parse_selected_indicator_and_mode("GDP|YOY") == {
             "type": "GDP",
             "mode": ChartSeriesMode.YOY,
+            "location": None,
+        }
+        assert _parse_selected_indicator_and_mode("DE|GDP") == {
+            "type": "GDP",
+            "mode": ChartSeriesMode.ABS,
+            "location": EconomicDataLocationChoices.DE,
+        }
+        assert _parse_selected_indicator_and_mode("DE|GDP|YOY") == {
+            "type": "GDP",
+            "mode": ChartSeriesMode.YOY,
+            "location": EconomicDataLocationChoices.DE,
+        }
+        assert _parse_selected_indicator_and_mode("GDP|QOQY") == {
+            "type": "GDP",
+            "mode": ChartSeriesMode.QOQY,
+            "location": None,
         }
         with self.assertRaises(ValueError):
-            _parse_indicator_selection("CPI|BAD")
+            _parse_selected_indicator_and_mode("CPI|BAD")
 
-    def test_transform_quarterly_qoq_and_yoy(self):
+    def test_change_series_mode_quarterly_qoq_qoqy_and_yoy(self):
         """
         GIVEN quarterly level points
-        WHEN transforming QoQ and YoY
-        THEN percent changes use 1 and 4 quarter lags
+        WHEN changing to QoQ, QoQy, and YoY modes
+        THEN percent changes use QoQ lag, annualized QoQ, and YoY lag
         """
         points = [
-            ChartLevelPoint(date(2023, 1, 1), 100.0),
-            ChartLevelPoint(date(2023, 4, 1), 102.0),
-            ChartLevelPoint(date(2023, 7, 1), 104.0),
-            ChartLevelPoint(date(2023, 10, 1), 106.0),
-            ChartLevelPoint(date(2024, 1, 1), 110.0),
+            TimeSeriesPoint(date(2023, 1, 1), 100.0),
+            TimeSeriesPoint(date(2023, 4, 1), 102.0),
+            TimeSeriesPoint(date(2023, 7, 1), 104.0),
+            TimeSeriesPoint(date(2023, 10, 1), 106.0),
+            TimeSeriesPoint(date(2024, 1, 1), 110.0),
         ]
-        qoq = _transform_level_series(
+        qoq = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.QUARTERLY,
             ChartSeriesMode.QOQ,
         )
-        assert qoq[0] == ChartLevelPoint(date(2023, 4, 1), 2.0)
+        assert qoq[0] == TimeSeriesPoint(date(2023, 4, 1), 2.0)
         assert abs(qoq[-1].value - (110.0 - 106.0) / 106.0 * 100) < 1e-9
 
-        yoy = _transform_level_series(
+        qoqy = _change_series_mode(
+            points,
+            EconomicPublicationFrequencyChoices.QUARTERLY,
+            ChartSeriesMode.QOQY,
+        )
+        assert qoqy == [
+            TimeSeriesPoint(date(2023, 4, 1), ((102.0 / 100.0) ** 4 - 1) * 100),
+            TimeSeriesPoint(date(2023, 7, 1), ((104.0 / 102.0) ** 4 - 1) * 100),
+            TimeSeriesPoint(date(2023, 10, 1), ((106.0 / 104.0) ** 4 - 1) * 100),
+            TimeSeriesPoint(date(2024, 1, 1), ((110.0 / 106.0) ** 4 - 1) * 100),
+        ]
+
+        yoy = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.QUARTERLY,
             ChartSeriesMode.YOY,
         )
-        assert yoy == [ChartLevelPoint(date(2024, 1, 1), 10.0)]
+        assert yoy == [TimeSeriesPoint(date(2024, 1, 1), 10.0)]
 
-    def test_transform_monthly_missing_prior_is_dropped(self):
+    def test_change_series_mode_monthly_missing_prior_is_dropped(self):
         """
         GIVEN monthly points with insufficient history for YoY
-        WHEN transforming
+        WHEN changing to YoY / QoQ modes
         THEN points without a prior are omitted
         """
         points = [
-            ChartLevelPoint(date(2024, 1, 1), 100.0),
-            ChartLevelPoint(date(2024, 2, 1), 101.0),
-            ChartLevelPoint(date(2024, 3, 1), 102.0),
+            TimeSeriesPoint(date(2024, 1, 1), 100.0),
+            TimeSeriesPoint(date(2024, 2, 1), 101.0),
+            TimeSeriesPoint(date(2024, 3, 1), 102.0),
         ]
         assert (
-            _transform_level_series(
+            _change_series_mode(
                 points,
                 EconomicPublicationFrequencyChoices.MONTHLY,
                 ChartSeriesMode.YOY,
             )
             == []
         )
-        qoq = _transform_level_series(
+        qoq = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.MONTHLY,
             ChartSeriesMode.QOQ,
         )
         assert qoq == []  # need 3-month lag; only 3 points → index 3 is out of range
 
-    def test_apply_period_window_truncates(self):
+    def test_filter_time_series_by_period_window_truncates(self):
         """
         GIVEN a long series
-        WHEN applying a 1Y window
+        WHEN filtering to a 1Y period window
         THEN only the last year of points remains
         """
-        points = [
-            ChartLevelPoint(date(2020, 1, 1), 1.0),
-            ChartLevelPoint(date(2023, 6, 1), 2.0),
-            ChartLevelPoint(date(2024, 1, 1), 3.0),
-            ChartLevelPoint(date(2024, 6, 1), 4.0),
+        time_series = [
+            TimeSeriesPoint(date(2020, 1, 1), 1.0),
+            TimeSeriesPoint(date(2023, 6, 1), 2.0),
+            TimeSeriesPoint(date(2024, 1, 1), 3.0),
+            TimeSeriesPoint(date(2024, 6, 1), 4.0),
         ]
-        windowed = _apply_period_window(points, ChartPeriodWindow.ONE_YEAR)
-        assert windowed == [
-            ChartLevelPoint(date(2023, 6, 1), 2.0),
-            ChartLevelPoint(date(2024, 1, 1), 3.0),
-            ChartLevelPoint(date(2024, 6, 1), 4.0),
+        time_series_in_period_window = _filter_time_series_by_period_window(
+            time_series, ChartPeriodWindow.ONE_YEAR
+        )
+        assert time_series_in_period_window == [
+            TimeSeriesPoint(date(2023, 6, 1), 2.0),
+            TimeSeriesPoint(date(2024, 1, 1), 3.0),
+            TimeSeriesPoint(date(2024, 6, 1), 4.0),
         ]
-        assert _apply_period_window(points, ChartPeriodWindow.MAX) == points
+        assert (
+            _filter_time_series_by_period_window(time_series, ChartPeriodWindow.MAX)
+            == time_series
+        )
 
     def test_get_charts_data_yoy_and_window(self):
         """
@@ -544,16 +629,108 @@ class TestEconomicChartServices(TestCase):
             selected_indicators,
             period_window=ChartPeriodWindow.ONE_YEAR,
         )
-        growth = next(item for item in result if item["category"] == "Growth")
-        assert growth["category_data"]
-        assert all(
-            point["indicator_name"] == "GDP Growth (in %)"
-            for point in growth["category_data"]
+        assert result == [
+            EconomicChartsData(
+                category="Growth",
+                category_data=[
+                    {
+                        "period": "2024Q2",
+                        "data_value": (122.0 - 112.0) / 112.0 * 100,
+                        "indicator_name": "GDP Growth (in %)",
+                    },
+                    {
+                        "period": "2024Q1",
+                        "data_value": (120.0 - 110.0) / 110.0 * 100,
+                        "indicator_name": "GDP Growth (in %)",
+                    },
+                    {
+                        "period": "2023Q4",
+                        "data_value": (116.0 - 103.0) / 103.0 * 100,
+                        "indicator_name": "GDP Growth (in %)",
+                    },
+                    {
+                        "period": "2023Q3",
+                        "data_value": (114.0 - 102.0) / 102.0 * 100,
+                        "indicator_name": "GDP Growth (in %)",
+                    },
+                    {
+                        "period": "2023Q2",
+                        "data_value": (112.0 - 101.0) / 101.0 * 100,
+                        "indicator_name": "GDP Growth (in %)",
+                    },
+                ],
+            ),
+            EconomicChartsData(category="Inflation", category_data=[]),
+            EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
+            EconomicChartsData(category="Labour", category_data=[]),
+            EconomicChartsData(category="Housing", category_data=[]),
+            EconomicChartsData(category="Confidence", category_data=[]),
+        ]
+
+    def test_get_charts_data_europe_plots_selected_country_curves(self):
+        """
+        GIVEN GDP series for DE / ES / IT / FR
+        WHEN getting Europe charts with only DE and FR selected
+        THEN only those country curves appear
+        """
+        period = date(2024, 4, 1)
+        for indicator_id, location, name, ticker, value in [
+            (61, EconomicDataLocationChoices.DE, "Germany Real GDP", "gdp_de", 100.0),
+            (70, EconomicDataLocationChoices.ES, "Spain Real GDP", "gdp_es", 110.0),
+            (79, EconomicDataLocationChoices.IT, "Italy Real GDP", "gdp_it", 120.0),
+            (27, EconomicDataLocationChoices.FR, "France Real GDP", "gdp_fr", 130.0),
+        ]:
+            indicator = EconomicIndicatorInformationModel.objects.create(
+                id=indicator_id,
+                location=location,
+                category=EconomicDataCategoryChoices.GROWTH,
+                type="GDP",
+                name=name,
+                technical_name="GDP and main aggregates",
+                frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+                source=EconomicDataSourceChoices.EUROSTAT,
+                ticker=ticker,
+            )
+            EconomicDataModel.objects.create(
+                indicator=indicator,
+                period=period,
+                data_value=value,
+            )
+
+        selected_indicators = [
+            SelectedIndicatorsByCategory(
+                category=EconomicDataCategoryChoices.GROWTH,
+                selected_indicators=["DE|GDP|ABS", "FR|GDP|ABS"],
+            ),
+        ]
+        result = get_economic_charts_data(
+            EconomicDataLocationChoices.EU, selected_indicators
         )
-        # Latest YoY: 122 vs 112; window from max period 2024-04 back 1Y
-        latest = growth["category_data"][0]
-        assert latest["period"] == "2024Q2"
-        assert abs(latest["data_value"] - (122.0 - 112.0) / 112.0 * 100) < 1e-9
-        # Earliest in window should be >= 2023-04
-        periods = [point["period"] for point in growth["category_data"]]
-        assert "2022Q1" not in periods
+        assert result == [
+            EconomicChartsData(
+                category="Growth",
+                category_data=[
+                    {
+                        "period": "2024Q2",
+                        "data_value": 100.0,
+                        "indicator_name": "Germany — GDP",
+                    },
+                    {
+                        "period": "2024Q2",
+                        "data_value": 130.0,
+                        "indicator_name": "France — GDP",
+                    },
+                ],
+            ),
+            EconomicChartsData(category="Inflation", category_data=[]),
+            EconomicChartsData(category="Government", category_data=[]),
+            EconomicChartsData(category="Production", category_data=[]),
+            EconomicChartsData(category="Sales", category_data=[]),
+            EconomicChartsData(category="Labour", category_data=[]),
+            EconomicChartsData(category="Housing", category_data=[]),
+            EconomicChartsData(category="Confidence", category_data=[]),
+        ]
+
+

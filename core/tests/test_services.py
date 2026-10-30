@@ -9,17 +9,14 @@ from bs4 import BeautifulSoup
 from django.db import IntegrityError
 from django.test import TestCase
 from freezegun import freeze_time
-from rest_framework.exceptions import NotFound
-
 from core.conftest import parse_query_for_testing
 from core.services import (
-    ValueChange,
+    ValueChangeOutput,
     calculate_value_change,
     convert_local_wall_time_to_utc,
     convert_query_to_dictionary_list,
     convert_to_display_timezone,
     fetch_html,
-    get,
     get_source_timezone,
     parse_datetime,
     update_with_logs,
@@ -34,43 +31,6 @@ from market_overview.models import (
 )
 
 FREEZE_TIME = datetime(2025, 12, 15, 0, 0, 0, tzinfo=timezone.utc)
-
-
-class TestGet(TestCase):
-    """Test cases for get function."""
-
-    def setUp(self):
-        """Set up test fixtures."""
-        self.asset = AssetModel.objects.create(
-            short_name="TEST",
-            full_name="Test Asset",
-            asset_id=1,
-            asset_class=AssetClassChoices.STOCKS,
-            asset_type=AssetTypeChoices.EQUITY_INDEX,
-        )
-
-    def test_get_success(self):
-        """
-        GIVEN an existing model instance
-        WHEN get is called with valid lookup parameters
-        THEN the instance should be returned
-        """
-        result = get(AssetModel, short_name="TEST")
-
-        assert result == self.asset
-        assert result.short_name == "TEST"
-
-    def test_get_not_found(self):
-        """
-        GIVEN a non-existent model instance
-        WHEN get is called with invalid lookup parameters
-        THEN a NotFound exception should be raised
-        """
-        with pytest.raises(NotFound) as exc_info:
-            get(AssetModel, short_name="NONEXISTENT")
-
-        assert "No AssetModel found matching" in str(exc_info.value.detail)
-        assert "NONEXISTENT" in str(exc_info.value.detail)
 
 
 class TestUpdateWithLogs(TestCase):
@@ -624,46 +584,74 @@ class TestFetchHtml(TestCase):
 class TestCalculateValueChange(TestCase):
     """Test cases for calculate_value_change."""
 
-    def test_calculate_value_change_percent_and_bps(self):
+    def test_calculate_value_change_absolute_percent_and_bps(self):
         """
         GIVEN current and previous levels
-        WHEN calculate_value_change is called
-        THEN absolute, percent, and bps fields are populated
+        WHEN calculate_value_change is called for each output
+        THEN the matching scalar is returned
         """
-        assert calculate_value_change(110.0, 100.0) == ValueChange(
-            absolute=10.0,
-            percent=10.0,
-            bps=1000.0,
+        assert calculate_value_change(110.0, 100.0, ValueChangeOutput.ABSOLUTE) == 10.0
+        assert calculate_value_change(110.0, 100.0, ValueChangeOutput.PERCENT) == 10.0
+        assert calculate_value_change(110.0, 100.0, ValueChangeOutput.BPS) == 1000.0
+
+    def test_calculate_value_change_annualized_percent(self):
+        """
+        GIVEN current and previous levels and annualized_ratio=4
+        WHEN output is ANNUALIZED_PERCENT
+        THEN ((current / previous) ** 4 - 1) * 100 is returned
+        """
+        assert (
+            calculate_value_change(
+                102.0, 100.0, ValueChangeOutput.ANNUALIZED_PERCENT, annualized_ratio=4
+            )
+            == ((102.0 / 100.0) ** 4 - 1) * 100
+        )
+        assert (
+            calculate_value_change(102.0, 100.0, ValueChangeOutput.ANNUALIZED_PERCENT)
+            is None
         )
 
     def test_calculate_value_change_undefined_when_previous_zero(self):
         """
         GIVEN a zero previous value
-        WHEN calculate_value_change is called
-        THEN percent is None while absolute and bps remain defined
+        WHEN percent or annualized outputs are requested
+        THEN None is returned while absolute and bps remain defined
         """
-        assert calculate_value_change(5.0, 0.0) == ValueChange(
-            absolute=5.0,
-            percent=None,
-            bps=500.0,
+        assert calculate_value_change(5.0, 0.0, ValueChangeOutput.ABSOLUTE) == 5.0
+        assert calculate_value_change(5.0, 0.0, ValueChangeOutput.BPS) == 500.0
+        assert calculate_value_change(5.0, 0.0, ValueChangeOutput.PERCENT) is None
+        assert (
+            calculate_value_change(
+                5.0, 0.0, ValueChangeOutput.ANNUALIZED_PERCENT, annualized_ratio=4
+            )
+            is None
+        )
+
+    def test_calculate_value_change_non_positive_ratio_skips_annualized(self):
+        """
+        GIVEN a non-positive current/previous ratio
+        WHEN ANNUALIZED_PERCENT is requested
+        THEN None is returned while simple percent remains defined
+        """
+        assert calculate_value_change(-1.0, 100.0, ValueChangeOutput.PERCENT) == -101.0
+        assert (
+            calculate_value_change(
+                -1.0, 100.0, ValueChangeOutput.ANNUALIZED_PERCENT, annualized_ratio=4
+            )
+            is None
         )
 
     def test_calculate_value_change_missing_inputs(self):
         """
         GIVEN a missing current or previous value
         WHEN calculate_value_change is called
-        THEN all fields are None
+        THEN None is returned for every output
         """
-        assert calculate_value_change(None, 100.0) == ValueChange(
-            absolute=None,
-            percent=None,
-            bps=None,
-        )
-        assert calculate_value_change(100.0, None) == ValueChange(
-            absolute=None,
-            percent=None,
-            bps=None,
-        )
+        for output in ValueChangeOutput:
+            assert calculate_value_change(None, 100.0, output) is None
+            assert (
+                calculate_value_change(100.0, None, output, annualized_ratio=4) is None
+            )
 
 
 class TestParseDatetime(TestCase):

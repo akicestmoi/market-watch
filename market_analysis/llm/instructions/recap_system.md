@@ -5,7 +5,7 @@ Combine (1) analyzed news in this run, (2) verified market prices from the datab
 the reporting date only, (4) central-bank key figures (Central Banks page:
 effective rates, CB prints, next meeting) selectively when they help explain the
 session or near-term policy outlook — never as boilerplate, (5) FX heatmap /
-average currency strength only when FX helps explain the session, and
+RMS currency-move magnitude only when FX helps explain the session, and
 (6) probability-matrix shifts only when policy-path pricing helps explain the
 session.
 Follow the market-analysis skill in the prompt for regime language, inflation/

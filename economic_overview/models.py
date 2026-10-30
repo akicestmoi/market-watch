@@ -3,7 +3,12 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from core.models import BaseLogModel, BaseModel, get_choice_from_label, get_choice_labels
+from core.models import (
+    BaseLogModel,
+    BaseModel,
+    get_choice_from_label,
+    get_choice_labels,
+)
 
 
 class EconomicDataLocationChoices(models.TextChoices):
@@ -11,6 +16,9 @@ class EconomicDataLocationChoices(models.TextChoices):
 
     US = "US", _("United States")
     EU = "EU", _("Europe")
+    DE = "DE", _("Germany")
+    ES = "ES", _("Spain")
+    IT = "IT", _("Italy")
     FR = "FR", _("France")
     JP = "JP", _("Japan")
 
@@ -22,7 +30,7 @@ class EconomicDataLocationChoices(models.TextChoices):
     @classmethod
     def ordered(cls) -> list["EconomicDataLocationChoices"]:
         """Ordered list of economic data location choices."""
-        order = ["US", "EU", "FR", "JP"]
+        order = ["US", "EU", "FR", "JP", "DE", "ES", "IT"]
         return [cls[value] for value in order]
 
     @classmethod
@@ -36,7 +44,11 @@ class EconomicDataSourceChoices(models.TextChoices):
 
     INSEE = "INSEE", _("INSEE")
     EUROSTAT = "EUROSTAT", _("Eurostat")
+    FRED = "FRED", _("FRED")
     JP_CABINET_OFFICE = "JP_CABINET_OFFICE", _("Japan Cabinet Office")
+    STAT_OF_JP = "STAT_OF_JP", _("Statistics of Japan")
+    MLIT = "MLIT", _("MLIT")
+    BOJ = "BOJ", _("Bank of Japan")
 
 
 class EconomicDataCategoryChoices(models.TextChoices):

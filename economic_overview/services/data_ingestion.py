@@ -1,20 +1,13 @@
-"""Scrape and ingest economic indicator time series."""
+"""Orchestrate economic data scraping and ingestion into the database."""
 
-import io
-import re
-import zipfile
 from collections.abc import Callable
-from datetime import date, datetime
-from typing import NamedTuple, TypedDict
+from datetime import date
+from typing import TypedDict
 
-import pandas as pd
-import requests
-from cachetools.func import ttl_cache
 from django.db.models import QuerySet
-from pydantic import TypeAdapter, ValidationError
 
 import core.services as core_services
-from core.services import CACHE_MAXSIZE, CACHE_TTL_SECONDS, logger
+from core.services import logger
 from economic_overview.models import (
     EconomicDataModel,
     EconomicDataSourceChoices,
@@ -22,61 +15,51 @@ from economic_overview.models import (
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
 )
-
-INSEE_CSV_NAME_BY_FREQUENCY: dict[EconomicPublicationFrequencyChoices, str] = {
-    EconomicPublicationFrequencyChoices.MONTHLY: "valeurs_mensuelles",
-    EconomicPublicationFrequencyChoices.QUARTERLY: "valeurs_trimestrielles",
-    EconomicPublicationFrequencyChoices.ANNUAL: "valeurs_annuelles",
-}
+from economic_overview.services.scrapers.boj import get_data_from_boj
+from economic_overview.services.scrapers.common import ScrapingResult
+from economic_overview.services.scrapers.eurostat import get_data_from_eurostat
+from economic_overview.services.scrapers.fred import get_data_from_fred
+from economic_overview.services.scrapers.insee import get_data_from_insee
+from economic_overview.services.scrapers.jp_cabinet_office import (
+    get_data_from_japan_cabinet_office,
+)
+from economic_overview.services.scrapers.mlit import get_data_from_mlit
+from economic_overview.services.scrapers.stat_of_jp import get_data_from_stat_of_jp
 
 SOURCE_SCRAP_MAP: dict[
     EconomicDataSourceChoices,
     Callable[
-        [str, str | None, EconomicPublicationFrequencyChoices],
-        list["ScrapingResult"],
+        [str, str | None, EconomicPublicationFrequencyChoices, str],
+        list[ScrapingResult],
     ],
 ] = {
-    EconomicDataSourceChoices.INSEE: lambda t, p, f: _get_data_from_insee(t, p, f),
-    EconomicDataSourceChoices.EUROSTAT: lambda t, p, f: _get_data_from_eurostat(
+    EconomicDataSourceChoices.INSEE: lambda t, p, f, _location: get_data_from_insee(
         t, p, f
     ),
-    EconomicDataSourceChoices.JP_CABINET_OFFICE: lambda t, p, f: _get_data_from_japan_cabinet_office(
+    EconomicDataSourceChoices.EUROSTAT: lambda t, p, f, location: get_data_from_eurostat(
+        t, p, f, location
+    ),
+    EconomicDataSourceChoices.FRED: lambda t, p, f, _location: get_data_from_fred(
         t, p, f
     ),
-}
-
-
-# Shared Eurostat Statistics API query args (every dataset).
-EUROSTAT_API_DEFAULT_PARAMS: dict[str, str] = {
-    "format": "JSON",
-    "lang": "en",
-}
-
-# Per-dataset dimension filters keyed by Eurostat dataset code (``ticker``).
-# Add a new entry when wiring another Eurostat series.
-EUROSTAT_DATASET_PARAMS: dict[str, dict[str, str]] = {
-    # ECOICOP v2 monthly indices (replaces frozen prc_hicp_midx / I15 after 2025-12).
-    "prc_hicp_minr": {
-        "geo": "EA",
-        "coicop18": "TOTAL",
-        "unit": "I25",
-        "freq": "M",
-        "sinceTimePeriod": "2015-01",
-    },
+    EconomicDataSourceChoices.JP_CABINET_OFFICE: lambda t, p, f, _location: get_data_from_japan_cabinet_office(
+        t, p, f
+    ),
+    EconomicDataSourceChoices.STAT_OF_JP: lambda t, p, f, _location: get_data_from_stat_of_jp(
+        t, p, f
+    ),
+    EconomicDataSourceChoices.MLIT: lambda t, p, f, _location: get_data_from_mlit(
+        t, p, f
+    ),
+    EconomicDataSourceChoices.BOJ: lambda t, p, f, _location: get_data_from_boj(
+        t, p, f
+    ),
 }
 
 
 def get_economic_data_ingestion_lock_key() -> str:
     """Return Redis lock key for economic data ingestion."""
     return "lock:economic_data_ingestion"
-
-
-class ScrapingResult(TypedDict):
-    """Scraping result dictionnary."""
-
-    period: date | None
-    data_value: float | None
-    comment: str
 
 
 class EconomicData(TypedDict):
@@ -86,339 +69,6 @@ class EconomicData(TypedDict):
     period: date | None
     data_value: float | None
     comment: str | None
-
-
-class InseeValuesLoadResult(NamedTuple):
-    """INSEE CSV load outcome."""
-
-    dataframe: pd.DataFrame | None
-    error_comment: str
-
-
-def _parse_insee_period(
-    period_str: str, frequency: EconomicPublicationFrequencyChoices
-) -> date:
-    """Parse an INSEE period label into a date (first day of the period)."""
-    period_str = str(period_str).strip()
-    if frequency == EconomicPublicationFrequencyChoices.MONTHLY:
-        return datetime.strptime(period_str, "%Y-%m").date()
-    if frequency == EconomicPublicationFrequencyChoices.QUARTERLY:
-        # French CSV uses YYYY-Tn; SDMX uses YYYY-Qn.
-        match = re.fullmatch(r"(\d{4})-[TQ]([1-4])", period_str, flags=re.IGNORECASE)
-        if not match:
-            raise ValueError(f"Invalid quarterly period: {period_str}")
-        year = int(match.group(1))
-        quarter = int(match.group(2))
-        return date(year, (quarter - 1) * 3 + 1, 1)
-    if frequency == EconomicPublicationFrequencyChoices.ANNUAL:
-        return datetime.strptime(period_str, "%Y").date()
-    raise ValueError(f"Unsupported frequency: {frequency}")
-
-
-def _load_insee_values_dataframe(
-    ticker: str,
-    frequency: EconomicPublicationFrequencyChoices,
-    year_start: int,
-    year_end: int,
-) -> InseeValuesLoadResult:
-    """Download and parse the INSEE values CSV for a ticker."""
-    expected_values_csv_name = INSEE_CSV_NAME_BY_FREQUENCY.get(frequency)
-    if not expected_values_csv_name:
-        return InseeValuesLoadResult(
-            None, f"Unsupported frequency for INSEE scrape: {frequency}"
-        )
-
-    params = {
-        "lang": "fr",
-        "ordre": "antechronologique",
-        "anneeDebut": str(year_start),
-        "anneeFin": str(year_end),
-        "revision": "sansrevisions",
-    }
-    insee_url = f"https://bdm.insee.fr/series/{ticker}/csv"
-    response = requests.get(insee_url, params=params)
-    if response.status_code >= 400:
-        logger.warning(f"Error scraping INSEE data: {response.text}")
-        return InseeValuesLoadResult(None, response.text)
-
-    try:
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_archive:
-            matching_values_csv_files = [
-                archive_member_name
-                for archive_member_name in zip_archive.namelist()
-                if expected_values_csv_name in archive_member_name.lower()
-            ]
-            if not matching_values_csv_files:
-                return InseeValuesLoadResult(
-                    None, f"No '{expected_values_csv_name}' CSV found in archive."
-                )
-            with zip_archive.open(matching_values_csv_files[0]) as values_csv_file:
-                dataframe = pd.read_csv(values_csv_file, encoding="utf-8", sep=";")
-    except Exception as exc:
-        return InseeValuesLoadResult(None, f"Error reading ZIP content: {exc}")
-
-    if (
-        "Libellé" not in dataframe.columns
-        or "Période" not in dataframe["Libellé"].values
-    ):
-        return InseeValuesLoadResult(None, "Data is not in the expected format.")
-
-    header_row = dataframe.index[dataframe["Libellé"] == "Période"][0]
-    if len(dataframe) <= header_row + 1:
-        return InseeValuesLoadResult(None, "No data found.")
-
-    return InseeValuesLoadResult(dataframe, "")
-
-
-def _parse_economic_data_from_insee_dataframe(
-    dataframe: pd.DataFrame, frequency: EconomicPublicationFrequencyChoices
-) -> list[ScrapingResult]:
-    """Parse all economic data rows from an INSEE values dataframe."""
-    header_row = dataframe.index[dataframe["Libellé"] == "Période"][0]
-    economic_data: list[ScrapingResult] = []
-    for row_index in range(header_row + 1, len(dataframe)):
-        period_label = str(dataframe.iloc[row_index, 0]).strip()
-        raw_value = str(dataframe.iloc[row_index, 1]).strip()
-        if not period_label or period_label.lower() == "nan":
-            continue
-        if not raw_value or raw_value.lower() in {"nan", ""}:
-            continue
-        try:
-            period = _parse_insee_period(period_label, frequency)
-            data_value = float(raw_value)
-        except ValueError:
-            continue
-        economic_data.append(
-            ScrapingResult(period=period, data_value=data_value, comment="")
-        )
-    return economic_data
-
-
-@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
-def _get_data_from_insee(
-    ticker: str,
-    target_period: str | None = None,
-    frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.MONTHLY,
-) -> list[ScrapingResult]:
-    """Get INSEE economic data (all rows, or a single matching period label).
-
-    Note: The data given by INSEE is a zip file containing:
-    - caractéristiques.csv
-    - valeurs_mensuelles.csv / valeurs_trimestrielles.csv / valeurs_annuelles.csv
-
-    Source: https://bdm.insee.fr/
-    Docs: https://www.insee.fr/fr/statistiques/serie/{ticker}
-    """
-    load_result = _load_insee_values_dataframe(
-        ticker=ticker,
-        frequency=frequency,
-        year_start=2010,
-        year_end=date.today().year,
-    )
-    if load_result.error_comment:
-        return [
-            ScrapingResult(
-                period=None, data_value=None, comment=load_result.error_comment
-            )
-        ]
-
-    assert load_result.dataframe is not None
-    if not target_period:
-        return _parse_economic_data_from_insee_dataframe(
-            load_result.dataframe, frequency
-        )
-
-    target_row_index = load_result.dataframe.index[
-        load_result.dataframe["Libellé"] == target_period
-    ]
-    if target_row_index.empty:
-        return [
-            ScrapingResult(
-                period=None, data_value=None, comment="Target period not found."
-            )
-        ]
-    target_row = target_row_index[0]
-    period = _parse_insee_period(
-        str(load_result.dataframe.iloc[target_row, 0]), frequency
-    )
-    data_value = float(str(load_result.dataframe.iloc[target_row, 1]))
-    return [ScrapingResult(period=period, data_value=data_value, comment="")]
-
-
-class EurostatJsonStatCategory(TypedDict, total=False):
-    """JSON-stat category block (period labels → flat positions)."""
-
-    index: dict[str, int]
-
-
-class EurostatJsonStatDimension(TypedDict, total=False):
-    """JSON-stat dimension block."""
-
-    category: EurostatJsonStatCategory
-
-
-class EurostatJsonStatPayload(TypedDict):
-    """Eurostat Statistics API JSON-stat subset used for scraping."""
-
-    id: list[str]
-    size: list[int]
-    # Flat-index keys are dynamic strings — open-key map of already-typed values.
-    value: dict[str, float | int | None]
-    # Dimension ids are dynamic (freq, unit, time, …).
-    dimension: dict[str, EurostatJsonStatDimension]
-
-
-_EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(EurostatJsonStatPayload)
-
-
-def _decode_eurostat_flat_index(flat_index: int, sizes: list[int]) -> list[int]:
-    """Decode a JSON-stat flat index into per-dimension coordinates."""
-    coordinates: list[int] = []
-    remaining = flat_index
-    for size in reversed(sizes):
-        coordinates.append(remaining % size)
-        remaining //= size
-    return list(reversed(coordinates))
-
-
-def _parse_eurostat_jsonstat_values(
-    payload: EurostatJsonStatPayload,
-) -> list[ScrapingResult]:
-    """Parse Eurostat Statistics API JSON-stat ``value`` / ``dimension`` payload."""
-    dimension_ids = payload["id"]
-    sizes = payload["size"]
-    values = payload["value"]
-    dimensions = payload["dimension"]
-    if "time" not in dimension_ids:
-        return [
-            ScrapingResult(
-                period=None, data_value=None, comment="Eurostat payload missing time."
-            )
-        ]
-
-    time_dimension = dimensions.get("time", EurostatJsonStatDimension())
-    time_category = time_dimension.get("category", EurostatJsonStatCategory())
-    time_index = time_category.get("index")
-    if time_index is None:
-        return [
-            ScrapingResult(
-                period=None,
-                data_value=None,
-                comment="Eurostat time index is not a mapping.",
-            )
-        ]
-    position_to_period = {
-        position: period_label for period_label, position in time_index.items()
-    }
-    time_dimension_offset = dimension_ids.index("time")
-
-    economic_data: list[ScrapingResult] = []
-    for flat_index_str, raw_value in values.items():
-        try:
-            flat_index = int(flat_index_str)
-            coordinates = _decode_eurostat_flat_index(flat_index, sizes)
-            time_position = coordinates[time_dimension_offset]
-            period_label = position_to_period[time_position]
-            period = datetime.strptime(period_label, "%Y-%m").date()
-            data_value = float(raw_value) if raw_value is not None else None
-            if data_value is None:
-                continue
-        except (KeyError, TypeError, ValueError):
-            continue
-        economic_data.append(
-            ScrapingResult(period=period, data_value=data_value, comment="")
-        )
-
-    economic_data.sort(
-        key=lambda row: row["period"] or date.min,
-        reverse=True,
-    )
-    return economic_data
-
-
-@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
-def _get_data_from_eurostat(
-    ticker: str,
-    target_period: str | None = None,
-    frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.MONTHLY,
-) -> list[ScrapingResult]:
-    """Get Eurostat economic data (all rows, or a single matching ``YYYY-MM`` period).
-
-    Dataset filters come from ``EUROSTAT_DATASET_PARAMS`` (keyed by ``ticker``).
-
-    Source: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/
-    """
-    if frequency != EconomicPublicationFrequencyChoices.MONTHLY:
-        return [
-            ScrapingResult(
-                period=None,
-                data_value=None,
-                comment=f"Unsupported frequency for Eurostat scrape: {frequency}",
-            )
-        ]
-    dataset_params = EUROSTAT_DATASET_PARAMS.get(ticker)
-    if dataset_params is None:
-        return [
-            ScrapingResult(
-                period=None,
-                data_value=None,
-                comment=f"Unsupported Eurostat ticker: {ticker}",
-            )
-        ]
-
-    eurostat_url = (
-        f"https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/{ticker}"
-    )
-    response = requests.get(
-        eurostat_url,
-        params={**EUROSTAT_API_DEFAULT_PARAMS, **dataset_params},
-        timeout=60,
-    )
-    if response.status_code >= 400:
-        logger.warning(f"Error scraping Eurostat data: {response.text}")
-        return [ScrapingResult(period=None, data_value=None, comment=response.text)]
-
-    try:
-        payload = _EUROSTAT_JSONSTAT_ADAPTER.validate_python(response.json())
-    except (ValueError, ValidationError) as exc:
-        return [
-            ScrapingResult(
-                period=None,
-                data_value=None,
-                comment=f"Invalid Eurostat JSON-stat: {exc}",
-            )
-        ]
-
-    economic_data = _parse_eurostat_jsonstat_values(payload)
-    if not economic_data:
-        return [
-            ScrapingResult(
-                period=None, data_value=None, comment="No Eurostat values found."
-            )
-        ]
-    if economic_data[0]["data_value"] is None and economic_data[0]["period"] is None:
-        return economic_data
-
-    if not target_period:
-        return economic_data
-
-    for row in economic_data:
-        period = row["period"]
-        if period is not None and period.strftime("%Y-%m") == target_period:
-            return [row]
-    return [
-        ScrapingResult(period=None, data_value=None, comment="Target period not found.")
-    ]
-
-
-@ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
-def _get_data_from_japan_cabinet_office(
-    ticker: str,
-    target_period: str | None = None,
-    frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.QUARTERLY,
-) -> list[ScrapingResult]:
-    """Get data from Japan Cabinet Office."""
-    raise NotImplementedError("Not implemented.")
 
 
 def _get_economic_data(
@@ -433,6 +83,7 @@ def _get_economic_data(
             indicator.ticker,
             period,
             EconomicPublicationFrequencyChoices(indicator.frequency),
+            indicator.location,
         )
         if scraping_function
         else [
@@ -572,6 +223,7 @@ def ingest_historical_economic_data(
             indicator.ticker,
             None,
             EconomicPublicationFrequencyChoices(indicator.frequency),
+            indicator.location,
         )
         has_been_upserted = False
         for economic_data_item in economic_data:

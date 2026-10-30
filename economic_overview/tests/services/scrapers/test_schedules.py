@@ -5,15 +5,18 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pandas as pd
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from pandas.testing import assert_frame_equal
 
 from core.conftest import MockResponse, load_json_mock
-from economic_overview.services.publication import (
+from economic_overview.services.scrapers.eurostat import (
     _get_eurostat_publication_schedule,
+    get_publication_dates_from_eurostat,
+)
+from economic_overview.services.scrapers.fred import get_publication_dates_from_fred
+from economic_overview.services.scrapers.insee import (
     _get_insee_publication_schedule,
-    _get_publication_dates_from_eurostat,
-    _get_publication_dates_from_insee,
+    get_publication_dates_from_insee,
 )
 
 
@@ -27,9 +30,9 @@ class TestInseePublicationScheduleScraping(TestCase):
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_insee_publication_schedule.cache_clear()
-        _get_publication_dates_from_insee.cache_clear()
+        get_publication_dates_from_insee.cache_clear()
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_insee_publication_schedule_success(self, mock_post):
         """
         GIVEN a successful INSEE publication schedule API response
@@ -63,7 +66,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         )
         assert_frame_equal(result, expected)
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_insee_publication_schedule_http_error(self, mock_post):
         """
         GIVEN an HTTP error response from INSEE API
@@ -77,7 +80,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_insee_publication_schedule_empty_documents(self, mock_post):
         """
         GIVEN an INSEE API response with empty documents
@@ -94,7 +97,7 @@ class TestInseePublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_publication_dates_from_insee_success(self, mock_post):
         """
         GIVEN a publication schedule with matching indicator name
@@ -106,13 +109,13 @@ class TestInseePublicationScheduleScraping(TestCase):
             content=json.dumps(self.MOCK_INSEE_PUBLICATION_SCHEDULE_SUCCESS).encode(),
         )
 
-        result = _get_publication_dates_from_insee("Foreign trade results")
+        result = get_publication_dates_from_insee("Foreign trade results")
         assert result == [
             datetime(2025, 12, 5, 7, 45, tzinfo=timezone.utc),
             datetime(2026, 3, 10, 7, 45, tzinfo=timezone.utc),
         ]
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_publication_dates_from_insee_not_found(self, mock_post):
         """
         GIVEN a publication schedule without matching indicator name
@@ -124,11 +127,11 @@ class TestInseePublicationScheduleScraping(TestCase):
             content=json.dumps(self.MOCK_INSEE_PUBLICATION_SCHEDULE_SUCCESS).encode(),
         )
 
-        result = _get_publication_dates_from_insee("Test Indicator")
+        result = get_publication_dates_from_insee("Test Indicator")
 
         assert result == []
 
-    @patch("economic_overview.services.publication.requests.post")
+    @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_publication_dates_from_insee_empty_schedule(self, mock_post):
         """
         GIVEN an empty publication schedule
@@ -140,7 +143,7 @@ class TestInseePublicationScheduleScraping(TestCase):
             status_code=200, content=json.dumps(mock_data).encode()
         )
 
-        result = _get_publication_dates_from_insee("Test Indicator")
+        result = get_publication_dates_from_insee("Test Indicator")
 
         assert result == []
 
@@ -155,9 +158,9 @@ class TestEurostatPublicationScheduleScraping(TestCase):
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
         _get_eurostat_publication_schedule.cache_clear()
-        _get_publication_dates_from_eurostat.cache_clear()
+        get_publication_dates_from_eurostat.cache_clear()
 
-    @patch("economic_overview.services.publication.requests.get")
+    @patch("economic_overview.services.scrapers.eurostat.requests.get")
     def test_get_eurostat_publication_schedule_success(self, mock_get):
         """
         GIVEN a successful Eurostat eventsJson response
@@ -193,7 +196,7 @@ class TestEurostatPublicationScheduleScraping(TestCase):
         )
         assert_frame_equal(result, expected)
 
-    @patch("economic_overview.services.publication.requests.get")
+    @patch("economic_overview.services.scrapers.eurostat.requests.get")
     def test_get_eurostat_publication_schedule_http_error(self, mock_get):
         """
         GIVEN an HTTP error response from Eurostat eventsJson
@@ -207,7 +210,7 @@ class TestEurostatPublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
-    @patch("economic_overview.services.publication.requests.get")
+    @patch("economic_overview.services.scrapers.eurostat.requests.get")
     def test_get_eurostat_publication_schedule_invalid_json(self, mock_get):
         """
         GIVEN a non-list Eurostat eventsJson payload
@@ -224,7 +227,7 @@ class TestEurostatPublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
-    @patch("economic_overview.services.publication.requests.get")
+    @patch("economic_overview.services.scrapers.eurostat.requests.get")
     def test_get_publication_dates_from_eurostat_success(self, mock_get):
         """
         GIVEN a publication schedule with matching calendar title
@@ -238,13 +241,13 @@ class TestEurostatPublicationScheduleScraping(TestCase):
             ).encode(),
         )
 
-        result = _get_publication_dates_from_eurostat("Inflation (HICP)")
+        result = get_publication_dates_from_eurostat("Inflation (HICP)")
         assert result == [
             datetime(2026, 11, 17, 11, 0, tzinfo=timezone.utc),
             datetime(2026, 12, 17, 11, 0, tzinfo=timezone.utc),
         ]
 
-    @patch("economic_overview.services.publication.requests.get")
+    @patch("economic_overview.services.scrapers.eurostat.requests.get")
     def test_get_publication_dates_from_eurostat_not_found(self, mock_get):
         """
         GIVEN a publication schedule without matching calendar title
@@ -258,6 +261,50 @@ class TestEurostatPublicationScheduleScraping(TestCase):
             ).encode(),
         )
 
-        result = _get_publication_dates_from_eurostat("Unknown release")
+        result = get_publication_dates_from_eurostat("Unknown release")
 
+        assert result == []
+
+
+class TestFredPublicationScheduleScraping(TestCase):
+    """Test cases for FRED publication schedule scraping functions."""
+
+    MOCK_FRED_RELEASE_DATES_SUCCESS = load_json_mock(
+        "economic_overview/tests/mock_web_data/fred/schedule/success.json"
+    )
+
+    def tearDown(self):
+        """Clear cache after each test to prevent state leakage between tests."""
+        get_publication_dates_from_fred.cache_clear()
+
+    @override_settings(FRED_API_KEY="test-fred-key")
+    @patch("economic_overview.services.scrapers.fred.requests.get")
+    def test_get_publication_dates_from_fred_success(self, mock_get):
+        """
+        GIVEN FRED release dates including past and future CPI releases
+        WHEN getting publication dates for Consumer Price Index
+        THEN the next two future dates are returned
+        """
+        mock_get.return_value = MockResponse(
+            status_code=200,
+            json_data=self.MOCK_FRED_RELEASE_DATES_SUCCESS,
+        )
+
+        result = get_publication_dates_from_fred("Consumer Price Index")
+        assert result == [
+            datetime(2026, 11, 13, tzinfo=timezone.utc),
+            datetime(2026, 12, 10, tzinfo=timezone.utc),
+        ]
+        request_params = mock_get.call_args.kwargs["params"]
+        assert request_params["release_id"] == 10
+        assert "realtime_start" in request_params
+
+    @override_settings(FRED_API_KEY="test-fred-key")
+    def test_get_publication_dates_from_fred_unknown_technical_name(self):
+        """
+        GIVEN a technical_name with no FRED release_id mapping
+        WHEN getting publication dates
+        THEN an empty list is returned
+        """
+        result = get_publication_dates_from_fred("Unknown FRED release")
         assert result == []

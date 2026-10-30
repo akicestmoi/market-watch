@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from django.test import TestCase
+from rest_framework.exceptions import NotFound
 
 from central_banks_overview.models import (
     CentralBankChoices,
@@ -20,7 +21,9 @@ from central_banks_overview.services.central_banks_inference import (
     get_central_bank_probability_matrices,
     get_fall_back_rate,
 )
-from central_banks_overview.services.central_banks_meetings import CentralBankMeetingDates
+from central_banks_overview.services.central_banks_meetings import (
+    CentralBankMeetingDates,
+)
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -115,12 +118,15 @@ class TestCentralBankInferenceServices(TestCase):
         """
         GIVEN no market price for central bank target rate on target date
         WHEN getting effective rate
-        THEN a DoesNotExist error is raised
+        THEN a NotFound error is raised
         """
         MarketPriceModel.objects.all().delete()
-        with pytest.raises(MarketPriceModel.DoesNotExist) as exc_info:
+        with pytest.raises(NotFound) as exc_info:
             get_central_bank_effective_rate(CentralBankChoices.FRB, self.test_date)
-        assert str(exc_info.value) == "MarketPriceModel matching query does not exist."
+        assert exc_info.value.detail == (
+            "No MarketPriceModel found matching "
+            "{'date': datetime.date(2025, 12, 15), 'asset__short_name': 'EFFR'}"
+        )
 
     def test_get_fall_back_rate_no_prices_error(self):
         """

@@ -15,6 +15,7 @@ import data_visualization.services.market_charts as market_charts
 import data_visualization.services.market_recap as market_recap
 import market_overview.services.market_data as market_data
 from central_banks_overview.models import CentralBankChoices
+from data_visualization.services.config import ECONOMIC_RECAP_LOCATIONS
 from data_visualization.services.economic_charts import EconomicChartsFrontData
 from data_visualization.services.market_charts import (
     ChartDuration,
@@ -203,13 +204,8 @@ def market_charts_view(request):
 
 def economic_recap_view(request):
     """Economic Overview View."""
-    locations = [
-        loc
-        for loc in EconomicDataLocationChoices.ordered()
-        if loc != EconomicDataLocationChoices.EU
-    ]
-    economic_data = economic_recap.get_economic_recap_data(locations)
-    location_codes = [loc.value for loc in locations]
+    economic_data = economic_recap.get_economic_recap_data(ECONOMIC_RECAP_LOCATIONS)
+    location_codes = [loc.value for loc in ECONOMIC_RECAP_LOCATIONS]
     context = {
         "locations": location_codes,
         "economic_data": economic_data,
@@ -221,71 +217,46 @@ def economic_recap_view(request):
 
 def economic_charts_view(request):
     """Economic Charts View."""
-    # Default Values
+    # Same category stack across regions; confidence series differs by region.
+    # Europe defaults to DE / ES / IT / FR curves.
+    us_defaults = economic_charts.get_default_indicator_selections(
+        "Consumer Confidence"
+    )
+    eu_defaults = economic_charts.get_default_eu_indicator_selections()
+    fr_defaults = economic_charts.get_default_indicator_selections(
+        "Aggregate Business Confidence"
+    )
+    jp_defaults = economic_charts.get_default_indicator_selections(
+        "Manufacturing Business Confidence"
+    )
     default_values = {
-        "zone": str(EconomicDataLocationChoices.US.label),
+        "region": str(EconomicDataLocationChoices.US.label),
         "period_window": economic_charts.ChartPeriodWindow.FIVE_YEARS.value,
-        "us_growth_indicator": "",
-        "us_inflation_indicator": "",
-        "us_government_indicator": "",
-        "us_production_indicator": "",
-        "us_sales_indicator": "",
-        "us_labour_indicator": "",
-        "us_housing_indicator": "",
-        "us_confidence_indicator": "",
-        "fr_growth_indicator": economic_charts.encode_indicator_selection(
-            "GDP", economic_charts.ChartSeriesMode.YOY
-        ),
-        "fr_inflation_indicator": economic_charts.encode_indicator_selection(
-            "Consumer Price Index", economic_charts.ChartSeriesMode.YOY
-        ),
-        "fr_government_indicator": economic_charts.encode_indicator_selection(
-            "Government Debt (% of GDP)", economic_charts.ChartSeriesMode.ABS
-        ),
-        "fr_production_indicator": economic_charts.encode_indicator_selection(
-            "Industrial Production", economic_charts.ChartSeriesMode.ABS
-        ),
-        "fr_sales_indicator": economic_charts.encode_indicator_selection(
-            "Retail Sales", economic_charts.ChartSeriesMode.YOY
-        ),
-        "fr_labour_indicator": economic_charts.encode_indicator_selection(
-            "Unemployment Rate", economic_charts.ChartSeriesMode.ABS
-        ),
-        "fr_housing_indicator": economic_charts.encode_indicator_selection(
-            "Home Prices", economic_charts.ChartSeriesMode.ABS
-        ),
-        "fr_confidence_indicator": economic_charts.encode_indicator_selection(
-            "Aggregate Business Confidence",
-            economic_charts.ChartSeriesMode.ABS,
-        ),
-        "jp_growth_indicator": "",
-        "jp_inflation_indicator": "",
-        "jp_government_indicator": "",
-        "jp_production_indicator": "",
-        "jp_sales_indicator": "",
-        "jp_labour_indicator": "",
-        "jp_housing_indicator": "",
-        "jp_confidence_indicator": "",
+        **{f"us_{key}": value for key, value in us_defaults.items()},
+        **{f"eu_{key}": value for key, value in eu_defaults.items()},
+        **{f"fr_{key}": value for key, value in fr_defaults.items()},
+        **{f"jp_{key}": value for key, value in jp_defaults.items()},
     }
 
-    # Get Data from Front
     front_data = {
         key: request.GET.get(key, default_values[key]) for key in default_values.keys()
     }
     errors = {}
 
-    # Return Selected Values for Front/Back Interaction
     selected_values = {**front_data}
-    selected_zone = selected_values.get("zone", default_values["zone"])
-    location = EconomicDataLocationChoices.from_label(selected_zone)
+    location = EconomicDataLocationChoices.from_label(
+        selected_values.get("region", default_values["region"])
+    )
+    selected_region = str(location.label)
+    selected_values["region"] = selected_region
+    front_data["region"] = selected_region
+
     period_window = economic_charts.ChartPeriodWindow(
         selected_values.get("period_window", default_values["period_window"])
     )
 
-    # Dropdown values
     dropdown_values = economic_charts.get_economic_charts_dropdown_values(location)
 
-    # Economic data
     selected_indicators_by_category = (
         economic_charts.get_selected_indicators_by_category(
             location,
@@ -299,7 +270,7 @@ def economic_charts_view(request):
     )
 
     context = {
-        "zone": selected_zone,
+        "region": selected_region,
         "period_window": period_window.value,
         "period_window_options": [
             period_window_option.value

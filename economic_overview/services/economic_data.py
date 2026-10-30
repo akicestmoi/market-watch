@@ -71,7 +71,7 @@ def get_economic_data(
     indicator_names: list[str] = [], period: str | None = None
 ) -> QuerySet[EconomicDataModel]:
     """Get economic data for a specific indicator and period."""
-    query = EconomicDataModel.objects.all()
+    query = EconomicDataModel.objects.select_related("indicator").all()
     if indicator_names:
         query = query.filter(indicator__name__in=indicator_names)
     if period:

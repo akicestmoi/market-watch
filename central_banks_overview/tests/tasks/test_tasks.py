@@ -15,18 +15,16 @@ from central_banks_overview.models import (
     StirFuturesPriceUpdateLogModel,
     StirFuturesSourceChoices,
 )
-from central_banks_overview.services.central_banks_meetings import (
-    _extract_boj_meeting_dates,
-    _extract_ecb_meeting_dates,
-    _extract_fomc_meeting_dates,
-)
-from central_banks_overview.services.stir_prices_ingestion import (
-    _get_fedfunds_futures_price,
+from central_banks_overview.services.scrapers.boj_meetings import extract_boj_meeting_dates
+from central_banks_overview.services.scrapers.ecb_meetings import extract_ecb_meeting_dates
+from central_banks_overview.services.scrapers.fedfunds_futures import _get_fedfunds_futures_price
+from central_banks_overview.services.scrapers.fomc_meetings import extract_fomc_meeting_dates
+from central_banks_overview.services.scrapers.tfx_mutan_futures import (
     _get_mutan_futures_accrual_dates,
     _get_mutan_futures_prices_from_tfx,
 )
 from core.conftest import MockResponse, parse_query_for_testing, read_file_content
-from market_overview.services.price_ingestion import ScrapingResult
+from market_overview.services.scrapers.common import ScrapingResult
 
 
 class TestScheduledStirPricesIngestion(TestCase):
@@ -51,14 +49,12 @@ class TestScheduledStirPricesIngestion(TestCase):
 
     @freeze_time("2025-12-06")
     @patch(
-        "central_banks_overview.services.stir_prices_ingestion.get_yahoo_finance_closing_prices"
+        "central_banks_overview.services.scrapers.fedfunds_futures.get_yahoo_finance_closing_prices"
     )
     @patch(
-        "central_banks_overview.services.stir_prices_ingestion.get_central_bank_next_meeting_date"
+        "central_banks_overview.services.scrapers.fedfunds_futures.get_central_bank_next_meeting_date"
     )
-    @patch(
-        "central_banks_overview.services.stir_prices_ingestion.requests.get"
-    )
+    @patch("central_banks_overview.services.scrapers.tfx_mutan_futures.requests.get")
     def test_scheduled_stir_prices_ingestion_success_one_bday_ago(
         self,
         mock_requests_get,
@@ -200,14 +196,12 @@ class TestScheduledStirPricesIngestion(TestCase):
 
     @freeze_time("2025-12-06")
     @patch(
-        "central_banks_overview.services.stir_prices_ingestion.get_yahoo_finance_closing_prices"
+        "central_banks_overview.services.scrapers.fedfunds_futures.get_yahoo_finance_closing_prices"
     )
     @patch(
-        "central_banks_overview.services.stir_prices_ingestion.get_central_bank_next_meeting_date"
+        "central_banks_overview.services.scrapers.fedfunds_futures.get_central_bank_next_meeting_date"
     )
-    @patch(
-        "central_banks_overview.services.stir_prices_ingestion.requests.get"
-    )
+    @patch("central_banks_overview.services.scrapers.tfx_mutan_futures.requests.get")
     def test_scheduled_stir_prices_ingestion_success_two_bdays_ago(
         self,
         mock_requests_get,
@@ -346,7 +340,7 @@ class TestScheduledStirPricesIngestion(TestCase):
 
     @freeze_time("2025-12-15")
     @patch(
-        "central_banks_overview.services.stir_prices_ingestion.get_yahoo_finance_closing_prices"
+        "central_banks_overview.services.scrapers.fedfunds_futures.get_yahoo_finance_closing_prices"
     )
     def test_scheduled_stir_prices_ingestion_error(self, mock_yahoo_finance):
         """
@@ -523,20 +517,22 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
 
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
-        _extract_fomc_meeting_dates.cache_clear()
-        _extract_ecb_meeting_dates.cache_clear()
-        _extract_boj_meeting_dates.cache_clear()
+        extract_fomc_meeting_dates.cache_clear()
+        extract_ecb_meeting_dates.cache_clear()
+        extract_boj_meeting_dates.cache_clear()
 
     @freeze_time("2025-12-15")
-    @patch("central_banks_overview.services.central_banks_data.ingest_central_bank_data")
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_data.ingest_central_bank_data"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
     def test_scheduled_update_cb_info_cleanup_success(
         self,
@@ -649,25 +645,27 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         assert mock_ingest_data.call_count == 3
 
     @freeze_time("2025-12-15")
-    @patch("central_banks_overview.services.central_banks_data.ingest_central_bank_data")
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_data.ingest_central_bank_data"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
-    @patch("market_overview.services.price_ingestion.get_webstat_rates")
-    @patch("market_overview.services.price_ingestion.scrap_from_global_rates")
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
+    )
+    @patch("central_banks_overview.services.central_banks_data.get_webstat_rates")
+    @patch("central_banks_overview.services.central_banks_data.scrap_from_global_rates")
     def test_scheduled_update_cb_info_cleanup_success_mixed_scenario(
         self,
         mock_scrap_global_rates,
         mock_get_webstat_rates,
-        mock_extract_boj_meeting_dates,
-        mock_extract_ecb_meeting_dates,
-        mock_extract_fomc_meeting_dates,
+        mockextract_boj_meeting_dates,
+        mockextract_ecb_meeting_dates,
+        mockextract_fomc_meeting_dates,
         mock_ingest_data,
     ):
         """
@@ -718,9 +716,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         # Mock extraction functions - FRB has past meeting, ECB has future meeting
         # Note: ECB extraction adds default time (13:15 UTC), so we need to match that
         ecb_future_meeting = datetime(2026, 1, 15, 13, 15, tzinfo=timezone.utc)
-        mock_extract_fomc_meeting_dates.return_value = [self.past_meeting_date]
-        mock_extract_ecb_meeting_dates.return_value = [ecb_future_meeting]
-        mock_extract_boj_meeting_dates.return_value = []
+        mockextract_fomc_meeting_dates.return_value = [self.past_meeting_date]
+        mockextract_ecb_meeting_dates.return_value = [ecb_future_meeting]
+        mockextract_boj_meeting_dates.return_value = []
 
         # Verify initial state
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
@@ -794,23 +792,23 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
 
     @freeze_time("2025-12-15")
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
-    @patch("market_overview.services.price_ingestion.get_webstat_rates")
-    @patch("market_overview.services.price_ingestion.scrap_from_global_rates")
+    @patch("central_banks_overview.services.central_banks_data.get_webstat_rates")
+    @patch("central_banks_overview.services.central_banks_data.scrap_from_global_rates")
     def test_scheduled_update_cb_info_cleanup_no_past_meetings_all_future(
         self,
         mock_scrap_global_rates,
         mock_get_webstat_rates,
-        mock_extract_boj_meeting_dates,
-        mock_extract_ecb_meeting_dates,
-        mock_extract_fomc_meeting_dates,
+        mockextract_boj_meeting_dates,
+        mockextract_ecb_meeting_dates,
+        mockextract_fomc_meeting_dates,
     ):
         """
         GIVEN all central banks have future meeting dates
@@ -852,9 +850,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             price=None, comment="No data"
         )
         # Mock extraction functions - all return future meetings
-        mock_extract_fomc_meeting_dates.return_value = [self.future_meeting_date]
-        mock_extract_ecb_meeting_dates.return_value = [self.future_meeting_date]
-        mock_extract_boj_meeting_dates.return_value = [self.future_meeting_date]
+        mockextract_fomc_meeting_dates.return_value = [self.future_meeting_date]
+        mockextract_ecb_meeting_dates.return_value = [self.future_meeting_date]
+        mockextract_boj_meeting_dates.return_value = [self.future_meeting_date]
 
         # Verify initial state - prices and meetings exist
         initial_prices = [
@@ -909,23 +907,23 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
 
     @freeze_time("2025-12-15")
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
-    @patch("market_overview.services.price_ingestion.get_webstat_rates")
-    @patch("market_overview.services.price_ingestion.scrap_from_global_rates")
+    @patch("central_banks_overview.services.central_banks_data.get_webstat_rates")
+    @patch("central_banks_overview.services.central_banks_data.scrap_from_global_rates")
     def test_scheduled_update_cb_info_cleanup_no_past_meetings_all_none(
         self,
         mock_scrap_global_rates,
         mock_get_webstat_rates,
-        mock_extract_boj_meeting_dates,
-        mock_extract_ecb_meeting_dates,
-        mock_extract_fomc_meeting_dates,
+        mockextract_boj_meeting_dates,
+        mockextract_ecb_meeting_dates,
+        mockextract_fomc_meeting_dates,
     ):
         """
         GIVEN all central banks have no meeting dates
@@ -951,9 +949,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             price=None, comment="No data"
         )
         # Mock extraction functions - all return empty lists (no meetings)
-        mock_extract_fomc_meeting_dates.return_value = []
-        mock_extract_ecb_meeting_dates.return_value = []
-        mock_extract_boj_meeting_dates.return_value = []
+        mockextract_fomc_meeting_dates.return_value = []
+        mockextract_ecb_meeting_dates.return_value = []
+        mockextract_boj_meeting_dates.return_value = []
 
         initial_prices = [
             {
@@ -984,25 +982,27 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
 
     @freeze_time("2025-12-15")
-    @patch("central_banks_overview.services.central_banks_data.ingest_central_bank_data")
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_data.ingest_central_bank_data"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
-    @patch("market_overview.services.price_ingestion.get_webstat_rates")
-    @patch("market_overview.services.price_ingestion.scrap_from_global_rates")
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
+    )
+    @patch("central_banks_overview.services.central_banks_data.get_webstat_rates")
+    @patch("central_banks_overview.services.central_banks_data.scrap_from_global_rates")
     def test_scheduled_update_cb_info_cleanup_error_during_data_ingestion(
         self,
         mock_scrap_global_rates,
         mock_get_webstat_rates,
-        mock_extract_boj_meeting_dates,
-        mock_extract_ecb_meeting_dates,
-        mock_extract_fomc_meeting_dates,
+        mockextract_boj_meeting_dates,
+        mockextract_ecb_meeting_dates,
+        mockextract_fomc_meeting_dates,
         mock_ingest_data,
     ):
         """
@@ -1035,9 +1035,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             price=None, comment="No data"
         )
         # Mock extraction functions - return empty lists
-        mock_extract_fomc_meeting_dates.return_value = []
-        mock_extract_ecb_meeting_dates.return_value = []
-        mock_extract_boj_meeting_dates.return_value = []
+        mockextract_fomc_meeting_dates.return_value = []
+        mockextract_ecb_meeting_dates.return_value = []
+        mockextract_boj_meeting_dates.return_value = []
         # Mock ingestion to raise an error
         mock_ingest_data.side_effect = Exception("Ingestion error")
 
@@ -1072,25 +1072,27 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
     @patch(
         "central_banks_overview.services.central_banks_meetings.ingest_central_bank_meeting_dates"
     )
-    @patch("central_banks_overview.services.central_banks_data.ingest_central_bank_data")
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_fomc_meeting_dates"
+        "central_banks_overview.services.central_banks_data.ingest_central_bank_data"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_ecb_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
     )
     @patch(
-        "central_banks_overview.services.central_banks_meetings._extract_boj_meeting_dates"
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
     )
-    @patch("market_overview.services.price_ingestion.get_webstat_rates")
-    @patch("market_overview.services.price_ingestion.scrap_from_global_rates")
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
+    )
+    @patch("central_banks_overview.services.central_banks_data.get_webstat_rates")
+    @patch("central_banks_overview.services.central_banks_data.scrap_from_global_rates")
     def test_scheduled_update_cb_info_cleanup_error_during_meetings_ingestion(
         self,
         mock_scrap_global_rates,
         mock_get_webstat_rates,
-        mock_extract_boj_meeting_dates,
-        mock_extract_ecb_meeting_dates,
-        mock_extract_fomc_meeting_dates,
+        mockextract_boj_meeting_dates,
+        mockextract_ecb_meeting_dates,
+        mockextract_fomc_meeting_dates,
         mock_ingest_data,
         mock_ingest_meetings,
     ):
@@ -1124,9 +1126,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             price=None, comment="No data"
         )
         # Mock extraction functions - return empty lists
-        mock_extract_fomc_meeting_dates.return_value = []
-        mock_extract_ecb_meeting_dates.return_value = []
-        mock_extract_boj_meeting_dates.return_value = []
+        mockextract_fomc_meeting_dates.return_value = []
+        mockextract_ecb_meeting_dates.return_value = []
+        mockextract_boj_meeting_dates.return_value = []
         # Mock data ingestion to succeed (so we can test meetings ingestion error)
         mock_ingest_data.return_value = []
         # Mock meetings ingestion to raise an error

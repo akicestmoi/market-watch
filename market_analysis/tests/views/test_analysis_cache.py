@@ -10,7 +10,7 @@ from market_analysis.llm.config import PROMPT_VERSION
 class GetArticleAnalysisCacheViewTests(TestCase):
     """Tests for the article analysis cache GET API."""
 
-    @patch("market_analysis.services.analysis_cache.list_cached_analyses")
+    @patch("market_analysis.services.cache.list_cached_analyses")
     def test_get_article_cache_endpoint(self, mock_list):
         """
         GIVEN list_cached_analyses returns an empty cache payload

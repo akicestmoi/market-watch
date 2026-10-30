@@ -1,17 +1,14 @@
 """Redis cache for same-day article analyses (keyed by URL + prompt version)."""
 
-from __future__ import annotations
-
 import json
 from datetime import date
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 from urllib.parse import quote
 
-import redis
-from django.conf import settings
 from django.utils import timezone as dj_timezone
-from pydantic import TypeAdapter, ValidationError
+from pydantic import TypeAdapter
 
+from core.cache import get_cached_json, get_redis_client
 from core.services import logger
 from market_analysis.llm.config import PROMPT_VERSION
 from market_analysis.llm.schemas import EventType, Sentiment
@@ -29,7 +26,7 @@ class CachedAnalysisPayload(TypedDict):
     source_url: str
     cached_at: str
     prompt_version: str
-    analysis: AnalyzedArticle
+    analysis: "AnalyzedArticle"
 
 
 class CachedAnalysisWireAnalysis(TypedDict, total=False):
@@ -59,14 +56,6 @@ class CachedAnalysisWirePayload(TypedDict, total=False):
 _CACHED_ANALYSIS_WIRE_ADAPTER = TypeAdapter(CachedAnalysisWirePayload)
 
 
-def _get_redis_client() -> redis.Redis:
-    """Return a Redis client using the Celery broker URL."""
-    redis_client = redis.from_url(settings.CELERY_BROKER_URL, decode_responses=True)
-    if not redis_client:
-        raise ValueError("Failed to create Redis client")
-    return redis_client
-
-
 def _build_entry_key(reporting_date: date, source_url: str) -> str:
     """Build the Redis key for one article analysis entry."""
     return (
@@ -80,26 +69,13 @@ def _build_index_key(reporting_date: date) -> str:
     return f"{_KEY_PREFIX}:index:{reporting_date.isoformat()}:{PROMPT_VERSION}"
 
 
-def _serialize_payload(article: AnalyzedArticle, source_url: str) -> str:
-    """Serialize an analyzed article into a Redis cache payload JSON string."""
-    payload = CachedAnalysisPayload(
-        source_url=source_url,
-        cached_at=dj_timezone.now().isoformat(),
-        prompt_version=PROMPT_VERSION,
-        analysis=article,
-    )
-    return json.dumps(payload, ensure_ascii=False)
-
-
-def _deserialize_payload(raw: str) -> CachedAnalysisPayload | None:
-    """Parse a Redis cache payload; return None if invalid."""
-    # Circular: analysis_cache ↔ llm_market_recap
+def _map_wire_payload_to_cached(
+    data: CachedAnalysisWirePayload,
+) -> CachedAnalysisPayload | None:
+    """Map validated Redis wire JSON into an inward CachedAnalysisPayload."""
+    # Circular: cache ↔ llm_market_recap
     from market_analysis.services.llm_market_recap import AnalyzedArticle
 
-    try:
-        data = _CACHED_ANALYSIS_WIRE_ADAPTER.validate_python(json.loads(raw))
-    except (TypeError, json.JSONDecodeError, ValidationError):
-        return None
     raw_analysis = data.get("analysis") or {}
     if not raw_analysis and "analysis" not in data:
         return None
@@ -143,35 +119,41 @@ def get_cached_analysis(
     reporting_date: date, source_url: str
 ) -> CachedAnalysisPayload | None:
     """Fetch one cached analysis by reporting date and article URL."""
-    try:
-        client = _get_redis_client()
-        raw = client.get(_build_entry_key(reporting_date, source_url))
-    except Exception as exc:
-        logger.warning("Article analysis cache get failed: %s", exc)
+    wire = get_cached_json(
+        _build_entry_key(reporting_date, source_url),
+        _CACHED_ANALYSIS_WIRE_ADAPTER,
+        log_label="Article analysis cache",
+    )
+    if wire is None:
         return None
-    if raw is None:
-        return None
-    assert isinstance(
-        raw, str
-    ), f"Expected str from Redis GET, got {type(raw).__name__}"
-    return _deserialize_payload(raw)
+    return _map_wire_payload_to_cached(wire)
 
 
 def set_cached_analysis(
     reporting_date: date,
-    article: AnalyzedArticle,
+    article: "AnalyzedArticle",
     source_url: str,
 ) -> None:
-    """Store an analysis digest keyed by reporting date and article URL."""
+    """Store an analysis digest keyed by reporting date and article URL.
+
+    Uses a Redis pipeline so the entry and day index stay in sync (beyond the
+    plain ``set_cached_json`` helper).
+    """
     try:
-        client = _get_redis_client()
+        client = get_redis_client(decode_responses=True)
         key = _build_entry_key(reporting_date, source_url)
         index = _build_index_key(reporting_date)
+        payload = CachedAnalysisPayload(
+            source_url=source_url,
+            cached_at=dj_timezone.now().isoformat(),
+            prompt_version=PROMPT_VERSION,
+            analysis=article,
+        )
         pipe = client.pipeline()
         pipe.setex(
             key,
             ARTICLE_CACHE_TTL_SECONDS,
-            _serialize_payload(article, source_url=source_url),
+            json.dumps(payload, ensure_ascii=False),
         )
         pipe.sadd(index, source_url)
         pipe.expire(index, ARTICLE_CACHE_TTL_SECONDS)
@@ -197,7 +179,7 @@ def list_cached_analyses(
 ) -> CachedAnalysesListResult:
     """List or fetch cached article analyses for a reporting day."""
     try:
-        client = _get_redis_client()
+        client = get_redis_client(decode_responses=True)
     except Exception as exc:
         logger.warning("Article analysis cache list failed: %s", exc)
         return CachedAnalysesListResult(

@@ -7,7 +7,6 @@ from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
 from rest_framework.response import Response
 
-import core.services as core_services
 import market_overview.services.market_data as market_data
 import market_overview.services.price_ingestion as price_ingestion
 from core.locks import acquire_redis_lock
@@ -162,8 +161,8 @@ class GetMarketPriceView(BaseAPIView):
         price_date: date = validated_data["date"]
         short_name: str = validated_data["short_name"]
 
-        asset = core_services.get(
-            MarketPriceModel, date=price_date, asset__short_name=short_name
+        asset = MarketPriceModel.objects.get(
+            date=price_date, asset__short_name=short_name
         )
         return Response(
             data=MarketPriceResponseSerializer(asset).data, status=status.HTTP_200_OK

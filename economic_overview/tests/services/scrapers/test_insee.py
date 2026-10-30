@@ -9,11 +9,8 @@ from django.test import TestCase
 
 from core.conftest import MockResponse, read_file_content
 from economic_overview.models import EconomicPublicationFrequencyChoices
-from economic_overview.services.data_ingestion import (
-    ScrapingResult,
-    _get_data_from_insee,
-    _parse_insee_period,
-)
+from economic_overview.services.scrapers.common import ScrapingResult
+from economic_overview.services.scrapers.insee import _parse_insee_period, get_data_from_insee
 
 
 def _create_mock_zip_with_csv(csv_name: str, csv_content: str) -> bytes:
@@ -34,9 +31,9 @@ class TestInseeDataScraping(TestCase):
 
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""
-        _get_data_from_insee.cache_clear()
+        get_data_from_insee.cache_clear()
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_success_no_target_period(self, mock_get):
         """
         GIVEN a successful INSEE ZIP response with CSV data
@@ -47,7 +44,7 @@ class TestInseeDataScraping(TestCase):
             status_code=200, content=self.MOCK_INSEE_SUCCESS_ZIP, text=""
         )
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result[0] == ScrapingResult(
             period=date(2025, 11, 1),
             data_value=97.6,
@@ -55,7 +52,7 @@ class TestInseeDataScraping(TestCase):
         )
         assert len(result) > 1
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_success_with_target_period(self, mock_get):
         """
         GIVEN a successful INSEE ZIP response with CSV data
@@ -66,7 +63,7 @@ class TestInseeDataScraping(TestCase):
             status_code=200, content=self.MOCK_INSEE_SUCCESS_ZIP, text=""
         )
 
-        result = _get_data_from_insee("001565530", "2024-10")
+        result = get_data_from_insee("001565530", "2024-10")
         assert result == [
             ScrapingResult(
                 period=date(2024, 10, 1),
@@ -75,7 +72,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_http_error(self, mock_get):
         """
         GIVEN an HTTP error response from INSEE
@@ -84,7 +81,7 @@ class TestInseeDataScraping(TestCase):
         """
         mock_get.return_value = MockResponse(status_code=404, content=b"Not Found")
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result == [
             ScrapingResult(
                 period=None,
@@ -93,7 +90,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_invalid_zip(self, mock_get):
         """
         GIVEN an invalid ZIP file response
@@ -104,7 +101,7 @@ class TestInseeDataScraping(TestCase):
             status_code=200, content=b"Invalid ZIP content", text=""
         )
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result == [
             ScrapingResult(
                 period=None,
@@ -113,7 +110,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_no_csv_file(self, mock_get):
         """
         GIVEN a ZIP file without valeurs_mensuelles CSV
@@ -127,7 +124,7 @@ class TestInseeDataScraping(TestCase):
             status_code=200, content=zip_buffer.getvalue(), text=""
         )
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result == [
             ScrapingResult(
                 period=None,
@@ -136,7 +133,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_invalid_csv_format(self, mock_get):
         """
         GIVEN a CSV file with invalid format
@@ -147,7 +144,7 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_mensuelles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result == [
             ScrapingResult(
                 period=None,
@@ -156,7 +153,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_no_data_rows(self, mock_get):
         """
         GIVEN a CSV file with only header row
@@ -167,7 +164,7 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_mensuelles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result == [
             ScrapingResult(
                 period=None,
@@ -176,7 +173,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_target_period_not_found(self, mock_get):
         """
         GIVEN a CSV file without the target period
@@ -187,7 +184,7 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_mensuelles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee("001565530", "2024-03")
+        result = get_data_from_insee("001565530", "2024-03")
         assert result == [
             ScrapingResult(
                 period=None,
@@ -196,7 +193,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_invalid_data_value(self, mock_get):
         """
         GIVEN a CSV file with invalid data value format
@@ -207,10 +204,10 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_mensuelles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee("001565530")
+        result = get_data_from_insee("001565530")
         assert result == []
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_quarterly_success(self, mock_get):
         """
         GIVEN a successful quarterly INSEE ZIP response
@@ -223,7 +220,7 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_trimestrielles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee(
+        result = get_data_from_insee(
             "001688527",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
         )
@@ -232,7 +229,7 @@ class TestInseeDataScraping(TestCase):
             ScrapingResult(period=date(2026, 1, 1), data_value=8.1, comment=""),
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_quarterly_with_target_period(self, mock_get):
         """
         GIVEN a quarterly INSEE ZIP response
@@ -245,7 +242,7 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_trimestrielles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee(
+        result = get_data_from_insee(
             "001688527",
             "2026-T1",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
@@ -258,7 +255,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_quarterly_no_csv_file(self, mock_get):
         """
         GIVEN a ZIP without valeurs_trimestrielles when frequency is quarterly
@@ -270,7 +267,7 @@ class TestInseeDataScraping(TestCase):
         )
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee(
+        result = get_data_from_insee(
             "001688527",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
         )
@@ -282,7 +279,7 @@ class TestInseeDataScraping(TestCase):
             )
         ]
 
-    @patch("economic_overview.services.data_ingestion.requests.get")
+    @patch("economic_overview.services.scrapers.insee.requests.get")
     def test_get_data_from_insee_returns_all_economic_data(self, mock_get):
         """
         GIVEN a monthly INSEE ZIP with several periods
@@ -300,7 +297,7 @@ class TestInseeDataScraping(TestCase):
         mock_zip = _create_mock_zip_with_csv("valeurs_mensuelles.csv", csv_content)
         mock_get.return_value = MockResponse(status_code=200, content=mock_zip, text="")
 
-        result = _get_data_from_insee(
+        result = get_data_from_insee(
             "001565530",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
         )

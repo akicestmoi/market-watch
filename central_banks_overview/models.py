@@ -3,7 +3,12 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from core.models import BaseLogModel, BaseModel, get_choice_from_label, get_choice_labels
+from core.models import (
+    BaseLogModel,
+    BaseModel,
+    get_choice_from_label,
+    get_choice_labels,
+)
 from market_overview.models import LocationChoices
 
 
@@ -30,12 +35,17 @@ class CentralBankChoices(models.TextChoices):
         """Display labels in ``ordered()`` order."""
         return get_choice_labels(cls)
 
-
-CENTRAL_BANK_LOCATION_MAP = {
-    CentralBankChoices.FRB: LocationChoices.US,
-    CentralBankChoices.BOJ: LocationChoices.JP,
-    CentralBankChoices.ECB: LocationChoices.EU,
-}
+    def get_location(self) -> LocationChoices:
+        """Return the economic / market location associated with this central bank."""
+        match self:
+            case CentralBankChoices.FRB:
+                return LocationChoices.US
+            case CentralBankChoices.BOJ:
+                return LocationChoices.JP
+            case CentralBankChoices.ECB:
+                return LocationChoices.EU
+            case _:
+                raise ValueError(f"No location configured for {self}")
 
 
 class CentralBankMeetingModel(BaseModel):

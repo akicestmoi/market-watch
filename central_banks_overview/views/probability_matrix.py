@@ -14,7 +14,12 @@ from central_banks_overview.open_api.request_serializers import (
 from central_banks_overview.open_api.response_serializers import (
     CentralBankProbabilityMatrixResponseSerializer,
 )
-from core.open_api.schema import ApiTags, BadRequestOpenApiResponse, OkOpenApiResponse, open_api
+from core.open_api.schema import (
+    ApiTags,
+    BadRequestOpenApiResponse,
+    OkOpenApiResponse,
+    open_api,
+)
 from core.views import BaseAPIView
 
 

@@ -1,8 +1,9 @@
-const economicRecapData = window.economicRecapDataJSON || {};
+const economicRecapSections = window.economicRecapDataJSON || [];
 const economicRecapLocations = window.economicRecapLocationsJSON || [];
 
 const MODE_ABS = "ABS";
 const MODE_QOQ = "QOQ";
+const MODE_QOQY = "QOQY";
 const MODE_YOY = "YOY";
 
 const ABS_UNIT_INDEX = "INDEX";
@@ -14,10 +15,10 @@ function lagForMode(frequency, mode) {
     return 0;
   }
   const freq = (frequency || "").toUpperCase();
-  if (mode === MODE_QOQ) {
+  if (mode === MODE_QOQ || mode === MODE_QOQY) {
     if (freq === "MONTHLY") return 3;
     if (freq === "QUARTERLY") return 1;
-    return 1; // ANNUAL: treat QoQ as YoY
+    return 1; // ANNUAL: treat QoQ / QoQy as YoY lag
   }
   // YOY
   if (freq === "MONTHLY") return 12;
@@ -30,6 +31,18 @@ function pctChange(curr, prev) {
     return null;
   }
   return ((curr - prev) / prev) * 100;
+}
+
+/** Annualized QoQ: ((curr / prev) ** 4 - 1) * 100. */
+function annualizedQoqPercent(curr, prev) {
+  if (curr == null || prev == null || prev === 0) {
+    return null;
+  }
+  const ratio = curr / prev;
+  if (ratio <= 0) {
+    return null;
+  }
+  return (ratio ** 4 - 1) * 100;
 }
 
 /** Space as thousands separator, e.g. 1234.5 → "1 234.5". */
@@ -49,7 +62,7 @@ function formatSpaced(value, digits) {
  * K/M/B from the magnitude of the printed value.
  */
 function buildDisplayName(baseName, mode, record) {
-  if (mode === MODE_QOQ || mode === MODE_YOY) {
+  if (mode === MODE_QOQ || mode === MODE_QOQY || mode === MODE_YOY) {
     return `${baseName} (in %)`;
   }
   const unit = (record && record.base_unit) || "";
@@ -65,13 +78,13 @@ function buildDisplayName(baseName, mode, record) {
   return baseName;
 }
 
-function valuesForMode(history, frequency, mode) {
-  if (!history || history.length === 0) {
+function valuesForMode(timeSeries, frequency, mode) {
+  if (!timeSeries || timeSeries.length === 0) {
     return { current: null, previous: null, change: null, period: null };
   }
   if (mode === MODE_ABS) {
-    const curr = history[history.length - 1];
-    const prev = history.length >= 2 ? history[history.length - 2] : null;
+    const curr = timeSeries[timeSeries.length - 1];
+    const prev = timeSeries.length >= 2 ? timeSeries[timeSeries.length - 2] : null;
     const currVal = curr ? curr.value : null;
     const prevVal = prev ? prev.value : null;
     return {
@@ -85,10 +98,13 @@ function valuesForMode(history, frequency, mode) {
 
   const lag = lagForMode(frequency, mode);
   const transformed = [];
-  for (let i = lag; i < history.length; i++) {
-    const curr = history[i];
-    const prev = history[i - lag];
-    const chg = pctChange(curr.value, prev.value);
+  for (let i = lag; i < timeSeries.length; i++) {
+    const curr = timeSeries[i];
+    const prev = timeSeries[i - lag];
+    const chg =
+      mode === MODE_QOQY
+        ? annualizedQoqPercent(curr.value, prev.value)
+        : pctChange(curr.value, prev.value);
     if (chg == null) {
       continue;
     }
@@ -120,7 +136,10 @@ function valuesForMode(history, frequency, mode) {
 }
 
 function findRecord(indicatorName, category, location) {
-  const group = economicRecapData[category] || [];
+  const section = economicRecapSections.find(
+    (categoryGroup) => categoryGroup.category === category
+  );
+  const group = section ? section.rows : [];
   return group.find(
     (item) => item.name === indicatorName && item.location === location
   );
@@ -177,7 +196,7 @@ function updateRow(row, mode) {
       return;
     }
 
-    const values = valuesForMode(record.history, record.frequency, mode);
+    const values = valuesForMode(record.time_series, record.frequency, mode);
     const currEmpty = values.current == null;
     const prevEmpty = values.previous == null;
     const chgEmpty = values.change == null;

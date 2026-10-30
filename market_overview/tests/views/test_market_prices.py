@@ -152,9 +152,7 @@ class TestMarketPricesIngestionViews(TestCase):
             },
         }
 
-    @patch(
-        "market_overview.services.price_ingestion._get_specific_asset_market_data"
-    )
+    @patch("market_overview.services.price_ingestion._get_specific_asset_market_data")
     @patch("market_overview.services.price_ingestion.ingest_market_data")
     def test_ingest_specific_asset_prices_success(self, mock_ingest, mock_get_data):
         """
@@ -226,9 +224,7 @@ class TestMarketPricesIngestionViews(TestCase):
             ],
         }
 
-    @patch(
-        "market_overview.services.price_ingestion._get_specific_asset_market_data"
-    )
+    @patch("market_overview.services.price_ingestion._get_specific_asset_market_data")
     @patch("market_overview.services.price_ingestion.ingest_market_data")
     def test_ingest_specific_asset_prices_start_date_after_end_date(
         self, mock_get_data, mock_ingest
@@ -294,9 +290,7 @@ class TestMarketPricesIngestionViews(TestCase):
             ],
         }
 
-    @patch(
-        "market_overview.services.price_ingestion._get_specific_asset_market_data"
-    )
+    @patch("market_overview.services.price_ingestion._get_specific_asset_market_data")
     @patch("market_overview.services.price_ingestion.ingest_market_data")
     def test_ingest_specific_asset_prices_with_asset_not_updated(
         self, mock_ingest, mock_get_data
@@ -348,9 +342,7 @@ class TestMarketPricesIngestionViews(TestCase):
             ],
         }
 
-    @patch(
-        "market_overview.services.price_ingestion._get_specific_asset_market_data"
-    )
+    @patch("market_overview.services.price_ingestion._get_specific_asset_market_data")
     @patch("market_overview.services.price_ingestion.ingest_market_data")
     def test_ingest_specific_asset_prices_multiple_assets(
         self, mock_ingest, mock_get_data
@@ -434,9 +426,7 @@ class TestMarketPricesIngestionViews(TestCase):
         }
         assert mock_get_data.call_count == 2
 
-    @patch(
-        "market_overview.services.price_ingestion._get_specific_asset_market_data"
-    )
+    @patch("market_overview.services.price_ingestion._get_specific_asset_market_data")
     @patch("market_overview.services.price_ingestion.ingest_market_data")
     def test_ingest_specific_asset_prices_partial_failure(
         self, mock_ingest, mock_get_data
@@ -490,9 +480,7 @@ class TestMarketPricesIngestionViews(TestCase):
             ],
         }
 
-    @patch(
-        "market_overview.services.price_ingestion._get_specific_asset_market_data"
-    )
+    @patch("market_overview.services.price_ingestion._get_specific_asset_market_data")
     @patch("market_overview.services.price_ingestion.ingest_market_data")
     def test_ingest_specific_asset_prices_without_end_date(
         self, mock_ingest, mock_get_data

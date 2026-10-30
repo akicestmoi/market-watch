@@ -23,7 +23,7 @@ from market_overview.open_api.request_serializers import (
     ListHolidaysSerializer,
 )
 from market_overview.open_api.response_serializers import HolidayResponseSerializer
-from market_overview.services.holidays import HOLIDAY_COUNTRIES
+from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
 class IngestHolidaysValidatedData(TypedDict, total=False):

@@ -85,9 +85,7 @@ class RunDailyAnalysisPipelineTests(TestCase):
         mock_extract.assert_called_once()
 
     @patch("market_analysis.services.market_analysis.try_acquire_redis_lock")
-    @patch(
-        "market_analysis.services.market_analysis.run_daily_analysis_pipeline"
-    )
+    @patch("market_analysis.services.market_analysis.run_daily_analysis_pipeline")
     def test_with_lock_skips_when_lock_held(self, mock_pipeline, mock_lock):
         """
         GIVEN the per-date Redis pipeline lock is already held

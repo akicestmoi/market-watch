@@ -9,9 +9,7 @@ from economic_overview.views.economic_data import (
     IngestLatestEconomicDataView,
     IngestSpecificEconomicDataView,
 )
-from economic_overview.views.publication_schedules import (
-    UpdatePublicationScheduleView,
-)
+from economic_overview.views.publication_schedules import UpdatePublicationScheduleView
 
 urlpatterns = [
     path(

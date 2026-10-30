@@ -54,6 +54,7 @@ A Django-based market monitoring platform that ingests market, economic, and cen
    CELERY_BROKER_URL
    CELERY_RESULT_BACKEND
    OPENAI_API_KEY
+   FRED_API_KEY
    ```
 
 4. **Set up database and start server**:
@@ -300,7 +301,7 @@ Owns Django settings, Celery app bootstrap, Redis locks, abstract base models, O
 Catalogs equities, rates, FX, crypto, and commodities; ingests daily prices from multiple public sources; tracks market holidays and price-update audit logs. Successful weekday ingestion is also the trigger that queues the market-analysis pipeline for that price date.
 
 - **Models:** `AssetModel` (metadata, ticker, source, location, class); `MarketPriceModel` (per-asset daily price, unique on asset+date); `PriceUpdateLogModel`; `HolidayModel`.
-- **Services:** `price_ingestion_services` — scrape/ingest closes (Yahoo, US Treasury, NY Fed, Webstat, Bundesbank, BoJ, BB, GlobalRates, etc.); `market_data` — queries, missing prices, bulk/CSV updates, log cleanup; `holidays` — public holidays (e.g. Nager.Date for supported countries).
+- **Services:** `price_ingestion` — orchestrate and ingest closes via `market_overview/services/scrapers/` (Yahoo, US Treasury, NY Fed, Webstat, Bundesbank, BoJ, BB, GlobalRates); `market_data` — queries, missing prices, bulk/CSV updates, log cleanup; `holidays` — public holidays via Nager.Date API for supported countries.
 - **Data sources:** `data_sources/market_data.json` (seed assets), `data_sources/single_names.json`.
 - **HTTP (`/markets/`):** `asset/*` (generate base data, names, details); `prices/*` (ingest, batch ingest, list, missing prices, bulk/CSV update, logs, mark-as-holiday); `holidays/*`.
 - **Tasks:** `scheduled_market_data_ingestion` (then queues market analysis); `scheduled_price_update_logs_cleanup`; `scheduled_holidays_ingestion`.
@@ -326,7 +327,8 @@ Maintains the economic calendar and observation history used by the economic rec
 Stores meeting dates, CB data series, and STIR futures prices, then derives meeting-by-meeting **probability matrices** for rate moves. That powers the central-banks recap and economic-events views, and complements market prices with a policy-path lens.
 
 - **Models:** `CentralBankMeetingModel`; `CentralBankDataModel`; `StirFuturesModel` (e.g. Fed funds / ESTR / mutan futures); `StirFuturesPriceUpdateLogModel`. Reuses `market_overview` location enums via a CB location map.
-- **Services:** `central_banks_data` — ingest/query CB series; `central_banks_meetings` — scrape FOMC/ECB/BoJ calendars; `stir_prices_ingestion_services` — Yahoo, TFX, ESTR PDF, bulk/CSV; `central_banks_inference` — probability matrices from STIR (Fed vs 3M futures methodologies).
+- **Scrapers (`central_banks_overview/services/scrapers/`):** `fomc_meetings`, `ecb_meetings`, `boj_meetings` — meeting calendars; `fedfunds_futures` — Yahoo Fed Funds futures; `tfx_mutan_futures` — TFX mutan futures; `estr_futures` — ESTR PDF parse; `common` — shared `StirFutures` record.
+- **Services:** `central_banks_data` — ingest/query CB series; `central_banks_meetings` — meeting dispatch map, ingest/query; `stir_prices_ingestion` — futures dispatch map, ingest/query, bulk/CSV; `central_banks_inference` — probability matrices from STIR (Fed vs 3M futures methodologies).
 - **Data sources:** `data_sources/central_banks_data.json`; Fed/ECB/BoJ sites; Yahoo; TFX; ESTR PDF; some rate scrapers shared with market overview.
 - **HTTP (`/central-banks/`):** `data`, `data/ingest`; `meeting-dates`, `meeting-dates/ingest`; `stir-futures` (+ ingest, ESTR PDF, bulk/CSV); `probability-matrix`.
 - **Tasks:** `scheduled_stir_prices_ingestion`; `scheduled_stir_futures_price_update_logs_cleanup`; `scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings`.
@@ -369,7 +371,7 @@ Cost-conscious research agent: scrape date-scoped market wraps, analyze them **i
 | **Redis** | Optional article-analysis digests keyed by reporting date + article URL + `PROMPT_VERSION` (TTL 24h). Used to skip repeat LLM analysis on re-runs. Inspect via `GET /analysis/article-cache` |
 | **Repo JSON** | `market_analysis/data_sources/news_sources.json` — which sources to scrape (`source` enum, `name`, `base_url`) |
 | **Repo markdown** | `market_analysis/llm/skills/market-analysis.md` (injected into prompts) and `market_analysis/llm/instructions/*.md` (system prompts for analysis / recap / chat) |
-| **Settings** | `OPENAI_API_KEY`, `LLM_MODEL_NAME` (full PydanticAI model id, e.g. `openai:gpt-6-luna`) in `core/settings.py` |
+| **Settings** | `OPENAI_API_KEY`, `FRED_API_KEY`, `LLM_MODEL_NAME` (full PydanticAI model id, e.g. `openai:gpt-6-luna`) in `core/settings.py` |
 
 News source enum: `NewsSourceChoices` in `market_analysis/models.py`. Scrapers are mapped in code (`SOURCE_SCRAP_MAP`), not in the DB.
 
@@ -406,7 +408,7 @@ Queued after successful price ingestion from `market_overview.tasks`.
 
 #### News extraction
 
-Config-driven list in `news_sources.json`. Each entry has a dedicated scrap function in `article_extraction_services.py` (same pattern as price ingestion: `ScrapingResult`, `@ttl_cache`).
+Config-driven list in `news_sources.json`. Each entry has a dedicated scrap function under `market_analysis/services/scrapers/` (same pattern as price ingestion: `ScrapingResult`, `@ttl_cache`), dispatched via `SOURCE_SCRAP_MAP` in `services/article_extraction.py`.
 
 | Enum | Scraper | Discovery |
 |---|---|---|
@@ -424,7 +426,7 @@ Config-driven list in `news_sources.json`. Each entry has a dedicated scrap func
 | Structured outputs | `market_analysis/llm/schemas.py` | Pydantic models for article analysis, daily recap, chat |
 | Constants / loaders | `market_analysis/llm/config.py` | `PROMPT_VERSION`, skill/instruction loaders, untrusted wrapper |
 | Analysis + recap | `llm_market_recap_services.py` | Per-article analysis, bulk market context for recap, `DailyRecapModel` write |
-| Redis digests | `analysis_cache_services.py` | Get/set/list cached analyses |
+| Redis digests | `services/cache.py` | Get/set/list cached analyses |
 | Chat | `llm_interaction_services.py` | Shared chat agent; tools for recaps, prices, economic context, gated recap update |
 | Skills | `llm/skills/market-analysis.md` | Zones, regime language, econ coverage, chat update rules |
 | Instructions | `llm/instructions/{analysis,recap,chat}_system.md` | Agent system prompts |
@@ -488,10 +490,13 @@ market_analysis/
   models.py                 # DailyRecapModel, NewsSourceChoices
   tasks.py
   services/
+    scrapers/
+      common.py                      # ScrapingResult, ArticleLink
+      html_text.py                   # shared HTML → main text
     market_analysis_services.py      # gates + pipeline
-    article_extraction_services.py   # scrapers
+    article_extraction.py            # SOURCE_SCRAP_MAP + orchestration
     llm_market_recap_services.py     # analyze + recap
-    analysis_cache_services.py       # Redis digests
+    services/cache.py                # Redis digests
     llm_interaction_services.py      # chat
   views/                             # API
   open_api/

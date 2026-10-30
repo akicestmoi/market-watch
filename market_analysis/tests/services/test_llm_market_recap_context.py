@@ -16,11 +16,11 @@ from market_analysis.services.llm_market_recap import (
 class TestFxHeatmapContext(TestCase):
     """Tests for FX heatmap LLM context."""
 
-    def test_compute_fx_currency_strength_averages_off_diagonal(self):
+    def test_compute_fx_currency_strength_rms_off_diagonal(self):
         """
         GIVEN an FX matrix row with known pairwise DoD % changes
         WHEN computing currency strength
-        THEN the average excludes the diagonal and matches the mean of peers
+        THEN the RMS excludes the diagonal and matches sqrt(mean of squares)
         """
         matrix = [
             {
@@ -34,11 +34,39 @@ class TestFxHeatmapContext(TestCase):
                 "CNY": 6.0,
             }
         ]
+        # sqrt((1+4+9+16+25+36)/6) = sqrt(91/6)
+        expected_rms = round((91 / 6) ** 0.5, 4)
         result = _compute_fx_currency_strength(matrix)
         assert result == [
             {
                 "currency": "USD",
-                "average_change_pct": 3.5,
+                "rms_change_pct": expected_rms,
+            }
+        ]
+
+    def test_compute_fx_currency_strength_rms_ignores_sign_cancellation(self):
+        """
+        GIVEN equal-magnitude opposing pairwise moves
+        WHEN computing currency strength
+        THEN the RMS stays large instead of averaging to zero
+        """
+        matrix = [
+            {
+                "currency": "USD",
+                "EUR": 3.0,
+                "USD": 0.0,
+                "GBP": -3.0,
+                "JPY": 3.0,
+                "CHF": -3.0,
+                "AUD": 3.0,
+                "CNY": -3.0,
+            }
+        ]
+        result = _compute_fx_currency_strength(matrix)
+        assert result == [
+            {
+                "currency": "USD",
+                "rms_change_pct": 3.0,
             }
         ]
 
@@ -79,7 +107,7 @@ class TestFxHeatmapContext(TestCase):
         usd_strength = next(
             row for row in result["currency_strength"] if row["currency"] == "USD"
         )
-        assert usd_strength["average_change_pct"] == 0.5
+        assert usd_strength["rms_change_pct"] == 0.5
         mock_get_fx_prices_matrix.assert_called_once_with(
             date(2025, 12, 16), date(2025, 12, 15)
         )

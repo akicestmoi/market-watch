@@ -7,7 +7,7 @@ from celery import shared_task
 import economic_overview.services.data_ingestion as data_ingestion
 import economic_overview.services.economic_data as economic_data
 import economic_overview.services.publication as publication
-from core.locks import try_acquire_redis_lock
+from core.locks import release_redis_lock, try_acquire_redis_lock
 from core.services import logger
 
 
@@ -18,9 +18,8 @@ def scheduled_economic_data_and_schedule_update():
     This task will be scheduled to run daily.
     """
     today = date.today()
-    lock = try_acquire_redis_lock(
-        data_ingestion.get_economic_data_ingestion_lock_key()
-    )
+    lock_key = data_ingestion.get_economic_data_ingestion_lock_key()
+    lock = try_acquire_redis_lock(lock_key)
     if lock is None:
         logger.warning(
             "Skipping economic data ingestion for %s: already in progress.",
@@ -33,10 +32,8 @@ def scheduled_economic_data_and_schedule_update():
         }
 
     try:
-        economic_indicators_to_update = (
-            economic_data.get_economic_indicators_to_update(
-                end_date=today,
-            )
+        economic_indicators_to_update = economic_data.get_economic_indicators_to_update(
+            end_date=today,
         )
         if not economic_indicators_to_update.exists():
             logger.info(f"No economic indicators to update found for {today}")
@@ -49,9 +46,7 @@ def scheduled_economic_data_and_schedule_update():
         logger.info(
             f"Ingesting economic data: {[indicator.name for indicator in economic_indicators_to_update]} for {today}"
         )
-        data_ingestion.ingest_latest_economic_data(
-            economic_indicators_to_update
-        )
+        data_ingestion.ingest_latest_economic_data(economic_indicators_to_update)
         logger.info("Updating publication schedules.")
         publication.update_publication_schedules(economic_indicators_to_update)
         return {
@@ -67,10 +62,7 @@ def scheduled_economic_data_and_schedule_update():
             "date": today.isoformat(),
         }
     finally:
-        try:
-            lock.release()
-        except Exception:
-            logger.warning("Could not release economic data ingestion lock.")
+        release_redis_lock(lock, lock_key)
 
 
 @shared_task

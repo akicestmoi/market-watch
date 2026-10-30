@@ -153,7 +153,7 @@ class TestStirFuturesViews(TestCase):
         }
 
     @patch(
-        "central_banks_overview.services.stir_prices_ingestion.extract_estr_prices_from_pdf"
+        "central_banks_overview.views.stir_futures_prices.extract_estr_prices_from_pdf"
     )
     @patch(
         "central_banks_overview.services.stir_prices_ingestion.ingest_stir_futures_prices"

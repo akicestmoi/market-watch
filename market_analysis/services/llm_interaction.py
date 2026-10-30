@@ -1,7 +1,5 @@
 """LLM chat — one shared agent; prior turns come from the request body."""
 
-from __future__ import annotations
-
 from contextvars import ContextVar
 from datetime import date, timedelta
 from typing import Literal, TypedDict
@@ -131,7 +129,7 @@ def _get_central_bank_context(reporting_date: str) -> list[CentralBankContextRow
 
 
 def _get_fx_heatmap_context(reporting_date: str) -> FxHeatmapContext:
-    """Return FX heatmap DoD % matrix and average currency strength for an ISO date."""
+    """Return FX heatmap DoD % matrix and RMS currency-move magnitude for an ISO date."""
     day = date.fromisoformat(reporting_date)
     return build_fx_heatmap_context(day)
 

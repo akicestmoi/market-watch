@@ -61,9 +61,13 @@ class MockResponse:
             self.mock.content = content
 
         # If text is not provided and content is provided, decode content to string
-        # Used for mocking HTML responses
+        # Used for mocking HTML responses. Binary payloads (xlsx/zip/cp932) should
+        # pass text="" explicitly.
         if text is None and content is not None:
-            self.mock.text = content.decode("utf-8")
+            try:
+                self.mock.text = content.decode("utf-8")
+            except UnicodeDecodeError:
+                self.mock.text = ""
         elif text is not None:
             self.mock.text = text
 

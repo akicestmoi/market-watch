@@ -7,7 +7,6 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 
-from core import services as core_services
 from core.open_api.schema import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -52,11 +51,9 @@ class GetDailyRecapView(BaseAPIView):
         recap_id: int | None = validated_data.get("id")
         reporting_date: date | None = validated_data.get("reporting_date")
         if recap_id:
-            recap = core_services.get(DailyRecapModel, id=recap_id)
+            recap = DailyRecapModel.objects.get(id=recap_id)
         else:
-            recap = llm_market_recap.get_latest_recap(
-                reporting_date=reporting_date
-            )
+            recap = llm_market_recap.get_latest_recap(reporting_date=reporting_date)
             if not recap:
                 raise NotFound(detail="Recap not found")
         return Response(RecapResponseSerializer(recap).data)
@@ -104,7 +101,7 @@ class GenerateDailyRecapView(BaseAPIView):
                 or result.get("reason")
                 or "Daily recap was not created"
             )
-        recap = core_services.get(DailyRecapModel, id=recap_id)
+        recap = DailyRecapModel.objects.get(id=recap_id)
         return Response(
             RecapResponseSerializer(recap).data,
             status=status.HTTP_201_CREATED,

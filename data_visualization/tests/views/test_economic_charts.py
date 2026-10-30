@@ -7,7 +7,11 @@ from typing import Protocol, TypedDict
 
 from django.test import Client, TestCase
 from django.test.utils import ContextList
+from django.urls import get_resolver
 from freezegun import freeze_time
+
+# Load root URLConf before freezegun patches datetime (pydantic_ai TypeAdapter).
+get_resolver().urlconf_module
 
 from data_visualization.services.economic_charts import (
     EconomicChartsData,
@@ -27,7 +31,7 @@ from economic_overview.models import (
 class EconomicChartsResponseContext(TypedDict):
     """Parsed template context fields accessed by economic charts view tests."""
 
-    zone: str
+    region: str
     period_window: str
     dropdown_values: EconomicChartsDropdownValues
     economic_data: list[EconomicChartsData]
@@ -68,7 +72,7 @@ def _get_response_context(response: TestResponse) -> EconomicChartsResponseConte
         _context_as_str(context, "selected_values", "{}")
     )
     return EconomicChartsResponseContext(
-        zone=_context_as_str(context, "zone", ""),
+        region=_context_as_str(context, "region", ""),
         period_window=_context_as_str(context, "period_window", ""),
         dropdown_values=dropdown_values,
         economic_data=economic_data,
@@ -164,7 +168,7 @@ class TestEconomicChartsView(TestCase):
         assert response.status_code == 200
         response_context = _get_response_context(response)
         assert response_context == {
-            "zone": "United States",
+            "region": "United States",
             "period_window": "5Y",
             "dropdown_values": {
                 "categories": [
@@ -181,11 +185,14 @@ class TestEconomicChartsView(TestCase):
                 "indicators_by_category": [
                     {
                         "category": "Growth",
-                        "indicators": ["GDP Growth", "GDP Growth (QoQ)"],
+                        "indicators": [
+                            {"type": "GDP Growth", "name": "GDP Growth"},
+                            {"type": "GDP Growth (QoQ)", "name": "GDP Growth (QoQ)"},
+                        ],
                     },
                     {
                         "category": "Inflation",
-                        "indicators": ["CPI"],
+                        "indicators": [{"type": "CPI", "name": "CPI"}],
                     },
                     {
                         "category": "Government",
@@ -234,16 +241,24 @@ class TestEconomicChartsView(TestCase):
                 "Confidence",
             ],
             "selected_values": {
-                "zone": "United States",
+                "region": "United States",
                 "period_window": "5Y",
-                "us_growth_indicator": "",
-                "us_inflation_indicator": "",
-                "us_government_indicator": "",
-                "us_production_indicator": "",
-                "us_sales_indicator": "",
-                "us_labour_indicator": "",
-                "us_housing_indicator": "",
-                "us_confidence_indicator": "",
+                "us_growth_indicator": "GDP|YOY",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY",
+                "eu_government_indicator": "DE|Government Debt (% of GDP)|ABS,ES|Government Debt (% of GDP)|ABS,IT|Government Debt (% of GDP)|ABS,FR|Government Debt (% of GDP)|ABS",
+                "eu_production_indicator": "DE|Industrial Production|ABS,ES|Industrial Production|ABS,IT|Industrial Production|ABS,FR|Industrial Production|ABS",
+                "eu_sales_indicator": "DE|Retail Sales|YOY,ES|Retail Sales|YOY,IT|Retail Sales|YOY,FR|Retail Sales|YOY",
+                "eu_labour_indicator": "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS",
+                "eu_housing_indicator": "DE|Home Prices|ABS,ES|Home Prices|ABS,IT|Home Prices|ABS,FR|Home Prices|ABS",
+                "eu_confidence_indicator": "",
                 "fr_growth_indicator": "GDP|YOY",
                 "fr_inflation_indicator": "Consumer Price Index|YOY",
                 "fr_government_indicator": "Government Debt (% of GDP)|ABS",
@@ -252,14 +267,14 @@ class TestEconomicChartsView(TestCase):
                 "fr_labour_indicator": "Unemployment Rate|ABS",
                 "fr_housing_indicator": "Home Prices|ABS",
                 "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
-                "jp_growth_indicator": "",
-                "jp_inflation_indicator": "",
-                "jp_government_indicator": "",
-                "jp_production_indicator": "",
-                "jp_sales_indicator": "",
-                "jp_labour_indicator": "",
-                "jp_housing_indicator": "",
-                "jp_confidence_indicator": "",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
             },
         }
 
@@ -270,14 +285,14 @@ class TestEconomicChartsView(TestCase):
         THEN selected indicator is in selected values and data is filtered
         """
         params = {
-            "zone": str(EconomicDataLocationChoices.US.label),
+            "region": str(EconomicDataLocationChoices.US.label),
             "us_growth_indicator": "GDP Growth",
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
         response_context = _get_response_context(response)
         assert response_context == {
-            "zone": "United States",
+            "region": "United States",
             "period_window": "5Y",
             "dropdown_values": {
                 "categories": [
@@ -294,11 +309,14 @@ class TestEconomicChartsView(TestCase):
                 "indicators_by_category": [
                     {
                         "category": "Growth",
-                        "indicators": ["GDP Growth", "GDP Growth (QoQ)"],
+                        "indicators": [
+                            {"type": "GDP Growth", "name": "GDP Growth"},
+                            {"type": "GDP Growth (QoQ)", "name": "GDP Growth (QoQ)"},
+                        ],
                     },
                     {
                         "category": "Inflation",
-                        "indicators": ["CPI"],
+                        "indicators": [{"type": "CPI", "name": "CPI"}],
                     },
                     {
                         "category": "Government",
@@ -356,16 +374,24 @@ class TestEconomicChartsView(TestCase):
                 "Confidence",
             ],
             "selected_values": {
-                "zone": "United States",
+                "region": "United States",
                 "period_window": "5Y",
                 "us_growth_indicator": "GDP Growth",
-                "us_inflation_indicator": "",
-                "us_government_indicator": "",
-                "us_production_indicator": "",
-                "us_sales_indicator": "",
-                "us_labour_indicator": "",
-                "us_housing_indicator": "",
-                "us_confidence_indicator": "",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY",
+                "eu_government_indicator": "DE|Government Debt (% of GDP)|ABS,ES|Government Debt (% of GDP)|ABS,IT|Government Debt (% of GDP)|ABS,FR|Government Debt (% of GDP)|ABS",
+                "eu_production_indicator": "DE|Industrial Production|ABS,ES|Industrial Production|ABS,IT|Industrial Production|ABS,FR|Industrial Production|ABS",
+                "eu_sales_indicator": "DE|Retail Sales|YOY,ES|Retail Sales|YOY,IT|Retail Sales|YOY,FR|Retail Sales|YOY",
+                "eu_labour_indicator": "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS",
+                "eu_housing_indicator": "DE|Home Prices|ABS,ES|Home Prices|ABS,IT|Home Prices|ABS,FR|Home Prices|ABS",
+                "eu_confidence_indicator": "",
                 "fr_growth_indicator": "GDP|YOY",
                 "fr_inflation_indicator": "Consumer Price Index|YOY",
                 "fr_government_indicator": "Government Debt (% of GDP)|ABS",
@@ -374,14 +400,14 @@ class TestEconomicChartsView(TestCase):
                 "fr_labour_indicator": "Unemployment Rate|ABS",
                 "fr_housing_indicator": "Home Prices|ABS",
                 "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
-                "jp_growth_indicator": "",
-                "jp_inflation_indicator": "",
-                "jp_government_indicator": "",
-                "jp_production_indicator": "",
-                "jp_sales_indicator": "",
-                "jp_labour_indicator": "",
-                "jp_housing_indicator": "",
-                "jp_confidence_indicator": "",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
             },
         }
 
@@ -392,14 +418,14 @@ class TestEconomicChartsView(TestCase):
         THEN all selected indicators are preserved
         """
         params = {
-            "zone": str(EconomicDataLocationChoices.US.label),
+            "region": str(EconomicDataLocationChoices.US.label),
             "us_growth_indicator": "GDP Growth,GDP Growth (QoQ)",
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
         response_context = _get_response_context(response)
         assert response_context == {
-            "zone": "United States",
+            "region": "United States",
             "period_window": "5Y",
             "dropdown_values": {
                 "categories": [
@@ -416,11 +442,14 @@ class TestEconomicChartsView(TestCase):
                 "indicators_by_category": [
                     {
                         "category": "Growth",
-                        "indicators": ["GDP Growth", "GDP Growth (QoQ)"],
+                        "indicators": [
+                            {"type": "GDP Growth", "name": "GDP Growth"},
+                            {"type": "GDP Growth (QoQ)", "name": "GDP Growth (QoQ)"},
+                        ],
                     },
                     {
                         "category": "Inflation",
-                        "indicators": ["CPI"],
+                        "indicators": [{"type": "CPI", "name": "CPI"}],
                     },
                     {
                         "category": "Government",
@@ -483,16 +512,24 @@ class TestEconomicChartsView(TestCase):
                 "Confidence",
             ],
             "selected_values": {
-                "zone": "United States",
+                "region": "United States",
                 "period_window": "5Y",
                 "us_growth_indicator": "GDP Growth,GDP Growth (QoQ)",
-                "us_inflation_indicator": "",
-                "us_government_indicator": "",
-                "us_production_indicator": "",
-                "us_sales_indicator": "",
-                "us_labour_indicator": "",
-                "us_housing_indicator": "",
-                "us_confidence_indicator": "",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY",
+                "eu_government_indicator": "DE|Government Debt (% of GDP)|ABS,ES|Government Debt (% of GDP)|ABS,IT|Government Debt (% of GDP)|ABS,FR|Government Debt (% of GDP)|ABS",
+                "eu_production_indicator": "DE|Industrial Production|ABS,ES|Industrial Production|ABS,IT|Industrial Production|ABS,FR|Industrial Production|ABS",
+                "eu_sales_indicator": "DE|Retail Sales|YOY,ES|Retail Sales|YOY,IT|Retail Sales|YOY,FR|Retail Sales|YOY",
+                "eu_labour_indicator": "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS",
+                "eu_housing_indicator": "DE|Home Prices|ABS,ES|Home Prices|ABS,IT|Home Prices|ABS,FR|Home Prices|ABS",
+                "eu_confidence_indicator": "",
                 "fr_growth_indicator": "GDP|YOY",
                 "fr_inflation_indicator": "Consumer Price Index|YOY",
                 "fr_government_indicator": "Government Debt (% of GDP)|ABS",
@@ -501,20 +538,20 @@ class TestEconomicChartsView(TestCase):
                 "fr_labour_indicator": "Unemployment Rate|ABS",
                 "fr_housing_indicator": "Home Prices|ABS",
                 "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
-                "jp_growth_indicator": "",
-                "jp_inflation_indicator": "",
-                "jp_government_indicator": "",
-                "jp_production_indicator": "",
-                "jp_sales_indicator": "",
-                "jp_labour_indicator": "",
-                "jp_housing_indicator": "",
-                "jp_confidence_indicator": "",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
             },
         }
 
-    def test_economic_charts_view_fr_zone_with_fr_data(self):
+    def test_economic_charts_view_fr_region_with_fr_data(self):
         """
-        GIVEN FR zone with FR data created
+        GIVEN FR region with FR data created
         WHEN accessing economic charts view
         THEN FR indicators data is returned
         """
@@ -526,14 +563,14 @@ class TestEconomicChartsView(TestCase):
         )
 
         params = {
-            "zone": str(EconomicDataLocationChoices.FR.label),
+            "region": str(EconomicDataLocationChoices.FR.label),
             "fr_growth_indicator": "GDP Growth",
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
         response_context = _get_response_context(response)
         assert response_context == {
-            "zone": "France",
+            "region": "France",
             "period_window": "5Y",
             "dropdown_values": {
                 "categories": [
@@ -550,7 +587,7 @@ class TestEconomicChartsView(TestCase):
                 "indicators_by_category": [
                     {
                         "category": "Growth",
-                        "indicators": ["GDP Growth"],
+                        "indicators": [{"type": "GDP Growth", "name": "GDP Growth"}],
                     },
                     {
                         "category": "Inflation",
@@ -612,16 +649,24 @@ class TestEconomicChartsView(TestCase):
                 "Confidence",
             ],
             "selected_values": {
-                "zone": "France",
+                "region": "France",
                 "period_window": "5Y",
-                "us_growth_indicator": "",
-                "us_inflation_indicator": "",
-                "us_government_indicator": "",
-                "us_production_indicator": "",
-                "us_sales_indicator": "",
-                "us_labour_indicator": "",
-                "us_housing_indicator": "",
-                "us_confidence_indicator": "",
+                "us_growth_indicator": "GDP|YOY",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY",
+                "eu_government_indicator": "DE|Government Debt (% of GDP)|ABS,ES|Government Debt (% of GDP)|ABS,IT|Government Debt (% of GDP)|ABS,FR|Government Debt (% of GDP)|ABS",
+                "eu_production_indicator": "DE|Industrial Production|ABS,ES|Industrial Production|ABS,IT|Industrial Production|ABS,FR|Industrial Production|ABS",
+                "eu_sales_indicator": "DE|Retail Sales|YOY,ES|Retail Sales|YOY,IT|Retail Sales|YOY,FR|Retail Sales|YOY",
+                "eu_labour_indicator": "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS",
+                "eu_housing_indicator": "DE|Home Prices|ABS,ES|Home Prices|ABS,IT|Home Prices|ABS,FR|Home Prices|ABS",
+                "eu_confidence_indicator": "",
                 "fr_growth_indicator": "GDP Growth",
                 "fr_inflation_indicator": "Consumer Price Index|YOY",
                 "fr_government_indicator": "Government Debt (% of GDP)|ABS",
@@ -630,38 +675,493 @@ class TestEconomicChartsView(TestCase):
                 "fr_labour_indicator": "Unemployment Rate|ABS",
                 "fr_housing_indicator": "Home Prices|ABS",
                 "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
-                "jp_growth_indicator": "",
-                "jp_inflation_indicator": "",
-                "jp_government_indicator": "",
-                "jp_production_indicator": "",
-                "jp_sales_indicator": "",
-                "jp_labour_indicator": "",
-                "jp_housing_indicator": "",
-                "jp_confidence_indicator": "",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
             },
         }
 
     def test_economic_charts_view_fr_defaults_and_period_window(self):
         """
-        GIVEN France zone with no indicator query params
+        GIVEN France region with no indicator query params
         WHEN accessing economic charts view
         THEN FR Type|MODE defaults and period_window 5Y are applied
         """
         response = self.client.get(
-            self.base_url, {"zone": str(EconomicDataLocationChoices.FR.label)}
+            self.base_url, {"region": str(EconomicDataLocationChoices.FR.label)}
         )
         assert response.status_code == 200
         response_context = _get_response_context(response)
-        assert response_context["period_window"] == "5Y"
-        selected = response_context["selected_values"]
-        assert selected["period_window"] == "5Y"
-        assert selected["fr_growth_indicator"] == "GDP|YOY"
-        assert selected["fr_inflation_indicator"] == "Consumer Price Index|YOY"
-        assert selected["fr_government_indicator"] == "Government Debt (% of GDP)|ABS"
-        assert selected["fr_production_indicator"] == "Industrial Production|ABS"
-        assert selected["fr_sales_indicator"] == "Retail Sales|YOY"
-        assert selected["fr_labour_indicator"] == "Unemployment Rate|ABS"
-        assert selected["fr_housing_indicator"] == "Home Prices|ABS"
-        assert (
-            selected["fr_confidence_indicator"] == "Aggregate Business Confidence|ABS"
+        assert response_context == {
+            "region": "France",
+            "period_window": "5Y",
+            "dropdown_values": {
+                "categories": [
+                    "Growth",
+                    "Inflation",
+                    "Government",
+                    "Production",
+                    "Sales",
+                    "Labour",
+                    "Housing",
+                    "Confidence",
+                ],
+                "locations": ["United States", "Europe", "France", "Japan"],
+                "indicators_by_category": [
+                    {
+                        "category": "Growth",
+                        "indicators": [{"type": "GDP Growth", "name": "GDP Growth"}],
+                    },
+                    {"category": "Inflation", "indicators": []},
+                    {"category": "Government", "indicators": []},
+                    {"category": "Production", "indicators": []},
+                    {"category": "Sales", "indicators": []},
+                    {"category": "Labour", "indicators": []},
+                    {"category": "Housing", "indicators": []},
+                    {"category": "Confidence", "indicators": []},
+                ],
+            },
+            "economic_data": [
+                {"category": "Growth", "category_data": []},
+                {"category": "Inflation", "category_data": []},
+                {"category": "Government", "category_data": []},
+                {"category": "Production", "category_data": []},
+                {"category": "Sales", "category_data": []},
+                {"category": "Labour", "category_data": []},
+                {"category": "Housing", "category_data": []},
+                {"category": "Confidence", "category_data": []},
+            ],
+            "categories": [
+                "Growth",
+                "Inflation",
+                "Government",
+                "Production",
+                "Sales",
+                "Labour",
+                "Housing",
+                "Confidence",
+            ],
+            "selected_values": {
+                "region": "France",
+                "period_window": "5Y",
+                "us_growth_indicator": "GDP|YOY",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": (
+                    "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,"
+                    "IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY"
+                ),
+                "eu_government_indicator": (
+                    "DE|Government Debt (% of GDP)|ABS,"
+                    "ES|Government Debt (% of GDP)|ABS,"
+                    "IT|Government Debt (% of GDP)|ABS,"
+                    "FR|Government Debt (% of GDP)|ABS"
+                ),
+                "eu_production_indicator": (
+                    "DE|Industrial Production|ABS,ES|Industrial Production|ABS,"
+                    "IT|Industrial Production|ABS,FR|Industrial Production|ABS"
+                ),
+                "eu_sales_indicator": (
+                    "DE|Retail Sales|YOY,ES|Retail Sales|YOY,"
+                    "IT|Retail Sales|YOY,FR|Retail Sales|YOY"
+                ),
+                "eu_labour_indicator": (
+                    "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,"
+                    "IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS"
+                ),
+                "eu_housing_indicator": (
+                    "DE|Home Prices|ABS,ES|Home Prices|ABS,"
+                    "IT|Home Prices|ABS,FR|Home Prices|ABS"
+                ),
+                "eu_confidence_indicator": "",
+                "fr_growth_indicator": "GDP|YOY",
+                "fr_inflation_indicator": "Consumer Price Index|YOY",
+                "fr_government_indicator": "Government Debt (% of GDP)|ABS",
+                "fr_production_indicator": "Industrial Production|ABS",
+                "fr_sales_indicator": "Retail Sales|YOY",
+                "fr_labour_indicator": "Unemployment Rate|ABS",
+                "fr_housing_indicator": "Home Prices|ABS",
+                "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
+            },
+        }
+
+    def test_economic_charts_view_us_defaults(self):
+        """
+        GIVEN United States region with no indicator query params
+        WHEN accessing economic charts view
+        THEN US Type|MODE defaults match the shared category stack
+        """
+        response = self.client.get(
+            self.base_url, {"region": str(EconomicDataLocationChoices.US.label)}
         )
+        assert response.status_code == 200
+        response_context = _get_response_context(response)
+        assert response_context == {
+            "region": "United States",
+            "period_window": "5Y",
+            "dropdown_values": {
+                "categories": [
+                    "Growth",
+                    "Inflation",
+                    "Government",
+                    "Production",
+                    "Sales",
+                    "Labour",
+                    "Housing",
+                    "Confidence",
+                ],
+                "locations": ["United States", "Europe", "France", "Japan"],
+                "indicators_by_category": [
+                    {
+                        "category": "Growth",
+                        "indicators": [
+                            {"type": "GDP Growth", "name": "GDP Growth"},
+                            {"type": "GDP Growth (QoQ)", "name": "GDP Growth (QoQ)"},
+                        ],
+                    },
+                    {
+                        "category": "Inflation",
+                        "indicators": [{"type": "CPI", "name": "CPI"}],
+                    },
+                    {"category": "Government", "indicators": []},
+                    {"category": "Production", "indicators": []},
+                    {"category": "Sales", "indicators": []},
+                    {"category": "Labour", "indicators": []},
+                    {"category": "Housing", "indicators": []},
+                    {"category": "Confidence", "indicators": []},
+                ],
+            },
+            "economic_data": [
+                {"category": "Growth", "category_data": []},
+                {"category": "Inflation", "category_data": []},
+                {"category": "Government", "category_data": []},
+                {"category": "Production", "category_data": []},
+                {"category": "Sales", "category_data": []},
+                {"category": "Labour", "category_data": []},
+                {"category": "Housing", "category_data": []},
+                {"category": "Confidence", "category_data": []},
+            ],
+            "categories": [
+                "Growth",
+                "Inflation",
+                "Government",
+                "Production",
+                "Sales",
+                "Labour",
+                "Housing",
+                "Confidence",
+            ],
+            "selected_values": {
+                "region": "United States",
+                "period_window": "5Y",
+                "us_growth_indicator": "GDP|YOY",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": (
+                    "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,"
+                    "IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY"
+                ),
+                "eu_government_indicator": (
+                    "DE|Government Debt (% of GDP)|ABS,"
+                    "ES|Government Debt (% of GDP)|ABS,"
+                    "IT|Government Debt (% of GDP)|ABS,"
+                    "FR|Government Debt (% of GDP)|ABS"
+                ),
+                "eu_production_indicator": (
+                    "DE|Industrial Production|ABS,ES|Industrial Production|ABS,"
+                    "IT|Industrial Production|ABS,FR|Industrial Production|ABS"
+                ),
+                "eu_sales_indicator": (
+                    "DE|Retail Sales|YOY,ES|Retail Sales|YOY,"
+                    "IT|Retail Sales|YOY,FR|Retail Sales|YOY"
+                ),
+                "eu_labour_indicator": (
+                    "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,"
+                    "IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS"
+                ),
+                "eu_housing_indicator": (
+                    "DE|Home Prices|ABS,ES|Home Prices|ABS,"
+                    "IT|Home Prices|ABS,FR|Home Prices|ABS"
+                ),
+                "eu_confidence_indicator": "",
+                "fr_growth_indicator": "GDP|YOY",
+                "fr_inflation_indicator": "Consumer Price Index|YOY",
+                "fr_government_indicator": "Government Debt (% of GDP)|ABS",
+                "fr_production_indicator": "Industrial Production|ABS",
+                "fr_sales_indicator": "Retail Sales|YOY",
+                "fr_labour_indicator": "Unemployment Rate|ABS",
+                "fr_housing_indicator": "Home Prices|ABS",
+                "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
+            },
+        }
+
+    def test_economic_charts_view_jp_defaults(self):
+        """
+        GIVEN Japan region with no indicator query params
+        WHEN accessing economic charts view
+        THEN JP Type|MODE defaults match the shared category stack
+        """
+        response = self.client.get(
+            self.base_url, {"region": str(EconomicDataLocationChoices.JP.label)}
+        )
+        assert response.status_code == 200
+        response_context = _get_response_context(response)
+        assert response_context == {
+            "region": "Japan",
+            "period_window": "5Y",
+            "dropdown_values": {
+                "categories": [
+                    "Growth",
+                    "Inflation",
+                    "Government",
+                    "Production",
+                    "Sales",
+                    "Labour",
+                    "Housing",
+                    "Confidence",
+                ],
+                "locations": ["United States", "Europe", "France", "Japan"],
+                "indicators_by_category": [
+                    {"category": "Growth", "indicators": []},
+                    {"category": "Inflation", "indicators": []},
+                    {"category": "Government", "indicators": []},
+                    {"category": "Production", "indicators": []},
+                    {"category": "Sales", "indicators": []},
+                    {"category": "Labour", "indicators": []},
+                    {"category": "Housing", "indicators": []},
+                    {"category": "Confidence", "indicators": []},
+                ],
+            },
+            "economic_data": [
+                {"category": "Growth", "category_data": []},
+                {"category": "Inflation", "category_data": []},
+                {"category": "Government", "category_data": []},
+                {"category": "Production", "category_data": []},
+                {"category": "Sales", "category_data": []},
+                {"category": "Labour", "category_data": []},
+                {"category": "Housing", "category_data": []},
+                {"category": "Confidence", "category_data": []},
+            ],
+            "categories": [
+                "Growth",
+                "Inflation",
+                "Government",
+                "Production",
+                "Sales",
+                "Labour",
+                "Housing",
+                "Confidence",
+            ],
+            "selected_values": {
+                "region": "Japan",
+                "period_window": "5Y",
+                "us_growth_indicator": "GDP|YOY",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": (
+                    "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,"
+                    "IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY"
+                ),
+                "eu_government_indicator": (
+                    "DE|Government Debt (% of GDP)|ABS,"
+                    "ES|Government Debt (% of GDP)|ABS,"
+                    "IT|Government Debt (% of GDP)|ABS,"
+                    "FR|Government Debt (% of GDP)|ABS"
+                ),
+                "eu_production_indicator": (
+                    "DE|Industrial Production|ABS,ES|Industrial Production|ABS,"
+                    "IT|Industrial Production|ABS,FR|Industrial Production|ABS"
+                ),
+                "eu_sales_indicator": (
+                    "DE|Retail Sales|YOY,ES|Retail Sales|YOY,"
+                    "IT|Retail Sales|YOY,FR|Retail Sales|YOY"
+                ),
+                "eu_labour_indicator": (
+                    "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,"
+                    "IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS"
+                ),
+                "eu_housing_indicator": (
+                    "DE|Home Prices|ABS,ES|Home Prices|ABS,"
+                    "IT|Home Prices|ABS,FR|Home Prices|ABS"
+                ),
+                "eu_confidence_indicator": "",
+                "fr_growth_indicator": "GDP|YOY",
+                "fr_inflation_indicator": "Consumer Price Index|YOY",
+                "fr_government_indicator": "Government Debt (% of GDP)|ABS",
+                "fr_production_indicator": "Industrial Production|ABS",
+                "fr_sales_indicator": "Retail Sales|YOY",
+                "fr_labour_indicator": "Unemployment Rate|ABS",
+                "fr_housing_indicator": "Home Prices|ABS",
+                "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
+            },
+        }
+
+    def test_economic_charts_view_eu_defaults(self):
+        """
+        GIVEN Europe region with no indicator query params
+        WHEN accessing economic charts view
+        THEN EU defaults are DE/ES/IT/FR Location|Type|MODE curves (no confidence)
+        """
+        response = self.client.get(
+            self.base_url, {"region": str(EconomicDataLocationChoices.EU.label)}
+        )
+        assert response.status_code == 200
+        response_context = _get_response_context(response)
+        assert response_context == {
+            "region": "Europe",
+            "period_window": "5Y",
+            "dropdown_values": {
+                "categories": [
+                    "Growth",
+                    "Inflation",
+                    "Government",
+                    "Production",
+                    "Sales",
+                    "Labour",
+                    "Housing",
+                    "Confidence",
+                ],
+                "locations": ["United States", "Europe", "France", "Japan"],
+                "indicators_by_category": [
+                    {
+                        "category": "Growth",
+                        "indicators": [
+                            {
+                                "type": "FR|GDP Growth",
+                                "name": "France — GDP Growth",
+                            }
+                        ],
+                    },
+                    {"category": "Inflation", "indicators": []},
+                    {"category": "Government", "indicators": []},
+                    {"category": "Production", "indicators": []},
+                    {"category": "Sales", "indicators": []},
+                    {"category": "Labour", "indicators": []},
+                    {"category": "Housing", "indicators": []},
+                    {"category": "Confidence", "indicators": []},
+                ],
+            },
+            "economic_data": [
+                {"category": "Growth", "category_data": []},
+                {"category": "Inflation", "category_data": []},
+                {"category": "Government", "category_data": []},
+                {"category": "Production", "category_data": []},
+                {"category": "Sales", "category_data": []},
+                {"category": "Labour", "category_data": []},
+                {"category": "Housing", "category_data": []},
+                {"category": "Confidence", "category_data": []},
+            ],
+            "categories": [
+                "Growth",
+                "Inflation",
+                "Government",
+                "Production",
+                "Sales",
+                "Labour",
+                "Housing",
+                "Confidence",
+            ],
+            "selected_values": {
+                "region": "Europe",
+                "period_window": "5Y",
+                "us_growth_indicator": "GDP|YOY",
+                "us_inflation_indicator": "Consumer Price Index|YOY",
+                "us_government_indicator": "Government Debt (% of GDP)|ABS",
+                "us_production_indicator": "Industrial Production|ABS",
+                "us_sales_indicator": "Retail Sales|YOY",
+                "us_labour_indicator": "Unemployment Rate|ABS",
+                "us_housing_indicator": "Home Prices|ABS",
+                "us_confidence_indicator": "Consumer Confidence|ABS",
+                "eu_growth_indicator": "DE|GDP|YOY,ES|GDP|YOY,IT|GDP|YOY,FR|GDP|YOY",
+                "eu_inflation_indicator": (
+                    "DE|Consumer Price Index|YOY,ES|Consumer Price Index|YOY,"
+                    "IT|Consumer Price Index|YOY,FR|Consumer Price Index|YOY"
+                ),
+                "eu_government_indicator": (
+                    "DE|Government Debt (% of GDP)|ABS,"
+                    "ES|Government Debt (% of GDP)|ABS,"
+                    "IT|Government Debt (% of GDP)|ABS,"
+                    "FR|Government Debt (% of GDP)|ABS"
+                ),
+                "eu_production_indicator": (
+                    "DE|Industrial Production|ABS,ES|Industrial Production|ABS,"
+                    "IT|Industrial Production|ABS,FR|Industrial Production|ABS"
+                ),
+                "eu_sales_indicator": (
+                    "DE|Retail Sales|YOY,ES|Retail Sales|YOY,"
+                    "IT|Retail Sales|YOY,FR|Retail Sales|YOY"
+                ),
+                "eu_labour_indicator": (
+                    "DE|Unemployment Rate|ABS,ES|Unemployment Rate|ABS,"
+                    "IT|Unemployment Rate|ABS,FR|Unemployment Rate|ABS"
+                ),
+                "eu_housing_indicator": (
+                    "DE|Home Prices|ABS,ES|Home Prices|ABS,"
+                    "IT|Home Prices|ABS,FR|Home Prices|ABS"
+                ),
+                "eu_confidence_indicator": "",
+                "fr_growth_indicator": "GDP|YOY",
+                "fr_inflation_indicator": "Consumer Price Index|YOY",
+                "fr_government_indicator": "Government Debt (% of GDP)|ABS",
+                "fr_production_indicator": "Industrial Production|ABS",
+                "fr_sales_indicator": "Retail Sales|YOY",
+                "fr_labour_indicator": "Unemployment Rate|ABS",
+                "fr_housing_indicator": "Home Prices|ABS",
+                "fr_confidence_indicator": "Aggregate Business Confidence|ABS",
+                "jp_growth_indicator": "GDP|YOY",
+                "jp_inflation_indicator": "Consumer Price Index|YOY",
+                "jp_government_indicator": "Government Debt (% of GDP)|ABS",
+                "jp_production_indicator": "Industrial Production|ABS",
+                "jp_sales_indicator": "Retail Sales|YOY",
+                "jp_labour_indicator": "Unemployment Rate|ABS",
+                "jp_housing_indicator": "Home Prices|ABS",
+                "jp_confidence_indicator": "Manufacturing Business Confidence|ABS",
+            },
+        }

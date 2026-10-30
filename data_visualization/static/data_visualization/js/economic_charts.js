@@ -5,36 +5,56 @@ const dropdownValues = window.dropdownValuesJSON;
 const economicData = window.economicDataJSON;
 const categories = window.categoriesJSON;
 const selectedValuesRaw = window.selectedValuesJSON || {};
-const currentZone = window.currentZone;
+const currentRegion = window.currentRegion;
 
 // Store chart instances
 const chartInstances = {};
 
+const CHART_SERIES_MODES = new Set(["ABS", "QOQ", "QOQY", "YOY"]);
+const CHART_SERIES_MODE_LABELS = {
+  ABS: "Abs",
+  QOQ: "QoQ",
+  QOQY: "QoQy",
+  YOY: "YoY",
+};
+
+function normalizeMode(mode) {
+  const modeUpper = (mode || "ABS").trim().toUpperCase();
+  return CHART_SERIES_MODES.has(modeUpper) ? modeUpper : "ABS";
+}
+
 function parseIndicatorEntry(raw) {
+  // Wire format: [Location|]Type[|MODE]. Location stays on ``type`` for Europe
+  // checkbox keys (``DE|GDP``); mode is peeled off separately.
   const text = (raw || "").trim();
   if (!text) {
     return null;
   }
-  if (text.includes("|")) {
-    const [type, mode] = text.split("|", 2);
-    const modeUpper = (mode || "ABS").trim().toUpperCase();
-    return {
-      type: type.trim(),
-      mode: ["ABS", "QOQ", "YOY"].includes(modeUpper) ? modeUpper : "ABS",
-      encoded: `${type.trim()}|${["ABS", "QOQ", "YOY"].includes(modeUpper) ? modeUpper : "ABS"}`,
-    };
+  const tokens = text.split("|").map((part) => part.trim()).filter(Boolean);
+  let mode = "ABS";
+  if (tokens.length && CHART_SERIES_MODES.has(tokens[tokens.length - 1].toUpperCase())) {
+    mode = normalizeMode(tokens.pop());
   }
-  return { type: text, mode: "ABS", encoded: `${text}|ABS` };
+  if (!tokens.length) {
+    return null;
+  }
+  const seriesKey = tokens.join("|");
+  return { type: seriesKey, mode, encoded: `${seriesKey}|${mode}` };
 }
 
 function encodeIndicatorEntry(type, mode) {
-  return `${type}|${(mode || "ABS").toUpperCase()}`;
+  // ``type`` may already be a Europe series key (``DE|GDP``).
+  return `${type}|${normalizeMode(mode)}`;
+}
+
+function getSeriesDomId(seriesKey) {
+  return String(seriesKey || "").replace(/\|/g, "__");
 }
 
 // Parse selectedValues - query params come as strings, need to parse lists
 const selectedValues = {};
 for (const [key, value] of Object.entries(selectedValuesRaw)) {
-  if (key === "zone" || key === "period_window") {
+  if (key === "region" || key === "period_window") {
     selectedValues[key] = value;
   } else if (key.endsWith("_indicator")) {
     // Parse list from string (could be JSON array string or comma-separated)
@@ -64,14 +84,15 @@ for (const [key, value] of Object.entries(selectedValuesRaw)) {
   }
 }
 
-// Helper to get zone value (lowercase) from zone label
-function getZoneValue(zoneLabel) {
-  const zoneMapping = {
+// Helper to get region value (lowercase) from region label
+function getRegionValue(regionLabel) {
+  const regionMapping = {
     "United States": "us",
-    "France": "fr",
-    "Japan": "jp",
+    Europe: "eu",
+    France: "fr",
+    Japan: "jp",
   };
-  return zoneMapping[zoneLabel] || zoneLabel.toLowerCase();
+  return regionMapping[regionLabel] || regionLabel.toLowerCase();
 }
 
 // Helper to get category string from enum object
@@ -94,11 +115,6 @@ if (Array.isArray(economicData)) {
     const categoryStr = getCategoryString(item.category);
     economicDataByCategory[categoryStr] = item.category_data || [];
   });
-} else if (economicData && economicData.category_data) {
-  // Legacy format support
-  Object.keys(economicData.category_data).forEach((category) => {
-    economicDataByCategory[category] = economicData.category_data[category];
-  });
 }
 
 // Convert indicators_by_category to object keyed by category string
@@ -108,13 +124,9 @@ if (dropdownValues && dropdownValues.indicators_by_category) {
   dropdownValues.indicators_by_category.forEach((item) => {
     const categoryStr = getCategoryString(item.category);
     const indicators = item.indicators || [];
-    // Extract types for filtering
-    indicatorsByCategoryMap[categoryStr] = indicators.map(ind =>
-      typeof ind === "string" ? ind : ind.type
-    );
-    // Create type -> name mapping
-    indicators.forEach(ind => {
-      if (typeof ind === "object" && ind.type && ind.name) {
+    indicatorsByCategoryMap[categoryStr] = indicators.map((ind) => ind.type);
+    indicators.forEach((ind) => {
+      if (ind.type && ind.name) {
         indicatorsByCategoryTypeMap[ind.type] = ind.name;
       }
     });
@@ -122,29 +134,74 @@ if (dropdownValues && dropdownValues.indicators_by_category) {
 }
 
 // ==========================================
-// Zone Button Handling
+// Region Button Handling
 // ==========================================
 
-function initializeZoneButtons() {
-  const zoneButtons = document.querySelectorAll(".zone-btn");
-  const zoneMapping = {
-    US: "United States",
-    FR: "France",
-    JP: "Japan",
-  };
+const REGION_CODE_TO_LABEL = {
+  US: "United States",
+  EU: "Europe",
+  FR: "France",
+  JP: "Japan",
+};
 
-  zoneButtons.forEach((btn) => {
-    const zone = btn.dataset.zone;
-    const zoneLabel = zoneMapping[zone];
+/**
+ * Same Chart.js hues as market charts, but assigned in a different order so
+ * economic categories do not mirror stocks → FX → commodity → …
+ */
+const CHART_SERIES_COLORS = [
+  "rgb(153, 102, 255)", // purple
+  "rgb(255, 159, 64)", // orange
+  "rgb(34, 197, 94)", // green
+  "rgb(54, 162, 235)", // blue
+  "rgb(255, 99, 132)", // pink
+  "rgb(75, 192, 192)", // teal
+  "rgb(120, 53, 15)", // brown
+  "rgb(255, 206, 86)", // yellow
+];
 
-    // Check if this zone matches current zone
-    if (zoneLabel === currentZone || (zone === "US" && currentZone.includes("United States"))) {
+/** Fixed main color per category (shared across all regions). */
+const CATEGORY_MAIN_COLORS = {
+  Growth: CHART_SERIES_COLORS[0], // purple
+  Inflation: CHART_SERIES_COLORS[1], // orange
+  Government: CHART_SERIES_COLORS[2], // green
+  Production: CHART_SERIES_COLORS[3], // blue
+  Sales: CHART_SERIES_COLORS[4], // pink
+  Labour: CHART_SERIES_COLORS[5], // teal
+  Housing: CHART_SERIES_COLORS[6], // brown
+  Confidence: CHART_SERIES_COLORS[7], // yellow
+};
+
+function getCategoryMainColor(category) {
+  return CATEGORY_MAIN_COLORS[getCategoryString(category)] || CHART_SERIES_COLORS[0];
+}
+
+function getSeriesColor(category, seriesIndex) {
+  const mainColor = getCategoryMainColor(category);
+  if (seriesIndex === 0) {
+    return mainColor;
+  }
+  // Walk the market-chart palette, skipping the category’s own color.
+  const extras = CHART_SERIES_COLORS.filter((color) => color !== mainColor);
+  return extras[(seriesIndex - 1) % extras.length];
+}
+
+function initializeRegionButtons() {
+  const regionButtons = document.querySelectorAll(".region-btn");
+
+  regionButtons.forEach((btn) => {
+    const regionCode = btn.dataset.region;
+    const regionLabel = REGION_CODE_TO_LABEL[regionCode];
+    if (!regionLabel) {
+      return;
+    }
+
+    if (regionLabel === currentRegion) {
       btn.classList.add("active");
     }
 
     btn.addEventListener("click", () => {
       const params = new URLSearchParams(window.location.search);
-      params.set("zone", zoneLabel);
+      params.set("region", regionLabel);
       window.location.search = params.toString();
     });
   });
@@ -160,9 +217,9 @@ function getCategorySafeName(category) {
 }
 
 function getSelectedIndicatorsForCategory(category) {
-  const zoneValue = getZoneValue(currentZone);
+  const regionValue = getRegionValue(currentRegion);
   const categoryValue = category.toLowerCase().replace(/\s+/g, "_");
-  const key = `${zoneValue}_${categoryValue}_indicator`;
+  const key = `${regionValue}_${categoryValue}_indicator`;
 
   const indicators = selectedValues[key] || [];
   // Filter out empty strings; values are Type|MODE encoded
@@ -244,18 +301,6 @@ function createEconomicChart(category, data, selectedIndicators) {
   // Note: selectedIndicators contains type values, and data has indicator_name (type field)
   // Backend should have filtered, so we show all data returned
   const datasets = [];
-  const colors = [
-    "#3b82f6",
-    "#10b981",
-    "#f59e0b",
-    "#ef4444",
-    "#8b5cf6",
-    "#ec4899",
-    "#06b6d4",
-    "#84cc16",
-    "#f97316",
-    "#6366f1",
-  ];
 
   uniqueIndicatorNames.forEach((indicatorName, index) => {
     // Filter data for this indicator
@@ -272,11 +317,12 @@ function createEconomicChart(category, data, selectedIndicators) {
       return dataMap[period] !== undefined ? dataMap[period] : null;
     });
 
+    const seriesColor = getSeriesColor(category, index);
     datasets.push({
       label: indicatorName,
       data: values,
-      borderColor: colors[index % colors.length],
-      backgroundColor: colors[index % colors.length] + "20",
+      borderColor: seriesColor,
+      backgroundColor: seriesColor.replace("rgb(", "rgba(").replace(")", ", 0.1)"),
       tension: 0.3,
       fill: false,
       pointRadius: 3,
@@ -377,12 +423,13 @@ function updateIndicatorSelection(category) {
   checkboxList.className = "multiselect-checkbox-list";
 
   availableIndicatorsFormatted.forEach((indicator) => {
+    const seriesDomId = getSeriesDomId(indicator.name);
     const checkboxItem = document.createElement("div");
     checkboxItem.className = "multiselect-checkbox-item";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.id = `${categorySafe}-indicator-${indicator.name}`;
+    checkbox.id = `${categorySafe}-indicator-${seriesDomId}`;
     checkbox.value = indicator.name;
     checkbox.checked = typesToCheck.includes(indicator.name);
     checkbox.onchange = () => updatePendingSelection(category);
@@ -394,12 +441,12 @@ function updateIndicatorSelection(category) {
 
     const modeSelect = document.createElement("select");
     modeSelect.className = "multiselect-mode-select";
-    modeSelect.id = `${categorySafe}-mode-${indicator.name}`;
+    modeSelect.id = `${categorySafe}-mode-${seriesDomId}`;
     modeSelect.setAttribute("aria-label", `Mode for ${indicator.full_name}`);
-    ["ABS", "QOQ", "YOY"].forEach((mode) => {
+    ["ABS", "QOQ", "QOQY", "YOY"].forEach((mode) => {
       const option = document.createElement("option");
       option.value = mode;
-      option.textContent = mode === "ABS" ? "Abs" : mode === "QOQ" ? "QoQ" : "YoY";
+      option.textContent = CHART_SERIES_MODE_LABELS[mode];
       modeSelect.appendChild(option);
     });
     modeSelect.value = getModeForType(category, indicator.name);
@@ -472,7 +519,9 @@ function selectAllInDropdown(category) {
   const availableIndicators = indicatorsByCategoryMap[categoryStr] || [];
 
   availableIndicators.forEach((indicatorType) => {
-    const checkbox = document.getElementById(`${categorySafe}-indicator-${indicatorType}`);
+    const checkbox = document.getElementById(
+      `${categorySafe}-indicator-${getSeriesDomId(indicatorType)}`
+    );
     if (checkbox) {
       checkbox.checked = true;
     }
@@ -487,7 +536,9 @@ function unselectAllInDropdown(category) {
   const availableIndicators = indicatorsByCategoryMap[categoryStr] || [];
 
   availableIndicators.forEach((indicatorType) => {
-    const checkbox = document.getElementById(`${categorySafe}-indicator-${indicatorType}`);
+    const checkbox = document.getElementById(
+      `${categorySafe}-indicator-${getSeriesDomId(indicatorType)}`
+    );
     if (checkbox) {
       checkbox.checked = false;
     }
@@ -503,8 +554,13 @@ function updatePendingSelection(category) {
 
   const selected = [];
   availableIndicators.forEach((indicatorType) => {
-    const checkbox = document.getElementById(`${categorySafe}-indicator-${indicatorType}`);
-    const modeSelect = document.getElementById(`${categorySafe}-mode-${indicatorType}`);
+    const seriesDomId = getSeriesDomId(indicatorType);
+    const checkbox = document.getElementById(
+      `${categorySafe}-indicator-${seriesDomId}`
+    );
+    const modeSelect = document.getElementById(
+      `${categorySafe}-mode-${seriesDomId}`
+    );
     if (checkbox && checkbox.checked) {
       const mode = modeSelect ? modeSelect.value : "ABS";
       selected.push(encodeIndicatorEntry(indicatorType, mode));
@@ -515,9 +571,9 @@ function updatePendingSelection(category) {
 }
 
 function applyIndicatorSelection(category) {
-  const zoneValue = getZoneValue(currentZone);
+  const regionValue = getRegionValue(currentRegion);
   const categoryValue = category.toLowerCase().replace(/\s+/g, "_");
-  const key = `${zoneValue}_${categoryValue}_indicator`;
+  const key = `${regionValue}_${categoryValue}_indicator`;
 
   const params = new URLSearchParams(window.location.search);
   const selectedIndicators = pendingSelections[getCategorySafeName(category)] || [];
@@ -555,8 +611,13 @@ function cancelIndicatorSelection(category) {
   const categoryStr = getCategoryString(category);
   const availableIndicators = indicatorsByCategoryMap[categoryStr] || [];
   availableIndicators.forEach((indicatorType) => {
-    const checkbox = document.getElementById(`${categorySafe}-indicator-${indicatorType}`);
-    const modeSelect = document.getElementById(`${categorySafe}-mode-${indicatorType}`);
+    const seriesDomId = getSeriesDomId(indicatorType);
+    const checkbox = document.getElementById(
+      `${categorySafe}-indicator-${seriesDomId}`
+    );
+    const modeSelect = document.getElementById(
+      `${categorySafe}-mode-${seriesDomId}`
+    );
     if (checkbox) {
       checkbox.checked = typesToCheck.includes(indicatorType);
     }
@@ -698,7 +759,7 @@ function renderCharts() {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  initializeZoneButtons();
+  initializeRegionButtons();
   initializePeriodWindowSelect();
   renderCharts();
 });

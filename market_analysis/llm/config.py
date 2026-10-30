@@ -3,8 +3,6 @@
 Model id and API key live in ``core.settings`` (``LLM_MODEL_NAME``, ``OPENAI_API_KEY``).
 """
 
-from __future__ import annotations
-
 import os
 
 from django.conf import settings

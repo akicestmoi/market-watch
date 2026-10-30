@@ -5,7 +5,12 @@ from enum import Enum
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from core.models import BaseLogModel, BaseModel, get_choice_from_label, get_choice_labels
+from core.models import (
+    BaseLogModel,
+    BaseModel,
+    get_choice_from_label,
+    get_choice_labels,
+)
 
 
 class AssetClassChoices(models.TextChoices):

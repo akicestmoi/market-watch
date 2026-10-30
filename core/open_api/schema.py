@@ -29,11 +29,18 @@ class ApiTags(str, Enum):
     MARKET_ANALYSIS = "Market Analysis"
 
 
-DEFAULT_ERROR_MESSAGES = {
+# Stock OpenAPI example messages for known client-error status codes.
+DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE: dict[int, str] = {
     400: "Bad Request - The request could not be understood by the server",
     404: "Not Found - The requested resource was not found",
-    409: "Conflict - The resource is locked or the operation conflicts with current state",
-    422: "Unprocessable Entity - The request was well-formed but semantically invalid",
+    409: (
+        "Conflict - The resource is locked or the operation conflicts "
+        "with current state"
+    ),
+    422: (
+        "Unprocessable Entity - The request was well-formed but "
+        "semantically invalid"
+    ),
 }
 
 
@@ -48,8 +55,10 @@ class _MessageOpenApiResponse(OpenApiResponse):
         message: str | None = None,
     ):
         """Initialize the OpenApiResponse."""
-        resolved_message = message or DEFAULT_ERROR_MESSAGES.get(
-            status_code, example_name
+        resolved_message = (
+            message
+            or DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE.get(status_code)
+            or example_name
         )
         super().__init__(
             response=status_code,

@@ -1,0 +1,45 @@
+{
+  "GET_STATS": {
+    "RESULT": {
+      "status": "0",
+      "errorMsg": "Success.",
+      "date": "Wed Oct 28 00:00:00 JST 2026"
+    },
+    "PARAMETER": {
+      "lang": "EN",
+      "indicatorCode": [
+        "0703010601010090000"
+      ]
+    },
+    "STATISTICAL_DATA": {
+      "DATA_INF": {
+        "DATA_OBJ": [
+          {
+            "VALUE": {
+              "@indicator": "0703010601010090000",
+              "@time": "20260900",
+              "@cycle": "1",
+              "$": "102.2"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0703010601010090000",
+              "@time": "20260800",
+              "@cycle": "1",
+              "$": "101.8"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0703010601010090000",
+              "@time": "20260700",
+              "@cycle": "1",
+              "$": "101.5"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

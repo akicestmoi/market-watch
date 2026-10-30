@@ -1,8 +1,7 @@
 """LLM article analysis and daily market recap."""
 
-from __future__ import annotations
-
 import json
+import math
 from datetime import date, datetime, timedelta
 from typing import TypedDict
 
@@ -11,7 +10,7 @@ from pandas.tseries.offsets import BDay
 from pydantic_ai import Agent
 
 from central_banks_overview.models import CentralBankChoices
-from core.services import calculate_value_change, logger
+from core.services import ValueChangeOutput, calculate_value_change, logger
 from data_visualization.services.central_banks_recap import (
     get_central_bank_data_item,
     get_central_bank_formatted_probability_matrix,
@@ -44,7 +43,7 @@ from market_analysis.llm.schemas import (
     Sentiment,
 )
 from market_analysis.models import DailyRecapModel
-from market_analysis.services.analysis_cache import (
+from market_analysis.services.cache import (
     get_cached_analysis,
     set_cached_analysis,
 )
@@ -140,9 +139,33 @@ def build_market_context(as_of: date) -> list[MarketContextRow]:
         previous_price = previous_row.price if previous_row else None
         wow_price = wow_row.price if wow_row else None
         mom_price = mom_row.price if mom_row else None
-        dod_change = calculate_value_change(price_row.price, previous_price)
-        wow_change = calculate_value_change(price_row.price, wow_price)
-        mom_change = calculate_value_change(price_row.price, mom_price)
+        dod_absolute = calculate_value_change(
+            price_row.price, previous_price, ValueChangeOutput.ABSOLUTE
+        )
+        dod_percent = calculate_value_change(
+            price_row.price, previous_price, ValueChangeOutput.PERCENT
+        )
+        dod_bps = calculate_value_change(
+            price_row.price, previous_price, ValueChangeOutput.BPS
+        )
+        wow_absolute = calculate_value_change(
+            price_row.price, wow_price, ValueChangeOutput.ABSOLUTE
+        )
+        wow_percent = calculate_value_change(
+            price_row.price, wow_price, ValueChangeOutput.PERCENT
+        )
+        wow_bps = calculate_value_change(
+            price_row.price, wow_price, ValueChangeOutput.BPS
+        )
+        mom_absolute = calculate_value_change(
+            price_row.price, mom_price, ValueChangeOutput.ABSOLUTE
+        )
+        mom_percent = calculate_value_change(
+            price_row.price, mom_price, ValueChangeOutput.PERCENT
+        )
+        mom_bps = calculate_value_change(
+            price_row.price, mom_price, ValueChangeOutput.BPS
+        )
         is_rates = asset.asset_class == AssetClassChoices.RATES
         is_vol = asset.asset_type == AssetTypeChoices.VOLATILITY_INDEX
         rows.append(
@@ -155,16 +178,16 @@ def build_market_context(as_of: date) -> list[MarketContextRow]:
                 source=PriceSourceChoices(asset.source),
                 previous_date=(previous_row.date.isoformat() if previous_row else None),
                 previous_price=previous_price,
-                change_dod=dod_change.absolute,
-                change_dod_pct=(None if is_rates or is_vol else dod_change.percent),
-                change_dod_bps=dod_change.bps if is_rates else None,
-                change_dod_pts=dod_change.absolute if is_vol else None,
-                change_wow_pct=(None if is_rates or is_vol else wow_change.percent),
-                change_wow_bps=wow_change.bps if is_rates else None,
-                change_wow_pts=wow_change.absolute if is_vol else None,
-                change_mom_pct=(None if is_rates or is_vol else mom_change.percent),
-                change_mom_bps=mom_change.bps if is_rates else None,
-                change_mom_pts=mom_change.absolute if is_vol else None,
+                change_dod=dod_absolute,
+                change_dod_pct=(None if is_rates or is_vol else dod_percent),
+                change_dod_bps=dod_bps if is_rates else None,
+                change_dod_pts=dod_absolute if is_vol else None,
+                change_wow_pct=(None if is_rates or is_vol else wow_percent),
+                change_wow_bps=wow_bps if is_rates else None,
+                change_wow_pts=wow_absolute if is_vol else None,
+                change_mom_pct=(None if is_rates or is_vol else mom_percent),
+                change_mom_bps=mom_bps if is_rates else None,
+                change_mom_pts=mom_absolute if is_vol else None,
             )
         )
     return rows
@@ -270,14 +293,18 @@ def _format_meeting_dates_for_context(
 
 
 class FxCurrencyStrengthRow(TypedDict):
-    """Average pairwise FX DoD % change for one currency vs the heatmap basket."""
+    """Quadratic-mean (RMS) pairwise FX DoD % move for one currency vs the basket.
+
+    Always non-negative: opposing peer moves do not cancel the way a signed
+    arithmetic mean would. Direction still comes from the pairwise matrix.
+    """
 
     currency: str
-    average_change_pct: float
+    rms_change_pct: float
 
 
 class FxHeatmapContext(TypedDict):
-    """FX heatmap (pairwise DoD %) plus per-currency average strength."""
+    """FX heatmap (pairwise DoD %) plus per-currency RMS strength magnitude."""
 
     as_of: str
     previous_date: str
@@ -308,7 +335,10 @@ def _get_fx_matrix_pair_change(matrix_row: FxMatrixRow, quote_currency: str) -> 
 def _compute_fx_currency_strength(
     matrix: list[FxMatrixRow],
 ) -> list[FxCurrencyStrengthRow]:
-    """Average off-diagonal pairwise % changes for each base currency row."""
+    """Quadratic mean (RMS) of off-diagonal pairwise % changes per base row.
+
+    ``rms = sqrt(sum(x_i^2) / n)`` so mixed-sign peer moves do not cancel.
+    """
     strength_rows: list[FxCurrencyStrengthRow] = []
     for matrix_row in matrix:
         base_currency = matrix_row["currency"]
@@ -319,20 +349,22 @@ def _compute_fx_currency_strength(
             pairwise_changes.append(
                 _get_fx_matrix_pair_change(matrix_row, quote_currency)
             )
-        average_change_pct = (
-            sum(pairwise_changes) / len(pairwise_changes) if pairwise_changes else 0.0
-        )
+        if not pairwise_changes:
+            rms_change_pct = 0.0
+        else:
+            squared_sum = sum(change**2 for change in pairwise_changes)
+            rms_change_pct = math.sqrt(squared_sum / len(pairwise_changes))
         strength_rows.append(
             FxCurrencyStrengthRow(
                 currency=base_currency,
-                average_change_pct=round(average_change_pct, 4),
+                rms_change_pct=round(rms_change_pct, 4),
             )
         )
     return strength_rows
 
 
 def build_fx_heatmap_context(as_of: date) -> FxHeatmapContext:
-    """FX heatmap DoD % matrix and average currency strength for LLM prompts."""
+    """FX heatmap DoD % matrix and RMS currency-move magnitude for LLM prompts."""
     previous_date = _get_previous_business_day(as_of)
     matrix = get_fx_prices_matrix(as_of, previous_date)
     return FxHeatmapContext(
@@ -690,8 +722,10 @@ def generate_daily_recap(
         "(authoritative policy baseline — effective rates, CB macro prints, "
         "next meeting; use when assessing policy outlook / future CB moves):\n"
         f"{json.dumps(central_bank_context, ensure_ascii=False)}\n\n"
-        "FX heatmap DoD % changes and per-currency average strength "
-        "(use only when FX strength/weakness helps explain the session):\n"
+        "FX heatmap DoD % changes and per-currency RMS move magnitude "
+        "(quadratic mean of pairwise % changes; always >= 0 — use pairwise "
+        "cells for direction; use only when FX strength/weakness helps "
+        "explain the session):\n"
         f"{json.dumps(fx_heatmap_context, ensure_ascii=False)}\n\n"
         "Central-bank probability matrices and DoD probability shifts "
         "(what the market is pricing — use only when policy-path repricing "

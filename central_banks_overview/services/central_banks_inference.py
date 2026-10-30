@@ -13,28 +13,17 @@ import pandas as pd
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices, StirFuturesModel
+from central_banks_overview.services.config import (
+    MAX_MEETINGS,
+    MAX_MEETINGS_TO_COVER,
+    PROBABILITY_EXTENSION_STEPS,
+    PROBABILITY_THRESHOLD,
+    STANDARD_STEP_SCENARIOS,
+    STEP_SIZE,
+    TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK,
+)
 from core.services import logger
 from market_overview.models import MarketPriceModel
-
-# Step size for probability calculations
-STEP_SIZE = 25
-MAX_MEETINGS = 3
-STANDARD_STEP_SCENARIOS = [
-    i * STEP_SIZE for i in range(-MAX_MEETINGS, MAX_MEETINGS + 1)
-]
-
-# Number of steps to extend probability support in each direction
-PROBABILITY_EXTENSION_STEPS = 5
-# Threshold for probability removal
-PROBABILITY_THRESHOLD = 1.0
-# Number of meetings to cover with futures contracts
-MAX_MEETINGS_TO_COVER = 8
-
-CENTRAL_BANK_TARGET_RATE_MAP = {
-    CentralBankChoices.FRB: "EFFR",
-    CentralBankChoices.ECB: "ESTR",
-    CentralBankChoices.BOJ: "MUTAN",
-}
 
 
 class RateChangePerStep(TypedDict):
@@ -1431,7 +1420,8 @@ def get_central_bank_effective_rate(
 ) -> float:
     """Get effective rate for a central bank."""
     return MarketPriceModel.objects.get(
-        date=target_date, asset__short_name=CENTRAL_BANK_TARGET_RATE_MAP[central_bank]
+        date=target_date,
+        asset__short_name=TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK[central_bank],
     ).price
 
 
@@ -1442,7 +1432,7 @@ def get_fall_back_rate(
     """Get fall back rate for a central bank (last non-None price)."""
     last_price = (
         MarketPriceModel.objects.filter(
-            asset__short_name=CENTRAL_BANK_TARGET_RATE_MAP[central_bank],
+            asset__short_name=TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK[central_bank],
             date__lte=target_date,
             price__isnull=False,
         )
@@ -1573,7 +1563,9 @@ def get_central_bank_probability_matrices(
     """Get probability matrices for specified central banks."""
     logger.info(f"Getting probability matrices for {central_banks} on {target_date}")
     central_banks_to_process = (
-        central_banks if central_banks else list(CENTRAL_BANK_TARGET_RATE_MAP.keys())
+        central_banks
+        if central_banks
+        else list(TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK)
     )
 
     all_meeting_dates = central_banks_meetings.get_central_bank_meeting_dates(

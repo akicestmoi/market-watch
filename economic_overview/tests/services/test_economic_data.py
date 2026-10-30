@@ -4,8 +4,8 @@ from datetime import date, datetime, timedelta
 
 from django.test import TestCase
 
-from core.services import convert_query_to_dictionary_list
 from core.conftest import parse_query_for_testing
+from core.services import convert_query_to_dictionary_list
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,

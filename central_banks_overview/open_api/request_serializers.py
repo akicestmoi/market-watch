@@ -3,10 +3,7 @@
 from rest_framework import serializers
 
 from central_banks_overview.models import CentralBankChoices
-from core.open_api.fields import (
-    CommaSeparatedChoiceField,
-    CommaSeparatedIntegerField,
-)
+from core.open_api.fields import CommaSeparatedChoiceField, CommaSeparatedIntegerField
 
 
 class CentralBankBaseSerializer(serializers.Serializer):

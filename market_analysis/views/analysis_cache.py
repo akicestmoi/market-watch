@@ -5,11 +5,16 @@ from typing import NotRequired, TypedDict
 
 from rest_framework.response import Response
 
-from core.open_api.schema import ApiTags, BadRequestOpenApiResponse, OkOpenApiResponse, open_api
+from core.open_api.schema import (
+    ApiTags,
+    BadRequestOpenApiResponse,
+    OkOpenApiResponse,
+    open_api,
+)
 from core.views import BaseAPIView
 from market_analysis.open_api.request_serializers import GetArticleCacheSerializer
 from market_analysis.open_api.response_serializers import ArticleCacheResponseSerializer
-from market_analysis.services import analysis_cache
+from market_analysis.services.cache import list_cached_analyses
 
 
 class GetArticleCacheValidatedData(TypedDict):
@@ -38,7 +43,7 @@ class GetArticleAnalysisCacheView(BaseAPIView):
         """List Redis-cached article analyses for a reporting date."""
         reporting_date: date = validated_data["reporting_date"]
         source_url: str | None = validated_data.get("source_url") or None
-        result = analysis_cache.list_cached_analyses(
+        result = list_cached_analyses(
             reporting_date,
             source_url=source_url or None,
         )

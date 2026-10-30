@@ -610,23 +610,23 @@ function updateChartDuration(chartType, duration) {
 initializeDurationButtons();
 
 // ==========================================
-// Zone Button Functionality
+// Region Button Functionality
 // ==========================================
 
 /**
- * Update zone button highlighting based on current zone
+ * Update region button highlighting based on current region
  */
-function updateZoneButtonHighlighting() {
-  const zoneButtons = document.querySelectorAll(".zone-btn");
+function updateRegionButtonHighlighting() {
+  const regionButtons = document.querySelectorAll(".region-btn");
   const params = new URLSearchParams(window.location.search);
-  const currentZone = params.get("zone");
+  const currentRegion = params.get("region");
 
-  // Remove active class from all zone buttons
-  zoneButtons.forEach(btn => btn.classList.remove("active"));
+  // Remove active class from all region buttons
+  regionButtons.forEach(btn => btn.classList.remove("active"));
 
-  // Add active class to current zone button (if not CUSTOM)
-  if (currentZone && currentZone !== "CUSTOM") {
-    const activeButton = document.querySelector(`[data-zone="${currentZone}"]`);
+  // Add active class to current region button (if not CUSTOM)
+  if (currentRegion && currentRegion !== "CUSTOM") {
+    const activeButton = document.querySelector(`[data-region="${currentRegion}"]`);
     if (activeButton) {
       activeButton.classList.add("active");
     }
@@ -634,30 +634,30 @@ function updateZoneButtonHighlighting() {
 }
 
 /**
- * Initialize zone buttons
+ * Initialize region buttons
  */
-function initializeZoneButtons() {
-  const zoneButtons = document.querySelectorAll(".zone-btn");
+function initializeRegionButtons() {
+  const regionButtons = document.querySelectorAll(".region-btn");
 
-  zoneButtons.forEach(button => {
+  regionButtons.forEach(button => {
     button.addEventListener("click", function() {
-      const zone = this.getAttribute("data-zone");
+      const region = this.getAttribute("data-region");
 
-      // Update zone and reload page
-      updateZone(zone);
+      // Update region and reload page
+      updateRegion(region);
     });
   });
 
   // Set initial highlighting
-  updateZoneButtonHighlighting();
+  updateRegionButtonHighlighting();
 }
 
 // ==========================================
-// Zone Configuration
+// Region Configuration
 // ==========================================
 
-// Zone values mapping - defines default values for each zone
-const ZONE_VALUES = {
+// Region values mapping - defines default values for each region
+const REGION_VALUES = {
   "US": {
     "stock_name": "DJIA",
     "fx_name": "EURUSD",
@@ -696,20 +696,20 @@ const LOCATION_TO_10Y = {
 };
 
 /**
- * Update zone and reload page with zone values
+ * Update region and reload page with region values
  */
-function updateZone(zone) {
+function updateRegion(region) {
   // Get current parameters from URL
   const params = new URLSearchParams(window.location.search);
 
-  // Set the zone parameter
-  params.set("zone", zone);
+  // Set the region parameter
+  params.set("region", region);
 
-  // Apply zone values to URL parameters
-  const zoneValues = ZONE_VALUES[zone];
-  if (zoneValues) {
-    Object.keys(zoneValues).forEach(field => {
-      const value = zoneValues[field];
+  // Apply region values to URL parameters
+  const regionValues = REGION_VALUES[region];
+  if (regionValues) {
+    Object.keys(regionValues).forEach(field => {
+      const value = regionValues[field];
       // Skip null/undefined values or delete them from params
       if (value === null || value === undefined) {
         params.delete(field);
@@ -719,7 +719,7 @@ function updateZone(zone) {
     });
   }
 
-  // Reload the page with zone values
+  // Reload the page with region values
   window.location.search = params.toString();
 }
 
@@ -746,8 +746,8 @@ function initializeCustomFieldHandlers() {
         // Get current parameters from URL
         const params = new URLSearchParams(window.location.search);
 
-        // Set zone to CUSTOM when any field is changed
-        params.set("zone", "CUSTOM");
+        // Set region to CUSTOM when any field is changed
+        params.set("region", "CUSTOM");
 
         // Add the selected value to the URL parameters
         const paramName = dropdownMappings[dropdownId];
@@ -755,7 +755,7 @@ function initializeCustomFieldHandlers() {
           params.set(paramName, this.value);
         }
 
-        // Reload the page with CUSTOM zone and the selected value
+        // Reload the page with CUSTOM region and the selected value
         window.location.search = params.toString();
       });
     }
@@ -778,8 +778,8 @@ function initializeLastButton() {
   }
 }
 
-// Initialize zone buttons when the page loads
-initializeZoneButtons();
+// Initialize region buttons when the page loads
+initializeRegionButtons();
 
 // Initialize custom field handlers when the page loads
 initializeCustomFieldHandlers();

@@ -10,7 +10,12 @@ from central_banks_overview.services.central_banks_data import get_central_bank_
 from central_banks_overview.services.central_banks_inference import (
     CentralBankProbabilityMatrix,
 )
-from core.services import calculate_value_change, convert_to_display_timezone, logger
+from core.services import (
+    ValueChangeOutput,
+    calculate_value_change,
+    convert_to_display_timezone,
+    logger,
+)
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
@@ -83,7 +88,11 @@ def _get_latest_yoy_inflation_rate(
     if prior_row is None or prior_row.data_value is None:
         return None
 
-    yoy_pct = calculate_value_change(latest.data_value, prior_row.data_value).percent
+    yoy_pct = calculate_value_change(
+        latest.data_value,
+        prior_row.data_value,
+        ValueChangeOutput.PERCENT,
+    )
     if yoy_pct is None:
         return None
     return InflationRateObservation(yoy_pct=yoy_pct, period=latest.period)

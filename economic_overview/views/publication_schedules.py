@@ -52,12 +52,8 @@ class UpdatePublicationScheduleView(EconomicOverviewBaseView):
 
         self._validate_indicators_exist(indicator_names)
 
-        indicators = economic_data.get_economic_indicators_by_names(
-            indicator_names
-        )
-        schedule_not_updated = publication.update_publication_schedules(
-            indicators
-        )
+        indicators = economic_data.get_economic_indicators_by_names(indicator_names)
+        schedule_not_updated = publication.update_publication_schedules(indicators)
         return Response(
             data=UpdatePublicationScheduleResponseSerializer(
                 {

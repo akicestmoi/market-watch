@@ -157,10 +157,12 @@ Use these context blocks **only when they are relevant** to the session’s mark
 
 ### FX heatmap (relative currency strength)
 
-- When FX matters (risk-on/off USD bid, policy-divergence FX, notable currency strength/weakness), use the **FX heatmap** context: pairwise DoD % changes plus each currency’s **average** change vs the other currencies in the basket.
-- Treat the **average as a helper only**. It can **hide** an important pattern: a currency may be **super strong / notable vs some peers** and flat or weak vs others, which can **change the narrative**. Always check outstanding pairwise cells; do not let a mild average override a concentrated move that matters for the story.
-- Assert strength/weakness from that full pattern (and named pairs), not from a single pair in isolation when the heatmap contradicts it, and not from the average alone when pairwise dispersion is material.
-- Example of relevant use: strong risk-off often accompanies **USD strength vs weaker currencies** — confirm with the heatmap averages **and** outstanding cells before stating it.
+- When FX matters (risk-on/off USD bid, policy-divergence FX, notable currency strength/weakness), use the **FX heatmap** context: pairwise DoD % changes plus each currency’s **RMS** (`rms_change_pct`) move vs the other currencies in the basket.
+- **`rms_change_pct`** is the **quadratic mean** of off-diagonal pairwise % changes: `sqrt(mean(x_i^2))`. It is **always ≥ 0**, so opposing peer moves do **not** cancel the way a signed arithmetic average would. Treat it as a **magnitude** helper (how much the currency moved vs the basket), **not** as signed strength/weakness by itself.
+- **Direction** (strong vs weak) comes from the **pairwise cells** (and named pairs). A high RMS with mixed signs can mean a large but uneven relative move — dig into the outstanding cells.
+- Treat the RMS as a helper only. It can still **hide** an important pattern: a currency may be **super strong / notable vs some peers** and flat or weak vs others, which can **change the narrative**. Always check outstanding pairwise cells; do not let a mild RMS override a concentrated move that matters for the story.
+- Assert strength/weakness from that full pattern (and named pairs), not from a single pair in isolation when the heatmap contradicts it, and not from the RMS alone when pairwise dispersion is material.
+- Example of relevant use: strong risk-off often accompanies **USD strength vs weaker currencies** — confirm with the heatmap pairwise cells **and** a material USD RMS before stating it.
 
 ### Probability-matrix shift (what the market is pricing)
 
@@ -191,11 +193,11 @@ Output these fields (not a single free-form Global→US→EU→Japan blob):
 | Field | Role |
 |---|---|
 | **title** | `Day Month Year: one-liner` — e.g. `23 October 2026: Oil-led risk-off as higher energy costs weigh on equities`. Lead with the **main drivers and effects on broad global markets** (especially US, EUR zone, Japan). Make **primary vs secondary** themes clear (secondary = important but geographically contained, unless it materially drove global markets). The one-liner must make the **mechanics** clear (what led what), not just a mood label. Vague titles like “Oil-led pressure, with divergent rates and FX” are weak if they do not say *why* oil pressure transmitted across assets. |
-| **main_summary** | High-level **worldwide mainline** (US + EUR + Japan + rest of world). **Not detailed** — the headline story of the day only. Same hierarchy as the title: lead with broad global drivers/effects; put geographically contained shocks in a **secondary** position unless they drove the global mainline. |
-| **us_summary** | Detailed **United States** zone. |
-| **eur_summary** | Detailed **EUR-denominated euro-area** zone only (not catch-all Europe). |
-| **jp_summary** | Detailed **Japan** zone. |
-| **additional_summary** | Everything else notable that is **not** US / EUR-zone / Japan core markets: commodities, crypto, minor FX, UK/non-EUR Europe, EM, geopolitics, idiosyncratic events. |
+| **main_summary** | High-level **worldwide mainline** (US + EUR + Japan + rest of world). **Not detailed** — the headline story of the day only, as **concise prose** (no thematic-bullet requirement). Same hierarchy as the title: lead with broad global drivers/effects; put geographically contained shocks in a **secondary** position unless they drove the global mainline. |
+| **us_summary** | Detailed **United States** zone — thematic markdown bullets (`- Subtitle: content`); see Detail sections format. |
+| **eur_summary** | Detailed **EUR-denominated euro-area** zone only (not catch-all Europe) — same bullet format. |
+| **jp_summary** | Detailed **Japan** zone — same bullet format. |
+| **additional_summary** | Everything else notable that is **not** US / EUR-zone / Japan core markets: commodities, crypto, minor FX, UK/non-EUR Europe, EM, geopolitics, idiosyncratic events — same bullet format. |
 
 ### Zone definitions
 
@@ -213,11 +215,24 @@ Output these fields (not a single free-form Global→US→EU→Japan blob):
 
 ### Detail sections format (us / eur / jp / additional)
 
-1. Optionally open with one short overall zone/theme sentence (regime + intensity) when useful — assertive, no meta hedges.
-2. Body themes as **markdown bullets** in the form `- Subtitle: content` (not `###` headings). A dedicated bullet for an asset class (e.g. Stocks, Rates, FX) is justified only when something **notable** happened there. On quiet / neutral days it is fine — and expected — to **regroup** several asset classes under one thematic bullet. Add Policy / other themes only when they matter that day. Each bullet should carry drivers where relevant, not just a list of moves.
+**Required shape for `us_summary`, `eur_summary`, `jp_summary`, and `additional_summary`:**
+
+1. Optionally open with **one short sentence** (regime + intensity / overall zone theme) when useful — assertive, no meta hedges. This opener is optional; it must **not** replace thematic structure.
+2. Organize **substantive themes** as **markdown bullets** in the form `- Subtitle: content` (not `###` headings, not free-form paragraphs of themes). Example: `- Stocks: S&P 500 fell (-1.4%) as higher energy costs weighed on risk appetite`.
 3. End with `- Uncertainties: …` **only if** there are genuinely unresolved items for that zone (see §5). Multiple uncertainty points may be separated by semicolons in that bullet, or use several `- Uncertainties: …` bullets. If nothing material remains, **omit** the Uncertainties bullet entirely — do **not** write “None material.”
 
-**main_summary** has **no** thematic bullet requirement and **no** Uncertainties block (keep it short and assertive). It should still make the **mechanics / drivers** of the worldwide mainline clear, with primary vs secondary hierarchy as in the title.
+**Bullet discipline (quiet vs active sessions):**
+
+- A dedicated bullet for an asset class (e.g. Stocks, Rates, FX) is justified only when something **notable** happened there.
+- On **quiet / neutral** sessions, **regroup** related assets under a **small number of thematic bullets** rather than adding unnecessary bullets. Prefer fewer, denser bullets over one bullet per asset.
+- Add Policy / other themes only when they matter that day.
+- Each bullet should carry **drivers** where relevant, not just a list of moves.
+
+**Formatting must not dilute analysis.** Keep existing requirements for assertive analysis, verified values (with mandatory change formatting), drivers, divergences, and Uncertainties. Do **not** alter recap content merely to add formatting, invent themes, or pad with empty bullets.
+
+### `main_summary` exception
+
+**`main_summary`** is **concise prose** — **no** thematic-bullet requirement and **no** Uncertainties block. Keep it short and assertive. It should still make the **mechanics / drivers** of the worldwide mainline clear, with primary vs secondary hierarchy as in the title.
 
 ### Pipeline gaps
 

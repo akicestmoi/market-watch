@@ -269,8 +269,7 @@ def bulk_update_assets_prices(
     """Bulk update assets prices."""
     updated_assets = []
     for update in updates:
-        market_price = core_services.get(
-            MarketPriceModel,
+        market_price = MarketPriceModel.objects.get(
             date=update["date"],
             asset__short_name=update["short_name"],
         )

@@ -2,7 +2,10 @@
 
 from django.urls import path
 
-from .views.central_banks_data import CentralBankDataIngestionView, ListCentralBankDataView
+from .views.central_banks_data import (
+    CentralBankDataIngestionView,
+    ListCentralBankDataView,
+)
 from .views.central_banks_meetings import (
     CentralBankMeetingDatesIngestionView,
     GetCentralBankMeetingDatesView,

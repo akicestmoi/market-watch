@@ -34,10 +34,8 @@ class TestScheduledMarketDataIngestion(TestCase):
         "market_overview.tasks.market_analysis_tasks.schedule_market_analysis_after_ingestion"
     )
     @patch("market_overview.tasks.try_acquire_redis_lock")
-    @patch(
-        "market_overview.services.price_ingestion.get_yahoo_finance_closing_prices"
-    )
-    @patch("market_overview.services.price_ingestion.requests.get")
+    @patch("market_overview.services.price_ingestion.get_yahoo_finance_closing_prices")
+    @patch("requests.get")
     def test_scheduled_market_data_ingestion_success_one_bday_ago(
         self, mock_requests_get, mock_yahoo_finance, mock_lock, mock_schedule_analysis
     ):
@@ -89,10 +87,8 @@ class TestScheduledMarketDataIngestion(TestCase):
         "market_overview.tasks.market_analysis_tasks.schedule_market_analysis_after_ingestion"
     )
     @patch("market_overview.tasks.try_acquire_redis_lock")
-    @patch(
-        "market_overview.services.price_ingestion.get_yahoo_finance_closing_prices"
-    )
-    @patch("market_overview.services.price_ingestion.requests.get")
+    @patch("market_overview.services.price_ingestion.get_yahoo_finance_closing_prices")
+    @patch("requests.get")
     def test_scheduled_market_data_ingestion_success_one_bday_ago_no_scrapping_function(
         self, mock_requests_get, mock_yahoo_finance, mock_lock, mock_schedule_analysis
     ):
@@ -145,10 +141,8 @@ class TestScheduledMarketDataIngestion(TestCase):
         "market_overview.tasks.market_analysis_tasks.schedule_market_analysis_after_ingestion"
     )
     @patch("market_overview.tasks.try_acquire_redis_lock")
-    @patch(
-        "market_overview.services.price_ingestion.get_yahoo_finance_closing_prices"
-    )
-    @patch("market_overview.services.price_ingestion.requests.get")
+    @patch("market_overview.services.price_ingestion.get_yahoo_finance_closing_prices")
+    @patch("requests.get")
     def test_scheduled_market_data_ingestion_success_two_bdays_ago(
         self, mock_requests_get, mock_yahoo_finance, mock_lock, mock_schedule_analysis
     ):
@@ -385,9 +379,7 @@ class TestScheduledPriceUpdateLogsCleanup(TestCase):
         ]
 
     @freeze_time("2025-12-15")
-    @patch(
-        "market_overview.tasks.market_data.delete_price_update_logs_before_date"
-    )
+    @patch("market_overview.tasks.market_data.delete_price_update_logs_before_date")
     def test_scheduled_price_update_logs_cleanup_error(self, mock_delete):
         """
         GIVEN an error occurs during log cleanup

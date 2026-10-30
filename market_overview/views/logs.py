@@ -6,7 +6,6 @@ from typing import TypedDict
 from rest_framework import status
 from rest_framework.response import Response
 
-import core.services as core_services
 import market_overview.services.market_data as market_data
 from core.open_api.schema import (
     ApiTags,
@@ -50,7 +49,7 @@ class GetPriceUpdateLogsView(BaseAPIView):
         short_name: str | None = validated_data.get("short_name")
 
         if short_name:
-            core_services.get(AssetModel, short_name=short_name)
+            AssetModel.objects.get(short_name=short_name)
 
         price_update_logs = market_data.get_price_update_logs(
             price_date=price_date, short_name=short_name

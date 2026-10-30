@@ -15,7 +15,9 @@ from central_banks_overview.models import (
 from central_banks_overview.services.central_banks_inference import (
     get_central_bank_probability_matrices,
 )
-from central_banks_overview.services.central_banks_meetings import CentralBankMeetingDates
+from central_banks_overview.services.central_banks_meetings import (
+    CentralBankMeetingDates,
+)
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

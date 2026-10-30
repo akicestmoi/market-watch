@@ -64,8 +64,8 @@ table th, table td {
 
 /* Explicit cols — required so Name colspan=2 does not split 50/50 with Mode */
 col.col-category { width: 8.5%; }
-col.col-name { width: 20.5%; }
-col.col-mode { width: 2.75%; }
+col.col-name { width: 19%; }
+col.col-mode { width: 4.25%; }
 col.col-metric { width: 5.25%; }
 col.col-metric-period { width: 4.35%; }
 
@@ -136,18 +136,22 @@ table thead tr.thead-secondary th {
 .recap-mode-select {
     width: 100%;
     max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     appearance: none;
-    padding: 0.25rem 1rem 0.25rem 0.2rem;
+    padding: 0.25rem 0.85rem 0.25rem 0.25rem;
     border-radius: 0.375rem;
     border: 1px solid #0f172a;
     background-color: #e0f2fe;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231e293b' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.25rem center;
+    background-position: right 0.2rem center;
     background-size: 0.5rem;
     color: #1e293b;
     font-size: 0.7rem;
+    line-height: 1.2;
+    text-align: center;
+    text-align-last: center;
     cursor: pointer;
     transition: background-color 0.2s ease;
 }

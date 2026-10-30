@@ -5,6 +5,12 @@ alwaysApply: true
 
 # Coding conventions
 
+## No legacy / multi-environment shims
+
+This is a **personal project with a single environment**. Do **not** keep parallel query params, bookmark aliases, dual encodings, or “compat with old URLs/clients” paths. Prefer the current contract only; delete obsolete names when renaming.
+
+If a change **needs** a schema/migration (models, persisted `TextChoices`, etc.), **stop and ask** before adding or running migration files — do not invent compatibility layers to avoid that conversation.
+
 ## App / API structure
 
 Each Django app keeps a fixed layout. Do not invent parallel folders for the same concern.
@@ -13,13 +19,95 @@ Each Django app keeps a fixed layout. Do not invent parallel folders for the sam
 | ----------------------------------- | --------------------------------------------------------------------------------------------- |
 | Models / `TextChoices`              | `<app>/models.py`                                                                             |
 | Business logic                      | `<app>/services/` (one module per domain area)                                                |
+| Static service config               | `<app>/services/config.py` (see below)                                                        |
+| Redis / display payload caches      | `<app>/services/cache.py` (only when the app has Redis-backed caches)                         |
+| HTTP / HTML / file scrapers         | `<app>/services/scrapers/` (one module per source; only when the app has scrapers)            |
 | HTTP API views                      | `<app>/views/` (or `<app>/views.py` when tiny) — subclass `core.views.BaseAPIView`            |
 | Request serializers                 | `<app>/open_api/request_serializers.py`                                                       |
 | Response serializers                | `<app>/open_api/response_serializers.py`                                                      |
 | Celery tasks                        | `<app>/tasks.py`                                                                              |
 | App routes                          | `<app>/urls.py` — also register `include(...)` in `core/urls.py` when adding a new app prefix |
-| Tests                               | `<app>/tests/` mirroring services / views / tasks                                             |
+| Tests                               | `<app>/tests/` mirroring services (incl. `tests/services/scrapers/`) / views / tasks          |
 | Static JSON / fixtures used by code | `<app>/data_sources/`                                                                         |
+
+### Redis caches live in `<app>/services/cache.py`
+
+When an app stores computed payloads in Redis (display digests, article analyses, …), put those get/set/list helpers in **`<app>/services/cache.py`**. Create the module only if the app has at least one Redis-backed cache. Do not scatter Redis key builders or clients across domain service modules.
+
+**Belong in `services/cache.py`:** key / version stamps, TTL constants for those entries, domain serialize/deserialize (when wire shape ≠ inward shape), and public `get_cached_*` / `set_cached_*` / `list_cached_*` entry points. Use **`core.cache.get_cached_json` / `set_cached_json`** for Redis JSON get/set with a Pydantic ``TypeAdapter``; obtain the client only via **`core.cache.get_redis_client`** when you need set membership / pipelines / non-JSON ops — never call `redis.from_url` in app modules.
+
+**Stay in sibling service modules:** cache fingerprints built from domain inputs, adapters / TypedDicts for the live payload shape, and the compute-then-cache orchestration that calls into `cache.py`.
+
+Locks use the same Redis helper with binary responses (`get_redis_client()` / `decode_responses=False`) from `core.locks`. Shared Redis helpers live in **`core/cache.py`**. `@ttl_cache` on HTTP scrapers is unrelated — that stays on the scraper/helper, not in `cache.py`.
+
+### Scrapers live in `<app>/services/scrapers/`
+
+When an app fetches third-party HTTP / HTML / file payloads for ingestion, put **one module per source** under **`<app>/services/scrapers/`** (e.g. `services/scrapers/insee.py`, `services/scrapers/yahoo.py`). Create the package only if the app has at least one scraper. Leave `__init__.py` empty.
+
+**Belong in `services/scrapers/<source>.py`:** HTTP fetch, HTML/XML/CSV/XLSX/PDF parse, source-local TypedDicts / adapters, and (when applicable) that source’s publication-schedule scrape helpers.
+
+**Stay in sibling service modules:** source → callable **dispatch maps** (`SOURCE_SCRAP_MAP`, …), upsert / lock / query orchestration. URLs / series maps stay in `<app>/services/config.py` (scrapers import from there).
+
+Public scraper entry points are verb-led and **without** a leading `_` when imported from other service modules (e.g. `get_data_from_insee`). Module-private parse helpers keep `_`.
+
+### Static config lives in `<app>/services/config.py`
+
+App-wide **static** values used by services — URLs, timeouts, series/ticker maps, release-id tables, layout constants, frozen dataclass / TypedDict templates — belong in **`<app>/services/config.py`**, not scattered as globals across service modules. Import them from there.
+
+**Prefer global dict mappers over `match` / `get_*` lookup helpers — everywhere, not only in `config.py`.** When a closed set of keys maps to static values, declare `SOME_NAME_BY_KEY: dict[…] = {…}` and use `.get(...)` / `[...]` at the call site. Do **not** wrap that table in a `match` statement or a one-line `get_*` function.
+
+```python
+# ❌ BAD — match / get_* wrapper around a fixed table (any module)
+def get_default_error_message(status_code: int) -> str | None:
+    match status_code:
+        case 400:
+            return "Bad Request - …"
+        case 404:
+            return "Not Found - …"
+        ...
+
+def get_insee_csv_name(frequency: EconomicPublicationFrequencyChoices) -> str | None:
+    match frequency:
+        case EconomicPublicationFrequencyChoices.MONTHLY:
+            return "valeurs_mensuelles"
+        ...
+
+# ✅ GOOD — module-level mapper; `.get` at the call site
+DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE: dict[int, str] = {
+    400: "Bad Request - …",
+    404: "Not Found - …",
+    ...
+}
+INSEE_CSV_NAME_BY_FREQUENCY: dict[EconomicPublicationFrequencyChoices, str] = {
+    EconomicPublicationFrequencyChoices.MONTHLY: "valeurs_mensuelles",
+    EconomicPublicationFrequencyChoices.QUARTERLY: "valeurs_trimestrielles",
+    EconomicPublicationFrequencyChoices.ANNUAL: "valeurs_annuelles",
+}
+
+message = DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE.get(status_code)
+expected = INSEE_CSV_NAME_BY_FREQUENCY.get(frequency)
+```
+
+**`config.py` holds data only** — same rule, strictly: no `get_*` / `match` lookup helpers there. Composition that **builds** a request from several tables (e.g. Eurostat dataset + geo) lives in the **scraper / service module**, not in `config.py`.
+
+**Stay in the service module** (not `config.py`):
+
+- Source → callable **dispatch maps** (e.g. `SOURCE_SCRAP_MAP` with lambdas/helpers defined in that module)
+- Cache sizes / TTL tied to a single helper’s `@ttl_cache`
+- Truly local constants used only inside one function cluster
+
+Do not invent a second config module for the same app.
+
+### Django settings and secrets
+
+Load environment variables **only** in `core/settings.py` via `django-environ` (`env = environ.Env()` / `env("NAME")`). Elsewhere, read Django settings — never construct a second `environ.Env()`, call `os.environ[…]`, or read `.env` from a service module.
+
+| Need                                           | Pattern                                                                                                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Required / always-present setting              | `from django.conf import settings` then `settings.NAME` (e.g. `settings.TIME_ZONE`, `settings.CELERY_BROKER_URL`, `settings.LLM_MODEL_NAME`) |
+| Optional secret that should degrade when empty | `(getattr(settings, "NAME", None) or "").strip()` then branch (e.g. `FRED_API_KEY`, `OPENAI_API_KEY`)                                        |
+
+Add new env-backed values in `core/settings.py` first; callers import `settings`, not `environ`.
 
 ### Every REST endpoint uses `@open_api`
 
@@ -113,7 +201,7 @@ Python modules use this top-to-bottom order:
 
 1. **Module docstring**
 2. **Imports**
-3. **Module-level globals / constants** (URLs, cache sizes, literal maps, **and source → callable dispatch maps**) — all of these sit here, at the top
+3. **Module-level globals / constants** that **belong in this module** (dispatch maps, local cache sizes, **not** app-wide URLs/series maps — those go in `services/config.py`) — all of these sit here, at the top
 4. **Public-function clusters** (less complex → more complex), each shaped as:
 
 ```text
@@ -172,10 +260,13 @@ When a private callable is registered with an external API (e.g. an LLM tool), p
 
 ## Prefer enums / `TextChoices` over plain `str`
 
-When a domain value already has an enum, Django `TextChoices` / `IntegerChoices`, or similar closed set, **annotate and pass that type** — not `str`.
+When a value’s allowed choices are a **closed, determined set**, use an enum (or Django `TextChoices` / `IntegerChoices`) — **annotate and pass that type**, not `str`. If no enum exists yet, **introduce one** next to the code that owns the set (e.g. `EconomicDisplayCacheType` in `services/cache.py` for Redis namespaces). Do not leave magic strings like `"charts"` / `"recap"` as parameters or module constants when the set is known up front.
 
 ```python
-# ❌ BAD
+# ❌ BAD — closed set passed as free-form str
+def get_cached_economic_display(kind: str, fingerprint: str, ...) -> ...: ...
+_CHARTS_CACHE_KIND = "charts"
+
 def ingest(source: str, location: str) -> None: ...
 
 class Filters(TypedDict, total=False):
@@ -183,6 +274,14 @@ class Filters(TypedDict, total=False):
     source: str
 
 # ✅ GOOD
+class EconomicDisplayCacheType(str, Enum):
+    CHARTS = "charts"
+    RECAP = "recap"
+
+def get_cached_economic_display(
+    kind: EconomicDisplayCacheType, fingerprint: str, ...
+) -> ...: ...
+
 def ingest(source: PriceSourceChoices, location: LocationChoices) -> None: ...
 
 class Filters(TypedDict, total=False):
@@ -218,19 +317,40 @@ def load(rows: list[str]) -> dict[str, int] | None: ...
 
 Never annotate with `Any`, `object`, bare `dict` / `Dict`, or bare `tuple` / `Tuple`.
 
+**Never return a bare `dict` / `tuple` literal** for a known shape — construct via the declared type (`SomeTypedDict(...)`, `SomeNamedTuple(...)`). A return annotation of `SomeTypedDict` does **not** excuse `return {"field": ...}`; call the TypedDict (or NamedTuple) so the construction site names the type. Nested typed fields get the same treatment. The only exceptions are the documented `# Usage of dict: …` / `# Usage of tuple: …` cases below (dynamic keys, framework bags, …).
+
+```python
+# ❌ BAD — untyped literal even when the annotation is a TypedDict
+def build(...) -> EurostatTickerParams | None:
+    return {
+        "dataset": template.dataset,
+        "params": {**template.params, "geo": geo},
+    }
+
+# ✅ GOOD — construct with the declared TypedDict(s)
+def build(...) -> EurostatTickerParams | None:
+    params: EurostatQueryParams = {**template.params, "geo": geo}
+    return EurostatTickerParams(dataset=template.dataset, params=params)
+```
+
+Do **not** call a TypedDict as ``SomeTypedDict(**other_typed_dict, extra=...)`` — pyright cannot match that ``__init__`` overload. Merge into an annotated ``SomeTypedDict`` local (or pass fields explicitly), then pass that value into the outer TypedDict constructor.
+```
+
 ### TypedDict vs Pydantic `BaseModel` vs Django `BaseModel`
 
 Three different “model” concepts — do not mix them:
 
-| Tool | Runtime? | Use for |
-| ---- | -------- | ------- |
-| **`TypedDict`** | No (typing only; value is a plain `dict`) | Internal record/mapping shapes we **build and trust**: service payloads, template/UI context, chat/tool return dicts, scraper/ingestion rows after we picked fields, DRF `*ValidatedData` **after** serializers ran; **and** the shape of third-party / Redis / HTTP JSON **after** validation |
-| **Pydantic `BaseModel`** / **`TypeAdapter`** | Yes (parse / coerce / validate) | **Trust boundaries** that admit messy input — **LLM structured outputs** (`BaseModel` + Field under `market_analysis/llm/schemas.py`) **and** third-party / cache JSON (`TypeAdapter(SomeTypedDict).validate_python(raw)` is preferred when the shape is a TypedDict) |
-| **Django `core.models.BaseModel`** | ORM | Persisted DB models only. Unrelated to Pydantic |
+| Tool                                         | Runtime?                                  | Use for                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`TypedDict`**                              | No (typing only; value is a plain `dict`) | Internal record/mapping shapes we **build and trust**: service payloads, template/UI context, chat/tool return dicts, scraper/ingestion rows after we picked fields, DRF `*ValidatedData` **after** serializers ran; **and** the shape of third-party / Redis / HTTP JSON **after** validation |
+| **Pydantic `BaseModel`** / **`TypeAdapter`** | Yes (parse / coerce / validate)           | **Trust boundaries** that admit messy input — **LLM structured outputs** (`BaseModel` + Field under `market_analysis/llm/schemas.py`) **and** third-party / cache JSON (`TypeAdapter(SomeTypedDict).validate_python(raw)` is preferred when the shape is a TypedDict)                          |
+| **Django `core.models.BaseModel`**           | ORM                                       | Persisted DB models only. Unrelated to Pydantic                                                                                                                                                                                                                                                |
 
 **HTTP JSON APIs** validate with **DRF serializers** (`<app>/open_api/`), not Pydantic. Map `validated_data` into a view-local `*ValidatedData` TypedDict, then call services with typed values (enums converted at the view boundary).
 
-**Third-party / cache JSON (required):** Do **not** annotate scraped or loaded JSON as bare `dict`, `dict[str, Any]`, or a **`Protocol`**. `Protocol` is for behavioral duck typing (methods), not JSON object shapes. Declare a **`TypedDict`** (nested as needed; `total=False` when fields may be absent) for the keys we read, then validate once at the edge with **`TypeAdapter(ThatTypedDict).validate_python(raw)`** (catch `ValidationError`). Pass only the TypedDict inward. Do **not** hand-write nested field-by-field coerce trees. Open-key maps inside that payload (e.g. JSON-stat flat indexes) stay `dict[str, …]` of already-typed values with the usual one-line comment.
+**Third-party / cache JSON (required):** Do **not** annotate scraped or loaded JSON as bare `dict`, `dict[str, Any]`, or a **`Protocol`**. `Protocol` is for behavioral duck typing (methods), not JSON object shapes. Declare a **`TypedDict`** (nested as needed; `total=False` when fields may be absent) for the keys we read, then validate once at the edge with **`TypeAdapter(ThatTypedDict).validate_python(raw)`** (catch `ValidationError`). Pass only the TypedDict inward. Do **not** hand-write nested field-by-field coerce trees.
+
+Flat maps with **truly dynamic keys not known in advance** (e.g. JSON-stat flat indexes) may stay `dict[str, …]` of already-typed values; comment with `# Usage of dict: …` (e.g. `# Usage of dict: keys are JSON-stat flat indexes; values are observation numbers.`). If every key is **known in advance**, do **not** use that exception — pick a typed shape instead (e.g. a `TypedDict` with those fields, a `list` of TypedDicts, a `NamedTuple`, … — whatever fits; not limited to these examples).
 
 **LLM pipeline pattern (required):** Pydantic schema at the agent boundary → map into a **TypedDict** (or ORM fields) for process memory, cache, and persistence. Do not thread Pydantic instances through services/UI; do not re-validate trusted internal dicts with Pydantic.
 
@@ -258,7 +378,43 @@ class DailyRecapOutput(TypedDict):
     main_summary: str
 ```
 
-Use **`NamedTuple`** for fixed-position multi-field returns (not for open JSON objects). Homogeneous sequences use `list[SomeTypedDict]`. Small frozen `@dataclass` configs with defaults are allowed when a TypedDict would be awkward; do not use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records.
+Use **`NamedTuple`** for fixed-position multi-field returns / small fixed records (not for open JSON objects). Homogeneous sequences use **`list[...]`** by default (e.g. `list[SomeTypedDict]`).
+
+**`tuple` — only when justified (same bar as `dict`).** Prefer `list` for sequences and `NamedTuple` for named fixed fields. Do **not** wrap values in `tuple(...)` or annotate `tuple[...]` just for style, immutability theater, or frozen-dataclass friendliness. Use a `tuple` only when you have a real reason (e.g. a fixed-length positional value that is not worth a `NamedTuple`, or an API that requires a tuple). When you do, comment with `# Usage of tuple: …` stating the reason (same pattern as `dict` below).
+
+**`@dataclass` — only when TypedDict / NamedTuple are a poor fit.** Prefer **`TypedDict`** for trusted internal / config / query shapes (plain `dict` at runtime). Prefer **`NamedTuple`** when every field is required and you want attribute access. Use a **frozen `@dataclass`** only when you need a real constructor (`Foo(...)`) **and** optional fields / defaults that make `TypedDict` or `NamedTuple` awkward (typical: static module config entries like `EurostatSeriesTemplate(...)`). Do **not** reach for dataclass by default; do **not** use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records you already model as TypedDict.
+
+```python
+# ✅ TypedDict — trusted query / row shape (default choice)
+class EurostatQueryParams(TypedDict, total=False):
+    freq: Required[str]
+    sinceTimePeriod: Required[str]
+    geo: str
+
+# ✅ NamedTuple — fixed required fields, attribute access
+class BojTankanSeries(NamedTuple):
+    ticker: str
+    sector_label: str
+    size: str
+
+# ✅ frozen dataclass — constructor + optional defaults for static config
+@dataclass(frozen=True)
+class EurostatSeriesTemplate:
+    key: str
+    dataset: str
+    params: EurostatQueryParams
+    locations: list[EconomicDataLocationChoices] | None = None
+    geo: str | None = None
+
+# ❌ BAD — dataclass for a plain trusted mapping (use TypedDict)
+@dataclass(frozen=True)
+class EurostatTickerParams:
+    dataset: str
+    params: EurostatQueryParams
+
+# ❌ BAD — tuple used without a reason (prefer list / NamedTuple / enum helpers)
+locations = tuple(EconomicDataLocationChoices.charts_eu_countries())
+```
 
 **Do not** return or annotate `tuple[…]` / `Tuple[…]` for a pair or n-tuple of named fields — even when the element types are already enums / TypedDicts. Give it a `NamedTuple` (or a TypedDict if it is JSON-shaped).
 
@@ -287,7 +443,8 @@ class DayEventChangeDisplay(NamedTuple):
 class EurostatJsonStatPayload(TypedDict):
     id: list[str]
     size: list[int]
-    value: dict[str, float | int | None]  # open flat-index keys
+    # Usage of dict: keys are JSON-stat flat indexes; values are observation numbers.
+    value: dict[str, float | int | None]
     dimension: dict[str, EurostatJsonStatDimension]
 
 def load() -> list[PriceChange]: ...
@@ -298,15 +455,15 @@ def parse_eurostat(payload: EurostatJsonStatPayload): ...
 
 Do **not** use `list[Any]`, `dict[str, Any]`, or `Mapping[Any, Any]` as an escape hatch around pandas / Redis / JSON. For untrusted JSON use `TypeAdapter(TypedDict)`; for values we already trust, build the TypedDict / NamedTuple from known fields.
 
-Open-key framework bags (Django `updates=` / `filter` kwargs, DRF `validated_data`) must still be declared as a **TypedDict** matching the known fields (`total=False` when partial).
+Framework kwargs bags (Django `updates=` / `filter` kwargs, DRF `validated_data`) must still be declared as a **TypedDict** matching the known fields (`total=False` when partial).
 
 DRF **`*ValidatedData` TypedDicts** live in the **view module** that annotates `validated_data` (not in `open_api/request_serializers.py`). Serializers stay in the serializer module.
 
-Allowed exceptions (document in a one-line comment at the site):
+Allowed exceptions — prefer structured types; use `dict` only when one of these applies. Comment every exception with `# Usage of dict: …` (or `# Usage of tuple: …`) plus the reason:
 
-- Homogeneous open-key maps of already-typed values, e.g. `dict[str, list[PriceChange]]` when keys are dynamic IDs/names.
-- Polymorphic model serializers such as Django `BaseModel.convert_to_dict` until per-model TypedDicts exist.
-- Abstract cross-model helpers such as `update_with_logs` / `upsert_with_logs` (`updates=` / `lookup_kwargs=`) — field keys vary by model; use bare `dict` with the polymorphic comment, do **not** invent a union TypedDict of every model’s fields.
+- Lookup / query maps where **keys are dynamic (not a closed set known up front)** (runtime tickers from the DB, HTTP query names assembled for `requests`, JSON-stat flat indexes, …) and **values are already typed**, e.g. `dict[str, list[PriceChange]]`. If the key set is fixed and known, use a typed structure instead (TypedDict, `list` of TypedDicts, NamedTuple, `match` helper, …) — do **not** keep a `dict` just because lookup is convenient. Example: `# Usage of dict: built for requests.get(params=...); keys are API query names.`
+- Polymorphic model serializers such as Django `BaseModel.convert_to_dict` until per-model TypedDicts exist (e.g. `# Usage of dict: field keys vary by Django model until per-model TypedDicts exist.`).
+- Abstract cross-model helpers such as `update_with_logs` / `upsert_with_logs` (`updates=` / `lookup_kwargs=`) — field keys vary by model; use bare `dict` with `# Usage of dict: …`, do **not** invent a union TypedDict of every model’s fields.
 
 ## Remove dead code
 
@@ -369,6 +526,29 @@ def test_get_recap_not_found(self):
     THEN a 404 response is returned
     """
 ```
+
+### Test assertions: hardcode the full expected value
+
+Assert the **entire** expected payload (response context, service return, …) in one equality check with a hardcoded literal. Do **not** cherry-pick individual fields — partial asserts hide drift and are harder to debug when something else in the structure changes.
+
+```python
+# ❌ BAD — field-by-field; misses unrelated regressions
+assert response_context["period_window"] == "5Y"
+assert selected["fr_growth_indicator"] == "GDP|YOY"
+assert selected["fr_confidence_indicator"] == "Aggregate Business Confidence|ABS"
+
+# ✅ GOOD — full hardcoded expected value
+assert response_context == {
+    "region": "France",
+    "period_window": "5Y",
+    "dropdown_values": { ... },
+    "economic_data": [ ... ],
+    "categories": [ ... ],
+    "selected_values": { ... },
+}
+```
+
+Status-code checks (`assert response.status_code == 200`) may stay separate. Tiny unit helpers that return a single scalar or a small fixed tuple may assert that value directly.
 
 ### Test mocks: decorator only; configure inside the test
 

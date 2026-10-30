@@ -9,13 +9,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from core.services import logger
 from market_overview.models import HolidayModel, LocationChoices
-
-HOLIDAY_COUNTRIES: list[LocationChoices] = [
-    LocationChoices.US,
-    LocationChoices.FR,
-    LocationChoices.JP,
-]
-HOLIDAY_API_URL = "https://date.nager.at/api/v3/publicholidays/"
+from market_overview.services.config import HOLIDAY_API_URL
 
 
 class HolidayApiItem(TypedDict):

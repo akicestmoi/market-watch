@@ -11,7 +11,6 @@ import market_overview.services.market_data as market_data
 from market_overview.models import AssetClassChoices, LocationChoices
 from market_overview.services.market_data import (
     AssetNames,
-    GetAssetNamesFilters,
     HistoricalPrice,
     YieldCurvePoint,
 )
@@ -39,24 +38,15 @@ class MarketChartsDropdownValues(TypedDict):
 
 def get_market_charts_dropdown_values() -> MarketChartsDropdownValues:
     """Get dropdown values."""
-    asset_classes: dict[str, GetAssetNamesFilters] = {
-        "stocks": {"asset_class": AssetClassChoices.STOCKS},
-        "fx": {"asset_class": AssetClassChoices.FX},
-        "crypto": {"asset_class": AssetClassChoices.CRYPTO},
-        "commodity": {"asset_class": AssetClassChoices.COMMODITIES},
-        "rates": {"asset_class": AssetClassChoices.RATES},
-    }
-    dropdown_values = {
-        name: market_data.get_asset_names(filters)
-        for name, filters in asset_classes.items()
-    }
     locations = LocationChoices.get_labels()
     return MarketChartsDropdownValues(
-        stocks=dropdown_values["stocks"],
-        fx=dropdown_values["fx"],
-        crypto=dropdown_values["crypto"],
-        commodity=dropdown_values["commodity"],
-        rates=dropdown_values["rates"],
+        stocks=market_data.get_asset_names({"asset_class": AssetClassChoices.STOCKS}),
+        fx=market_data.get_asset_names({"asset_class": AssetClassChoices.FX}),
+        crypto=market_data.get_asset_names({"asset_class": AssetClassChoices.CRYPTO}),
+        commodity=market_data.get_asset_names(
+            {"asset_class": AssetClassChoices.COMMODITIES}
+        ),
+        rates=market_data.get_asset_names({"asset_class": AssetClassChoices.RATES}),
         locations=locations,
     )
 

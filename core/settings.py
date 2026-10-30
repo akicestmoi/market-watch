@@ -143,6 +143,10 @@ USE_TZ = True
 OPENAI_API_KEY = env("OPENAI_API_KEY")
 LLM_MODEL_NAME = "openai:gpt-6-luna"
 
+# FRED (St. Louis Fed) — required for US economic series ingestion.
+# https://fred.stlouisfed.org/docs/api/api_key.html
+FRED_API_KEY = env("FRED_API_KEY")
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/

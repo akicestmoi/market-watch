@@ -1,7 +1,83 @@
 const AGENT_CHAT_STORAGE_KEY = "marketWatchAgentChatMessages";
+const AGENT_CHAT_DISPLAY_TIMEZONE = "Europe/Paris";
 
 let agentChatMessages = loadAgentChatMessages();
 let agentChatBusy = false;
+
+function getAgentChatTimestampIso() {
+  return new Date().toISOString();
+}
+
+function getAgentChatDayParts(isoTimestamp) {
+  if (!isoTimestamp) {
+    return null;
+  }
+  const parsed = new Date(isoTimestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: AGENT_CHAT_DISPLAY_TIMEZONE,
+    weekday: "long",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(parsed);
+  const byType = {};
+  parts.forEach((part) => {
+    if (part.type !== "literal") {
+      byType[part.type] = part.value;
+    }
+  });
+  if (!byType.year || !byType.month || !byType.day) {
+    return null;
+  }
+  const monthIndex = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ].indexOf(byType.month);
+  const monthNumber = String(monthIndex + 1).padStart(2, "0");
+  return {
+    dayKey: `${byType.year}-${monthNumber}-${byType.day}`,
+    dayLabel: `${byType.weekday}, ${byType.day} ${byType.month} ${byType.year}`,
+    timeLabel: `${byType.hour}:${byType.minute}`,
+  };
+}
+
+function formatAgentChatTimestamp(isoTimestamp) {
+  const parts = getAgentChatDayParts(isoTimestamp);
+  return parts ? parts.timeLabel : "";
+}
+
+function appendAgentChatDaySectionIfNeeded(container, isoTimestamp) {
+  const parts = getAgentChatDayParts(isoTimestamp);
+  if (!parts || !container) {
+    return;
+  }
+  if (container.dataset.lastChatDayKey === parts.dayKey) {
+    return;
+  }
+  container.dataset.lastChatDayKey = parts.dayKey;
+  const section = document.createElement("div");
+  section.className = "agent-chat-day-section";
+  section.setAttribute("role", "separator");
+  section.setAttribute("aria-label", parts.dayLabel);
+  section.textContent = parts.dayLabel;
+  container.appendChild(section);
+}
 
 function loadAgentChatMessages() {
   try {
@@ -24,6 +100,8 @@ function loadAgentChatMessages() {
       .map((message) => ({
         role: message.role,
         content: String(message.content || ""),
+        created_at:
+          typeof message.created_at === "string" ? message.created_at : undefined,
         fields: Array.isArray(message.fields) ? message.fields : undefined,
       }))
       .filter((message) => message.content || (message.fields && message.fields.length));
@@ -578,9 +656,9 @@ async function generateDailyRecap() {
 const PROPOSAL_FIELD_LABELS = {
   title: "Title",
   main_summary: "Summary",
-  us_summary: "Summary for US zone",
-  eur_summary: "Summary for EU zone",
-  jp_summary: "Summary for Japan zone",
+  us_summary: "Summary for US region",
+  eur_summary: "Summary for EU region",
+  jp_summary: "Summary for Japan region",
   additional_summary: "Additional summary",
 };
 
@@ -608,9 +686,22 @@ function formatProposalContent(fields) {
     .join("\n\n");
 }
 
+function appendAgentChatTimestamp(bubble, isoTimestamp) {
+  const formatted = formatAgentChatTimestamp(isoTimestamp);
+  if (!formatted) {
+    return;
+  }
+  const meta = document.createElement("div");
+  meta.className = "agent-chat-bubble-meta";
+  meta.textContent = formatted;
+  bubble.appendChild(meta);
+}
+
 function appendProposalBubble(container, message) {
+  appendAgentChatDaySectionIfNeeded(container, message.created_at);
   const bubble = document.createElement("div");
   bubble.className = "agent-chat-bubble proposal";
+  appendAgentChatTimestamp(bubble, message.created_at);
 
   const heading = document.createElement("div");
   heading.className = "agent-chat-proposal-heading";
@@ -659,17 +750,24 @@ function renderAgentChatMessages(options = {}) {
     return;
   }
   container.innerHTML = "";
+  delete container.dataset.lastChatDayKey;
   agentChatMessages.forEach((message) => {
     if (message.role === "proposal") {
       appendProposalBubble(container, message);
       return;
     }
+    appendAgentChatDaySectionIfNeeded(container, message.created_at);
     const bubble = document.createElement("div");
     bubble.className = `agent-chat-bubble ${message.role}`;
-    bubble.textContent = message.content;
+    appendAgentChatTimestamp(bubble, message.created_at);
+    const body = document.createElement("div");
+    body.className = "agent-chat-bubble-body";
+    body.textContent = message.content;
+    bubble.appendChild(body);
     container.appendChild(bubble);
   });
   if (options.pending) {
+    appendAgentChatDaySectionIfNeeded(container, getAgentChatTimestampIso());
     const pending = document.createElement("div");
     pending.className = "agent-chat-bubble pending";
     pending.id = "agentChatPending";
@@ -685,9 +783,15 @@ function appendAgentChatNote(text) {
   if (!container || !text) {
     return;
   }
+  const noteTimestamp = getAgentChatTimestampIso();
+  appendAgentChatDaySectionIfNeeded(container, noteTimestamp);
   const note = document.createElement("div");
   note.className = "agent-chat-bubble system-note";
-  note.textContent = text;
+  appendAgentChatTimestamp(note, noteTimestamp);
+  const body = document.createElement("div");
+  body.className = "agent-chat-bubble-body";
+  body.textContent = text;
+  note.appendChild(body);
   container.appendChild(note);
   container.scrollTop = container.scrollHeight;
 }
@@ -751,7 +855,11 @@ async function sendAgentChatMessage(event) {
     }));
 
   agentChatBusy = true;
-  agentChatMessages.push({ role: "user", content: question });
+  agentChatMessages.push({
+    role: "user",
+    content: question,
+    created_at: getAgentChatTimestampIso(),
+  });
   renderAgentChatMessages({ pending: true });
   if (overlay) {
     overlay.classList.add("active");
@@ -803,6 +911,7 @@ async function sendAgentChatMessage(event) {
     agentChatMessages.push({
       role: "assistant",
       content: answer || "(empty reply)",
+      created_at: getAgentChatTimestampIso(),
     });
 
     const proposalFields = buildProposalFieldsFromResponse(data);
@@ -811,6 +920,7 @@ async function sendAgentChatMessage(event) {
         role: "proposal",
         content: formatProposalContent(proposalFields),
         fields: proposalFields,
+        created_at: getAgentChatTimestampIso(),
       });
     }
 
@@ -831,6 +941,7 @@ async function sendAgentChatMessage(event) {
     agentChatMessages.push({
       role: "assistant",
       content: `Chat failed: ${err.message}`,
+      created_at: getAgentChatTimestampIso(),
     });
     renderAgentChatMessages();
   } finally {

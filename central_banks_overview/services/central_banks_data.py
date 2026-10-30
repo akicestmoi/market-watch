@@ -8,15 +8,12 @@ from typing import TypedDict
 from django.db.models import F, Max, OuterRef, QuerySet, Subquery
 
 from central_banks_overview.models import CentralBankChoices, CentralBankDataModel
+from central_banks_overview.services.config import CENTRAL_BANKS_DATA_JSON
 from core.services import logger
 from market_overview.models import PriceSourceChoices
-from market_overview.services.price_ingestion import (
-    ScrapingResult,
-    get_webstat_rates,
-    scrap_from_global_rates,
-)
-
-CENTRAL_BANKS_DATA_JSON = "central_banks_overview/data_sources/central_banks_data.json"
+from market_overview.services.scrapers.common import ScrapingResult
+from market_overview.services.scrapers.global_rates import scrap_from_global_rates
+from market_overview.services.scrapers.webstat import get_webstat_rates
 
 CENTRAL_BANK_DATA_MAP: dict[
     PriceSourceChoices, Callable[[date, str], ScrapingResult]

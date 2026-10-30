@@ -2,14 +2,14 @@
 
 import logging
 from datetime import date, datetime, timezone
-from typing import NamedTuple, TypeVar
+from enum import Enum
+from typing import TypeVar
 from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
 from django.utils import timezone as dj_timezone
@@ -22,11 +22,6 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 L = TypeVar("L", bound=BaseLogModel)
 
-# Cache configuration constants
-# Used by @ttl_cache decorators across the codebase for consistent caching behavior
-CACHE_MAXSIZE = 128  # Maximum number of cached entries per function
-CACHE_TTL_SECONDS = 10 * 60  # Time-to-live: 10 minutes (600 seconds)
-
 # Source wall-clock zones for location codes (economic / market location choices).
 # Naive publish times from a source are interpreted in this zone, then stored as UTC.
 SOURCE_TIMEZONE_BY_LOCATION_CODE: dict[str, str] = {
@@ -38,42 +33,50 @@ SOURCE_TIMEZONE_BY_LOCATION_CODE: dict[str, str] = {
 }
 
 
-class ValueChange(NamedTuple):
-    """Absolute, percent, and basis-point change from previous to current.
+class ValueChangeOutput(str, Enum):
+    """Which scalar ``calculate_value_change`` should return."""
 
-    Period labels (DoD / WoW / MoM / QoQ / YoY) are caller concerns: pick the
-    comparison value, then call ``calculate_value_change``. ``bps`` is
-    ``absolute * 100`` (yields quoted in percent). Point changes for vol use
-    ``absolute``.
-    """
-
-    absolute: float | None
-    percent: float | None
-    bps: float | None
+    ABSOLUTE = "absolute"
+    PERCENT = "percent"
+    BPS = "bps"
+    ANNUALIZED_PERCENT = "annualized_percent"
 
 
 def calculate_value_change(
     current: float | None,
     previous: float | None,
-) -> ValueChange:
-    """Compute level / % / bps change from ``previous`` to ``current``.
+    output: ValueChangeOutput,
+    annualized_ratio: float | None = None,
+) -> float | None:
+    """Compute one change metric from ``previous`` to ``current``.
 
-    Returns None fields when either input is None. ``percent`` is also None when
-    ``previous`` is 0 (undefined ratio).
+    Period labels (DoD / WoW / MoM / QoQ / QoQy / YoY) are caller concerns: pick
+    the comparison value and ``output``. Returns None when either input is None.
+
+    - ``ABSOLUTE`` — ``current - previous``
+    - ``PERCENT`` — ``(absolute / previous) * 100`` (None if ``previous`` is 0)
+    - ``BPS`` — ``absolute * 100`` (yields quoted in percent)
+    - ``ANNUALIZED_PERCENT`` — ``((current / previous) ** annualized_ratio - 1) *
+      100`` (requires ``annualized_ratio``; None if ``previous`` is 0 or the
+      ratio is non-positive)
     """
     if current is None or previous is None:
-        return ValueChange(absolute=None, percent=None, bps=None)
+        return None
     absolute = current - previous
-    percent = None if previous == 0 else (absolute / previous) * 100
-    return ValueChange(absolute=absolute, percent=percent, bps=absolute * 100)
-
-
-def get(model: type[T], *args, **kwargs) -> T:
-    """Get entity from database."""
-    try:
-        return model.objects.get(*args, **kwargs)
-    except ObjectDoesNotExist:
-        raise NotFound(detail=f"No {model.__name__} found matching {kwargs}")
+    match output:
+        case ValueChangeOutput.ABSOLUTE:
+            return absolute
+        case ValueChangeOutput.BPS:
+            return absolute * 100
+        case ValueChangeOutput.PERCENT:
+            return None if previous == 0 else (absolute / previous) * 100
+        case ValueChangeOutput.ANNUALIZED_PERCENT:
+            if annualized_ratio is None or previous == 0:
+                return None
+            ratio = current / previous
+            if ratio <= 0:
+                return None
+            return ((ratio**annualized_ratio) - 1) * 100
 
 
 def update_with_logs(
@@ -146,7 +149,8 @@ def upsert_with_logs(
             none_skip_fields=none_skip_fields,
             enable_none_updates=enable_none_updates,
         )
-    except ObjectDoesNotExist:
+    except NotFound:
+        # BaseManager.get maps a missing row to DRF NotFound.
         create_data = {
             **lookup_kwargs,
             **{k: v for k, v in updates.items() if k != "logs"},

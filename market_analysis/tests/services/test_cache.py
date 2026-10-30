@@ -1,4 +1,4 @@
-"""Tests for analysis_cache."""
+"""Tests for market analysis Redis cache helpers."""
 
 from datetime import date
 from unittest.mock import MagicMock, patch
@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from market_analysis.llm.config import PROMPT_VERSION
 from market_analysis.llm.schemas import EventType, Sentiment
-from market_analysis.services import analysis_cache
+from market_analysis.services import cache
 from market_analysis.services.llm_market_recap import AnalyzedArticle
 
 
@@ -27,10 +27,11 @@ def _sample_analyzed() -> AnalyzedArticle:
 
 
 class AnalysisCacheServicesTests(TestCase):
-    """Tests for analysis_cache Redis cache helpers."""
+    """Tests for article-analysis Redis cache helpers."""
 
-    @patch("market_analysis.services.analysis_cache._get_redis_client")
-    def test_set_get_list_roundtrip(self, mock_redis_factory):
+    @patch("market_analysis.services.cache.get_redis_client")
+    @patch("core.cache.get_redis_client")
+    def test_set_get_list_roundtrip(self, mock_core_redis, mock_local_redis):
         """
         GIVEN a mocked Redis client and an analyzed article
         WHEN the analysis is cached then fetched and listed
@@ -69,22 +70,21 @@ class AnalysisCacheServicesTests(TestCase):
         client.pipeline.return_value = pipe
         client.get.side_effect = get
         client.smembers.side_effect = smembers
-        mock_redis_factory.return_value = client
+        mock_core_redis.return_value = client
+        mock_local_redis.return_value = client
 
         day = date(2025, 12, 12)
         article = _sample_analyzed()
-        analysis_cache.set_cached_analysis(
-            day, article, source_url=article["source_url"]
-        )
-        key = analysis_cache._build_entry_key(day, article["source_url"])
+        cache.set_cached_analysis(day, article, source_url=article["source_url"])
+        key = cache._build_entry_key(day, article["source_url"])
         assert key in store
 
-        got = analysis_cache.get_cached_analysis(day, article["source_url"])
+        got = cache.get_cached_analysis(day, article["source_url"])
         assert got is not None
         assert got["source_url"] == article["source_url"]
         assert got["analysis"]["title"] == "t"
         assert got["prompt_version"] == PROMPT_VERSION
 
-        listed = analysis_cache.list_cached_analyses(day)
+        listed = cache.list_cached_analyses(day)
         assert listed["count"] == 1
         assert listed["items"][0]["analysis"]["companies"] == ["Acme"]

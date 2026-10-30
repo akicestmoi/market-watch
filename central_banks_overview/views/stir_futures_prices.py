@@ -22,6 +22,9 @@ from central_banks_overview.open_api.response_serializers import (
     StirFuturesPriceIngestionResponseSerializer,
     StirFuturesPriceResponseSerializer,
 )
+from central_banks_overview.services.scrapers.estr_futures import (
+    extract_estr_prices_from_pdf,
+)
 from central_banks_overview.services.stir_prices_ingestion import (
     BulkUpdateFuturesPricesItem,
 )
@@ -129,9 +132,7 @@ class EstrPriceIngestionViaPdfView(BaseAPIView):
                 f"{price_date.isoformat()}."
             ),
         ):
-            estr_prices = stir_prices_ingestion.extract_estr_prices_from_pdf(
-                pdf_file.read(), price_date
-            )
+            estr_prices = extract_estr_prices_from_pdf(pdf_file.read(), price_date)
             stir_futures_updated = stir_prices_ingestion.ingest_stir_futures_prices(
                 estr_prices
             )

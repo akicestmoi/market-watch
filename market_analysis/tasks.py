@@ -1,7 +1,5 @@
 """Celery entry points that queue or run the daily market-analysis pipeline."""
 
-from __future__ import annotations
-
 from datetime import date
 
 from celery import shared_task
