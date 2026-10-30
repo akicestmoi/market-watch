@@ -34,7 +34,7 @@ class Sentiment(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class EvidenceItem(BaseModel):
+class _EvidenceItem(BaseModel):
     """A single claim backed by a source URL and quote/paraphrase."""
 
     claim: str = Field(..., max_length=500)
@@ -124,7 +124,7 @@ class ChatAnswerOutput(BaseModel):
     """LLM shape for a chat reply."""
 
     answer: str = Field(..., max_length=8000)
-    citations: list[EvidenceItem] = Field(default_factory=list, max_length=15)
+    citations: list[_EvidenceItem] = Field(default_factory=list, max_length=15)
     missing_information: list[str] = Field(default_factory=list, max_length=10)
     uncertainties: list[str] = Field(default_factory=list, max_length=10)
     proposed_recap_title: str | None = Field(

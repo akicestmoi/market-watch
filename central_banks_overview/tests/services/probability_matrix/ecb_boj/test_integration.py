@@ -16,7 +16,7 @@ from central_banks_overview.services.central_banks_inference import (
     get_central_bank_probability_matrices,
 )
 from central_banks_overview.services.central_banks_meetings import (
-    CentralBankMeetingDates,
+    _CentralBankMeetingDates,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -70,7 +70,7 @@ class TestECBIntegrationScenarios(TestCase):
         """
         meeting_date = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date],
             )
@@ -125,7 +125,7 @@ class TestECBIntegrationScenarios(TestCase):
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )
@@ -185,7 +185,7 @@ class TestECBIntegrationScenarios(TestCase):
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_3 = datetime(2026, 5, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date_1, meeting_date_2, meeting_date_3],
             )
@@ -250,7 +250,7 @@ class TestECBIntegrationScenarios(TestCase):
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 6, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )
@@ -328,7 +328,7 @@ class TestECBIntegrationScenarios(TestCase):
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )
@@ -391,11 +391,11 @@ class TestECBIntegrationScenarios(TestCase):
         meeting_date_ecb = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_boj = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date_ecb],
             ),
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.BOJ,
                 meeting_dates=[meeting_date_boj],
             ),
@@ -530,7 +530,7 @@ class TestECBIntegrationScenarios(TestCase):
         """
         meeting_date = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[meeting_date],
             )
@@ -597,7 +597,7 @@ class TestECBIntegrationScenarios(TestCase):
         THEN the override meeting dates are used instead of fetched ones
         """
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)],
             )
@@ -696,7 +696,7 @@ class TestBOJIntegrationScenarios(TestCase):
         """
         meeting_date = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.BOJ,
                 meeting_dates=[meeting_date],
             )
@@ -747,7 +747,7 @@ class TestBOJIntegrationScenarios(TestCase):
         meeting_date_1 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.BOJ,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )
@@ -807,7 +807,7 @@ class TestBOJIntegrationScenarios(TestCase):
         meeting_date_2 = datetime(2026, 4, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_3 = datetime(2026, 5, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.BOJ,
                 meeting_dates=[meeting_date_1, meeting_date_2, meeting_date_3],
             )
@@ -911,7 +911,7 @@ class TestBOJIntegrationScenarios(TestCase):
         """
         meeting_date = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.BOJ,
                 meeting_dates=[meeting_date],
             )
@@ -974,7 +974,7 @@ class TestBOJIntegrationScenarios(TestCase):
         THEN the override meeting dates are used instead of fetched ones
         """
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.BOJ,
                 meeting_dates=[datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)],
             )

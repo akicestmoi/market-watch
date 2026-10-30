@@ -11,27 +11,27 @@ from rest_framework.views import APIView
 from core.services import logger
 
 
-class FieldValidationError(TypedDict):
+class _FieldValidationError(TypedDict):
     """One field-level validation error (field name + message)."""
 
     field: str
     message: str
 
 
-class ErrorResponseDetail(TypedDict, total=False):
+class _ErrorResponseDetail(TypedDict, total=False):
     """Optional structured error detail."""
 
     exception: str
-    field_errors: list[FieldValidationError]
+    field_errors: list[_FieldValidationError]
 
 
-class ErrorResponseBody(TypedDict):
+class _ErrorResponseBody(TypedDict):
     """Standardized API error response body."""
 
     error: str
     message: str
     status_code: int
-    detail: NotRequired[ErrorResponseDetail | None]
+    detail: NotRequired[_ErrorResponseDetail | None]
 
 
 class BaseErrorResponseModel:
@@ -43,10 +43,10 @@ class BaseErrorResponseModel:
         error_type: str,
         message: str,
         status_code: int,
-        detail: ErrorResponseDetail | None = None,
-    ) -> ErrorResponseBody:
+        detail: _ErrorResponseDetail | None = None,
+    ) -> _ErrorResponseBody:
         """Create a standardized error response dictionary."""
-        body: ErrorResponseBody = {
+        body: _ErrorResponseBody = {
             "error": error_type,
             "message": message,
             "status_code": status_code,
@@ -64,7 +64,7 @@ class BaseAPIView(APIView):
         Handle any exception that occurs in the view.
         Always returns a JSON response instead of HTML.
         """
-        detail: ErrorResponseDetail | None = None
+        detail: _ErrorResponseDetail | None = None
         if isinstance(exc, Http404):
             error_type = "Not Found"
             message = str(exc) if str(exc) else "The requested resource was not found."
@@ -76,19 +76,19 @@ class BaseAPIView(APIView):
             status_code = exc.status_code
             # Field-level ValidationError uses a dict; a bare string becomes a list.
             if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
-                field_errors: list[FieldValidationError] = []
+                field_errors: list[_FieldValidationError] = []
                 for field, value in exc.detail.items():
                     if isinstance(value, list):
                         field_message = "; ".join(str(item) for item in value)
                     else:
                         field_message = str(value)
                     field_errors.append(
-                        FieldValidationError(field=str(field), message=field_message)
+                        _FieldValidationError(field=str(field), message=field_message)
                     )
                 message = "; ".join(
                     f"{error['field']}: {error['message']}" for error in field_errors
                 )
-                detail = ErrorResponseDetail(field_errors=field_errors)
+                detail = _ErrorResponseDetail(field_errors=field_errors)
             elif isinstance(exc, ValidationError) and isinstance(exc.detail, list):
                 message = "; ".join(str(item) for item in exc.detail)
             else:
@@ -97,13 +97,13 @@ class BaseAPIView(APIView):
             error_type = exc.__class__.__name__.replace("Error", "")
             message = "Invalid request data. Please check your input."
             status_code = status.HTTP_400_BAD_REQUEST
-            detail = ErrorResponseDetail(exception=str(exc))
+            detail = _ErrorResponseDetail(exception=str(exc))
         else:
             error_type = "Internal Server Error"
             message = "An unexpected error occurred. Please try again later."
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             if hasattr(exc, "__dict__"):
-                detail = ErrorResponseDetail(exception=str(exc))
+                detail = _ErrorResponseDetail(exception=str(exc))
 
         logger.error(
             f"{error_type}: {exc}",

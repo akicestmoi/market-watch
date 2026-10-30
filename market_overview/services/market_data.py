@@ -73,7 +73,7 @@ class AssetNames(TypedDict):
     full_name: str
 
 
-class GetAssetNamesFilters(TypedDict, total=False):
+class _GetAssetNamesFilters(TypedDict, total=False):
     """Optional filters for ``get_asset_names``."""
 
     asset_class: AssetClassChoices | None
@@ -82,7 +82,7 @@ class GetAssetNamesFilters(TypedDict, total=False):
     source: PriceSourceChoices | None
 
 
-def get_asset_names(filters: GetAssetNamesFilters) -> list[AssetNames]:
+def get_asset_names(filters: _GetAssetNamesFilters) -> list[AssetNames]:
     """Get all assets based on unique short_name and full_name pair."""
     asset_names = []
     query_filters = {key: value for key, value in filters.items() if value}
@@ -168,7 +168,7 @@ def get_yield_curve(
     return sorted(yield_curve, key=lambda x: x["maturity"] or 0)
 
 
-class AssetWithoutPrice(TypedDict):
+class _AssetWithoutPrice(TypedDict):
     """Asset without price dictionnary."""
 
     id: int
@@ -183,7 +183,7 @@ def get_assets_without_prices(
     start_date: date | None = None,
     end_date: date | None = None,
     include_holidays: bool = False,
-) -> list[AssetWithoutPrice]:
+) -> list[_AssetWithoutPrice]:
     """Get assets without prices."""
     assets_queryset = MarketPriceModel.objects.filter(
         price__isnull=True
@@ -204,7 +204,7 @@ def get_assets_without_prices(
     )
     return sorted(
         [
-            AssetWithoutPrice(
+            _AssetWithoutPrice(
                 id=asset["id"],
                 date=asset["date"],
                 short_name=asset["asset__short_name"],
@@ -332,14 +332,14 @@ class MarkAsHolidayItem(TypedDict):
     date: date
 
 
-class MarkAsHolidayResult(TypedDict):
+class _MarkAsHolidayResult(TypedDict):
     """Mark as holiday result dictionnary."""
 
     updated_count: int
     not_found: list[str]
 
 
-def mark_prices_as_holiday(items: list[MarkAsHolidayItem]) -> MarkAsHolidayResult:
+def mark_prices_as_holiday(items: list[MarkAsHolidayItem]) -> _MarkAsHolidayResult:
     """Mark market prices as holiday for the given assets and dates."""
     updated_count = 0
     not_found: list[str] = []
@@ -358,10 +358,10 @@ def mark_prices_as_holiday(items: list[MarkAsHolidayItem]) -> MarkAsHolidayResul
         else:
             not_found.append(f"{item['short_name']} on {item['date']}")
 
-    return MarkAsHolidayResult(updated_count=updated_count, not_found=not_found)
+    return _MarkAsHolidayResult(updated_count=updated_count, not_found=not_found)
 
 
-class MarketPriceRow(TypedDict):
+class _MarketPriceRow(TypedDict):
     """Merged asset + market-price row used by price-change calculations."""
 
     asset_id: int
@@ -378,7 +378,7 @@ class MarketPriceRow(TypedDict):
     comment: str | None
 
 
-class PriceChange(TypedDict):
+class _PriceChange(TypedDict):
     """Price change dictionnary."""
 
     asset_id: int
@@ -399,13 +399,13 @@ class PriceChange(TypedDict):
 
 def _convert_market_prices_to_data(
     market_prices: list[MarketPriceModel],
-) -> list[MarketPriceRow]:
+) -> list[_MarketPriceRow]:
     """Convert market prices to dictionary format."""
-    data_list: list[MarketPriceRow] = []
+    data_list: list[_MarketPriceRow] = []
     for market_price in market_prices:
         asset = market_price.asset
         data_list.append(
-            MarketPriceRow(
+            _MarketPriceRow(
                 asset_id=asset.asset_id,
                 asset_class=AssetClassChoices(asset.asset_class),
                 location=(LocationChoices(asset.location) if asset.location else None),
@@ -428,7 +428,7 @@ def _convert_market_prices_to_data(
 def calculate_price_change(
     reference_market_prices: list[MarketPriceModel],
     comparison_market_prices: list[MarketPriceModel],
-) -> list[PriceChange]:
+) -> list[_PriceChange]:
     """Calculate price change between two dates."""
     reference_data = _convert_market_prices_to_data(reference_market_prices)
     comparison_data = _convert_market_prices_to_data(comparison_market_prices)
@@ -492,17 +492,17 @@ def calculate_price_change(
             price_diff.loc[rates_mask, "price_change"] *= 100
             price_diff.loc[rates_mask, "price_change_pct"] = None
 
-    # Convert to PriceChange records
-    price_change_cols = list(PriceChange.__annotations__.keys())
+    # Convert to _PriceChange records
+    price_change_cols = list(_PriceChange.__annotations__.keys())
     available_cols = [col for col in price_change_cols if col in price_diff.columns]
-    price_changes: list[PriceChange] = []
+    price_changes: list[_PriceChange] = []
     for record in (
         price_diff[available_cols]
         .replace({float("nan"): None})
         .to_dict(orient="records")
     ):
         price_changes.append(
-            PriceChange(
+            _PriceChange(
                 asset_id=record["asset_id"],
                 asset_class=record["asset_class"],
                 short_name=record["short_name"],

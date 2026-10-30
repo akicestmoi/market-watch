@@ -12,12 +12,15 @@ from freezegun import freeze_time
 from rest_framework.exceptions import NotFound
 
 from core.services import (
-    ValueChangeOutput,
+    ValueChangeType,
     calculate_value_change,
     convert_local_wall_time_to_utc,
     convert_query_to_dictionary_list,
     convert_to_display_timezone,
     fetch_html,
+    get_local_today,
+    get_market_watch_as_of_date,
+    get_previous_business_day,
     get_source_timezone,
     parse_datetime,
     update_with_logs,
@@ -592,9 +595,9 @@ class TestCalculateValueChange(TestCase):
         WHEN calculate_value_change is called for each output
         THEN the matching scalar is returned
         """
-        assert calculate_value_change(110.0, 100.0, ValueChangeOutput.ABSOLUTE) == 10.0
-        assert calculate_value_change(110.0, 100.0, ValueChangeOutput.PERCENT) == 10.0
-        assert calculate_value_change(110.0, 100.0, ValueChangeOutput.BPS) == 1000.0
+        assert calculate_value_change(110.0, 100.0, ValueChangeType.ABSOLUTE) == 10.0
+        assert calculate_value_change(110.0, 100.0, ValueChangeType.PERCENT) == 10.0
+        assert calculate_value_change(110.0, 100.0, ValueChangeType.BPS) == 1000.0
 
     def test_calculate_value_change_annualized_percent(self):
         """
@@ -604,12 +607,12 @@ class TestCalculateValueChange(TestCase):
         """
         assert (
             calculate_value_change(
-                102.0, 100.0, ValueChangeOutput.ANNUALIZED_PERCENT, annualized_ratio=4
+                102.0, 100.0, ValueChangeType.ANNUALIZED_PERCENT, annualized_ratio=4
             )
             == ((102.0 / 100.0) ** 4 - 1) * 100
         )
         assert (
-            calculate_value_change(102.0, 100.0, ValueChangeOutput.ANNUALIZED_PERCENT)
+            calculate_value_change(102.0, 100.0, ValueChangeType.ANNUALIZED_PERCENT)
             is None
         )
 
@@ -619,12 +622,12 @@ class TestCalculateValueChange(TestCase):
         WHEN percent or annualized outputs are requested
         THEN None is returned while absolute and bps remain defined
         """
-        assert calculate_value_change(5.0, 0.0, ValueChangeOutput.ABSOLUTE) == 5.0
-        assert calculate_value_change(5.0, 0.0, ValueChangeOutput.BPS) == 500.0
-        assert calculate_value_change(5.0, 0.0, ValueChangeOutput.PERCENT) is None
+        assert calculate_value_change(5.0, 0.0, ValueChangeType.ABSOLUTE) == 5.0
+        assert calculate_value_change(5.0, 0.0, ValueChangeType.BPS) == 500.0
+        assert calculate_value_change(5.0, 0.0, ValueChangeType.PERCENT) is None
         assert (
             calculate_value_change(
-                5.0, 0.0, ValueChangeOutput.ANNUALIZED_PERCENT, annualized_ratio=4
+                5.0, 0.0, ValueChangeType.ANNUALIZED_PERCENT, annualized_ratio=4
             )
             is None
         )
@@ -635,10 +638,10 @@ class TestCalculateValueChange(TestCase):
         WHEN ANNUALIZED_PERCENT is requested
         THEN None is returned while simple percent remains defined
         """
-        assert calculate_value_change(-1.0, 100.0, ValueChangeOutput.PERCENT) == -101.0
+        assert calculate_value_change(-1.0, 100.0, ValueChangeType.PERCENT) == -101.0
         assert (
             calculate_value_change(
-                -1.0, 100.0, ValueChangeOutput.ANNUALIZED_PERCENT, annualized_ratio=4
+                -1.0, 100.0, ValueChangeType.ANNUALIZED_PERCENT, annualized_ratio=4
             )
             is None
         )
@@ -647,12 +650,15 @@ class TestCalculateValueChange(TestCase):
         """
         GIVEN a missing current or previous value
         WHEN calculate_value_change is called
-        THEN None is returned for every output
+        THEN None is returned for every value-change type
         """
-        for output in ValueChangeOutput:
-            assert calculate_value_change(None, 100.0, output) is None
+        for value_change_type in ValueChangeType:
+            assert calculate_value_change(None, 100.0, value_change_type) is None
             assert (
-                calculate_value_change(100.0, None, output, annualized_ratio=4) is None
+                calculate_value_change(
+                    100.0, None, value_change_type, annualized_ratio=4
+                )
+                is None
             )
 
 
@@ -779,3 +785,27 @@ class TestDisplayTimezone(TestCase):
         paris = convert_to_display_timezone(utc_dt)
         assert paris.strftime("%H:%M") == "08:45"
         assert str(paris.tzinfo) == "Europe/Paris"
+
+
+class TestMarketWatchAsOfDate(TestCase):
+    """Project T-1 business-day perspective helpers."""
+
+    @freeze_time("2026-10-30 16:00:00")
+    def test_get_market_watch_as_of_date_is_previous_business_day(self):
+        """
+        GIVEN a Friday system calendar day
+        WHEN resolving the Market Watch as-of date
+        THEN the previous business day (Thursday) is returned
+        """
+        assert get_local_today() == date(2026, 10, 30)
+        assert get_market_watch_as_of_date() == date(2026, 10, 29)
+        assert get_previous_business_day(date(2026, 10, 30)) == date(2026, 10, 29)
+
+    @freeze_time("2026-10-26 12:00:00")
+    def test_get_market_watch_as_of_date_skips_weekend(self):
+        """
+        GIVEN a Monday
+        WHEN resolving the Market Watch as-of date
+        THEN Friday (not Sunday) is returned
+        """
+        assert get_market_watch_as_of_date() == date(2026, 10, 23)

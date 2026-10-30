@@ -81,7 +81,7 @@ class GenerateBaseAssetsDataView(BaseAPIView):
         )
 
 
-class GetAssetNamesValidatedData(TypedDict, total=False):
+class _GetAssetNamesValidatedData(TypedDict, total=False):
     """Validated data for ``GetAssetNamesSerializer``."""
 
     asset_class: AssetClassChoices | None
@@ -105,7 +105,7 @@ class GetAssetNamesView(BaseAPIView):
             )
         ],
     )
-    def get(self, validated_data: GetAssetNamesValidatedData) -> Response:
+    def get(self, validated_data: _GetAssetNamesValidatedData) -> Response:
         """List all asset names in the database."""
         asset_names = market_data.get_asset_names(validated_data)
         return Response(
@@ -114,7 +114,7 @@ class GetAssetNamesView(BaseAPIView):
         )
 
 
-class BaseAssetValidatedData(TypedDict):
+class _BaseAssetValidatedData(TypedDict):
     """Validated data for ``BaseAssetSerializer``."""
 
     short_name: str
@@ -134,7 +134,7 @@ class AssetDetailsView(BaseAPIView):
             NotFoundOpenApiResponse("Asset not found"),
         ],
     )
-    def get(self, validated_data: BaseAssetValidatedData) -> Response:
+    def get(self, validated_data: _BaseAssetValidatedData) -> Response:
         """Get an asset."""
         short_name: str = validated_data["short_name"]
         asset = AssetModel.objects.get(short_name=short_name)
@@ -153,7 +153,7 @@ class AssetDetailsView(BaseAPIView):
             NotFoundOpenApiResponse("Asset not found"),
         ],
     )
-    def delete(self, validated_data: BaseAssetValidatedData) -> Response:
+    def delete(self, validated_data: _BaseAssetValidatedData) -> Response:
         """Delete an asset."""
         short_name: str = validated_data["short_name"]
         asset = AssetModel.objects.get(short_name=short_name)

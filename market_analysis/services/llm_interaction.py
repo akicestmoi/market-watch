@@ -45,7 +45,7 @@ class ChatMessage(TypedDict):
     content: str
 
 
-class ChatAskResult(TypedDict):
+class _ChatAskResult(TypedDict):
     """Chat ask result dictionnary."""
 
     answer: str
@@ -64,7 +64,7 @@ class ChatAskResult(TypedDict):
     recap_updated: bool
 
 
-class PreviousRecapItem(TypedDict):
+class _PreviousRecapItem(TypedDict):
     """One daily recap row returned by the get_previous_recaps tool."""
 
     id: int
@@ -78,7 +78,7 @@ class PreviousRecapItem(TypedDict):
     source_urls: list[str]
 
 
-class UpdateDailyRecapResult(TypedDict, total=False):
+class _UpdateDailyRecapResult(TypedDict, total=False):
     """Result of the update_daily_recap tool."""
 
     ok: bool
@@ -88,11 +88,11 @@ class UpdateDailyRecapResult(TypedDict, total=False):
     title: str
 
 
-def _get_previous_recaps(days: int = 7, limit: int = 5) -> list[PreviousRecapItem]:
+def _get_previous_recaps(days: int = 7, limit: int = 5) -> list[_PreviousRecapItem]:
     """Return recent daily analyses (full structured content)."""
     start_date = date.today() - timedelta(days=days)
     return [
-        PreviousRecapItem(
+        _PreviousRecapItem(
             id=recap.pk,
             reporting_date=recap.reporting_date.isoformat(),
             title=recap.title,
@@ -150,7 +150,7 @@ def _update_daily_recap(
     eur_summary: str | None = None,
     jp_summary: str | None = None,
     additional_summary: str | None = None,
-) -> UpdateDailyRecapResult:
+) -> _UpdateDailyRecapResult:
     """Update the stored DailyRecap for a date.
 
     Call only after explicit user agreement to a proposal, or when the user
@@ -166,7 +166,7 @@ def _update_daily_recap(
         "additional_summary": additional_summary,
     }
     if not any(value for value in fields.values()):
-        return UpdateDailyRecapResult(
+        return _UpdateDailyRecapResult(
             ok=False,
             error=(
                 "Provide title and/or at least one summary field "
@@ -176,7 +176,7 @@ def _update_daily_recap(
     day = date.fromisoformat(reporting_date)
     recap = DailyRecapModel.objects.filter(reporting_date=day).first()
     if not recap:
-        return UpdateDailyRecapResult(
+        return _UpdateDailyRecapResult(
             ok=False,
             error=f"No DailyRecap for {reporting_date}",
         )
@@ -197,7 +197,7 @@ def _update_daily_recap(
     recap.save()
     _recap_updated_this_turn.set(True)
     logger.info("DailyRecap %s updated via chat", reporting_date)
-    return UpdateDailyRecapResult(
+    return _UpdateDailyRecapResult(
         ok=True,
         id=recap.pk,
         reporting_date=reporting_date,
@@ -234,7 +234,7 @@ def _get_chat_agent() -> Agent[None, ChatAnswerOutput]:
 def ask(
     question: str,
     messages: list[ChatMessage] | None = None,
-) -> ChatAskResult:
+) -> _ChatAskResult:
     """Answer one turn using optional prior messages sent by the client.
 
     Chat is stateless on the server.
@@ -272,7 +272,7 @@ def ask(
         output: ChatAnswerOutput = result.output
         # Persist flag comes from the update tool, not the LLM's structured guess.
         recap_updated = _recap_updated_this_turn.get()
-        return ChatAskResult(
+        return _ChatAskResult(
             answer=output.answer,
             citations=[EvidenceEntry(**c.model_dump()) for c in output.citations],
             missing_information=output.missing_information,

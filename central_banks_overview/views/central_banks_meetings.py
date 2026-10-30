@@ -42,7 +42,7 @@ class CentralBankMeetingDatesIngestionView(BaseAPIView):
         )
 
 
-class GetCentralBankMeetingDatesValidatedData(TypedDict, total=False):
+class _GetCentralBankMeetingDatesValidatedData(TypedDict, total=False):
     """Validated data for ``GetCentralBankMeetingDatesSerializer``."""
 
     central_banks: list[CentralBankChoices] | None
@@ -59,7 +59,7 @@ class GetCentralBankMeetingDatesView(BaseAPIView):
         response=OkOpenApiResponse(CentralBankMeetingDatesResponseSerializer),
         error_responses=[BadRequestOpenApiResponse("Invalid central_banks.")],
     )
-    def get(self, validated_data: GetCentralBankMeetingDatesValidatedData) -> Response:
+    def get(self, validated_data: _GetCentralBankMeetingDatesValidatedData) -> Response:
         """Get Central Bank Meeting Dates."""
         central_banks = validated_data.get("central_banks") or []
 

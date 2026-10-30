@@ -12,7 +12,7 @@ from market_overview.models import HolidayModel, LocationChoices
 from market_overview.services.config import HOLIDAY_API_URL
 
 
-class HolidayApiItem(TypedDict):
+class _HolidayApiItem(TypedDict):
     """One public holiday from the Nager.Date API (fields we consume)."""
 
     date: str
@@ -20,10 +20,10 @@ class HolidayApiItem(TypedDict):
     countryCode: str
 
 
-_HOLIDAY_API_ITEMS_ADAPTER = TypeAdapter(list[HolidayApiItem])
+_HOLIDAY_API_ITEMS_ADAPTER = TypeAdapter(list[_HolidayApiItem])
 
 
-def _call_holiday_api(year: int, location: LocationChoices) -> list[HolidayApiItem]:
+def _call_holiday_api(year: int, location: LocationChoices) -> list[_HolidayApiItem]:
     """Call the holiday API for a given year and location."""
     url = f"{HOLIDAY_API_URL}{year}/{location.value}"
     response = requests.get(url)

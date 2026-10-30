@@ -6,16 +6,26 @@ from datetime import date, datetime, timedelta
 from typing import TypedDict
 
 from django.conf import settings
-from pandas.tseries.offsets import BDay
+from django.db.models import Q
 from pydantic_ai import Agent
 
 from central_banks_overview.models import CentralBankChoices
-from core.services import ValueChangeOutput, calculate_value_change, logger
+from central_banks_overview.services.central_banks_data import (
+    get_decision_day_key_rates,
+    list_central_banks_with_meetings_at_date,
+)
+from core.services import (
+    ValueChangeType,
+    calculate_value_change,
+    get_previous_business_day,
+    logger,
+)
 from data_visualization.services.central_banks_recap import (
     get_central_bank_data_item,
     get_central_bank_formatted_probability_matrix,
     get_formatted_probability_matrix_changes,
 )
+from data_visualization.services.economic_recap import format_indicator_value
 from data_visualization.services.market_recap import (
     FX_MATRIX_ORDER,
     FxMatrixRow,
@@ -26,7 +36,13 @@ from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicDataModel,
     EconomicPublicationFrequencyChoices,
+    IndicatorBaseUnitChoices,
+    IndicatorDisplayModeChoices,
     PublicationScheduleModel,
+)
+from economic_overview.services.economic_data import (
+    change_indicator_values_mode,
+    get_lag_for_mode_change_calculation,
 )
 from market_analysis.llm.config import (
     MAX_ARTICLE_CHARS,
@@ -137,31 +153,31 @@ def build_market_context(as_of: date) -> list[MarketContextRow]:
         wow_price = wow_row.price if wow_row else None
         mom_price = mom_row.price if mom_row else None
         dod_absolute = calculate_value_change(
-            price_row.price, previous_price, ValueChangeOutput.ABSOLUTE
+            price_row.price, previous_price, ValueChangeType.ABSOLUTE
         )
         dod_percent = calculate_value_change(
-            price_row.price, previous_price, ValueChangeOutput.PERCENT
+            price_row.price, previous_price, ValueChangeType.PERCENT
         )
         dod_bps = calculate_value_change(
-            price_row.price, previous_price, ValueChangeOutput.BPS
+            price_row.price, previous_price, ValueChangeType.BPS
         )
         wow_absolute = calculate_value_change(
-            price_row.price, wow_price, ValueChangeOutput.ABSOLUTE
+            price_row.price, wow_price, ValueChangeType.ABSOLUTE
         )
         wow_percent = calculate_value_change(
-            price_row.price, wow_price, ValueChangeOutput.PERCENT
+            price_row.price, wow_price, ValueChangeType.PERCENT
         )
         wow_bps = calculate_value_change(
-            price_row.price, wow_price, ValueChangeOutput.BPS
+            price_row.price, wow_price, ValueChangeType.BPS
         )
         mom_absolute = calculate_value_change(
-            price_row.price, mom_price, ValueChangeOutput.ABSOLUTE
+            price_row.price, mom_price, ValueChangeType.ABSOLUTE
         )
         mom_percent = calculate_value_change(
-            price_row.price, mom_price, ValueChangeOutput.PERCENT
+            price_row.price, mom_price, ValueChangeType.PERCENT
         )
         mom_bps = calculate_value_change(
-            price_row.price, mom_price, ValueChangeOutput.BPS
+            price_row.price, mom_price, ValueChangeType.BPS
         )
         is_rates = asset.asset_class == AssetClassChoices.RATES
         is_vol = asset.asset_type == AssetTypeChoices.VOLATILITY_INDEX
@@ -199,50 +215,170 @@ class EconomicContextRow(TypedDict):
     frequency: EconomicPublicationFrequencyChoices
     period: str | None  # ISO date string for the LLM/JSON boundary
     period_display: str | None  # Display period label for the LLM
-    data_value: float | None
+    display_mode: str  # Raw / Quarter / Annualized Quarter / Annual
+    base_unit: str
+    base_currency: str
+    # Raw stored observations (before display-mode change).
+    raw_current_value: float | None
+    raw_previous_value: float | None
+    # Values after applying ``display_mode`` (YoY %, Abs, …).
+    current_value: float | None
+    previous_value: float | None
+    change_value: float | None
+    # Same figures formatted for display (units in parentheses when applicable).
+    display_current_value: str
+    display_previous_value: str
+    display_change_value: str
     comment: str | None
     publication_date: str | None  # ISO datetime/date string for the LLM/JSON boundary
     kind: str
 
 
+def _get_publication_datetime_on_date(
+    publication_schedule: PublicationScheduleModel, as_of: date
+) -> datetime | None:
+    """Return the publication datetime that falls on ``as_of``, if any.
+
+    Prefers ``current`` when both current and previous land on the same date.
+    After ingest, the just-released print is often on ``previous`` only.
+    """
+    for publication_date in (
+        publication_schedule.current_publication_date,
+        publication_schedule.previous_publication_date,
+    ):
+        if publication_date is None:
+            continue
+        if publication_date.date() == as_of:
+            return publication_date
+    return None
+
+
 def build_economic_context(as_of: date) -> list[EconomicContextRow]:
-    """Economic indicators scheduled for publication on ``as_of`` only."""
-    rows: list[EconomicContextRow] = []
-    schedules = (
-        PublicationScheduleModel.objects.filter(current_publication_date__date=as_of)
+    """Economic indicators scheduled for publication on ``as_of``.
+
+    Matches ``current`` or ``previous`` publication date (post-ingest roll).
+    """
+    economic_context_rows: list[EconomicContextRow] = []
+    publication_schedules = (
+        PublicationScheduleModel.objects.filter(
+            Q(current_publication_date__date=as_of)
+            | Q(previous_publication_date__date=as_of)
+        )
         .select_related("indicator")
         .order_by("indicator__location", "indicator__name")
     )
-    for schedule in schedules:
-        indicator = schedule.indicator
-        latest = (
-            EconomicDataModel.objects.filter(indicator=indicator)
-            .order_by("-period", "-last_modified")
-            .first()
+    for publication_schedule in publication_schedules:
+        matched_publication_date = _get_publication_datetime_on_date(
+            publication_schedule, as_of
         )
-        pub = schedule.current_publication_date
-        rows.append(
+        if matched_publication_date is None:
+            continue
+        indicator = publication_schedule.indicator
+        indicator_default_display_mode = IndicatorDisplayModeChoices(
+            indicator.default_mode
+        )
+        indicator_frequency = EconomicPublicationFrequencyChoices(indicator.frequency)
+        time_series_max_period = (
+            get_lag_for_mode_change_calculation(
+                indicator_frequency, indicator_default_display_mode
+            )
+            + 2
+        )
+        economic_data_time_series = list(
+            EconomicDataModel.objects.filter(indicator=indicator).order_by(
+                "-period", "-last_modified"
+            )[:time_series_max_period]
+        )
+        latest_time_series_point = (
+            economic_data_time_series[0] if economic_data_time_series else None
+        )
+        economic_data_time_series = [
+            float(time_series_point.data_value)
+            for time_series_point in economic_data_time_series
+            if time_series_point.data_value is not None
+        ]
+        indicator_value_triplet = change_indicator_values_mode(
+            economic_data_time_series,
+            frequency=indicator_frequency,
+            mode=indicator_default_display_mode,
+        )
+        raw_current_value = (
+            economic_data_time_series[0] if economic_data_time_series else None
+        )
+        raw_previous_value = (
+            economic_data_time_series[1] if len(economic_data_time_series) > 1 else None
+        )
+        economic_context_rows.append(
             EconomicContextRow(
                 name=indicator.name,
                 location=EconomicDataLocationChoices(indicator.location),
                 category=EconomicDataCategoryChoices(indicator.category),
-                frequency=EconomicPublicationFrequencyChoices(indicator.frequency),
-                period=latest.period.isoformat() if latest and latest.period else None,
-                period_display=latest.get_period_display() if latest else None,
-                data_value=latest.data_value if latest else None,
-                comment=latest.comment if latest else None,
-                publication_date=pub.isoformat() if pub else as_of.isoformat(),
+                frequency=indicator_frequency,
+                period=(
+                    latest_time_series_point.period.isoformat()
+                    if latest_time_series_point and latest_time_series_point.period
+                    else None
+                ),
+                period_display=(
+                    latest_time_series_point.get_period_display()
+                    if latest_time_series_point
+                    else None
+                ),
+                display_mode=indicator_default_display_mode.value,
+                base_unit=indicator.base_unit or "",
+                base_currency=indicator.base_currency or "",
+                raw_current_value=raw_current_value,
+                raw_previous_value=raw_previous_value,
+                current_value=indicator_value_triplet.current,
+                previous_value=indicator_value_triplet.previous,
+                change_value=indicator_value_triplet.change,
+                display_current_value=format_indicator_value(
+                    indicator_value_triplet.current,
+                    base_unit=indicator.base_unit,
+                    base_currency=indicator.base_currency,
+                    mode=indicator_default_display_mode,
+                ),
+                display_previous_value=format_indicator_value(
+                    indicator_value_triplet.previous,
+                    base_unit=indicator.base_unit,
+                    base_currency=indicator.base_currency,
+                    mode=indicator_default_display_mode,
+                ),
+                display_change_value=format_indicator_value(
+                    indicator_value_triplet.change,
+                    base_unit=indicator.base_unit,
+                    base_currency=indicator.base_currency,
+                    mode=indicator_default_display_mode,
+                ),
+                comment=(
+                    latest_time_series_point.comment
+                    if latest_time_series_point
+                    else None
+                ),
+                publication_date=matched_publication_date.isoformat(),
                 kind="scheduled_release",
             )
         )
-    return rows
+    return economic_context_rows
 
 
-class CentralBankFigureRow(TypedDict):
+class _CentralBankFigureRow(TypedDict):
     """One central-bank key figure as shown on the Central Banks page."""
 
     label: str  # Display label from the Central Banks UI
     value: str  # Display value from the Central Banks UI
+
+
+class _CentralBankDecisionRateRow(TypedDict):
+    """Key policy rate print on a monetary-policy decision day."""
+
+    name: str
+    current_value: float | None
+    previous_value: float | None
+    change_value: float | None
+    display_current_value: str
+    display_previous_value: str
+    display_change_value: str
 
 
 class CentralBankContextRow(TypedDict):
@@ -250,30 +386,76 @@ class CentralBankContextRow(TypedDict):
 
     central_bank: CentralBankChoices
     reference_date: str  # ISO date string for the LLM/JSON boundary
-    figures: list[CentralBankFigureRow]
+    is_decision_day: bool
+    decision_rates: list[_CentralBankDecisionRateRow]
+    figures: list[_CentralBankFigureRow]
+
+
+def _format_decision_rate_change(change_value: float | None) -> str:
+    """Format a signed policy-rate change with a percent unit label."""
+    if change_value is None:
+        return ""
+    formatted_magnitude = format_indicator_value(
+        abs(change_value),
+        base_unit=IndicatorBaseUnitChoices.PERCENT,
+        include_unit_label=True,
+        digits=2,
+    )
+    if change_value > 0:
+        return f"+{formatted_magnitude}"
+    if change_value < 0:
+        return f"-{formatted_magnitude}"
+    return formatted_magnitude
 
 
 def build_central_bank_context(as_of: date) -> list[CentralBankContextRow]:
-    """Key CB figures as on the Central Banks page (policy baseline for the LLM)."""
+    """Key CB figures plus decision-day rate prints when a meeting falls on ``as_of``."""
+    central_banks_with_meeting = set(list_central_banks_with_meetings_at_date(as_of))
+    decision_rates_by_central_bank: dict[
+        CentralBankChoices, list[_CentralBankDecisionRateRow]
+    ] = {}
+    for decision_day_key_rate in get_decision_day_key_rates(as_of):
+        central_bank = decision_day_key_rate["central_bank"]
+        decision_rates_by_central_bank.setdefault(central_bank, []).append(
+            _CentralBankDecisionRateRow(
+                name=decision_day_key_rate["full_name"],
+                current_value=decision_day_key_rate["current_value"],
+                previous_value=decision_day_key_rate["previous_value"],
+                change_value=decision_day_key_rate["change_value"],
+                display_current_value=format_indicator_value(
+                    decision_day_key_rate["current_value"],
+                    base_unit=IndicatorBaseUnitChoices.PERCENT,
+                    include_unit_label=True,
+                    digits=2,
+                ),
+                display_previous_value=format_indicator_value(
+                    decision_day_key_rate["previous_value"],
+                    base_unit=IndicatorBaseUnitChoices.PERCENT,
+                    include_unit_label=True,
+                    digits=2,
+                ),
+                display_change_value=_format_decision_rate_change(
+                    decision_day_key_rate["change_value"]
+                ),
+            )
+        )
+
     rows: list[CentralBankContextRow] = []
     for central_bank in CENTRAL_BANKS_FOR_CONTEXT:
         figures = [
-            CentralBankFigureRow(label=item["label"], value=item["value"])
+            _CentralBankFigureRow(label=item["label"], value=item["value"])
             for item in get_central_bank_data_item(central_bank, as_of)
         ]
         rows.append(
             CentralBankContextRow(
                 central_bank=central_bank,
                 reference_date=as_of.isoformat(),
+                is_decision_day=central_bank in central_banks_with_meeting,
+                decision_rates=decision_rates_by_central_bank.get(central_bank, []),
                 figures=figures,
             )
         )
     return rows
-
-
-def _get_previous_business_day(as_of: date) -> date:
-    """Return the previous weekday business day before ``as_of``."""
-    return (as_of - BDay(1)).date()
 
 
 def _format_meeting_dates_for_context(
@@ -289,7 +471,7 @@ def _format_meeting_dates_for_context(
     return formatted
 
 
-class FxCurrencyStrengthRow(TypedDict):
+class _FxCurrencyStrengthRow(TypedDict):
     """Quadratic-mean (RMS) pairwise FX DoD % move for one currency vs the basket.
 
     Always non-negative: opposing peer moves do not cancel the way a signed
@@ -307,52 +489,31 @@ class FxHeatmapContext(TypedDict):
     previous_date: str
     currencies: list[str]
     matrix: list[FxMatrixRow]
-    currency_strength: list[FxCurrencyStrengthRow]
-
-
-def _get_fx_matrix_pair_change(matrix_row: FxMatrixRow, quote_currency: str) -> float:
-    """Return the pairwise DoD % change for one quote currency in a matrix row."""
-    if quote_currency == "EUR":
-        return matrix_row["EUR"]
-    if quote_currency == "USD":
-        return matrix_row["USD"]
-    if quote_currency == "GBP":
-        return matrix_row["GBP"]
-    if quote_currency == "JPY":
-        return matrix_row["JPY"]
-    if quote_currency == "CHF":
-        return matrix_row["CHF"]
-    if quote_currency == "AUD":
-        return matrix_row["AUD"]
-    if quote_currency == "CNY":
-        return matrix_row["CNY"]
-    raise ValueError(f"Unsupported FX matrix quote currency: {quote_currency}")
+    currency_strength: list[_FxCurrencyStrengthRow]
 
 
 def _compute_fx_currency_strength(
     matrix: list[FxMatrixRow],
-) -> list[FxCurrencyStrengthRow]:
+) -> list[_FxCurrencyStrengthRow]:
     """Quadratic mean (RMS) of off-diagonal pairwise % changes per base row.
 
     ``rms = sqrt(sum(x_i^2) / n)`` so mixed-sign peer moves do not cancel.
     """
-    strength_rows: list[FxCurrencyStrengthRow] = []
+    strength_rows: list[_FxCurrencyStrengthRow] = []
     for matrix_row in matrix:
         base_currency = matrix_row["currency"]
         pairwise_changes: list[float] = []
         for quote_currency in FX_MATRIX_ORDER:
             if quote_currency == base_currency:
                 continue
-            pairwise_changes.append(
-                _get_fx_matrix_pair_change(matrix_row, quote_currency)
-            )
+            pairwise_changes.append(matrix_row[quote_currency])
         if not pairwise_changes:
             rms_change_pct = 0.0
         else:
             squared_sum = sum(change**2 for change in pairwise_changes)
             rms_change_pct = math.sqrt(squared_sum / len(pairwise_changes))
         strength_rows.append(
-            FxCurrencyStrengthRow(
+            _FxCurrencyStrengthRow(
                 currency=base_currency,
                 rms_change_pct=round(rms_change_pct, 4),
             )
@@ -362,7 +523,7 @@ def _compute_fx_currency_strength(
 
 def build_fx_heatmap_context(as_of: date) -> FxHeatmapContext:
     """FX heatmap DoD % matrix and RMS currency-move magnitude for LLM prompts."""
-    previous_date = _get_previous_business_day(as_of)
+    previous_date = get_previous_business_day(as_of)
     matrix = get_fx_prices_matrix(as_of, previous_date)
     return FxHeatmapContext(
         as_of=as_of.isoformat(),
@@ -373,7 +534,7 @@ def build_fx_heatmap_context(as_of: date) -> FxHeatmapContext:
     )
 
 
-class ProbabilityStepRow(TypedDict):
+class _ProbabilityStepRow(TypedDict):
     """One rate-step row of probabilities or probability changes."""
 
     expected_rate_step: int
@@ -387,15 +548,15 @@ class ProbabilityMatrixShiftContextRow(TypedDict):
     as_of: str
     previous_date: str
     meeting_dates: list[str]
-    current_probabilities: list[ProbabilityStepRow]
-    probability_changes: list[ProbabilityStepRow]
+    current_probabilities: list[_ProbabilityStepRow]
+    probability_changes: list[_ProbabilityStepRow]
 
 
 def build_probability_matrix_shift_context(
     as_of: date,
 ) -> list[ProbabilityMatrixShiftContextRow]:
     """FRB / ECB / BOJ probability matrices and DoD shifts for LLM prompts."""
-    previous_date = _get_previous_business_day(as_of)
+    previous_date = get_previous_business_day(as_of)
     rows: list[ProbabilityMatrixShiftContextRow] = []
     for central_bank in CENTRAL_BANKS_FOR_CONTEXT:
         try:
@@ -426,14 +587,14 @@ def build_probability_matrix_shift_context(
             current_matrix["meeting_dates"]
         )
         current_probabilities = [
-            ProbabilityStepRow(
+            _ProbabilityStepRow(
                 expected_rate_step=entry["expected_rate_step"],
                 probabilities=list(entry["probabilities"]),
             )
             for entry in current_matrix["probability_matrix"]
         ]
         probability_changes = [
-            ProbabilityStepRow(
+            _ProbabilityStepRow(
                 expected_rate_step=entry["expected_rate_step"],
                 probabilities=list(entry["probabilities"]),
             )
@@ -550,7 +711,7 @@ class ArticleAnalysisFailure(TypedDict):
     error: str
 
 
-class ArticleBatchAnalysisResult(TypedDict):
+class _ArticleBatchAnalysisResult(TypedDict):
     """Batch article analysis result dictionnary."""
 
     analyses: list[AnalyzedArticle]
@@ -564,7 +725,7 @@ def analyze_extracted_articles(
     articles: list[ArticleData],
     reporting_date: date,
     use_cache: bool = True,
-) -> ArticleBatchAnalysisResult:
+) -> _ArticleBatchAnalysisResult:
     """Analyze extracted articles in source order."""
     analyzed: list[AnalyzedArticle] = []
     failed: list[ArticleAnalysisFailure] = []
@@ -619,7 +780,7 @@ def analyze_extracted_articles(
         cache_hits,
         cache_misses,
     )
-    return ArticleBatchAnalysisResult(
+    return _ArticleBatchAnalysisResult(
         analyses=analyzed,
         analyzed_count=len(analyzed),
         failed=failed,
@@ -628,7 +789,7 @@ def analyze_extracted_articles(
     )
 
 
-class ExtractionGap(TypedDict):
+class _ExtractionGap(TypedDict):
     """Source that yielded no article during extraction."""
 
     source_id: str
@@ -636,10 +797,10 @@ class ExtractionGap(TypedDict):
     comment: str | None
 
 
-class PipelineIssues(TypedDict):
+class _PipelineIssues(TypedDict):
     """Extraction/analysis gaps summarized for the recap prompt."""
 
-    extraction_gaps: list[ExtractionGap]
+    extraction_gaps: list[_ExtractionGap]
     analysis_failures: list[ArticleAnalysisFailure]
     has_issues: bool
 
@@ -647,10 +808,10 @@ class PipelineIssues(TypedDict):
 def _build_pipeline_issues(
     extraction_sources: list[ArticleExtractionResult] | None,
     analysis_failures: list[ArticleAnalysisFailure] | None,
-) -> PipelineIssues:
+) -> _PipelineIssues:
     """Summarize missing extractions and failed analyses for the recap prompt."""
     extraction_gaps = [
-        ExtractionGap(
+        _ExtractionGap(
             source_id=source["source_id"],
             name=source["name"],
             comment=source.get("comment"),
@@ -659,7 +820,7 @@ def _build_pipeline_issues(
         if not source.get("article")
     ]
     failures = list(analysis_failures or [])
-    return PipelineIssues(
+    return _PipelineIssues(
         extraction_gaps=extraction_gaps,
         analysis_failures=failures,
         has_issues=bool(extraction_gaps or failures),
@@ -715,9 +876,12 @@ def generate_daily_recap(
         f"{json.dumps(market_context, ensure_ascii=False)}\n\n"
         "Economic indicators from the database (authoritative):\n"
         f"{json.dumps(economic_context, ensure_ascii=False)}\n\n"
-        "Central bank key figures from the database / Central Banks page "
-        "(authoritative policy baseline — effective rates, CB macro prints, "
-        "next meeting; use when assessing policy outlook / future CB moves):\n"
+        "Central bank context from the database / Central Banks page "
+        "(authoritative — figures: effective rates, CB macro prints, next "
+        "meeting; on a decision day, is_decision_day=true and decision_rates "
+        "holds that day's key rate prints with previous/change — use those "
+        "to state the decision and compare vs prior pricing; otherwise use "
+        "figures only when they materially help the policy outlook):\n"
         f"{json.dumps(central_bank_context, ensure_ascii=False)}\n\n"
         "FX heatmap DoD % changes and per-currency RMS move magnitude "
         "(quadratic mean of pairwise % changes; always >= 0 — use pairwise "

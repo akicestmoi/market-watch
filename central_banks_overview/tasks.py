@@ -3,14 +3,13 @@
 from datetime import date, datetime, timedelta, timezone
 
 from celery import shared_task
-from pandas.tseries.offsets import BDay
 
 import central_banks_overview.services.central_banks_data as central_banks_data
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices
 from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import logger
+from core.services import get_market_watch_as_of_date, get_previous_business_day, logger
 
 
 @shared_task
@@ -21,9 +20,9 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
     """
     match two_bdays_ago:
         case True:
-            price_date = (date.today() - BDay(2)).date()
+            price_date = get_previous_business_day(get_market_watch_as_of_date())
         case False:
-            price_date = (date.today() - BDay(1)).date()
+            price_date = get_market_watch_as_of_date()
 
     lock_key = stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date)
     lock = try_acquire_redis_lock(lock_key)
@@ -129,7 +128,7 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
             stir_prices_ingestion.delete_stir_futures_prices_before_date(
                 central_bank, price_date
             )
-            cb_data_date = (date.today() - BDay(1)).date()
+            cb_data_date = get_market_watch_as_of_date()
             cb_lock_key = central_banks_data.get_cb_data_ingestion_lock_key(
                 central_bank, cb_data_date
             )

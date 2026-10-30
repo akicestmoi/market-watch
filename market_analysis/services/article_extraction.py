@@ -26,7 +26,7 @@ SOURCE_SCRAP_MAP = {
 }
 
 
-class NewsSourceEntry(TypedDict):
+class _NewsSourceEntry(TypedDict):
     """News source entry dictionnary."""
 
     source: NewsSourceChoices
@@ -55,7 +55,7 @@ class ArticleExtractionResult(TypedDict):
 
 
 def _extract_article(
-    news_source: NewsSourceEntry,
+    news_source: _NewsSourceEntry,
     reporting_date: date,
 ) -> ArticleExtractionResult:
     """Extract the single article for one JSON-listed source via its scrap function."""
@@ -98,7 +98,7 @@ def _extract_article(
     )
 
 
-class ExtractedArticles(TypedDict):
+class _ExtractedArticles(TypedDict):
     """Extracted articles dictionnary."""
 
     articles: list[ArticleData]
@@ -106,7 +106,7 @@ class ExtractedArticles(TypedDict):
     reporting_date: str
 
 
-def extract_all_articles(reporting_date: date) -> ExtractedArticles:
+def extract_all_articles(reporting_date: date) -> _ExtractedArticles:
     """Extract the single article from each JSON-listed source into memory."""
     extracted_articles: list[ArticleData] = []
     source_results: list[ArticleExtractionResult] = []
@@ -120,7 +120,7 @@ def extract_all_articles(reporting_date: date) -> ExtractedArticles:
         len(news_sources),
     )
     for raw_source in news_sources:
-        news_source = NewsSourceEntry(
+        news_source = _NewsSourceEntry(
             source=NewsSourceChoices(raw_source["source"]),
             name=raw_source["name"],
             base_url=raw_source["base_url"],
@@ -148,7 +148,7 @@ def extract_all_articles(reporting_date: date) -> ExtractedArticles:
         len(extracted_articles),
         len(source_results),
     )
-    return ExtractedArticles(
+    return _ExtractedArticles(
         articles=extracted_articles,
         sources=source_results,
         reporting_date=reporting_date.isoformat(),

@@ -3,10 +3,18 @@
 from datetime import date
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from freezegun import freeze_time
 
-from data_visualization.services.economic_recap import get_economic_recap_data
+from data_visualization.services.economic_recap import (
+    _format_amount_unit_label,
+    _format_recap_row_unit_parenthesis,
+    _format_spaced_number,
+    _scale_amount_for_display,
+    _ScaledAmount,
+    format_indicator_value,
+    get_economic_recap_data,
+)
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
@@ -14,6 +22,10 @@ from economic_overview.models import (
     EconomicDataSourceChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
+    IndicatorAmountMagnitudeChoices,
+    IndicatorBaseCurrencyChoices,
+    IndicatorBaseUnitChoices,
+    IndicatorDisplayModeChoices,
 )
 
 
@@ -68,7 +80,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Test Indicator",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 110.0,
                         "previous": 100.0,
                         "change": 10.0,
@@ -103,7 +117,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Test Indicator",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 110.0,
                         "previous": 100.0,
                         "change": 10.0,
@@ -178,7 +194,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "GDP",
                         "frequency": EconomicPublicationFrequencyChoices.QUARTERLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 150.0,
                         "previous": None,
                         "change": None,
@@ -198,7 +216,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "GDP",
                         "frequency": EconomicPublicationFrequencyChoices.QUARTERLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 200.0,
                         "previous": None,
                         "change": None,
@@ -223,7 +243,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Test Indicator",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 110.0,
                         "previous": 100.0,
                         "change": 10.0,
@@ -248,7 +270,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Test Indicator",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": None,
                         "previous": None,
                         "change": None,
@@ -296,7 +320,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Nonfarm Payrolls",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": None,
                         "previous": None,
                         "change": None,
@@ -310,7 +336,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Nonfarm Payrolls",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 200.0,
                         "previous": None,
                         "change": None,
@@ -335,7 +363,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Test Indicator",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 110.0,
                         "previous": 100.0,
                         "change": 10.0,
@@ -360,7 +390,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Test Indicator",
                         "frequency": EconomicPublicationFrequencyChoices.MONTHLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": None,
                         "previous": None,
                         "change": None,
@@ -418,7 +450,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Manufacturing Business Confidence",
                         "frequency": EconomicPublicationFrequencyChoices.QUARTERLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 10.0,
                         "previous": None,
                         "change": None,
@@ -438,7 +472,9 @@ class TestEconomicRecapServices(TestCase):
                         "display_name": "Manufacturing Business Confidence",
                         "frequency": EconomicPublicationFrequencyChoices.QUARTERLY,
                         "base_year": None,
-                        "base_unit": "",
+                        "base_unit": None,
+                        "base_currency": None,
+                        "default_mode": "Raw",
                         "current": 5.0,
                         "previous": None,
                         "change": None,
@@ -463,3 +499,166 @@ class TestEconomicRecapServices(TestCase):
         """
         result = get_economic_recap_data([EconomicDataLocationChoices.JP])
         assert result == []
+
+
+class TestFormatAmountHelpers(SimpleTestCase):
+    """Amount scaling and unit label helpers."""
+
+    def test_format_amount_unit_label(self):
+        """
+        GIVEN a magnitude and optional currency
+        WHEN formatting the amount unit label
+        THEN the compact label matches (bUSD / m)
+        """
+        assert (
+            _format_amount_unit_label(
+                IndicatorAmountMagnitudeChoices.B,
+                IndicatorBaseCurrencyChoices.USD,
+            )
+            == "bUSD"
+        )
+        assert _format_amount_unit_label(IndicatorAmountMagnitudeChoices.M) == "m"
+
+    def test_scale_amount_bumps_magnitude(self):
+        """
+        GIVEN a billion-scale value above 999
+        WHEN scaling for display
+        THEN the value is divided by 1_000 and magnitude becomes T
+        """
+        assert _scale_amount_for_display(
+            1_500.0,
+            IndicatorAmountMagnitudeChoices.B,
+            IndicatorBaseCurrencyChoices.USD,
+        ) == _ScaledAmount(
+            value=1.5,
+            magnitude=IndicatorAmountMagnitudeChoices.T,
+            currency=IndicatorBaseCurrencyChoices.USD,
+        )
+
+    def test_format_spaced_number(self):
+        """
+        GIVEN a large float
+        WHEN formatting with space thousands separators
+        THEN integer groups are space-separated
+        """
+        assert _format_spaced_number(1234.5, digits=2) == "1 234.50"
+        assert _format_spaced_number(-12.3, digits=1) == "-12.3"
+
+
+class TestFormatIndicatorValue(SimpleTestCase):
+    """Single-value formatting for UI / LLM."""
+
+    def test_none_returns_empty(self):
+        """
+        GIVEN a None value
+        WHEN formatting
+        THEN an empty string is returned
+        """
+        assert format_indicator_value(None) == ""
+
+    def test_percent_mode_appends_percent(self):
+        """
+        GIVEN a growth-mode value
+        WHEN formatting with unit label
+        THEN a trailing percent sign is appended
+        """
+        assert (
+            format_indicator_value(
+                1.25,
+                mode=IndicatorDisplayModeChoices.QUARTER,
+                include_unit_label=True,
+            )
+            == "1.25 %"
+        )
+
+    def test_amount_raw_with_currency(self):
+        """
+        GIVEN a raw billion USD amount
+        WHEN formatting with unit label
+        THEN the scaled value includes a parenthetical unit
+        """
+        assert (
+            format_indicator_value(
+                1_500.0,
+                base_unit=IndicatorBaseUnitChoices.B,
+                base_currency="USD",
+                mode=IndicatorDisplayModeChoices.RAW,
+            )
+            == "1.50 (tUSD)"
+        )
+
+    def test_index_raw_number_only(self):
+        """
+        GIVEN an index-series value
+        WHEN formatting in Raw mode
+        THEN only the spaced number is returned
+        """
+        assert (
+            format_indicator_value(
+                102.5,
+                base_unit=IndicatorBaseUnitChoices.INDEX,
+                mode=IndicatorDisplayModeChoices.RAW,
+            )
+            == "102.50"
+        )
+
+
+class TestFormatRecapRowUnitParenthetical(TestCase):
+    """Cross-location unit / base-year parentheticals for recap row titles."""
+
+    def setUp(self):
+        """Create two amount indicators that disagree on unit."""
+        self.us_gdp = EconomicIndicatorInformationModel.objects.create(
+            id=101,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="GDP",
+            name="US GDP",
+            technical_name="us_gdp",
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="GDP",
+            base_unit=IndicatorBaseUnitChoices.B,
+            base_currency="USD",
+        )
+        self.jp_gdp = EconomicIndicatorInformationModel.objects.create(
+            id=102,
+            location=EconomicDataLocationChoices.JP,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="GDP",
+            name="JP GDP",
+            technical_name="jp_gdp",
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="JPNGDPNQDSMEI",
+            base_unit=IndicatorBaseUnitChoices.B,
+            base_currency="JPY",
+        )
+
+    def test_growth_mode_is_percent(self):
+        """
+        GIVEN any indicators
+        WHEN formatting the unit parenthetical in Quarter mode
+        THEN the label is (in %)
+        """
+        assert (
+            _format_recap_row_unit_parenthesis(
+                [self.us_gdp, self.jp_gdp],
+                mode=IndicatorDisplayModeChoices.QUARTER,
+            )
+            == "(in %)"
+        )
+
+    def test_disagreeing_amount_units(self):
+        """
+        GIVEN US and JP GDP with different currencies
+        WHEN formatting the Raw unit parenthetical
+        THEN both compact labels are joined with /
+        """
+        assert (
+            _format_recap_row_unit_parenthesis(
+                [self.us_gdp, self.jp_gdp],
+                mode=IndicatorDisplayModeChoices.RAW,
+            )
+            == "(in bUSD / bJPY)"
+        )

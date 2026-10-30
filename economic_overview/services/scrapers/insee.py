@@ -23,7 +23,7 @@ from economic_overview.services.config import (
 from economic_overview.services.scrapers.common import ScrapingResult
 
 
-class InseeValuesLoadResult(NamedTuple):
+class _InseeValuesLoadResult(NamedTuple):
     """INSEE CSV load outcome."""
 
     dataframe: pd.DataFrame | None
@@ -55,11 +55,11 @@ def _load_insee_values_dataframe(
     frequency: EconomicPublicationFrequencyChoices,
     year_start: int,
     year_end: int,
-) -> InseeValuesLoadResult:
+) -> _InseeValuesLoadResult:
     """Download and parse the INSEE values CSV for a ticker."""
     expected_values_csv_name = INSEE_CSV_NAME_BY_FREQUENCY.get(frequency)
     if not expected_values_csv_name:
-        return InseeValuesLoadResult(
+        return _InseeValuesLoadResult(
             None, f"Unsupported frequency for INSEE scrape: {frequency}"
         )
 
@@ -74,7 +74,7 @@ def _load_insee_values_dataframe(
     response = requests.get(insee_url, params=params)
     if response.status_code >= 400:
         logger.warning(f"Error scraping INSEE data: {response.text}")
-        return InseeValuesLoadResult(None, response.text)
+        return _InseeValuesLoadResult(None, response.text)
 
     try:
         with zipfile.ZipFile(io.BytesIO(response.content)) as zip_archive:
@@ -84,25 +84,25 @@ def _load_insee_values_dataframe(
                 if expected_values_csv_name in archive_member_name.lower()
             ]
             if not matching_values_csv_files:
-                return InseeValuesLoadResult(
+                return _InseeValuesLoadResult(
                     None, f"No '{expected_values_csv_name}' CSV found in archive."
                 )
             with zip_archive.open(matching_values_csv_files[0]) as values_csv_file:
                 dataframe = pd.read_csv(values_csv_file, encoding="utf-8", sep=";")
     except Exception as exc:
-        return InseeValuesLoadResult(None, f"Error reading ZIP content: {exc}")
+        return _InseeValuesLoadResult(None, f"Error reading ZIP content: {exc}")
 
     if (
         "Libellé" not in dataframe.columns
         or "Période" not in dataframe["Libellé"].values
     ):
-        return InseeValuesLoadResult(None, "Data is not in the expected format.")
+        return _InseeValuesLoadResult(None, "Data is not in the expected format.")
 
     header_row = dataframe.index[dataframe["Libellé"] == "Période"][0]
     if len(dataframe) <= header_row + 1:
-        return InseeValuesLoadResult(None, "No data found.")
+        return _InseeValuesLoadResult(None, "No data found.")
 
-    return InseeValuesLoadResult(dataframe, "")
+    return _InseeValuesLoadResult(dataframe, "")
 
 
 def _parse_economic_data_from_insee_dataframe(
@@ -180,57 +180,57 @@ def get_data_from_insee(
     return [ScrapingResult(period=period, data_value=data_value, comment="")]
 
 
-class InseeAgendaSortField(TypedDict):
+class _InseeAgendaSortField(TypedDict):
     """Sort field for the INSEE agenda-diffusion search request."""
 
     field: str
     order: str
 
 
-class InseeAgendaRequest(TypedDict):
+class _InseeAgendaRequest(TypedDict):
     """POST body for https://www.insee.fr/fr/agenda-diffusion."""
 
     q: str
     start: int
-    sortFields: list[InseeAgendaSortField]
+    sortFields: list[_InseeAgendaSortField]
     filters: list[str]
     rows: int
     facetsQuery: list[str]
 
 
-class InseeAgendaFacetteConjoncture(TypedDict, total=False):
+class _InseeAgendaFacetteConjoncture(TypedDict, total=False):
     """Nested INSEE facetteConjoncture block (fields we read)."""
 
     libelleEn: str
 
 
-class InseeAgendaFamille(TypedDict, total=False):
+class _InseeAgendaFamille(TypedDict, total=False):
     """Nested INSEE famille block (fields we read)."""
 
-    facetteConjoncture: InseeAgendaFacetteConjoncture
+    facetteConjoncture: _InseeAgendaFacetteConjoncture
 
 
-class InseeAgendaDocument(TypedDict, total=False):
+class _InseeAgendaDocument(TypedDict, total=False):
     """One INSEE agenda document (fields we read)."""
 
-    famille: InseeAgendaFamille
+    famille: _InseeAgendaFamille
     embargo: str
 
 
-class InseeAgendaResponse(TypedDict, total=False):
+class _InseeAgendaResponse(TypedDict, total=False):
     """INSEE agenda-diffusion JSON root (fields we read)."""
 
-    documents: list[InseeAgendaDocument]
+    documents: list[_InseeAgendaDocument]
 
 
-class InseePublicationScheduleRow(TypedDict):
+class _InseePublicationScheduleRow(TypedDict):
     """One normalized INSEE publication schedule row before DataFrame load."""
 
     name: str
     publication_date: str | None
 
 
-_INSEE_AGENDA_RESPONSE_ADAPTER = TypeAdapter(InseeAgendaResponse)
+_INSEE_AGENDA_RESPONSE_ADAPTER = TypeAdapter(_InseeAgendaResponse)
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
@@ -240,7 +240,7 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
     Source: https://www.insee.fr/fr/agenda-diffusion
     """
     default_df = pd.DataFrame(columns=["name", "publication_date"])
-    payload = InseeAgendaRequest(
+    payload = _InseeAgendaRequest(
         q="*:*",
         start=0,
         sortFields=[{"field": "dateEmbargo_dt", "order": "asc"}],
@@ -260,12 +260,12 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
         logger.warning("Invalid INSEE publication schedule JSON")
         return default_df
 
-    records: list[InseePublicationScheduleRow] = []
+    records: list[_InseePublicationScheduleRow] = []
     for document in agenda.get("documents", []):
         famille = document.get("famille", {})
         facette = famille.get("facetteConjoncture", {}) if famille else {}
         records.append(
-            InseePublicationScheduleRow(
+            _InseePublicationScheduleRow(
                 name=facette.get("libelleEn", "") if facette else "",
                 publication_date=document.get("embargo"),
             )

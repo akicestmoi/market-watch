@@ -5,10 +5,14 @@ from datetime import date, datetime, timezone
 from django.test import TestCase
 from freezegun import freeze_time
 
-from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankDataModel,
+    CentralBankMeetingModel,
+)
 from data_visualization.services.market_recap import (
     FX_MATRIX_ORDER,
-    DayEventChangeClass,
+    _DayEventChangeClass,
     format_data_for_market_recap_display,
     get_day_events_grouped_by_location,
     get_fx_prices_matrix,
@@ -637,16 +641,16 @@ class TestDayEvents(TestCase):
                         "value": "",
                         "previous": "",
                         "change": "",
-                        "change_class": DayEventChangeClass.NONE,
+                        "change_class": _DayEventChangeClass.NONE,
                         "is_holiday": True,
                     },
                     {
                         "name": "CPI",
                         "location": "United States",
-                        "value": "3.2",
-                        "previous": "3",
-                        "change": "+0.2",
-                        "change_class": DayEventChangeClass.POSITIVE,
+                        "value": "3.20",
+                        "previous": "3.00",
+                        "change": "+0.20",
+                        "change_class": _DayEventChangeClass.POSITIVE,
                         "is_holiday": False,
                     },
                 ],
@@ -655,14 +659,62 @@ class TestDayEvents(TestCase):
 
     def test_get_day_events_includes_central_bank_meeting(self):
         """
-        GIVEN a central bank meeting on the target date
+        GIVEN a central bank meeting and key rates on the target date
         WHEN getting day events grouped by location
-        THEN the rate decision is included under that location
+        THEN each key rate shows current, previous, and change
         """
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
             order=1,
             date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=date(2025, 10, 30),
+            value=2.0,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=self.event_date,
+            value=2.0,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=3,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Refinancing",
+            full_name="ECB Main Refinancing Operation Rate",
+            date=date(2025, 10, 30),
+            value=2.15,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=3,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Refinancing",
+            full_name="ECB Main Refinancing Operation Rate",
+            date=self.event_date,
+            value=2.15,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=4,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Marginal_Lending",
+            full_name="ECB Marginal Lending Facility Rate",
+            date=date(2025, 10, 30),
+            value=2.4,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=4,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Marginal_Lending",
+            full_name="ECB Marginal Lending Facility Rate",
+            date=self.event_date,
+            value=2.15,
         )
 
         result = get_day_events_grouped_by_location(self.event_date)
@@ -671,14 +723,76 @@ class TestDayEvents(TestCase):
                 "location": "Europe",
                 "events": [
                     {
-                        "name": "European Central Bank (ECB) Rates Decision",
+                        "name": "ECB Deposit Facility Rate",
                         "location": "Europe",
-                        "value": "",
-                        "previous": "",
-                        "change": "",
-                        "change_class": DayEventChangeClass.NONE,
+                        "value": "2.00 %",
+                        "previous": "2.00 %",
+                        "change": "0.00 %",
+                        "change_class": _DayEventChangeClass.NONE,
                         "is_holiday": False,
-                    }
+                    },
+                    {
+                        "name": "ECB Main Refinancing Operation Rate",
+                        "location": "Europe",
+                        "value": "2.15 %",
+                        "previous": "2.15 %",
+                        "change": "0.00 %",
+                        "change_class": _DayEventChangeClass.NONE,
+                        "is_holiday": False,
+                    },
+                    {
+                        "name": "ECB Marginal Lending Facility Rate",
+                        "location": "Europe",
+                        "value": "2.15 %",
+                        "previous": "2.40 %",
+                        "change": "-0.25 %",
+                        "change_class": _DayEventChangeClass.NEGATIVE,
+                        "is_holiday": False,
+                    },
+                ],
+            }
+        ]
+
+    def test_get_day_events_matches_previous_publication_date(self):
+        """
+        GIVEN a release whose schedule rolled onto previous_publication_date
+        WHEN getting day events for that calendar date
+        THEN the release still appears with current/previous/change values
+        """
+        PublicationScheduleModel.objects.create(
+            indicator=self.indicator,
+            previous_publication_date=datetime(
+                2025, 12, 15, 13, 30, 0, tzinfo=timezone.utc
+            ),
+            current_publication_date=datetime(
+                2026, 1, 15, 13, 30, 0, tzinfo=timezone.utc
+            ),
+        )
+        EconomicDataModel.objects.create(
+            indicator=self.indicator,
+            period=date(2025, 11, 1),
+            data_value=3.2,
+        )
+        EconomicDataModel.objects.create(
+            indicator=self.indicator,
+            period=date(2025, 10, 1),
+            data_value=3.0,
+        )
+
+        result = get_day_events_grouped_by_location(self.event_date)
+        assert result == [
+            {
+                "location": "United States",
+                "events": [
+                    {
+                        "name": "CPI",
+                        "location": "United States",
+                        "value": "3.20",
+                        "previous": "3.00",
+                        "change": "+0.20",
+                        "change_class": _DayEventChangeClass.POSITIVE,
+                        "is_holiday": False,
+                    },
                 ],
             }
         ]

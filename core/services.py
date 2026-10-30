@@ -13,6 +13,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
 from django.utils import timezone as dj_timezone
+from pandas.tseries.offsets import BDay
 from rest_framework.exceptions import NotFound
 
 from .models import BaseLogModel, BaseModel
@@ -33,8 +34,8 @@ SOURCE_TIMEZONE_BY_LOCATION_CODE: dict[str, str] = {
 }
 
 
-class ValueChangeOutput(str, Enum):
-    """Which scalar ``calculate_value_change`` should return."""
+class ValueChangeType(str, Enum):
+    """Which change metric ``calculate_value_change`` should compute."""
 
     ABSOLUTE = "absolute"
     PERCENT = "percent"
@@ -45,13 +46,14 @@ class ValueChangeOutput(str, Enum):
 def calculate_value_change(
     current: float | None,
     previous: float | None,
-    output: ValueChangeOutput,
+    value_change_type: ValueChangeType,
     annualized_ratio: float | None = None,
 ) -> float | None:
     """Compute one change metric from ``previous`` to ``current``.
 
     Period labels (DoD / WoW / MoM / QoQ / QoQy / YoY) are caller concerns: pick
-    the comparison value and ``output``. Returns None when either input is None.
+    the comparison value and ``value_change_type``. Returns None when either
+    input is None.
 
     - ``ABSOLUTE`` — ``current - previous``
     - ``PERCENT`` — ``(absolute / previous) * 100`` (None if ``previous`` is 0)
@@ -63,14 +65,14 @@ def calculate_value_change(
     if current is None or previous is None:
         return None
     absolute = current - previous
-    match output:
-        case ValueChangeOutput.ABSOLUTE:
+    match value_change_type:
+        case ValueChangeType.ABSOLUTE:
             return absolute
-        case ValueChangeOutput.BPS:
+        case ValueChangeType.BPS:
             return absolute * 100
-        case ValueChangeOutput.PERCENT:
+        case ValueChangeType.PERCENT:
             return None if previous == 0 else (absolute / previous) * 100
-        case ValueChangeOutput.ANNUALIZED_PERCENT:
+        case ValueChangeType.ANNUALIZED_PERCENT:
             if annualized_ratio is None or previous == 0:
                 return None
             ratio = current / previous
@@ -283,3 +285,17 @@ def get_local_today() -> date:
     from ``convert_to_display_timezone``, which returns a full datetime.
     """
     return dj_timezone.localdate()
+
+
+def get_previous_business_day(as_of: date) -> date:
+    """Return the previous weekday on the business calendar before ``as_of``."""
+    return (as_of - BDay(1)).date()
+
+
+def get_market_watch_as_of_date() -> date:
+    """Return the project's default data perspective: Paris T-1 business day.
+
+    Market Watch analyses, recaps, and calendars are at most previous-business-day
+    (never live ``today``). Prefer this over ``date.today() - BDay(1)``.
+    """
+    return get_previous_business_day(get_local_today())

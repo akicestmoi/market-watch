@@ -1,18 +1,26 @@
 """Tests for FX heatmap and probability-matrix shift LLM context builders."""
 
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import patch
 
 from django.test import TestCase
 
-from central_banks_overview.models import CentralBankChoices
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankDataModel,
+    CentralBankMeetingModel,
+)
 from data_visualization.services.config import FX_MATRIX_ORDER
 from data_visualization.services.market_recap import FxMatrixRow
 from market_analysis.services.llm_market_recap import (
+    CentralBankContextRow,
     FxHeatmapContext,
     ProbabilityMatrixShiftContextRow,
-    ProbabilityStepRow,
+    _CentralBankDecisionRateRow,
+    _CentralBankFigureRow,
     _compute_fx_currency_strength,
+    _ProbabilityStepRow,
+    build_central_bank_context,
     build_fx_heatmap_context,
     build_probability_matrix_shift_context,
 )
@@ -184,12 +192,12 @@ class TestProbabilityMatrixShiftContext(TestCase):
                 previous_date="2025-12-15",
                 meeting_dates=["2026-01-28"],
                 current_probabilities=[
-                    ProbabilityStepRow(expected_rate_step=0, probabilities=[0.6]),
-                    ProbabilityStepRow(expected_rate_step=-25, probabilities=[0.4]),
+                    _ProbabilityStepRow(expected_rate_step=0, probabilities=[0.6]),
+                    _ProbabilityStepRow(expected_rate_step=-25, probabilities=[0.4]),
                 ],
                 probability_changes=[
-                    ProbabilityStepRow(expected_rate_step=0, probabilities=[0.1]),
-                    ProbabilityStepRow(expected_rate_step=-25, probabilities=[-0.1]),
+                    _ProbabilityStepRow(expected_rate_step=0, probabilities=[0.1]),
+                    _ProbabilityStepRow(expected_rate_step=-25, probabilities=[-0.1]),
                 ],
             )
         ]
@@ -208,3 +216,83 @@ class TestProbabilityMatrixShiftContext(TestCase):
         mock_get_matrix.side_effect = ValueError("missing futures")
         result = build_probability_matrix_shift_context(date(2025, 12, 16))
         assert result == []
+
+
+class TestCentralBankContext(TestCase):
+    """Tests for central-bank LLM context including decision-day rates."""
+
+    @patch("market_analysis.services.llm_market_recap.get_central_bank_data_item")
+    def test_build_central_bank_context_includes_decision_rates(
+        self, mock_get_central_bank_data_item
+    ):
+        """
+        GIVEN an ECB meeting and key-rate prints on the reporting date
+        WHEN building central-bank context
+        THEN ECB is_decision_day with decision_rates current/previous/change
+        """
+        as_of = date(2025, 12, 15)
+        mock_get_central_bank_data_item.return_value = [
+            {"label": "Effective Rate", "value": "2.00 %"},
+        ]
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            order=1,
+            date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=date(2025, 10, 30),
+            value=2.0,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=as_of,
+            value=1.75,
+        )
+
+        result = build_central_bank_context(as_of)
+        assert result == [
+            CentralBankContextRow(
+                central_bank=CentralBankChoices.FRB,
+                reference_date="2025-12-15",
+                is_decision_day=False,
+                decision_rates=[],
+                figures=[
+                    _CentralBankFigureRow(label="Effective Rate", value="2.00 %"),
+                ],
+            ),
+            CentralBankContextRow(
+                central_bank=CentralBankChoices.ECB,
+                reference_date="2025-12-15",
+                is_decision_day=True,
+                decision_rates=[
+                    _CentralBankDecisionRateRow(
+                        name="ECB Deposit Facility Rate",
+                        current_value=1.75,
+                        previous_value=2.0,
+                        change_value=-0.25,
+                        display_current_value="1.75 %",
+                        display_previous_value="2.00 %",
+                        display_change_value="-0.25 %",
+                    )
+                ],
+                figures=[
+                    _CentralBankFigureRow(label="Effective Rate", value="2.00 %"),
+                ],
+            ),
+            CentralBankContextRow(
+                central_bank=CentralBankChoices.BOJ,
+                reference_date="2025-12-15",
+                is_decision_day=False,
+                decision_rates=[],
+                figures=[
+                    _CentralBankFigureRow(label="Effective Rate", value="2.00 %"),
+                ],
+            ),
+        ]

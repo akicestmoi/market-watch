@@ -7,9 +7,18 @@ from typing import TypedDict
 
 from django.db.models import F, Max, OuterRef, QuerySet, Subquery
 
-from central_banks_overview.models import CentralBankChoices, CentralBankDataModel
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankDataModel,
+    CentralBankMeetingModel,
+)
 from central_banks_overview.services.config import CENTRAL_BANKS_DATA_JSON
-from core.services import logger
+from core.services import (
+    ValueChangeType,
+    calculate_value_change,
+    convert_to_display_timezone,
+    logger,
+)
 from market_overview.models import PriceSourceChoices
 from market_overview.services.scrapers.common import ScrapingResult
 from market_overview.services.scrapers.global_rates import scrap_from_global_rates
@@ -30,7 +39,7 @@ def get_cb_data_ingestion_lock_key(
     return f"lock:cb_data_ingestion:{central_bank.value}:{price_date.isoformat()}"
 
 
-class CentralBankDataBaseInfo(TypedDict):
+class _CentralBankDataBaseInfo(TypedDict):
     """Central Bank Data Information."""
 
     cb_data_id: int
@@ -41,7 +50,7 @@ class CentralBankDataBaseInfo(TypedDict):
     source: PriceSourceChoices
 
 
-class CentralBankData(TypedDict):
+class _CentralBankData(TypedDict):
     """Central Bank Data."""
 
     cb_data_id: int
@@ -53,22 +62,22 @@ class CentralBankData(TypedDict):
     comment: str | None
 
 
-class CentralBankDataIngestionResponseItem(TypedDict):
+class _CentralBankDataIngestionResponseItem(TypedDict):
     """Central Bank Data Ingestion Response Item."""
 
     data_name: str
     date: date
 
 
-def _get_central_bank_base_info() -> list[CentralBankDataBaseInfo]:
+def _get_central_bank_base_info() -> list[_CentralBankDataBaseInfo]:
     """Get central bank base info."""
     with open(CENTRAL_BANKS_DATA_JSON) as f:
-        return [CentralBankDataBaseInfo(**data) for data in json.load(f)]
+        return [_CentralBankDataBaseInfo(**data) for data in json.load(f)]
 
 
 def _get_specific_central_bank_data(
-    target_date: date, central_bank_data: CentralBankDataBaseInfo
-) -> CentralBankData:
+    target_date: date, central_bank_data: _CentralBankDataBaseInfo
+) -> _CentralBankData:
     """Ingest central bank data."""
     logger.info(
         f"Ingesting central bank data for {central_bank_data['short_name']} on {target_date}"
@@ -83,7 +92,7 @@ def _get_specific_central_bank_data(
     if not scraping_result.get("price"):
         logger.warning("No price found.")
 
-    return CentralBankData(
+    return _CentralBankData(
         cb_data_id=central_bank_data["cb_data_id"],
         central_bank=central_bank_data["central_bank"],
         short_name=central_bank_data["short_name"],
@@ -97,8 +106,8 @@ def _get_specific_central_bank_data(
 def ingest_central_bank_data(
     central_bank: CentralBankChoices,
     date_to_ingest: date,
-    all_data_info: list[CentralBankDataBaseInfo] = [],
-) -> list[CentralBankDataIngestionResponseItem]:
+    all_data_info: list[_CentralBankDataBaseInfo] = [],
+) -> list[_CentralBankDataIngestionResponseItem]:
     """Ingest central bank data.
 
     The function can act as a standalone function or
@@ -122,7 +131,7 @@ def ingest_central_bank_data(
                 },
             )
             central_bank_data_updated.append(
-                CentralBankDataIngestionResponseItem(
+                _CentralBankDataIngestionResponseItem(
                     data_name=data_info["full_name"], date=date_to_ingest
                 )
             )
@@ -138,7 +147,7 @@ class CentralBankDataDate(TypedDict):
 
 def ingest_requested_central_bank_data(
     dates_to_ingest_by_central_bank: list[CentralBankDataDate],
-) -> list[CentralBankDataIngestionResponseItem]:
+) -> list[_CentralBankDataIngestionResponseItem]:
     """Ingest central bank data."""
     central_bank_data_updated = []
     central_bank_base_info = _get_central_bank_base_info()
@@ -194,3 +203,84 @@ def delete_central_bank_data(ids: list[int]) -> int:
     deleted_count = queryset.count()
     queryset.delete()
     return deleted_count
+
+
+class _DecisionDayKeyRate(TypedDict):
+    """One key policy rate observed on a monetary-policy decision day."""
+
+    central_bank: CentralBankChoices
+    short_name: str
+    full_name: str
+    current_value: float | None
+    previous_value: float | None
+    change_value: float | None
+
+
+def get_previous_central_bank_rate(
+    short_name: str, event_date: date
+) -> CentralBankDataModel | None:
+    """Return the latest key-rate observation strictly before ``event_date``."""
+    return (
+        CentralBankDataModel.objects.filter(
+            short_name=short_name,
+            date__lt=event_date,
+        )
+        .order_by("-date")
+        .first()
+    )
+
+
+def list_central_banks_with_meetings_at_date(
+    event_date: date,
+) -> list[CentralBankChoices]:
+    """Return central banks with a meeting at the display calendar date."""
+    central_banks: list[CentralBankChoices] = []
+    seen_central_banks: set[CentralBankChoices] = set()
+    for meeting in CentralBankMeetingModel.objects.all().order_by(
+        "central_bank", "date"
+    ):
+        if convert_to_display_timezone(meeting.date).date() != event_date:
+            continue
+        central_bank = CentralBankChoices(meeting.central_bank)
+        if central_bank in seen_central_banks:
+            continue
+        seen_central_banks.add(central_bank)
+        central_banks.append(central_bank)
+    return central_banks
+
+
+def get_decision_day_key_rates(event_date: date) -> list[_DecisionDayKeyRate]:
+    """Return key rates for CB meetings whose display calendar date is ``event_date``.
+
+    One row per key-rate series with a print on that date (current / previous /
+    absolute change). Empty when there is no meeting that day or rates are not
+    ingested yet.
+    """
+    decision_day_key_rates: list[_DecisionDayKeyRate] = []
+    for central_bank in list_central_banks_with_meetings_at_date(event_date):
+        rate_rows = list(
+            get_central_bank_data(
+                target_date=event_date,
+                central_banks=[central_bank],
+            ).order_by("cb_data_id", "short_name")
+        )
+        for rate_row in rate_rows:
+            previous_row = get_previous_central_bank_rate(
+                rate_row.short_name, event_date
+            )
+            previous_value = previous_row.value if previous_row else None
+            decision_day_key_rates.append(
+                _DecisionDayKeyRate(
+                    central_bank=central_bank,
+                    short_name=rate_row.short_name,
+                    full_name=rate_row.full_name,
+                    current_value=rate_row.value,
+                    previous_value=previous_value,
+                    change_value=calculate_value_change(
+                        rate_row.value,
+                        previous_value,
+                        ValueChangeType.ABSOLUTE,
+                    ),
+                )
+            )
+    return decision_day_key_rates

@@ -26,14 +26,14 @@ from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.scrapers.yahoo import get_yahoo_finance_closing_prices
 
 
-class YFinanceTickerInfo(TypedDict):
+class _YFinanceTickerInfo(TypedDict):
     """YFinance Ticker Information."""
 
     ticker: str
     date: datetime
 
 
-def _get_ticker_info_from_maturity_month(maturity_month: int) -> YFinanceTickerInfo:
+def _get_ticker_info_from_maturity_month(maturity_month: int) -> _YFinanceTickerInfo:
     """Get the YFinance ticker and date from a maturity month."""
     next_meeting_date = get_central_bank_next_meeting_date(CentralBankChoices.FRB)
     now = datetime.now(timezone.utc)
@@ -46,7 +46,7 @@ def _get_ticker_info_from_maturity_month(maturity_month: int) -> YFinanceTickerI
     yfinance_ticker = (
         f"{FF_FUTURES_PREFIX}{ticker_month}{ticker_year}{FF_FUTURES_SUFFIX}"
     )
-    return YFinanceTickerInfo(ticker=yfinance_ticker, date=ticker_date)
+    return _YFinanceTickerInfo(ticker=yfinance_ticker, date=ticker_date)
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

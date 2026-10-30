@@ -3,20 +3,22 @@
 from datetime import date
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from data_visualization.services.economic_charts import (
     ChartPeriodWindow,
-    ChartSeriesMode,
-    EconomicChartsData,
-    EconomicChartsDropdownValues,
     EconomicChartsFrontData,
-    SelectedIndicatorsByCategory,
-    TimeSeriesPoint,
+    _build_value_axis_label,
     _change_series_mode,
+    _EconomicChartsCategoryDefaults,
+    _EconomicChartsData,
+    _EconomicChartsDropdownValues,
     _filter_time_series_by_period_window,
     _format_period,
     _parse_selected_indicator_and_mode,
+    _SelectedIndicatorsByCategory,
+    _TimeSeriesPoint,
+    get_default_indicator_selections,
     get_economic_charts_data,
     get_economic_charts_dropdown_values,
     get_selected_indicators_by_category,
@@ -28,6 +30,8 @@ from economic_overview.models import (
     EconomicDataSourceChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
+    IndicatorBaseUnitChoices,
+    IndicatorDisplayModeChoices,
 )
 
 
@@ -169,39 +173,93 @@ class TestEconomicChartServices(TestCase):
             EconomicDataLocationChoices.US, EconomicChartsFrontData(**front_data)
         )
         assert result == [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GROWTH,
                 selected_indicators=["GDP Growth", "Real GDP"],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.INFLATION,
                 selected_indicators=["CPI"],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GOVERNMENT,
                 selected_indicators=[],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.PRODUCTION,
                 selected_indicators=[],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.SALES,
                 selected_indicators=[],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.LABOUR,
                 selected_indicators=[],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.HOUSING,
                 selected_indicators=[],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.CONFIDENCE,
                 selected_indicators=[],
             ),
         ]
+
+    def test_get_default_indicator_selections_uses_db_default_mode(self):
+        """
+        GIVEN GDP / CPI / debt indicators with distinct DB default modes
+        WHEN building default chart selections for US
+        THEN each selection encodes that indicator's default_mode
+        """
+        EconomicIndicatorInformationModel.objects.create(
+            id=101,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="GDP",
+            name="US GDP",
+            technical_name="us_gdp",
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="GDP",
+            default_mode=IndicatorDisplayModeChoices.ANNUAL,
+        )
+        EconomicIndicatorInformationModel.objects.create(
+            id=102,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.INFLATION,
+            type="Consumer Price Index",
+            name="US CPI",
+            technical_name="us_cpi_main",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="CPIAUCSL",
+            default_mode=IndicatorDisplayModeChoices.ANNUAL,
+        )
+        EconomicIndicatorInformationModel.objects.create(
+            id=103,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GOVERNMENT,
+            type="Government Debt (% of GDP)",
+            name="US Debt",
+            technical_name="us_debt",
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="GFDEGDQ188S",
+            default_mode=IndicatorDisplayModeChoices.RAW,
+        )
+        result = get_default_indicator_selections(EconomicDataLocationChoices.US)
+        assert result == _EconomicChartsCategoryDefaults(
+            growth_indicator="GDP|Annual",
+            inflation_indicator="Consumer Price Index|Annual",
+            government_indicator="Government Debt (% of GDP)|Raw",
+            production_indicator="Industrial Production|Raw",
+            sales_indicator="Retail Sales|Raw",
+            labour_indicator="Unemployment Rate|Raw",
+            housing_indicator="Home Prices|Raw",
+            confidence_indicator="Consumer Confidence|Raw",
+        )
 
     def test_get_dropdown_values_returns_correct_structure(self):
         """
@@ -210,7 +268,7 @@ class TestEconomicChartServices(TestCase):
         THEN the correct structure is returned
         """
         result = get_economic_charts_dropdown_values(self.location)
-        assert result == EconomicChartsDropdownValues(
+        assert result == _EconomicChartsDropdownValues(
             categories=[
                 "Growth",
                 "Inflation",
@@ -225,11 +283,19 @@ class TestEconomicChartServices(TestCase):
             indicators_by_category=[
                 {
                     "category": "Growth",
-                    "indicators": [{"type": "GDP Growth", "name": "GDP Growth"}],
+                    "indicators": [
+                        {
+                            "type": "GDP Growth",
+                            "name": "GDP Growth",
+                            "default_mode": "Raw",
+                        }
+                    ],
                 },
                 {
                     "category": "Inflation",
-                    "indicators": [{"type": "CPI", "name": "CPI"}],
+                    "indicators": [
+                        {"type": "CPI", "name": "CPI", "default_mode": "Raw"}
+                    ],
                 },
                 {"category": "Government", "indicators": []},
                 {"category": "Production", "indicators": []},
@@ -247,7 +313,7 @@ class TestEconomicChartServices(TestCase):
         THEN only FR indicators are returned
         """
         result = get_economic_charts_dropdown_values(EconomicDataLocationChoices.FR)
-        assert result == EconomicChartsDropdownValues(
+        assert result == _EconomicChartsDropdownValues(
             categories=[
                 "Growth",
                 "Inflation",
@@ -262,7 +328,13 @@ class TestEconomicChartServices(TestCase):
             indicators_by_category=[
                 {
                     "category": "Growth",
-                    "indicators": [{"type": "GDP Growth", "name": "GDP Growth"}],
+                    "indicators": [
+                        {
+                            "type": "GDP Growth",
+                            "name": "GDP Growth",
+                            "default_mode": "Raw",
+                        }
+                    ],
                 },
                 {"category": "Inflation", "indicators": []},
                 {"category": "Government", "indicators": []},
@@ -283,7 +355,7 @@ class TestEconomicChartServices(TestCase):
         THEN the cached payload is returned without recomputing
         """
         cached_payload = [
-            EconomicChartsData(
+            _EconomicChartsData(
                 category="Growth",
                 category_data=[
                     {
@@ -292,11 +364,12 @@ class TestEconomicChartServices(TestCase):
                         "indicator_name": "GDP Growth",
                     }
                 ],
+                value_axis_label="Data Value",
             )
         ]
         mock_get_cache.return_value = cached_payload
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GROWTH,
                 selected_indicators=["GDP Growth"],
             ),
@@ -314,14 +387,14 @@ class TestEconomicChartServices(TestCase):
         THEN the correct data is returned (sorted by period descending)
         """
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GROWTH,
                 selected_indicators=["GDP Growth"],
             ),
         ]
         result = get_economic_charts_data(self.location, selected_indicators)
         assert result == [
-            EconomicChartsData(
+            _EconomicChartsData(
                 category="Growth",
                 category_data=[
                     {
@@ -335,14 +408,29 @@ class TestEconomicChartServices(TestCase):
                         "indicator_name": "GDP Growth",
                     },
                 ],
+                value_axis_label="Data Value",
             ),
-            EconomicChartsData(category="Inflation", category_data=[]),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Inflation", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
 
     def test_get_charts_data_inflation_category(self):
@@ -352,15 +440,17 @@ class TestEconomicChartServices(TestCase):
         THEN inflation data is returned correctly (sorted by period descending)
         """
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.INFLATION,
                 selected_indicators=["CPI"],
             ),
         ]
         result = get_economic_charts_data(self.location, selected_indicators)
         assert result == [
-            EconomicChartsData(category="Growth", category_data=[]),
-            EconomicChartsData(
+            _EconomicChartsData(
+                category="Growth", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
                 category="Inflation",
                 category_data=[
                     {
@@ -374,13 +464,26 @@ class TestEconomicChartServices(TestCase):
                         "indicator_name": "CPI",
                     },
                 ],
+                value_axis_label="Data Value",
             ),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
 
     def test_get_charts_data_with_selected_indicators(self):
@@ -390,11 +493,11 @@ class TestEconomicChartServices(TestCase):
         THEN growth data is filtered, inflation returns empty (no selection = no data)
         """
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GROWTH,
                 selected_indicators=["GDP Growth"],
             ),
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.INFLATION,
                 selected_indicators=[],
             ),
@@ -402,7 +505,7 @@ class TestEconomicChartServices(TestCase):
 
         result = get_economic_charts_data(self.location, selected_indicators)
         assert result == [
-            EconomicChartsData(
+            _EconomicChartsData(
                 category="Growth",
                 category_data=[
                     {
@@ -416,14 +519,29 @@ class TestEconomicChartServices(TestCase):
                         "indicator_name": "GDP Growth",
                     },
                 ],
+                value_axis_label="Data Value",
             ),
-            EconomicChartsData(category="Inflation", category_data=[]),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Inflation", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
 
     def test_get_charts_data_empty_selected_list_returns_all_empty(self):
@@ -434,14 +552,30 @@ class TestEconomicChartServices(TestCase):
         """
         result = get_economic_charts_data(self.location, [])
         assert result == [
-            EconomicChartsData(category="Growth", category_data=[]),
-            EconomicChartsData(category="Inflation", category_data=[]),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Growth", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Inflation", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
 
     def test_get_charts_data_empty_category(self):
@@ -451,24 +585,40 @@ class TestEconomicChartServices(TestCase):
         THEN empty category_data is returned for that category
         """
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.HOUSING,
                 selected_indicators=["Housing Starts"],  # Non-existent indicator
             ),
         ]
         result = get_economic_charts_data(self.location, selected_indicators)
         assert result == [
-            EconomicChartsData(category="Growth", category_data=[]),
-            EconomicChartsData(category="Inflation", category_data=[]),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Growth", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Inflation", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
 
-    def test__parse_selected_indicator_and_mode(self):
+    def test_parse_selected_indicator_and_mode(self):
         """
         GIVEN [Location|]Type[|MODE] strings
         WHEN parsing
@@ -476,27 +626,27 @@ class TestEconomicChartServices(TestCase):
         """
         assert _parse_selected_indicator_and_mode("GDP") == {
             "type": "GDP",
-            "mode": ChartSeriesMode.ABS,
+            "mode": IndicatorDisplayModeChoices.RAW,
             "location": None,
         }
-        assert _parse_selected_indicator_and_mode("GDP|YOY") == {
+        assert _parse_selected_indicator_and_mode("GDP|Annual") == {
             "type": "GDP",
-            "mode": ChartSeriesMode.YOY,
+            "mode": IndicatorDisplayModeChoices.ANNUAL,
             "location": None,
         }
         assert _parse_selected_indicator_and_mode("DE|GDP") == {
             "type": "GDP",
-            "mode": ChartSeriesMode.ABS,
+            "mode": IndicatorDisplayModeChoices.RAW,
             "location": EconomicDataLocationChoices.DE,
         }
-        assert _parse_selected_indicator_and_mode("DE|GDP|YOY") == {
+        assert _parse_selected_indicator_and_mode("DE|GDP|Annual") == {
             "type": "GDP",
-            "mode": ChartSeriesMode.YOY,
+            "mode": IndicatorDisplayModeChoices.ANNUAL,
             "location": EconomicDataLocationChoices.DE,
         }
-        assert _parse_selected_indicator_and_mode("GDP|QOQY") == {
+        assert _parse_selected_indicator_and_mode("GDP|Annualized Quarter") == {
             "type": "GDP",
-            "mode": ChartSeriesMode.QOQY,
+            "mode": IndicatorDisplayModeChoices.ANNUALIZED_QUARTER,
             "location": None,
         }
         with self.assertRaises(ValueError):
@@ -509,38 +659,38 @@ class TestEconomicChartServices(TestCase):
         THEN percent changes use QoQ lag, annualized QoQ, and YoY lag
         """
         points = [
-            TimeSeriesPoint(date(2023, 1, 1), 100.0),
-            TimeSeriesPoint(date(2023, 4, 1), 102.0),
-            TimeSeriesPoint(date(2023, 7, 1), 104.0),
-            TimeSeriesPoint(date(2023, 10, 1), 106.0),
-            TimeSeriesPoint(date(2024, 1, 1), 110.0),
+            _TimeSeriesPoint(date(2023, 1, 1), 100.0),
+            _TimeSeriesPoint(date(2023, 4, 1), 102.0),
+            _TimeSeriesPoint(date(2023, 7, 1), 104.0),
+            _TimeSeriesPoint(date(2023, 10, 1), 106.0),
+            _TimeSeriesPoint(date(2024, 1, 1), 110.0),
         ]
         qoq = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.QUARTERLY,
-            ChartSeriesMode.QOQ,
+            IndicatorDisplayModeChoices.QUARTER,
         )
-        assert qoq[0] == TimeSeriesPoint(date(2023, 4, 1), 2.0)
+        assert qoq[0] == _TimeSeriesPoint(date(2023, 4, 1), 2.0)
         assert abs(qoq[-1].value - (110.0 - 106.0) / 106.0 * 100) < 1e-9
 
         qoqy = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.QUARTERLY,
-            ChartSeriesMode.QOQY,
+            IndicatorDisplayModeChoices.ANNUALIZED_QUARTER,
         )
         assert qoqy == [
-            TimeSeriesPoint(date(2023, 4, 1), ((102.0 / 100.0) ** 4 - 1) * 100),
-            TimeSeriesPoint(date(2023, 7, 1), ((104.0 / 102.0) ** 4 - 1) * 100),
-            TimeSeriesPoint(date(2023, 10, 1), ((106.0 / 104.0) ** 4 - 1) * 100),
-            TimeSeriesPoint(date(2024, 1, 1), ((110.0 / 106.0) ** 4 - 1) * 100),
+            _TimeSeriesPoint(date(2023, 4, 1), ((102.0 / 100.0) ** 4 - 1) * 100),
+            _TimeSeriesPoint(date(2023, 7, 1), ((104.0 / 102.0) ** 4 - 1) * 100),
+            _TimeSeriesPoint(date(2023, 10, 1), ((106.0 / 104.0) ** 4 - 1) * 100),
+            _TimeSeriesPoint(date(2024, 1, 1), ((110.0 / 106.0) ** 4 - 1) * 100),
         ]
 
         yoy = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.QUARTERLY,
-            ChartSeriesMode.YOY,
+            IndicatorDisplayModeChoices.ANNUAL,
         )
-        assert yoy == [TimeSeriesPoint(date(2024, 1, 1), 10.0)]
+        assert yoy == [_TimeSeriesPoint(date(2024, 1, 1), 10.0)]
 
     def test_change_series_mode_monthly_missing_prior_is_dropped(self):
         """
@@ -549,22 +699,22 @@ class TestEconomicChartServices(TestCase):
         THEN points without a prior are omitted
         """
         points = [
-            TimeSeriesPoint(date(2024, 1, 1), 100.0),
-            TimeSeriesPoint(date(2024, 2, 1), 101.0),
-            TimeSeriesPoint(date(2024, 3, 1), 102.0),
+            _TimeSeriesPoint(date(2024, 1, 1), 100.0),
+            _TimeSeriesPoint(date(2024, 2, 1), 101.0),
+            _TimeSeriesPoint(date(2024, 3, 1), 102.0),
         ]
         assert (
             _change_series_mode(
                 points,
                 EconomicPublicationFrequencyChoices.MONTHLY,
-                ChartSeriesMode.YOY,
+                IndicatorDisplayModeChoices.ANNUAL,
             )
             == []
         )
         qoq = _change_series_mode(
             points,
             EconomicPublicationFrequencyChoices.MONTHLY,
-            ChartSeriesMode.QOQ,
+            IndicatorDisplayModeChoices.QUARTER,
         )
         assert qoq == []  # need 3-month lag; only 3 points → index 3 is out of range
 
@@ -575,18 +725,18 @@ class TestEconomicChartServices(TestCase):
         THEN only the last year of points remains
         """
         time_series = [
-            TimeSeriesPoint(date(2020, 1, 1), 1.0),
-            TimeSeriesPoint(date(2023, 6, 1), 2.0),
-            TimeSeriesPoint(date(2024, 1, 1), 3.0),
-            TimeSeriesPoint(date(2024, 6, 1), 4.0),
+            _TimeSeriesPoint(date(2020, 1, 1), 1.0),
+            _TimeSeriesPoint(date(2023, 6, 1), 2.0),
+            _TimeSeriesPoint(date(2024, 1, 1), 3.0),
+            _TimeSeriesPoint(date(2024, 6, 1), 4.0),
         ]
         time_series_in_period_window = _filter_time_series_by_period_window(
             time_series, ChartPeriodWindow.ONE_YEAR
         )
         assert time_series_in_period_window == [
-            TimeSeriesPoint(date(2023, 6, 1), 2.0),
-            TimeSeriesPoint(date(2024, 1, 1), 3.0),
-            TimeSeriesPoint(date(2024, 6, 1), 4.0),
+            _TimeSeriesPoint(date(2023, 6, 1), 2.0),
+            _TimeSeriesPoint(date(2024, 1, 1), 3.0),
+            _TimeSeriesPoint(date(2024, 6, 1), 4.0),
         ]
         assert (
             _filter_time_series_by_period_window(time_series, ChartPeriodWindow.MAX)
@@ -619,9 +769,9 @@ class TestEconomicChartServices(TestCase):
             )
 
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GROWTH,
-                selected_indicators=["GDP Growth|YOY"],
+                selected_indicators=["GDP Growth|Annual"],
             ),
         ]
         result = get_economic_charts_data(
@@ -630,7 +780,7 @@ class TestEconomicChartServices(TestCase):
             period_window=ChartPeriodWindow.ONE_YEAR,
         )
         assert result == [
-            EconomicChartsData(
+            _EconomicChartsData(
                 category="Growth",
                 category_data=[
                     {
@@ -659,14 +809,29 @@ class TestEconomicChartServices(TestCase):
                         "indicator_name": "GDP Growth (in %)",
                     },
                 ],
+                value_axis_label="Data Value (%)",
             ),
-            EconomicChartsData(category="Inflation", category_data=[]),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Inflation", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
 
     def test_get_charts_data_europe_plots_selected_country_curves(self):
@@ -700,16 +865,16 @@ class TestEconomicChartServices(TestCase):
             )
 
         selected_indicators = [
-            SelectedIndicatorsByCategory(
+            _SelectedIndicatorsByCategory(
                 category=EconomicDataCategoryChoices.GROWTH,
-                selected_indicators=["DE|GDP|ABS", "FR|GDP|ABS"],
+                selected_indicators=["DE|GDP|Raw", "FR|GDP|Raw"],
             ),
         ]
         result = get_economic_charts_data(
             EconomicDataLocationChoices.EU, selected_indicators
         )
         assert result == [
-            EconomicChartsData(
+            _EconomicChartsData(
                 category="Growth",
                 category_data=[
                     {
@@ -723,12 +888,57 @@ class TestEconomicChartServices(TestCase):
                         "indicator_name": "France — GDP",
                     },
                 ],
+                value_axis_label="Data Value",
             ),
-            EconomicChartsData(category="Inflation", category_data=[]),
-            EconomicChartsData(category="Government", category_data=[]),
-            EconomicChartsData(category="Production", category_data=[]),
-            EconomicChartsData(category="Sales", category_data=[]),
-            EconomicChartsData(category="Labour", category_data=[]),
-            EconomicChartsData(category="Housing", category_data=[]),
-            EconomicChartsData(category="Confidence", category_data=[]),
+            _EconomicChartsData(
+                category="Inflation", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Government", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Production", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Sales", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Labour", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Housing", category_data=[], value_axis_label="Data Value"
+            ),
+            _EconomicChartsData(
+                category="Confidence", category_data=[], value_axis_label="Data Value"
+            ),
         ]
+
+
+class TestBuildValueAxisLabel(SimpleTestCase):
+    """Economic chart Y-axis titles."""
+
+    def test_growth_mode_is_percent(self):
+        """
+        GIVEN Annual display mode
+        WHEN building the value axis label
+        THEN the axis is labeled as percent
+        """
+        assert (
+            _build_value_axis_label(mode=IndicatorDisplayModeChoices.ANNUAL)
+            == "Data Value (%)"
+        )
+
+    def test_amount_raw_includes_unit(self):
+        """
+        GIVEN Raw mode with billion EUR base
+        WHEN building the value axis label
+        THEN the axis includes the compact unit
+        """
+        assert (
+            _build_value_axis_label(
+                mode=IndicatorDisplayModeChoices.RAW,
+                base_unit=IndicatorBaseUnitChoices.B,
+                base_currency="EUR",
+            )
+            == "Data Value (in bEUR)"
+        )

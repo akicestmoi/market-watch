@@ -9,7 +9,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001565530",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 2,
@@ -21,7 +23,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001587025",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 3,
@@ -33,7 +37,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001580428",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 4,
@@ -45,7 +51,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001585934",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 5,
@@ -57,7 +65,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001586890",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 6,
@@ -69,7 +79,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001587668",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 7,
@@ -81,7 +93,9 @@
     "frequency": "MONTHLY",
     "source": "INSEE",
     "ticker": "001796629",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 8,
@@ -94,7 +108,9 @@
     "source": "INSEE",
     "ticker": "011812231",
     "base_year": 2025,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 9,
@@ -107,7 +123,9 @@
     "source": "INSEE",
     "ticker": "010769903",
     "base_year": 2021,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 10,
@@ -120,7 +138,9 @@
     "source": "INSEE",
     "ticker": "010768261",
     "base_year": 2021,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 11,
@@ -132,7 +152,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "001688527",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 12,
@@ -145,7 +167,9 @@
     "source": "INSEE",
     "ticker": "010761999",
     "base_year": 2020,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 13,
@@ -158,7 +182,9 @@
     "source": "INSEE",
     "ticker": "010567119",
     "base_year": 2015,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 14,
@@ -170,7 +196,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794860",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annual"
   },
   {
     "id": 15,
@@ -182,19 +210,23 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794864",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 16,
     "location": "FR",
     "category": "GROWTH",
-    "type": "Government Consumption",
-    "name": "France Government Consumption",
+    "type": "Government Spending",
+    "name": "France Government Spending",
     "technical_name": "Quarterly national accounts - first estimate",
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794862",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 17,
@@ -206,7 +238,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794884",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 18,
@@ -218,7 +252,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794877",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 19,
@@ -230,7 +266,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794879",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 20,
@@ -242,7 +280,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "010777608",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 21,
@@ -254,7 +294,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "010777616",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 22,
@@ -266,7 +308,9 @@
     "frequency": "QUARTERLY",
     "source": "INSEE",
     "ticker": "011794880",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 23,
@@ -279,7 +323,9 @@
     "source": "INSEE",
     "ticker": "010002014",
     "base_year": 2010,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 24,
@@ -292,7 +338,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hicp_minr",
     "base_year": 2025,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 25,
@@ -304,7 +352,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "GDPC1",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annual"
   },
   {
     "id": 26,
@@ -317,7 +367,9 @@
     "source": "FRED",
     "ticker": "CPIAUCSL",
     "base_year": 1982,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 27,
@@ -329,7 +381,9 @@
     "frequency": "MONTHLY",
     "source": "FRED",
     "ticker": "RSAFS",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "USD",
+    "default_mode": "Annual"
   },
   {
     "id": 28,
@@ -342,7 +396,9 @@
     "source": "FRED",
     "ticker": "INDPRO",
     "base_year": 2017,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 29,
@@ -354,7 +410,9 @@
     "frequency": "MONTHLY",
     "source": "FRED",
     "ticker": "UNRATE",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 30,
@@ -366,7 +424,9 @@
     "frequency": "MONTHLY",
     "source": "FRED",
     "ticker": "PAYEMS",
-    "base_unit": "K"
+    "base_unit": "K",
+    "base_currency": "USD",
+    "default_mode": "Raw"
   },
   {
     "id": 31,
@@ -379,7 +439,9 @@
     "source": "FRED",
     "ticker": "USSTHPI",
     "base_year": 1980,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 32,
@@ -391,7 +453,9 @@
     "frequency": "MONTHLY",
     "source": "FRED",
     "ticker": "UMCSENT",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 33,
@@ -403,7 +467,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annual"
   },
   {
     "id": 34,
@@ -416,7 +482,9 @@
     "source": "STAT_OF_JP",
     "ticker": "0703010601010090000",
     "base_year": 2025,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 35,
@@ -428,7 +496,9 @@
     "frequency": "MONTHLY",
     "source": "STAT_OF_JP",
     "ticker": "0301010000020020010",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 36,
@@ -441,7 +511,9 @@
     "source": "STAT_OF_JP",
     "ticker": "0502070301000090010",
     "base_year": 2020,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 37,
@@ -453,7 +525,9 @@
     "frequency": "MONTHLY",
     "source": "STAT_OF_JP",
     "ticker": "0601010201010010000",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annual"
   },
   {
     "id": 38,
@@ -466,7 +540,9 @@
     "source": "MLIT",
     "ticker": "residential_property_sa",
     "base_year": 2010,
-    "base_unit": "INDEX"
+    "base_unit": "INDEX",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 39,
@@ -478,7 +554,9 @@
     "frequency": "QUARTERLY",
     "source": "BOJ",
     "ticker": "business_conditions_large_mfg",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 40,
@@ -490,7 +568,9 @@
     "frequency": "QUARTERLY",
     "source": "BOJ",
     "ticker": "business_conditions_medium_mfg",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 41,
@@ -502,7 +582,9 @@
     "frequency": "QUARTERLY",
     "source": "BOJ",
     "ticker": "business_conditions_small_mfg",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 42,
@@ -514,7 +596,9 @@
     "frequency": "QUARTERLY",
     "source": "BOJ",
     "ticker": "business_conditions_large_nonmfg",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 43,
@@ -526,7 +610,9 @@
     "frequency": "QUARTERLY",
     "source": "BOJ",
     "ticker": "business_conditions_medium_nonmfg",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 44,
@@ -538,7 +624,9 @@
     "frequency": "QUARTERLY",
     "source": "BOJ",
     "ticker": "business_conditions_small_nonmfg",
-    "base_unit": ""
+    "base_unit": "",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 45,
@@ -550,19 +638,23 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "PCECC96",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 46,
     "location": "US",
     "category": "GROWTH",
-    "type": "Government Consumption",
-    "name": "United States Real Government Consumption and Gross Investment",
+    "type": "Government Spending",
+    "name": "United States Real Government Spending and Gross Investment",
     "technical_name": "Gross Domestic Product",
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "GCEC1",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 47,
@@ -574,7 +666,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "GPDIC1",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 48,
@@ -586,7 +680,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "EXPGSC1",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 49,
@@ -598,7 +694,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "IMPGSC1",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 50,
@@ -610,7 +708,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "NETEXP",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "USD",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 51,
@@ -622,7 +722,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "GFDEGDQ188S",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 52,
@@ -634,7 +736,9 @@
     "frequency": "QUARTERLY",
     "source": "FRED",
     "ticker": "GFDEBTN",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "USD",
+    "default_mode": "Raw"
   },
   {
     "id": 53,
@@ -646,19 +750,23 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk-hh",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 54,
     "location": "JP",
     "category": "GROWTH",
-    "type": "Government Consumption",
-    "name": "Japan Government Consumption",
+    "type": "Government Spending",
+    "name": "Japan Government Spending",
     "technical_name": "Quarterly Estimates of GDP",
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk-gov",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 55,
@@ -670,7 +778,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk-gfcf",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 56,
@@ -682,7 +792,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk-ex",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 57,
@@ -694,7 +806,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk-im",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 58,
@@ -706,7 +820,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "gaku-jk-nx",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Annualized Quarter"
   },
   {
     "id": 59,
@@ -718,7 +834,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "ggd_pct_gdp",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 60,
@@ -730,7 +848,9 @@
     "frequency": "QUARTERLY",
     "source": "JP_CABINET_OFFICE",
     "ticker": "ggd_total",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Raw"
   },
   {
     "id": 61,
@@ -742,7 +862,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "namq_10_gdp",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annual"
   },
   {
     "id": 62,
@@ -755,7 +877,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hicp_minr",
     "base_unit": "INDEX",
-    "base_year": 2025
+    "base_year": 2025,
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 63,
@@ -767,7 +891,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "gov_10q_ggdebt_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 64,
@@ -779,7 +905,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "gov_10q_ggdebt_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 65,
@@ -791,7 +919,9 @@
     "frequency": "MONTHLY",
     "source": "EUROSTAT",
     "ticker": "bop_c6_m",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 66,
@@ -804,7 +934,9 @@
     "source": "EUROSTAT",
     "ticker": "sts_inpr_m",
     "base_unit": "INDEX",
-    "base_year": 2021
+    "base_year": 2021,
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 67,
@@ -817,7 +949,9 @@
     "source": "EUROSTAT",
     "ticker": "sts_trtu_m",
     "base_unit": "INDEX",
-    "base_year": 2021
+    "base_year": 2021,
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 68,
@@ -829,7 +963,9 @@
     "frequency": "MONTHLY",
     "source": "EUROSTAT",
     "ticker": "une_rt_m",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 69,
@@ -842,7 +978,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hpi_q",
     "base_unit": "INDEX",
-    "base_year": 2015
+    "base_year": 2015,
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 70,
@@ -854,7 +992,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "namq_10_gdp",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annual"
   },
   {
     "id": 71,
@@ -867,7 +1007,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hicp_minr",
     "base_unit": "INDEX",
-    "base_year": 2025
+    "base_year": 2025,
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 72,
@@ -879,7 +1021,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "gov_10q_ggdebt_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 73,
@@ -891,7 +1035,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "gov_10q_ggdebt_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 74,
@@ -903,7 +1049,9 @@
     "frequency": "MONTHLY",
     "source": "EUROSTAT",
     "ticker": "bop_c6_m",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 75,
@@ -916,7 +1064,9 @@
     "source": "EUROSTAT",
     "ticker": "sts_inpr_m",
     "base_unit": "INDEX",
-    "base_year": 2021
+    "base_year": 2021,
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 76,
@@ -929,7 +1079,9 @@
     "source": "EUROSTAT",
     "ticker": "sts_trtu_m",
     "base_unit": "INDEX",
-    "base_year": 2021
+    "base_year": 2021,
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 77,
@@ -941,7 +1093,9 @@
     "frequency": "MONTHLY",
     "source": "EUROSTAT",
     "ticker": "une_rt_m",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 78,
@@ -954,7 +1108,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hpi_q",
     "base_unit": "INDEX",
-    "base_year": 2015
+    "base_year": 2015,
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 79,
@@ -966,7 +1122,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "namq_10_gdp",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Annual"
   },
   {
     "id": 80,
@@ -979,7 +1137,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hicp_minr",
     "base_unit": "INDEX",
-    "base_year": 2025
+    "base_year": 2025,
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 81,
@@ -991,7 +1151,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "gov_10q_ggdebt_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 82,
@@ -1003,7 +1165,9 @@
     "frequency": "QUARTERLY",
     "source": "EUROSTAT",
     "ticker": "gov_10q_ggdebt_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 83,
@@ -1015,7 +1179,9 @@
     "frequency": "MONTHLY",
     "source": "EUROSTAT",
     "ticker": "bop_c6_m",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 84,
@@ -1028,7 +1194,9 @@
     "source": "EUROSTAT",
     "ticker": "sts_inpr_m",
     "base_unit": "INDEX",
-    "base_year": 2021
+    "base_year": 2021,
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 85,
@@ -1041,7 +1209,9 @@
     "source": "EUROSTAT",
     "ticker": "sts_trtu_m",
     "base_unit": "INDEX",
-    "base_year": 2021
+    "base_year": 2021,
+    "base_currency": "",
+    "default_mode": "Annual"
   },
   {
     "id": 86,
@@ -1053,7 +1223,9 @@
     "frequency": "MONTHLY",
     "source": "EUROSTAT",
     "ticker": "une_rt_m",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 87,
@@ -1066,7 +1238,9 @@
     "source": "EUROSTAT",
     "ticker": "prc_hpi_q",
     "base_unit": "INDEX",
-    "base_year": 2015
+    "base_year": 2015,
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 88,
@@ -1078,7 +1252,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 89,
@@ -1090,7 +1266,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 90,
@@ -1102,7 +1280,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 91,
@@ -1114,7 +1294,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 92,
@@ -1126,7 +1308,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 93,
@@ -1138,7 +1322,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 94,
@@ -1150,7 +1336,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_pct",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 95,
@@ -1162,7 +1350,9 @@
     "frequency": "ANNUAL",
     "source": "EUROSTAT",
     "ticker": "tec00127_mio",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "EUR",
+    "default_mode": "Raw"
   },
   {
     "id": 96,
@@ -1174,7 +1364,9 @@
     "frequency": "ANNUAL",
     "source": "FRED",
     "ticker": "FYFSDFYGDP",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 97,
@@ -1186,7 +1378,9 @@
     "frequency": "ANNUAL",
     "source": "FRED",
     "ticker": "FYFSD",
-    "base_unit": "M"
+    "base_unit": "M",
+    "base_currency": "USD",
+    "default_mode": "Raw"
   },
   {
     "id": 98,
@@ -1198,7 +1392,9 @@
     "frequency": "ANNUAL",
     "source": "JP_CABINET_OFFICE",
     "ticker": "net_lending_gg_cy_pct_gdp",
-    "base_unit": "PERCENT"
+    "base_unit": "PERCENT",
+    "base_currency": "",
+    "default_mode": "Raw"
   },
   {
     "id": 99,
@@ -1210,6 +1406,8 @@
     "frequency": "ANNUAL",
     "source": "JP_CABINET_OFFICE",
     "ticker": "net_lending_gg_cy",
-    "base_unit": "B"
+    "base_unit": "B",
+    "base_currency": "JPY",
+    "default_mode": "Raw"
   }
 ]

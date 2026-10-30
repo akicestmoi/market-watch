@@ -2,7 +2,7 @@
 
 from datetime import date, datetime, timedelta
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from core.services import convert_query_to_dictionary_list
 from core.testing import parse_query_for_testing
@@ -14,15 +14,19 @@ from economic_overview.models import (
     EconomicDataUpdateLogModel,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
+    IndicatorDisplayModeChoices,
     PublicationScheduleModel,
 )
 from economic_overview.services.economic_data import (
+    _IndicatorValueTriplet,
+    change_indicator_values_mode,
     check_economic_indicator_existence,
     delete_economic_data,
     delete_economic_data_update_logs_before_date,
     get_economic_data,
     get_economic_indicators_by_names,
     get_economic_indicators_to_update,
+    get_lag_for_mode_change_calculation,
     identify_not_existing_indicators,
 )
 
@@ -83,6 +87,8 @@ class TestEconomicDataServices(TestCase):
                 "ticker": "001565530",
                 "base_unit": "",
                 "base_year": None,
+                "base_currency": "",
+                "default_mode": "Raw",
             }
         ]
 
@@ -117,6 +123,8 @@ class TestEconomicDataServices(TestCase):
                 "ticker": "001565530",
                 "base_unit": "",
                 "base_year": None,
+                "base_currency": "",
+                "default_mode": "Raw",
             },
             {
                 "location": EconomicDataLocationChoices.JP.value,
@@ -129,6 +137,8 @@ class TestEconomicDataServices(TestCase):
                 "ticker": "001565531",
                 "base_unit": "",
                 "base_year": None,
+                "base_currency": "",
+                "default_mode": "Raw",
             },
         ]
 
@@ -184,6 +194,8 @@ class TestEconomicDataServices(TestCase):
                 "ticker": "001565530",
                 "base_unit": "",
                 "base_year": None,
+                "base_currency": "",
+                "default_mode": "Raw",
             }
         ]
 
@@ -223,6 +235,8 @@ class TestEconomicDataServices(TestCase):
                 "ticker": "001565531",
                 "base_unit": "",
                 "base_year": None,
+                "base_currency": "",
+                "default_mode": "Raw",
             }
         ]
 
@@ -481,3 +495,118 @@ class TestEconomicDataServices(TestCase):
         delete_economic_data_update_logs_before_date(cutoff_date)
 
         assert EconomicDataUpdateLogModel.objects.count() == 0
+
+
+class TestGetLagForModeChangeCalculation(SimpleTestCase):
+    """Lag lookup for Quarter / Annualized Quarter / Annual modes."""
+
+    def test_raw_always_zero(self):
+        """
+        GIVEN any publication frequency
+        WHEN lag is requested for Raw mode
+        THEN the lag is 0
+        """
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.MONTHLY,
+                IndicatorDisplayModeChoices.RAW,
+            )
+            == 0
+        )
+
+    def test_quarter_lags_by_frequency(self):
+        """
+        GIVEN monthly / quarterly / annual frequency
+        WHEN lag is requested for Quarter mode
+        THEN the lag is 3 / 1 / 1
+        """
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.MONTHLY,
+                IndicatorDisplayModeChoices.QUARTER,
+            )
+            == 3
+        )
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.QUARTERLY,
+                IndicatorDisplayModeChoices.QUARTER,
+            )
+            == 1
+        )
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.ANNUAL,
+                IndicatorDisplayModeChoices.ANNUALIZED_QUARTER,
+            )
+            == 1
+        )
+
+    def test_annual_lags_by_frequency(self):
+        """
+        GIVEN monthly / quarterly / annual frequency
+        WHEN lag is requested for Annual mode
+        THEN the lag is 12 / 4 / 1
+        """
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.MONTHLY,
+                IndicatorDisplayModeChoices.ANNUAL,
+            )
+            == 12
+        )
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.QUARTERLY,
+                IndicatorDisplayModeChoices.ANNUAL,
+            )
+            == 4
+        )
+        assert (
+            get_lag_for_mode_change_calculation(
+                EconomicPublicationFrequencyChoices.ANNUAL,
+                IndicatorDisplayModeChoices.ANNUAL,
+            )
+            == 1
+        )
+
+
+class TestChangeIndicatorValuesMode(SimpleTestCase):
+    """Newest-first raw series → current / previous / change triplet."""
+
+    def test_empty_series(self):
+        """
+        GIVEN an empty time series
+        WHEN changing mode
+        THEN all triplet fields are None
+        """
+        assert change_indicator_values_mode(
+            [],
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            mode=IndicatorDisplayModeChoices.RAW,
+        ) == _IndicatorValueTriplet(current=None, previous=None, change=None)
+
+    def test_raw_absolute_change(self):
+        """
+        GIVEN a newest-first raw series
+        WHEN changing to Raw mode
+        THEN current / previous are consecutive levels and change is absolute
+        """
+        assert change_indicator_values_mode(
+            [110.0, 100.0, 90.0],
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            mode=IndicatorDisplayModeChoices.RAW,
+        ) == _IndicatorValueTriplet(current=110.0, previous=100.0, change=10.0)
+
+    def test_quarter_percent_growth(self):
+        """
+        GIVEN a quarterly series with enough history
+        WHEN changing to Quarter mode
+        THEN current / previous are QoQ percent growths and change is their delta
+        """
+        # Newest-first: 110, 100, 80 → QoQ at 0 = 10%, QoQ at 1 = 25%
+        assert change_indicator_values_mode(
+            [110.0, 100.0, 80.0],
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            mode=IndicatorDisplayModeChoices.QUARTER,
+        ) == _IndicatorValueTriplet(current=10.0, previous=25.0, change=-15.0)

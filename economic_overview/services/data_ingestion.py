@@ -62,7 +62,7 @@ def get_economic_data_ingestion_lock_key() -> str:
     return "lock:economic_data_ingestion"
 
 
-class EconomicData(TypedDict):
+class _EconomicData(TypedDict):
     """Economic data dictionnary."""
 
     indicator: EconomicIndicatorInformationModel
@@ -73,7 +73,7 @@ class EconomicData(TypedDict):
 
 def _get_economic_data(
     indicator: EconomicIndicatorInformationModel, period: str | None = None
-) -> EconomicData:
+) -> _EconomicData:
     """Get economic data from scraping function (latest or a specific period)."""
     scraping_function = SOURCE_SCRAP_MAP.get(
         EconomicDataSourceChoices(indicator.source)
@@ -99,7 +99,7 @@ def _get_economic_data(
     )
     if not scraping_result.get("data_value"):
         logger.warning("No value found.")
-    return EconomicData(
+    return _EconomicData(
         indicator=indicator,
         period=scraping_result.get("period"),
         data_value=scraping_result.get("data_value"),
@@ -159,7 +159,7 @@ def ingest_latest_economic_data(
     return economic_data_not_updated
 
 
-class SpecificEconomicDataNotUpdatedItem(TypedDict):
+class _SpecificEconomicDataNotUpdatedItem(TypedDict):
     """Specific Economic Data Not Updated."""
 
     indicator: str
@@ -172,7 +172,7 @@ def ingest_specific_economic_data(
         | QuerySet[EconomicIndicatorInformationModel]
     ),
     periods: list[list[str]],
-) -> list[SpecificEconomicDataNotUpdatedItem]:
+) -> list[_SpecificEconomicDataNotUpdatedItem]:
     """Ingest specific economic data for indicators and target periods."""
     economic_data_not_updated = []
     for indicator, period_list in zip(indicators, periods):
@@ -183,7 +183,7 @@ def ingest_specific_economic_data(
             is_success = _ingest_single_economic_data(indicator, target_period)
             if not is_success:
                 economic_data_not_updated.append(
-                    SpecificEconomicDataNotUpdatedItem(
+                    _SpecificEconomicDataNotUpdatedItem(
                         indicator=indicator.name,
                         period=target_period,
                     )
@@ -198,9 +198,9 @@ def ingest_historical_economic_data(
     ),
     start_date: date,
     end_date: date,
-) -> list[SpecificEconomicDataNotUpdatedItem]:
+) -> list[_SpecificEconomicDataNotUpdatedItem]:
     """Ingest all economic data in [start_date, end_date] for each indicator."""
-    economic_data_not_updated: list[SpecificEconomicDataNotUpdatedItem] = []
+    economic_data_not_updated: list[_SpecificEconomicDataNotUpdatedItem] = []
     window_label = f"{start_date.isoformat()}/{end_date.isoformat()}"
     for indicator in indicators:
         logger.info(
@@ -212,7 +212,7 @@ def ingest_historical_economic_data(
         )
         if not scraping_function:
             economic_data_not_updated.append(
-                SpecificEconomicDataNotUpdatedItem(
+                _SpecificEconomicDataNotUpdatedItem(
                     indicator=indicator.name,
                     period=window_label,
                 )
@@ -243,7 +243,7 @@ def ingest_historical_economic_data(
 
         if not has_been_upserted:
             economic_data_not_updated.append(
-                SpecificEconomicDataNotUpdatedItem(
+                _SpecificEconomicDataNotUpdatedItem(
                     indicator=indicator.name,
                     period=window_label,
                 )

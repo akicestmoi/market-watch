@@ -1,9 +1,11 @@
 const LOCATION_FLAGS = {
   "United States": "🇺🇸",
   Europe: "🇪🇺",
-  Germany: "🇩🇪",
   France: "🇫🇷",
   Japan: "🇯🇵",
+  Germany: "🇩🇪",
+  Spain: "🇪🇸",
+  Italy: "🇮🇹",
 };
 
 function formatLocationWithFlag(locationLabel) {

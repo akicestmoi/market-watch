@@ -3,14 +3,13 @@
 from datetime import date, timedelta
 
 from celery import shared_task
-from pandas.tseries.offsets import BDay
 
 import market_analysis.tasks as market_analysis_tasks
 import market_overview.services.holidays as holidays
 import market_overview.services.market_data as market_data
 import market_overview.services.price_ingestion as price_ingestion
 from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import logger
+from core.services import get_market_watch_as_of_date, get_previous_business_day, logger
 from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
@@ -22,9 +21,9 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
     """
     match two_bdays_ago:
         case True:
-            price_date = (date.today() - BDay(2)).date()
+            price_date = get_previous_business_day(get_market_watch_as_of_date())
         case False:
-            price_date = (date.today() - BDay(1)).date()
+            price_date = get_market_watch_as_of_date()
 
     lock_key = price_ingestion.get_market_price_ingestion_lock_key(price_date)
     lock = try_acquire_redis_lock(lock_key)

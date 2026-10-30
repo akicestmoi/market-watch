@@ -48,7 +48,7 @@ from market_overview.services.market_data import (
 from market_overview.services.price_ingestion import BatchPriceIngestionItem
 
 
-class MarketPriceIngestionValidatedData(TypedDict):
+class _MarketPriceIngestionValidatedData(TypedDict):
     """Validated data for ``MarketPriceIngestionSerializer``."""
 
     date: date
@@ -70,7 +70,7 @@ class IngestMarketPricesView(BaseAPIView):
             ),
         ],
     )
-    def post(self, validated_data: MarketPriceIngestionValidatedData) -> Response:
+    def post(self, validated_data: _MarketPriceIngestionValidatedData) -> Response:
         """Ingest market prices gathered from various sources."""
         price_date: date = validated_data["date"]
 
@@ -129,14 +129,14 @@ class BatchIngestMarketPricesView(BaseAPIView):
         )
 
 
-class GetMarketPriceValidatedData(TypedDict):
+class _GetMarketPriceValidatedData(TypedDict):
     """Validated data for ``GetMarketPriceSerializer``."""
 
     date: date
     short_name: str
 
 
-class DeleteMarketPricesValidatedData(TypedDict, total=False):
+class _DeleteMarketPricesValidatedData(TypedDict, total=False):
     """Validated data for ``DeleteMarketPricesSerializer``."""
 
     ids: list[int] | None
@@ -156,7 +156,7 @@ class GetMarketPriceView(BaseAPIView):
             NotFoundOpenApiResponse("Market price not found"),
         ],
     )
-    def get(self, validated_data: GetMarketPriceValidatedData) -> Response:
+    def get(self, validated_data: _GetMarketPriceValidatedData) -> Response:
         """Get or list all market prices."""
         price_date: date = validated_data["date"]
         short_name: str = validated_data["short_name"]
@@ -178,7 +178,7 @@ class GetMarketPriceView(BaseAPIView):
             BadRequestOpenApiResponse("IDs must be comma-separated integers.")
         ],
     )
-    def delete(self, validated_data: DeleteMarketPricesValidatedData) -> Response:
+    def delete(self, validated_data: _DeleteMarketPricesValidatedData) -> Response:
         """Delete market prices by IDs."""
         ids: list[int] = validated_data.get("ids") or []
 
@@ -194,7 +194,7 @@ class GetMarketPriceView(BaseAPIView):
         )
 
 
-class ListMarketPricesValidatedData(TypedDict):
+class _ListMarketPricesValidatedData(TypedDict):
     """Validated data for ``ListMarketPricesSerializer``."""
 
     date: date
@@ -211,7 +211,7 @@ class ListMarketPricesView(BaseAPIView):
         response=OkOpenApiResponse(MarketPriceResponseSerializer),
         error_responses=[BadRequestOpenApiResponse("date is required")],
     )
-    def get(self, validated_data: ListMarketPricesValidatedData) -> Response:
+    def get(self, validated_data: _ListMarketPricesValidatedData) -> Response:
         """List all market prices for a specific date."""
         price_date: date = validated_data["date"]
 
@@ -222,7 +222,7 @@ class ListMarketPricesView(BaseAPIView):
         )
 
 
-class GetAssetsWithoutPricesValidatedData(TypedDict, total=False):
+class _GetAssetsWithoutPricesValidatedData(TypedDict, total=False):
     """Validated data for ``GetAssetsWithoutPricesSerializer``."""
 
     start_date: date
@@ -245,7 +245,7 @@ class GetAssetsWithoutPricesView(BaseAPIView):
             )
         ],
     )
-    def get(self, validated_data: GetAssetsWithoutPricesValidatedData) -> Response:
+    def get(self, validated_data: _GetAssetsWithoutPricesValidatedData) -> Response:
         """Get assets without prices."""
         start_date: date | None = validated_data.get("start_date")
         end_date: date | None = validated_data.get("end_date")
@@ -288,7 +288,7 @@ class BulkUpdateAssetsPricesView(BaseAPIView):
         )
 
 
-class CsvBulkUpdateAssetsPricesValidatedData(TypedDict):
+class _CsvBulkUpdateAssetsPricesValidatedData(TypedDict):
     """Validated data for ``CsvBulkUpdateAssetsPricesSerializer``."""
 
     csv_file: UploadedFile
@@ -308,7 +308,7 @@ class CsvBulkUpdateAssetsPricesView(BaseAPIView):
             NotFoundOpenApiResponse("Market price not found"),
         ],
     )
-    def post(self, validated_data: CsvBulkUpdateAssetsPricesValidatedData) -> Response:
+    def post(self, validated_data: _CsvBulkUpdateAssetsPricesValidatedData) -> Response:
         """Bulk update assets prices from a CSV file."""
         uploaded_file = validated_data["csv_file"]
         csv_file_bytes = uploaded_file.read()

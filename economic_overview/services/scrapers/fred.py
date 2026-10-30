@@ -25,24 +25,24 @@ from economic_overview.services.scrapers.common import (
 )
 
 
-class FredObservation(TypedDict, total=False):
+class _FredObservation(TypedDict, total=False):
     """One FRED observation row (fields we read)."""
 
     date: str
     value: str
 
 
-class FredObservationsPayload(TypedDict, total=False):
+class _FredObservationsPayload(TypedDict, total=False):
     """FRED ``series/observations`` JSON root (fields we read)."""
 
-    observations: list[FredObservation]
+    observations: list[_FredObservation]
 
 
-_FRED_OBSERVATIONS_ADAPTER = TypeAdapter(FredObservationsPayload)
+_FRED_OBSERVATIONS_ADAPTER = TypeAdapter(_FredObservationsPayload)
 
 
 def _parse_fred_observations(
-    payload: FredObservationsPayload,
+    payload: _FredObservationsPayload,
 ) -> list[ScrapingResult]:
     """Parse FRED observation rows into scraping results (newest first)."""
     economic_data: list[ScrapingResult] = []
@@ -121,19 +121,19 @@ def get_data_from_fred(
     )
 
 
-class FredReleaseDate(TypedDict, total=False):
+class _FredReleaseDate(TypedDict, total=False):
     """One FRED release date row (fields we read)."""
 
     date: str
 
 
-class FredReleaseDatesPayload(TypedDict, total=False):
+class _FredReleaseDatesPayload(TypedDict, total=False):
     """FRED ``release/dates`` JSON root (fields we read)."""
 
-    release_dates: list[FredReleaseDate]
+    release_dates: list[_FredReleaseDate]
 
 
-_FRED_RELEASE_DATES_ADAPTER = TypeAdapter(FredReleaseDatesPayload)
+_FRED_RELEASE_DATES_ADAPTER = TypeAdapter(_FredReleaseDatesPayload)
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

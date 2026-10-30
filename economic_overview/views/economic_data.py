@@ -99,7 +99,7 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
         )
 
 
-class LatestEconomicDataIngestionValidatedData(TypedDict, total=False):
+class _LatestEconomicDataIngestionValidatedData(TypedDict, total=False):
     """Validated data for ``LatestEconomicDataIngestionSerializer``."""
 
     update_schedule: bool
@@ -123,7 +123,7 @@ class IngestLatestEconomicDataView(EconomicOverviewBaseView):
         ],
     )
     def post(
-        self, validated_data: LatestEconomicDataIngestionValidatedData
+        self, validated_data: _LatestEconomicDataIngestionValidatedData
     ) -> Response:
         """Ingest the latest observation for all indicators."""
         update_schedule: bool = validated_data.get("update_schedule", True)
@@ -154,7 +154,7 @@ class IngestLatestEconomicDataView(EconomicOverviewBaseView):
         )
 
 
-class HistoricalEconomicDataIngestionValidatedData(TypedDict):
+class _HistoricalEconomicDataIngestionValidatedData(TypedDict):
     """Validated data for ``HistoricalEconomicDataIngestionSerializer``."""
 
     start_date: date
@@ -186,7 +186,7 @@ class IngestHistoricalEconomicDataView(EconomicOverviewBaseView):
         ],
     )
     def post(
-        self, validated_data: HistoricalEconomicDataIngestionValidatedData
+        self, validated_data: _HistoricalEconomicDataIngestionValidatedData
     ) -> Response:
         """Ingest historical economic data for a date window."""
         start_date: date = validated_data["start_date"]
@@ -217,7 +217,7 @@ class IngestHistoricalEconomicDataView(EconomicOverviewBaseView):
         )
 
 
-class SpecificEconomicDataIngestionItemValidatedData(TypedDict):
+class _SpecificEconomicDataIngestionItemValidatedData(TypedDict):
     """Validated data for ``SpecificEconomicDataIngestionSerializerItem``."""
 
     indicator_name: str
@@ -244,7 +244,7 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
         ],
     )
     def post(
-        self, validated_data: list[SpecificEconomicDataIngestionItemValidatedData]
+        self, validated_data: list[_SpecificEconomicDataIngestionItemValidatedData]
     ) -> Response:
         """Ingest specific economic data for a specific indicator and period."""
         indicator_names: list[str] = [item["indicator_name"] for item in validated_data]
@@ -272,14 +272,14 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
         )
 
 
-class ListEconomicDataValidatedData(TypedDict, total=False):
+class _ListEconomicDataValidatedData(TypedDict, total=False):
     """Validated data for ``ListEconomicDataSerializer``."""
 
     indicator_names: list[str]
     period: str
 
 
-class DeleteEconomicDataValidatedData(TypedDict, total=False):
+class _DeleteEconomicDataValidatedData(TypedDict, total=False):
     """Validated data for ``DeleteEconomicDataSerializer``."""
 
     ids: list[int] | None
@@ -299,7 +299,7 @@ class EconomicDataDetailedView(EconomicOverviewBaseView):
             NotFoundOpenApiResponse("Indicator not found"),
         ],
     )
-    def get(self, validated_data: ListEconomicDataValidatedData) -> Response:
+    def get(self, validated_data: _ListEconomicDataValidatedData) -> Response:
         """List economic data for a specific indicator and period."""
         indicator_names: list[str] = validated_data.get("indicator_names", [])
         period: str | None = validated_data.get("period")
@@ -323,7 +323,7 @@ class EconomicDataDetailedView(EconomicOverviewBaseView):
             BadRequestOpenApiResponse("IDs must be comma-separated integers.")
         ],
     )
-    def delete(self, validated_data: DeleteEconomicDataValidatedData) -> Response:
+    def delete(self, validated_data: _DeleteEconomicDataValidatedData) -> Response:
         """Delete economic data by IDs."""
         ids: list[int] = validated_data.get("ids") or []
 

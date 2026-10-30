@@ -11,7 +11,7 @@ from central_banks_overview.services.central_banks_inference import (
     CentralBankProbabilityMatrix,
 )
 from core.services import (
-    ValueChangeOutput,
+    ValueChangeType,
     calculate_value_change,
     convert_to_display_timezone,
     logger,
@@ -25,21 +25,23 @@ from economic_overview.models import (
 )
 
 
-class CentralBankDataItem(TypedDict):
+class _CentralBankDataItem(TypedDict):
     """Central bank data item."""
 
     label: str
     value: str
 
 
-class InflationRateObservation(TypedDict):
+class _InflationRateObservation(TypedDict):
     """Latest YoY inflation rate and the observation period it refers to."""
 
     yoy_pct: float
     period: date
 
 
-def _format_inflation_rate_display(observation: InflationRateObservation | None) -> str:
+def _format_inflation_rate_display(
+    observation: _InflationRateObservation | None,
+) -> str:
     """Format YoY inflation as ``0.9 % (Sep 26)``, or ``-`` when unavailable."""
     if observation is None:
         return "-"
@@ -52,7 +54,7 @@ def _format_inflation_rate_display(observation: InflationRateObservation | None)
 
 def _get_latest_yoy_inflation_rate(
     location: EconomicDataLocationChoices,
-) -> InflationRateObservation | None:
+) -> _InflationRateObservation | None:
     """Compute latest monthly YoY % from stored inflation index levels.
 
     Needs the latest observation and the same calendar month one year earlier.
@@ -91,17 +93,20 @@ def _get_latest_yoy_inflation_rate(
     yoy_pct = calculate_value_change(
         latest.data_value,
         prior_row.data_value,
-        ValueChangeOutput.PERCENT,
+        ValueChangeType.PERCENT,
     )
     if yoy_pct is None:
         return None
-    return InflationRateObservation(yoy_pct=yoy_pct, period=latest.period)
+    return _InflationRateObservation(yoy_pct=yoy_pct, period=latest.period)
 
 
 def get_central_bank_data_item(
     central_bank: CentralBankChoices, reference_date: date
-) -> list[CentralBankDataItem]:
-    """Get central bank data item."""
+) -> list[_CentralBankDataItem]:
+    """Build rate / next-meeting summary rows for one central bank.
+
+    ``Next Meeting`` always uses the Market Watch as-of date.
+    """
     effective_rate = central_banks_inference.get_central_bank_effective_rate(
         central_bank, reference_date
     )
@@ -121,28 +126,36 @@ def get_central_bank_data_item(
         else "N/A"
     )
     data_items = [
-        CentralBankDataItem(
+        _CentralBankDataItem(
             label=item.full_name, value=f"{item.value} %" if item.value else "N/A"
         )
         for item in get_central_bank_data(central_banks=[central_bank], last_value=True)
     ]
 
     base_data = [
-        CentralBankDataItem(
+        _CentralBankDataItem(
             label="Effective Rate",
             value=f"{effective_rate} %" if effective_rate else "N/A",
         ),
         *data_items,
-        CentralBankDataItem(label="Next Meeting", value=next_meeting_date),
+        _CentralBankDataItem(label="Next Meeting", value=next_meeting_date),
     ]
     match central_bank:
         case CentralBankChoices.FRB:
+            us_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.US)
+            )
             additional_data = [
-                CentralBankDataItem(label="US Inflation Rate", value="-"),
+                _CentralBankDataItem(label="US Inflation Rate", value=us_inflation),
             ]
         case CentralBankChoices.BOJ:
+            japan_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.JP)
+            )
             additional_data = [
-                CentralBankDataItem(label="Japan Inflation Rate", value="-"),
+                _CentralBankDataItem(
+                    label="Japan Inflation Rate", value=japan_inflation
+                ),
             ]
         case CentralBankChoices.ECB:
             france_inflation = _format_inflation_rate_display(
@@ -152,10 +165,10 @@ def get_central_bank_data_item(
                 _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.EU)
             )
             additional_data = [
-                CentralBankDataItem(
+                _CentralBankDataItem(
                     label="France Inflation Rate", value=france_inflation
                 ),
-                CentralBankDataItem(
+                _CentralBankDataItem(
                     label="Eurozone Inflation Rate", value=eurozone_inflation
                 ),
             ]

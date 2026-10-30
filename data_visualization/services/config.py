@@ -42,6 +42,14 @@ ECONOMIC_CHARTS_EU_COUNTRIES: list[EconomicDataLocationChoices] = [
     EconomicDataLocationChoices.IT,
     EconomicDataLocationChoices.FR,
 ]
+# Default confidence indicator type per single-region chart location (EU has none).
+ECONOMIC_CHARTS_DEFAULT_CONFIDENCE_TYPE_BY_LOCATION: dict[
+    EconomicDataLocationChoices, str
+] = {
+    EconomicDataLocationChoices.US: "Consumer Confidence",
+    EconomicDataLocationChoices.FR: "Aggregate Business Confidence",
+    EconomicDataLocationChoices.JP: "Manufacturing Business Confidence",
+}
 
 # ---------------------------------------------------------------------------
 # Geographic grouping

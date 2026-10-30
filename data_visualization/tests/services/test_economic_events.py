@@ -8,12 +8,12 @@ from django.utils import timezone as django_timezone
 from freezegun import freeze_time
 
 from data_visualization.services.economic_events import (
-    UpcomingEvent,
-    UpcomingEventGroup,
-    UpcomingWeekGroup,
     _get_upcoming_events,
     _get_upcoming_events_from_publication_schedules,
     _get_upcoming_holidays_events,
+    _UpcomingEvent,
+    _UpcomingEventGroup,
+    _UpcomingWeekGroup,
     group_upcoming_events_by_week,
 )
 from economic_overview.models import (
@@ -37,27 +37,27 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         THEN those weeks are returned with all Mon–Fri day slots
         """
         today = date(2025, 12, 16)  # Tuesday; ISO week starts 2025-12-15
-        this_week_event = UpcomingEvent(
+        this_week_event = _UpcomingEvent(
             name="This Week",
             location="France",
             publication_date=datetime(2025, 12, 16, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
         )
-        next_week_event = UpcomingEvent(
+        next_week_event = _UpcomingEvent(
             name="Next Week",
             location="United States",
             publication_date=datetime(2025, 12, 22, 14, 0, 0, tzinfo=timezone.utc),
             time_str="14:00",
             is_holiday=False,
         )
-        upcoming: list[UpcomingEventGroup] = [
-            UpcomingEventGroup(
+        upcoming: list[_UpcomingEventGroup] = [
+            _UpcomingEventGroup(
                 date="2025-12-16",
                 date_display="Tuesday 16 December 2025",
                 events=[this_week_event],
             ),
-            UpcomingEventGroup(
+            _UpcomingEventGroup(
                 date="2025-12-22",
                 date_display="Monday 22 December 2025",
                 events=[next_week_event],
@@ -65,36 +65,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         ]
         result = group_upcoming_events_by_week(upcoming, today=today)
         assert result == [
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-15",
                 week_label="15 Dec 2025 – 19 Dec 2025",
                 is_current_week=True,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-15",
                         date_display="Monday 15 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-16",
                         date_display="Tuesday 16 December 2025",
                         events=[this_week_event],
                         is_today=True,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-17",
                         date_display="Wednesday 17 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-18",
                         date_display="Thursday 18 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-19",
                         date_display="Friday 19 December 2025",
                         events=[],
@@ -102,36 +102,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-22",
                 week_label="22 Dec 2025 – 26 Dec 2025",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-22",
                         date_display="Monday 22 December 2025",
                         events=[next_week_event],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-23",
                         date_display="Tuesday 23 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-24",
                         date_display="Wednesday 24 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-25",
                         date_display="Thursday 25 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-26",
                         date_display="Friday 26 December 2025",
                         events=[],
@@ -148,15 +148,15 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         THEN the focus week is next Monday–Friday and the following week is included
         """
         today = date(2025, 12, 20)  # Saturday
-        next_week_event = UpcomingEvent(
+        next_week_event = _UpcomingEvent(
             name="Next Week",
             location="France",
             publication_date=datetime(2025, 12, 22, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
         )
-        upcoming: list[UpcomingEventGroup] = [
-            UpcomingEventGroup(
+        upcoming: list[_UpcomingEventGroup] = [
+            _UpcomingEventGroup(
                 date="2025-12-22",
                 date_display="Monday 22 December 2025",
                 events=[next_week_event],
@@ -164,36 +164,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         ]
         result = group_upcoming_events_by_week(upcoming, today=today)
         assert result == [
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-22",
                 week_label="22 Dec 2025 – 26 Dec 2025",
                 is_current_week=True,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-22",
                         date_display="Monday 22 December 2025",
                         events=[next_week_event],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-23",
                         date_display="Tuesday 23 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-24",
                         date_display="Wednesday 24 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-25",
                         date_display="Thursday 25 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-26",
                         date_display="Friday 26 December 2025",
                         events=[],
@@ -201,36 +201,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-29",
                 week_label="29 Dec 2025 – 02 Jan 2026",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-29",
                         date_display="Monday 29 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-30",
                         date_display="Tuesday 30 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-31",
                         date_display="Wednesday 31 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-01",
                         date_display="Thursday 1 January 2026",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-02",
                         date_display="Friday 2 January 2026",
                         events=[],
@@ -247,15 +247,15 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         THEN Mon–Fri slots are all present and empty days have no events
         """
         today = date(2025, 12, 16)
-        wednesday_event = UpcomingEvent(
+        wednesday_event = _UpcomingEvent(
             name="Only Wednesday",
             location="France",
             publication_date=datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
         )
-        upcoming: list[UpcomingEventGroup] = [
-            UpcomingEventGroup(
+        upcoming: list[_UpcomingEventGroup] = [
+            _UpcomingEventGroup(
                 date="2025-12-17",
                 date_display="Wednesday 17 December 2025",
                 events=[wednesday_event],
@@ -263,36 +263,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         ]
         result = group_upcoming_events_by_week(upcoming, today=today)
         assert result == [
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-15",
                 week_label="15 Dec 2025 – 19 Dec 2025",
                 is_current_week=True,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-15",
                         date_display="Monday 15 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-16",
                         date_display="Tuesday 16 December 2025",
                         events=[],
                         is_today=True,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-17",
                         date_display="Wednesday 17 December 2025",
                         events=[wednesday_event],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-18",
                         date_display="Thursday 18 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-19",
                         date_display="Friday 19 December 2025",
                         events=[],
@@ -300,36 +300,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-22",
                 week_label="22 Dec 2025 – 26 Dec 2025",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-22",
                         date_display="Monday 22 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-23",
                         date_display="Tuesday 23 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-24",
                         date_display="Wednesday 24 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-25",
                         date_display="Thursday 25 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-26",
                         date_display="Friday 26 December 2025",
                         events=[],
@@ -346,15 +346,15 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         THEN weeks run through that week and the count is even for paging
         """
         today = date(2025, 12, 16)
-        far_event = UpcomingEvent(
+        far_event = _UpcomingEvent(
             name="Far Ahead",
             location="France",
             publication_date=datetime(2026, 1, 5, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
         )
-        upcoming: list[UpcomingEventGroup] = [
-            UpcomingEventGroup(
+        upcoming: list[_UpcomingEventGroup] = [
+            _UpcomingEventGroup(
                 date="2026-01-05",
                 date_display="Monday 5 January 2026",
                 events=[far_event],
@@ -362,36 +362,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
         ]
         result = group_upcoming_events_by_week(upcoming, today=today)
         assert result == [
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-15",
                 week_label="15 Dec 2025 – 19 Dec 2025",
                 is_current_week=True,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-15",
                         date_display="Monday 15 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-16",
                         date_display="Tuesday 16 December 2025",
                         events=[],
                         is_today=True,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-17",
                         date_display="Wednesday 17 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-18",
                         date_display="Thursday 18 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-19",
                         date_display="Friday 19 December 2025",
                         events=[],
@@ -399,36 +399,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-22",
                 week_label="22 Dec 2025 – 26 Dec 2025",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-22",
                         date_display="Monday 22 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-23",
                         date_display="Tuesday 23 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-24",
                         date_display="Wednesday 24 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-25",
                         date_display="Thursday 25 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-26",
                         date_display="Friday 26 December 2025",
                         events=[],
@@ -436,36 +436,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-29",
                 week_label="29 Dec 2025 – 02 Jan 2026",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-29",
                         date_display="Monday 29 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-30",
                         date_display="Tuesday 30 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-31",
                         date_display="Wednesday 31 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-01",
                         date_display="Thursday 1 January 2026",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-02",
                         date_display="Friday 2 January 2026",
                         events=[],
@@ -473,36 +473,36 @@ class TestGroupUpcomingEventsByWeek(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2026-01-05",
                 week_label="05 Jan 2026 – 09 Jan 2026",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-05",
                         date_display="Monday 5 January 2026",
                         events=[far_event],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-06",
                         date_display="Tuesday 6 January 2026",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-07",
                         date_display="Wednesday 7 January 2026",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-08",
                         date_display="Thursday 8 January 2026",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2026-01-09",
                         date_display="Friday 9 January 2026",
                         events=[],

@@ -22,7 +22,7 @@ from central_banks_overview.services.central_banks_inference import (
     get_fall_back_rate,
 )
 from central_banks_overview.services.central_banks_meetings import (
-    CentralBankMeetingDates,
+    _CentralBankMeetingDates,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -484,7 +484,7 @@ class TestCentralBankInferenceServices(TestCase):
         )
 
         meeting_dates_list = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting.date],
             )
@@ -560,7 +560,7 @@ class TestCentralBankInferenceServices(TestCase):
         )
 
         meeting_dates_list = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting.date],
             )

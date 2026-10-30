@@ -5,10 +5,10 @@ from io import BytesIO
 from unittest.mock import patch
 
 from django.test import TestCase
-from pandas.tseries.offsets import BDay
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from core.services import get_market_watch_as_of_date
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -19,7 +19,7 @@ from market_overview.models import (
     SpecialComment,
 )
 from market_overview.services.market_data import BulkUpdateAssetsPricesItem
-from market_overview.services.price_ingestion import MarketData
+from market_overview.services.price_ingestion import _MarketData
 
 
 class TestMarketPricesIngestionViews(TestCase):
@@ -106,8 +106,10 @@ class TestMarketPricesIngestionViews(TestCase):
         )
 
         mock_get_market_data.return_value = [
-            MarketData(asset=self.asset, price=100.0, date=self.price_date, comment=""),
-            MarketData(
+            _MarketData(
+                asset=self.asset, price=100.0, date=self.price_date, comment=""
+            ),
+            _MarketData(
                 asset=asset_without_price,
                 price=None,
                 date=self.price_date,
@@ -301,10 +303,10 @@ class TestMarketPricesIngestionViews(TestCase):
         THEN the dates without prices are listed in asset_not_updated
         """
         mock_get_data.return_value = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=None, date=self.start_date, comment="No price"
             ),
-            MarketData(
+            _MarketData(
                 asset=self.asset,
                 price=100.0,
                 date=self.start_date + timedelta(days=1),
@@ -364,7 +366,7 @@ class TestMarketPricesIngestionViews(TestCase):
             """Return mock market data rows keyed by asset short_name."""
             if short_name == "TEST":
                 return [
-                    MarketData(
+                    _MarketData(
                         asset=self.asset,
                         price=100.0,
                         date=start_date,
@@ -373,7 +375,7 @@ class TestMarketPricesIngestionViews(TestCase):
                 ]
             else:
                 return [
-                    MarketData(
+                    _MarketData(
                         asset=asset2,
                         price=200.0,
                         date=start_date,
@@ -491,7 +493,7 @@ class TestMarketPricesIngestionViews(TestCase):
         THEN the asset price is ingested for the start_date only
         """
         mock_get_data.return_value = [
-            MarketData(
+            _MarketData(
                 asset=self.asset,
                 price=100.0,
                 date=self.start_date,
@@ -528,7 +530,7 @@ class TestMarketPricesIngestionViews(TestCase):
             ],
         }
         mock_get_data.assert_called_once_with(
-            "TEST", self.start_date, (date.today() - BDay(1)).date()
+            "TEST", self.start_date, get_market_watch_as_of_date()
         )
 
     def test_ingest_specific_asset_prices_empty_list(self):

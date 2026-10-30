@@ -2,9 +2,10 @@ help:
 	@echo "Available commands:"
 	@echo "  build           - Build the Docker image"
 	@echo "  install         - Install dependencies"
-	@echo "  lint            - Lint the code"
+	@echo "  lint            - Lint the code (black, isort, npm)"
 	@echo "  flake8          - Run Flake8"
 	@echo "  pyright         - Run Pyright"
+	@echo "  audit           - Run lint, flake8, pyright, and tests"
 	@echo "  start           - Start the application"
 	@echo "  stop            - Stop all containers"
 	@echo "  restart         - Restart all containers"
@@ -45,6 +46,16 @@ flake8:
 # Pyright
 pyright:
 	$(DOCKER_COMPOSE) exec webapp pyright
+
+# Full static + test audit (runs every check; fails at the end if any failed)
+audit:
+	@failed=0; \
+	echo "==> lint"; $(MAKE) lint || failed=1; \
+	echo "==> flake8"; $(MAKE) flake8 || failed=1; \
+	echo "==> pyright"; $(MAKE) pyright || failed=1; \
+	echo "==> test"; $(MAKE) test || failed=1; \
+	if [ $$failed -ne 0 ]; then echo "audit FAILED"; exit 1; fi; \
+	echo "audit OK"
 
 # Build the Docker image
 build:
@@ -135,4 +146,4 @@ trigger-task:
 	$(if $(TASK),,$(error TASK is required. Example: make trigger-task TASK=scheduled_market_data_ingestion))
 	@$(DOCKER_COMPOSE) exec webapp python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,) || $(RUN_TMP) python manage.py trigger_task $(TASK) $(if $(ASYNC),--async,)
 
-.PHONY: help install lint flake8 pyright build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test test-coverage test-app clean reset celery-beat celery-worker flower db-export db-import trigger-task
+.PHONY: help install lint flake8 pyright audit build start stop restart logs logs-webapp shell makemigrations migrate collectstatic test test-coverage test-app clean reset celery-beat celery-worker flower db-export db-import trigger-task

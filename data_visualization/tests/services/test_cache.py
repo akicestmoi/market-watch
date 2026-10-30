@@ -52,11 +52,11 @@ class TestEconomicDisplayCache(TestCase):
         payload: list[ChartCacheProbe] = [{"category": "Growth", "label": "GDP"}]
 
         set_cached_economic_display(
-            EconomicDisplayCacheType.CHARTS, "us|5Y|GROWTH:GDP|YOY", payload
+            EconomicDisplayCacheType.CHARTS, "us|5Y|GROWTH:GDP|Annual", payload
         )
         result = get_cached_economic_display(
             EconomicDisplayCacheType.CHARTS,
-            "us|5Y|GROWTH:GDP|YOY",
+            "us|5Y|GROWTH:GDP|Annual",
             _CHART_CACHE_PROBE_ADAPTER,
         )
 

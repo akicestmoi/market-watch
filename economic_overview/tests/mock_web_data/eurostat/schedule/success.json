@@ -10,8 +10,8 @@
     "period": "October 2026",
     "datasetCodes": "prc_hicp_fpd,prc_hicp_minr",
     "types": [
-      {"label": "Data release", "order": 1},
-      {"label": "Euro indicators release", "order": 2}
+      { "label": "Data release", "order": 1 },
+      { "label": "Euro indicators release", "order": 2 }
     ],
     "unit": "C4"
   },
@@ -26,8 +26,8 @@
     "period": "October 2026",
     "datasetCodes": "prc_hicp_ainr,prc_hicp_minr",
     "types": [
-      {"label": "Data release", "order": 1},
-      {"label": "Euro indicators release", "order": 2}
+      { "label": "Data release", "order": 1 },
+      { "label": "Euro indicators release", "order": 2 }
     ],
     "unit": "C4"
   },
@@ -41,7 +41,7 @@
     "preliminary": false,
     "period": "September 2026",
     "datasetCodes": "une_rt_m",
-    "types": [{"label": "Data release", "order": 1}],
+    "types": [{ "label": "Data release", "order": 1 }],
     "unit": "C4"
   },
   {
@@ -55,8 +55,8 @@
     "period": "November 2026",
     "datasetCodes": "prc_hicp_ainr,prc_hicp_minr",
     "types": [
-      {"label": "Data release", "order": 1},
-      {"label": "Euro indicators release", "order": 2}
+      { "label": "Data release", "order": 1 },
+      { "label": "Euro indicators release", "order": 2 }
     ],
     "unit": "C4"
   }

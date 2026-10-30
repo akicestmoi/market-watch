@@ -27,6 +27,7 @@ Include, when material:
 - When a scheduled release is **below consensus** and the indicator also **deteriorates** (e.g. confidence or GDP **falls**, or prices **rise** when that is the adverse direction), describe it as a **negative economic signal**. The **other way around** — **above consensus** and the indicator also **improves** (e.g. confidence or GDP **rises**, or prices **fall** when that is the favorable direction) — describe it as a **positive economic signal**. In either case, then assess its **observed** market impact: state whether relevant assets **fell**, **rose**, or showed **little response**. Do **not** invent causality. Prefer **verified DB release values** over conflicting article values; after the user resolves a data point, write it assertively and **do not** leave that resolved item in **Uncertainties**.
 - Central-bank decisions, speeches, and policy signals.
 - **Central bank key figures** from the prompt’s CB context (effective rate, CB macro prints, next meeting): include them **only when they materially help** explain the session or the near-term policy outlook. Do **not** dump them as boilerplate every day. Never invent CB prints or meeting dates.
+- On a **decision day** (`is_decision_day=true`), **always** report the verified **`decision_rates`** prints (name + current / previous / change) for that bank — same authority as scheduled economic releases. Do **not** invent a hold/cut/hike if `decision_rates` is empty (rates not ingested yet); note the meeting without inventing levels.
 - Earnings or corporate news only when they move markets or the zone narrative.
 - Geopolitical / world events only when they clearly affect risk appetite or the zones below.
 - **EUR rates**: assess **German–French** and other relevant **sovereign spreads separately** from the level and direction of **core** yields whenever it is relevant (mild/strong move) (see §3b).
@@ -170,7 +171,7 @@ Use these context blocks **only when they are relevant** to the session’s mark
 - **Most important:** the direction implied by the **two closest meetings** — whether probabilities show a **hike / cut / neutral** case (and how that shifted DoD). Lead any policy-pricing read from those near meetings.
 - **Far / long-end meetings** are useful for the **overall structure** of investors’ views but have **little concrete tangibility** for the session narrative — do not overweight them relative to the two nearest meetings.
 - For probability matrices, **omit** changes smaller than **25pts**. Describe **material** moves as pricing of **one or more rate hikes/cuts**, with **one rate step = 25bps**.
-- On a **central-bank decision day**, compare the decision with the **prior day’s market pricing** to assess whether it was **in line** or a **surprise**.
+- On a **central-bank decision day**, use **`decision_rates`** for the verified policy-rate outcome, then compare with the **prior day’s market pricing** (probability-matrix context) to assess whether it was **in line** or a **surprise**.
 - State what the market is **pricing** (or has **repriced**) in assertive terms when the near-meeting shift is material and supported — e.g. higher odds of fewer cuts, or a hawkish/dovish skew into the next meeting.
 - Do **not** invent path shifts that are not in the matrix context. Quiet / near-zero shifts can be omitted.
 
@@ -181,7 +182,13 @@ Use these context blocks **only when they are relevant** to the session’s mark
 When rates matter for the session and the curve context supports it:
 
 - Add the **10-year minus 2-year** spread when its daily change exceeds **±7bps**.
-- Describe curve shapes **only when supported** by the moves: **bull flattening**, **bear steepening**, **twist flattening**, or **twist steepening**.
+- Describe curve shapes (**bull/bear flattening**, **bull/bear steepening**, **twist flattening/steepening**) **only when** the **2s/10s** daily change is at least **±5bps** and the relative short- vs long-end moves support the label:
+  - **bull flattening** — long end bought stronger than the short end while yields fall overall.
+  - **bull steepening** — short end bought stronger than the long end while yields fall overall.
+  - **bear steepening** — short end sold more heavily than the long end while yields rise overall.
+  - **bear flattening** — long end sold more heavily than the short end while yields rise overall.
+  - **twist flattening** / **twist steepening** — short and long ends move in opposite directions so the curve flattens or steepens without a clear bull/bear level shift.
+- Do **not** name a curve-shape regime when the shape change is smaller than **±5bps**.
 - Use **“butterfly”** only when a meaningful **5y / 7y belly** move (at least **±5bps**) runs **opposite** to the **2s/10s** move (also at least **±5bps**) in a **bull-flattening** or **bear-steepening** pattern. Do not label a butterfly from a belly wiggle alone.
 
 ---

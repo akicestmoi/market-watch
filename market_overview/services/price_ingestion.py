@@ -3,10 +3,8 @@
 from datetime import date, timedelta
 from typing import Literal, TypedDict
 
-from pandas.tseries.offsets import BDay
-
 import core.services as core_services
-from core.services import logger
+from core.services import get_market_watch_as_of_date, logger
 from market_overview.models import (
     AssetModel,
     HolidayModel,
@@ -47,7 +45,7 @@ def get_market_price_ingestion_lock_key(price_date: date) -> str:
     return f"lock:market_price_ingestion:{price_date.isoformat()}"
 
 
-class MarketData(TypedDict):
+class _MarketData(TypedDict):
     """Market data dictionnary."""
 
     asset: AssetModel
@@ -64,13 +62,13 @@ def _is_holiday_at_location(target_date: date, location: LocationChoices) -> boo
 def _get_market_data(
     asset: AssetModel,
     target_date: date,
-) -> MarketData:
+) -> _MarketData:
     """Get price from scraping function."""
     if _is_holiday_at_location(target_date, asset.location):
         logger.info(
             f"No price found for {asset.short_name} on {target_date} as it is a bank holiday."
         )
-        return MarketData(
+        return _MarketData(
             asset=asset,
             price=None,
             date=target_date,
@@ -89,7 +87,7 @@ def _get_market_data(
         scraping_result = ScrapingResult(
             price=None, comment=f"Error getting market data: {str(e)}"
         )
-    return MarketData(
+    return _MarketData(
         asset=asset,
         price=scraping_result.get("price"),
         date=target_date,
@@ -97,7 +95,7 @@ def _get_market_data(
     )
 
 
-def get_market_data(target_date: date) -> list[MarketData]:
+def get_market_data(target_date: date) -> list[_MarketData]:
     """Get market data."""
     market_data = []
     for asset in AssetModel.objects.all():
@@ -106,7 +104,7 @@ def get_market_data(target_date: date) -> list[MarketData]:
     return market_data
 
 
-class IngestionNotUpdatedResult(TypedDict):
+class _IngestionNotUpdatedResult(TypedDict):
     """Ingestion not updated result dictionnary."""
 
     asset_not_updated: list[str]
@@ -114,11 +112,11 @@ class IngestionNotUpdatedResult(TypedDict):
 
 
 def ingest_market_data(
-    market_data: list[MarketData],
-) -> IngestionNotUpdatedResult:
+    market_data: list[_MarketData],
+) -> _IngestionNotUpdatedResult:
     """Ingest market data."""
-    asset_not_updated: list[MarketData] = []
-    asset_not_updated_holiday: list[MarketData] = []
+    asset_not_updated: list[_MarketData] = []
+    asset_not_updated_holiday: list[_MarketData] = []
     for data in market_data:
         if not data["price"]:
             if data["comment"] == SpecialComment.BANK_HOLIDAY:
@@ -137,7 +135,7 @@ def ingest_market_data(
             logging_on_fields=["price"],
             none_skip_fields=["price"],
         )
-    return IngestionNotUpdatedResult(
+    return _IngestionNotUpdatedResult(
         asset_not_updated=[data["asset"].short_name for data in asset_not_updated],
         asset_not_updated_holiday=[
             data["asset"].short_name for data in asset_not_updated_holiday
@@ -153,7 +151,7 @@ class BatchPriceIngestionItem(TypedDict):
     end_date: date | None
 
 
-class BatchPriceIngestionResult(TypedDict):
+class _BatchPriceIngestionResult(TypedDict):
     """Batch price ingestion result dictionnary."""
 
     short_name: str
@@ -167,7 +165,7 @@ def _get_specific_asset_market_data(
     short_name: str,
     start_date: date,
     end_date: date,
-) -> list[MarketData]:
+) -> list[_MarketData]:
     """Get specific asset market data."""
     asset = AssetModel.objects.get(short_name=short_name)
     delta_days = (end_date - start_date).days
@@ -187,11 +185,11 @@ def _ingest_specific_asset_market_prices(
     short_name: str,
     start_date: date,
     end_date: date | None = None,
-) -> BatchPriceIngestionResult:
+) -> _BatchPriceIngestionResult:
     """Ingest market prices for a specific asset over a date range."""
-    target_end_date = end_date if end_date else (date.today() - BDay(1)).date()
+    target_end_date = end_date if end_date else get_market_watch_as_of_date()
     if not AssetModel.objects.filter(short_name=short_name).exists():
-        return BatchPriceIngestionResult(
+        return _BatchPriceIngestionResult(
             short_name=short_name,
             status="error",
             error=f"Asset: {short_name} does not exist in database.",
@@ -204,7 +202,7 @@ def _ingest_specific_asset_market_prices(
     )
     ingestion_result = ingest_market_data(market_data)
 
-    return BatchPriceIngestionResult(
+    return _BatchPriceIngestionResult(
         short_name=short_name,
         status="success",
         error=None,
@@ -215,7 +213,7 @@ def _ingest_specific_asset_market_prices(
 
 def batch_ingest_specific_asset_market_prices(
     batch_ingestion_items: list[BatchPriceIngestionItem],
-) -> list[BatchPriceIngestionResult]:
+) -> list[_BatchPriceIngestionResult]:
     """Batch ingest market prices for multiple assets."""
     results = []
     for item in batch_ingestion_items:

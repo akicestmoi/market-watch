@@ -13,7 +13,7 @@ from central_banks_overview.models import (
 )
 from central_banks_overview.services.central_banks_inference import (
     FedFundsFuturesProbabilityMatrixService,
-    FedFuturesRateType,
+    _FedFuturesRateType,
 )
 
 
@@ -434,7 +434,7 @@ class TestFRBStep2InferImpliedRates(TestProbabilityMatrixCalculationBaseTestCase
             meeting_date,
             future_average_rate,
             start_rate,
-            FedFuturesRateType.END,
+            _FedFuturesRateType.END,
         )
 
         days_before = 18
@@ -471,7 +471,7 @@ class TestFRBStep2InferImpliedRates(TestProbabilityMatrixCalculationBaseTestCase
             meeting_date,
             future_average_rate,
             end_rate,
-            FedFuturesRateType.START,
+            _FedFuturesRateType.START,
         )
 
         # Calculate expected: (31 * 3.64 - 13 * 3.58) / 18

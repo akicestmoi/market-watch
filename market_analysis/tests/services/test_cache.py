@@ -11,8 +11,8 @@ from market_analysis.llm.schemas import EventType, Sentiment
 from market_analysis.services import cache
 from market_analysis.services.cache import (
     ARTICLE_CACHE_TTL_SECONDS,
-    CachedAnalysesListResult,
-    CachedAnalysisPayload,
+    _CachedAnalysesListResult,
+    _CachedAnalysisPayload,
 )
 from market_analysis.services.llm_market_recap import AnalyzedArticle
 
@@ -84,7 +84,7 @@ class AnalysisCacheServicesTests(TestCase):
 
         day = date(2025, 12, 12)
         article = _sample_analyzed()
-        expected_payload = CachedAnalysisPayload(
+        expected_payload = _CachedAnalysisPayload(
             source_url=article["source_url"],
             cached_at=_FREEZE_TIME.isoformat(),
             prompt_version=PROMPT_VERSION,
@@ -98,7 +98,7 @@ class AnalysisCacheServicesTests(TestCase):
         assert got == expected_payload
 
         listed = cache.list_cached_analyses(day)
-        assert listed == CachedAnalysesListResult(
+        assert listed == _CachedAnalysesListResult(
             reporting_date=day.isoformat(),
             prompt_version=PROMPT_VERSION,
             ttl_seconds=ARTICLE_CACHE_TTL_SECONDS,

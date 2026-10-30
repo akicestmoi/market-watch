@@ -4,7 +4,6 @@ import json
 from datetime import date, datetime
 
 from django.shortcuts import render
-from pandas.tseries.offsets import BDay
 
 import data_visualization.services.central_banks_recap as central_banks_recap
 import data_visualization.services.database_management as database_management
@@ -15,6 +14,7 @@ import data_visualization.services.market_charts as market_charts
 import data_visualization.services.market_recap as market_recap
 import market_overview.services.market_data as market_data
 from central_banks_overview.models import CentralBankChoices
+from core.services import get_market_watch_as_of_date, get_previous_business_day
 from data_visualization.services.config import ECONOMIC_RECAP_LOCATIONS
 from data_visualization.services.economic_charts import EconomicChartsFrontData
 from data_visualization.services.market_charts import (
@@ -30,13 +30,13 @@ from market_overview.models import AssetClassChoices, LocationChoices
 
 def market_recap_view(request):
     """Market recap view to render price changes."""
-    default_reference_date = (date.today() - BDay(1)).date()
+    default_reference_date = get_market_watch_as_of_date()
     reference_date = request.GET.get(
         "reference_date", default_reference_date.isoformat()
     )
     reference_date = datetime.fromisoformat(reference_date).date()
 
-    default_previous_date = (default_reference_date - BDay(1)).date()
+    default_previous_date = get_previous_business_day(default_reference_date)
     previous_date = request.GET.get(
         "previous_date",
         default_previous_date.isoformat(),
@@ -127,8 +127,10 @@ def market_charts_view(request):
     """Market Charts View."""
     # Default Values
     default_values = {
-        "reference_date": (date.today() - BDay(1)).date().isoformat(),
-        "previous_curve_date": (date.today() - BDay(2)).date().isoformat(),
+        "reference_date": get_market_watch_as_of_date().isoformat(),
+        "previous_curve_date": get_previous_business_day(
+            get_market_watch_as_of_date()
+        ).isoformat(),
         "yield_curve_location": str(LocationChoices.US.label),
         "stock_name": "DJIA",
         "fx_name": "EURUSD",
@@ -217,17 +219,18 @@ def economic_recap_view(request):
 
 def economic_charts_view(request):
     """Economic Charts View."""
-    # Same category stack across regions; confidence series differs by region.
-    # Europe defaults to DE / ES / IT / FR curves.
+    # Same category stack across regions; confidence series differs by region
+    # (see ECONOMIC_CHARTS_DEFAULT_CONFIDENCE_TYPE_BY_LOCATION). Europe defaults
+    # to DE / ES / IT / FR curves.
     us_defaults = economic_charts.get_default_indicator_selections(
-        "Consumer Confidence"
+        EconomicDataLocationChoices.US,
     )
     eu_defaults = economic_charts.get_default_eu_indicator_selections()
     fr_defaults = economic_charts.get_default_indicator_selections(
-        "Aggregate Business Confidence"
+        EconomicDataLocationChoices.FR,
     )
     jp_defaults = economic_charts.get_default_indicator_selections(
-        "Manufacturing Business Confidence"
+        EconomicDataLocationChoices.JP,
     )
     default_values = {
         "region": str(EconomicDataLocationChoices.US.label),
@@ -288,13 +291,13 @@ def economic_charts_view(request):
 
 def central_banks_recap_view(request):
     """Central Banks Overview View."""
-    default_reference_date = (date.today() - BDay(1)).date()
+    default_reference_date = get_market_watch_as_of_date()
     reference_date = request.GET.get(
         "reference_date", default_reference_date.isoformat()
     )
     reference_date = datetime.fromisoformat(reference_date).date()
 
-    default_previous_date = (default_reference_date - BDay(1)).date()
+    default_previous_date = get_previous_business_day(default_reference_date)
     previous_date = request.GET.get(
         "previous_date",
         default_previous_date.isoformat(),

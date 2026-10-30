@@ -62,12 +62,13 @@ table th, table td {
     white-space: nowrap;
 }
 
-/* Explicit cols — required so Name colspan=2 does not split 50/50 with Mode */
-col.col-category { width: 8.5%; }
-col.col-name { width: 19%; }
-col.col-mode { width: 4.25%; }
-col.col-metric { width: 5.25%; }
-col.col-metric-period { width: 4.35%; }
+/* Explicit cols — required so Name colspan=2 does not split 50/50 with Mode.
+   Name is widened at the expense of the value columns. */
+col.col-category { width: 7.5%; }
+col.col-name { width: 28%; }
+col.col-mode { width: 3.75%; }
+col.col-metric { width: 4.35%; }
+col.col-metric-period { width: 3.7%; }
 
 table td.name-cell {
     border-right: none !important;

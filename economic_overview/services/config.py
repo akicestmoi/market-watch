@@ -57,7 +57,7 @@ class EurostatQueryParams(TypedDict, total=False):
     sectpart: str
 
 
-class EurostatApiDefaultParams(TypedDict):
+class _EurostatApiDefaultParams(TypedDict):
     """Default Eurostat Statistics API query args."""
 
     format: str
@@ -72,10 +72,10 @@ class EurostatTickerParams(TypedDict):
 
 
 @dataclass(frozen=True)
-class EurostatSeriesTemplate:
+class _EurostatSeriesTemplate:
     """One Eurostat series keyed by our configured series ID (seed ticker).
 
-    Frozen dataclass: needs ``EurostatSeriesTemplate(...)``.
+    Frozen dataclass: needs ``_EurostatSeriesTemplate(...)``.
     """
 
     series_id: str
@@ -86,7 +86,7 @@ class EurostatSeriesTemplate:
 EUROSTAT_STATISTICS_API_BASE_URL = (
     "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/"
 )
-EUROSTAT_API_DEFAULT_PARAMS: EurostatApiDefaultParams = {
+EUROSTAT_API_DEFAULT_PARAMS: _EurostatApiDefaultParams = {
     "format": "JSON",
     "lang": "en",
 }
@@ -94,9 +94,9 @@ EUROSTAT_API_DEFAULT_PARAMS: EurostatApiDefaultParams = {
 # other locations use their code as-is.
 EUROSTAT_GEO_FOR_EU_LOCATION = "EA"
 
-EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
+EUROSTAT_SERIES_TEMPLATES: list[_EurostatSeriesTemplate] = [
     # HICP ECOICOP v2 monthly index 2025=100 (EU seed → geo EA; DE/ES/IT use location).
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="prc_hicp_minr",
         dataset="prc_hicp_minr",
         params={
@@ -107,7 +107,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Real GDP, chain-linked volumes 2020, million euro, SCA.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="namq_10_gdp",
         dataset="namq_10_gdp",
         params={
@@ -119,7 +119,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # General government consolidated gross debt, % of GDP.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="gov_10q_ggdebt_pct",
         dataset="gov_10q_ggdebt",
         params={
@@ -131,7 +131,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # General government consolidated gross debt, million euro.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="gov_10q_ggdebt_mio",
         dataset="gov_10q_ggdebt",
         params={
@@ -143,7 +143,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Industrial production volume index (2021=100), SCA.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="sts_inpr_m",
         dataset="sts_inpr_m",
         params={
@@ -156,7 +156,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Retail trade volume of sales index (2021=100), SCA.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="sts_trtu_m",
         dataset="sts_trtu_m",
         params={
@@ -169,7 +169,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Unemployment rate, % of active population, SA.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="une_rt_m",
         dataset="une_rt_m",
         params={
@@ -182,7 +182,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # House price index, 2015=100, quarterly.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="prc_hpi_q",
         dataset="prc_hpi_q",
         params={
@@ -193,7 +193,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Goods trade balance (BoP), million euro.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="bop_c6_m",
         dataset="bop_c6_m",
         params={
@@ -208,7 +208,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Maastricht B9 deficit/surplus % of GDP — annual.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="tec00127_pct",
         dataset="tec00127",
         params={
@@ -220,7 +220,7 @@ EUROSTAT_SERIES_TEMPLATES: list[EurostatSeriesTemplate] = [
         },
     ),
     # Maastricht B9 deficit/surplus million euro — annual.
-    EurostatSeriesTemplate(
+    _EurostatSeriesTemplate(
         series_id="tec00127_mio",
         dataset="tec00127",
         params={
@@ -274,7 +274,7 @@ FRED_RELEASE_ID_BY_TECHNICAL_NAME: dict[str, int] = {
 """e-Stat Statistics Dashboard API (no appId). Ticker = 19-digit IndicatorCode."""
 
 
-class StatOfJpDefaultParams(TypedDict):
+class _StatOfJpDefaultParams(TypedDict):
     """Default e-Stat Dashboard getData query args (API key names)."""
 
     Lang: str
@@ -282,29 +282,29 @@ class StatOfJpDefaultParams(TypedDict):
     TimeFrom: str
 
 
-class StatOfJpSeriesParams(TypedDict):
+class _StatOfJpSeriesParams(TypedDict):
     """e-Stat cycle / seasonal-adjustment filters (API key names)."""
 
     Cycle: str
     IsSeasonalAdjustment: str
 
 
-class StatOfJpSeriesConfig(TypedDict):
+class _StatOfJpSeriesConfig(TypedDict):
     """Configured series mapped to an e-Stat IndicatorCode + filters."""
 
     ticker: str
     name: str
     indicator_code: str
-    params: StatOfJpSeriesParams
+    params: _StatOfJpSeriesParams
 
 
 STAT_OF_JP_DATA_URL = "https://dashboard.e-stat.go.jp/api/1.0/Json/getData"
-STAT_OF_JP_DEFAULT_PARAMS: StatOfJpDefaultParams = {
+STAT_OF_JP_DEFAULT_PARAMS: _StatOfJpDefaultParams = {
     "Lang": "EN",
     "RegionCode": "00000",
     "TimeFrom": "20100100",
 }
-STAT_OF_JP_SERIES_BY_TICKER: dict[str, StatOfJpSeriesConfig] = {
+STAT_OF_JP_SERIES_BY_TICKER: dict[str, _StatOfJpSeriesConfig] = {
     "0703010601010090000": {
         "ticker": "0703010601010090000",
         "name": "Japan CPI",
@@ -353,7 +353,7 @@ JP_CAO_REAL_SA_CSV_FILENAME_PREFIX = "gaku-jk"
 JP_CAO_REAL_SA_COLUMN_BY_TICKER: dict[str, int] = {
     "gaku-jk": 1,  # GDP (expenditure approach)
     "gaku-jk-hh": 3,  # Consumption of Households
-    "gaku-jk-gov": 8,  # Government Consumption
+    "gaku-jk-gov": 8,  # Government Spending
     "gaku-jk-gfcf": 27,  # Gross Fixed Capital Formation
     "gaku-jk-nx": 11,  # Net Exports (goods & services)
     "gaku-jk-ex": 12,  # Exports
@@ -398,7 +398,7 @@ MLIT_RPPI_SHEET = "全国Japan季節調整"
 """BoJ Tankan summary ZIP: TABLE1 current-survey Actual columns by size × sector."""
 
 
-class BojTankanSeries(NamedTuple):
+class _BojTankanSeries(NamedTuple):
     """Configured Tankan series mapped to TABLE1 sector × size."""
 
     ticker: str
@@ -415,38 +415,38 @@ BOJ_TANKAN_CURRENT_ACTUAL_COLUMN_BY_SIZE: dict[str, int] = {
     "medium": 10,
     "small": 16,
 }
-BOJ_TANKAN_SERIES_BY_TICKER: dict[str, BojTankanSeries] = {
-    "business_conditions_large_mfg": BojTankanSeries(
+BOJ_TANKAN_SERIES_BY_TICKER: dict[str, _BojTankanSeries] = {
+    "business_conditions_large_mfg": _BojTankanSeries(
         ticker="business_conditions_large_mfg",
         name="Japan Tankan Large Enterprises Manufacturing DI",
         sector_label="Manufacturing",
         size="large",
     ),
-    "business_conditions_medium_mfg": BojTankanSeries(
+    "business_conditions_medium_mfg": _BojTankanSeries(
         ticker="business_conditions_medium_mfg",
         name="Japan Tankan Medium-sized Enterprises Manufacturing DI",
         sector_label="Manufacturing",
         size="medium",
     ),
-    "business_conditions_small_mfg": BojTankanSeries(
+    "business_conditions_small_mfg": _BojTankanSeries(
         ticker="business_conditions_small_mfg",
         name="Japan Tankan Small Enterprises Manufacturing DI",
         sector_label="Manufacturing",
         size="small",
     ),
-    "business_conditions_large_nonmfg": BojTankanSeries(
+    "business_conditions_large_nonmfg": _BojTankanSeries(
         ticker="business_conditions_large_nonmfg",
         name="Japan Tankan Large Enterprises Nonmanufacturing DI",
         sector_label="Nonmanufacturing",
         size="large",
     ),
-    "business_conditions_medium_nonmfg": BojTankanSeries(
+    "business_conditions_medium_nonmfg": _BojTankanSeries(
         ticker="business_conditions_medium_nonmfg",
         name="Japan Tankan Medium-sized Enterprises Nonmanufacturing DI",
         sector_label="Nonmanufacturing",
         size="medium",
     ),
-    "business_conditions_small_nonmfg": BojTankanSeries(
+    "business_conditions_small_nonmfg": _BojTankanSeries(
         ticker="business_conditions_small_nonmfg",
         name="Japan Tankan Small Enterprises Nonmanufacturing DI",
         sector_label="Nonmanufacturing",

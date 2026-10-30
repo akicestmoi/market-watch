@@ -31,7 +31,7 @@ from core.open_api.schema import (
 from core.views import BaseAPIView
 
 
-class CentralBankDataIngestionItemValidatedData(TypedDict):
+class _CentralBankDataIngestionItemValidatedData(TypedDict):
     """One item from ``CentralBankDataIngestionSerializer`` (ChoiceField → str)."""
 
     central_bank: str
@@ -55,7 +55,7 @@ class CentralBankDataIngestionView(BaseAPIView):
         ],
     )
     def post(
-        self, validated_data: list[CentralBankDataIngestionItemValidatedData]
+        self, validated_data: list[_CentralBankDataIngestionItemValidatedData]
     ) -> Response:
         """Ingest central bank data."""
         dates_to_ingest_by_central_bank: list[CentralBankDataDate] = [
@@ -91,7 +91,7 @@ class CentralBankDataIngestionView(BaseAPIView):
         )
 
 
-class ListCentralBankDataValidatedData(TypedDict, total=False):
+class _ListCentralBankDataValidatedData(TypedDict, total=False):
     """Validated data for ``ListCentralBankDataSerializer``."""
 
     central_banks: list[CentralBankChoices] | None
@@ -99,7 +99,7 @@ class ListCentralBankDataValidatedData(TypedDict, total=False):
     last_value: bool
 
 
-class DeleteCentralBankDataValidatedData(TypedDict, total=False):
+class _DeleteCentralBankDataValidatedData(TypedDict, total=False):
     """Validated data for ``DeleteCentralBankDataSerializer``."""
 
     central_banks: list[CentralBankChoices] | None
@@ -119,7 +119,7 @@ class ListCentralBankDataView(BaseAPIView):
             BadRequestOpenApiResponse("Invalid central_banks, date, or last_value.")
         ],
     )
-    def get(self, validated_data: ListCentralBankDataValidatedData) -> Response:
+    def get(self, validated_data: _ListCentralBankDataValidatedData) -> Response:
         """List Central Bank Data for a specific date and central bank."""
         target_date: date | None = validated_data.get("date")
         last_value: bool = validated_data.get("last_value", False)
@@ -143,7 +143,7 @@ class ListCentralBankDataView(BaseAPIView):
             BadRequestOpenApiResponse("IDs must be comma-separated integers.")
         ],
     )
-    def delete(self, validated_data: DeleteCentralBankDataValidatedData) -> Response:
+    def delete(self, validated_data: _DeleteCentralBankDataValidatedData) -> Response:
         """Delete Central Bank Data by IDs."""
         ids: list[int] = validated_data.get("ids") or []
 

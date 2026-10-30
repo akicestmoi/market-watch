@@ -16,7 +16,7 @@ from central_banks_overview.services.central_banks_inference import (
     get_central_bank_probability_matrices,
 )
 from central_banks_overview.services.central_banks_meetings import (
-    CentralBankMeetingDates,
+    _CentralBankMeetingDates,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -79,7 +79,7 @@ class TestFRBIntegrationScenarios(TestCase):
         """
         meeting_date = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting_date],
             )
@@ -157,7 +157,7 @@ class TestFRBIntegrationScenarios(TestCase):
         meeting_date_1 = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 2, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )
@@ -259,7 +259,7 @@ class TestFRBIntegrationScenarios(TestCase):
         meeting_date_2 = datetime(2026, 2, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_3 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting_date_1, meeting_date_2, meeting_date_3],
             )
@@ -380,7 +380,7 @@ class TestFRBIntegrationScenarios(TestCase):
         The function should raise an error as meetings are required.
         """
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[],
             )
@@ -425,7 +425,7 @@ class TestFRBIntegrationScenarios(TestCase):
         meeting_date_1 = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
         meeting_date_2 = datetime(2026, 3, 15, 13, 0, tzinfo=timezone.utc)
         mock_get_meetings.return_value = [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting_date_1, meeting_date_2],
             )

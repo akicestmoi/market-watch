@@ -11,14 +11,14 @@ from economic_overview.models import EconomicPublicationFrequencyChoices
 from economic_overview.services.config import EurostatTickerParams
 from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.scrapers.eurostat import (
-    EurostatJsonStatPayload,
     _build_eurostat_request_params,
+    _EurostatJsonStatPayload,
     _parse_eurostat_jsonstat_values,
     _parse_eurostat_period_label,
     get_data_from_eurostat,
 )
 
-_EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(EurostatJsonStatPayload)
+_EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(_EurostatJsonStatPayload)
 
 
 class TestEurostatHicpIngestion(TestCase):

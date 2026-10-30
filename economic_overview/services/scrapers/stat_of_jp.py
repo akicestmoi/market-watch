@@ -22,38 +22,38 @@ from economic_overview.services.scrapers.common import (
 )
 
 
-class StatOfJpDataObj(TypedDict, total=False):
+class _StatOfJpDataObj(TypedDict, total=False):
     """Wrapper around a single VALUE object (``@time`` / ``$`` keys)."""
 
     # Open-key map of already-typed attribute / value strings from the API.
     VALUE: dict[str, str]
 
 
-class StatOfJpDataInf(TypedDict, total=False):
+class _StatOfJpDataInf(TypedDict, total=False):
     """DATA_INF block."""
 
-    DATA_OBJ: list[StatOfJpDataObj]
+    DATA_OBJ: list[_StatOfJpDataObj]
 
 
-class StatOfJpStatisticalData(TypedDict, total=False):
+class _StatOfJpStatisticalData(TypedDict, total=False):
     """STATISTICAL_DATA block."""
 
-    DATA_INF: StatOfJpDataInf
+    DATA_INF: _StatOfJpDataInf
 
 
-class StatOfJpGetStats(TypedDict, total=False):
+class _StatOfJpGetStats(TypedDict, total=False):
     """GET_STATS block."""
 
-    STATISTICAL_DATA: StatOfJpStatisticalData
+    STATISTICAL_DATA: _StatOfJpStatisticalData
 
 
-class StatOfJpPayload(TypedDict, total=False):
+class _StatOfJpPayload(TypedDict, total=False):
     """e-Stat Dashboard getData JSON root (fields we read)."""
 
-    GET_STATS: StatOfJpGetStats
+    GET_STATS: _StatOfJpGetStats
 
 
-_STAT_OF_JP_PAYLOAD_ADAPTER = TypeAdapter(StatOfJpPayload)
+_STAT_OF_JP_PAYLOAD_ADAPTER = TypeAdapter(_StatOfJpPayload)
 
 
 def _parse_stat_of_jp_time_label(time_label: str) -> date | None:
@@ -74,7 +74,7 @@ def _parse_stat_of_jp_time_label(time_label: str) -> date | None:
     return None
 
 
-def _parse_stat_of_jp_values(payload: StatOfJpPayload) -> list[ScrapingResult]:
+def _parse_stat_of_jp_values(payload: _StatOfJpPayload) -> list[ScrapingResult]:
     """Parse e-Stat Dashboard ``DATA_OBJ`` values into scraping results."""
     data_objects = (
         payload.get("GET_STATS", {})

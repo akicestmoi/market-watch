@@ -25,7 +25,7 @@ from market_analysis.open_api.response_serializers import RecapResponseSerialize
 from market_analysis.services import llm_market_recap, market_analysis
 
 
-class GetRecapValidatedData(TypedDict, total=False):
+class _GetRecapValidatedData(TypedDict, total=False):
     """Validated data for ``GetRecapSerializer``."""
 
     reporting_date: date
@@ -46,7 +46,7 @@ class GetDailyRecapView(BaseAPIView):
             NotFoundOpenApiResponse("Recap not found"),
         ],
     )
-    def get(self, validated_data: GetRecapValidatedData) -> Response:
+    def get(self, validated_data: _GetRecapValidatedData) -> Response:
         """Return a daily recap by id, reporting date, or the latest row."""
         recap_id: int | None = validated_data.get("id")
         reporting_date: date | None = validated_data.get("reporting_date")
@@ -59,7 +59,7 @@ class GetDailyRecapView(BaseAPIView):
         return Response(RecapResponseSerializer(recap).data)
 
 
-class ReportingDateValidatedData(TypedDict):
+class _ReportingDateValidatedData(TypedDict):
     """Validated data for ``ReportingDateSerializer``."""
 
     reporting_date: date
@@ -85,7 +85,7 @@ class GenerateDailyRecapView(BaseAPIView):
             NotFoundOpenApiResponse("Recap not found"),
         ],
     )
-    def post(self, validated_data: ReportingDateValidatedData) -> Response:
+    def post(self, validated_data: _ReportingDateValidatedData) -> Response:
         """Run the analysis pipeline in-process and return the saved recap."""
         reporting_date = validated_data["reporting_date"]
         force = bool(validated_data.get("force", False))

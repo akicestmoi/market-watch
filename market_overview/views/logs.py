@@ -22,7 +22,7 @@ from market_overview.open_api.response_serializers import (
 )
 
 
-class GetPriceUpdateLogsValidatedData(TypedDict, total=False):
+class _GetPriceUpdateLogsValidatedData(TypedDict, total=False):
     """Validated data for ``GetPriceUpdateLogsSerializer``."""
 
     price_date: date
@@ -43,7 +43,7 @@ class GetPriceUpdateLogsView(BaseAPIView):
             NotFoundOpenApiResponse("Asset not found"),
         ],
     )
-    def get(self, validated_data: GetPriceUpdateLogsValidatedData) -> Response:
+    def get(self, validated_data: _GetPriceUpdateLogsValidatedData) -> Response:
         """Get price update logs with optional filtering."""
         price_date: date | None = validated_data.get("price_date")
         short_name: str | None = validated_data.get("short_name")

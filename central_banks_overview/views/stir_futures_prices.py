@@ -42,7 +42,7 @@ from core.services import logger
 from core.views import BaseAPIView
 
 
-class StirFuturesPriceIngestionValidatedData(TypedDict):
+class _StirFuturesPriceIngestionValidatedData(TypedDict):
     """Validated data for ``StirFuturesPriceIngestionSerializer``."""
 
     date: date
@@ -64,7 +64,7 @@ class StirFuturesPriceIngestionView(BaseAPIView):
             ),
         ],
     )
-    def post(self, validated_data: StirFuturesPriceIngestionValidatedData) -> Response:
+    def post(self, validated_data: _StirFuturesPriceIngestionValidatedData) -> Response:
         """Ingest market prices gathered from various sources."""
         price_date: date = validated_data["date"]
 
@@ -97,7 +97,7 @@ class StirFuturesPriceIngestionView(BaseAPIView):
         )
 
 
-class EstrPriceIngestionViaPdfValidatedData(TypedDict):
+class _EstrPriceIngestionViaPdfValidatedData(TypedDict):
     """Validated data for ``EstrPriceIngestionViaPdfSerializer``."""
 
     pdf_file: UploadedFile
@@ -120,7 +120,7 @@ class EstrPriceIngestionViaPdfView(BaseAPIView):
             ),
         ],
     )
-    def post(self, validated_data: EstrPriceIngestionViaPdfValidatedData) -> Response:
+    def post(self, validated_data: _EstrPriceIngestionViaPdfValidatedData) -> Response:
         """Ingest PDF Prices for a given date."""
         pdf_file = validated_data["pdf_file"]
         price_date: date = validated_data["date"]
@@ -151,14 +151,14 @@ class EstrPriceIngestionViaPdfView(BaseAPIView):
         )
 
 
-class ListStirFuturesPricesValidatedData(TypedDict):
+class _ListStirFuturesPricesValidatedData(TypedDict):
     """Validated data for ``ListStirFuturesPricesSerializer``."""
 
     date: date
     central_banks: NotRequired[list[CentralBankChoices] | None]
 
 
-class DeleteStirFuturesPricesValidatedData(TypedDict, total=False):
+class _DeleteStirFuturesPricesValidatedData(TypedDict, total=False):
     """Validated data for ``DeleteStirFuturesPricesSerializer``."""
 
     central_banks: list[CentralBankChoices] | None
@@ -176,7 +176,7 @@ class ListStirFuturesPricesView(BaseAPIView):
         response=OkOpenApiResponse(StirFuturesPriceResponseSerializer),
         error_responses=[BadRequestOpenApiResponse("date is required")],
     )
-    def get(self, validated_data: ListStirFuturesPricesValidatedData) -> Response:
+    def get(self, validated_data: _ListStirFuturesPricesValidatedData) -> Response:
         """List Stir Futures Prices for a given date."""
         price_date: date = validated_data["date"]
         central_banks = validated_data.get("central_banks") or []
@@ -197,7 +197,7 @@ class ListStirFuturesPricesView(BaseAPIView):
             BadRequestOpenApiResponse("IDs must be comma-separated integers.")
         ],
     )
-    def delete(self, validated_data: DeleteStirFuturesPricesValidatedData) -> Response:
+    def delete(self, validated_data: _DeleteStirFuturesPricesValidatedData) -> Response:
         """Delete STIR futures prices by IDs."""
         ids: list[int] = validated_data.get("ids") or []
 
@@ -241,7 +241,7 @@ class BulkUpdateStirFuturesPricesView(BaseAPIView):
         )
 
 
-class CsvBulkUpdateStirFuturesPricesValidatedData(TypedDict):
+class _CsvBulkUpdateStirFuturesPricesValidatedData(TypedDict):
     """Validated data for ``CsvBulkUpdateStirFuturesPricesSerializer``."""
 
     csv_file: UploadedFile
@@ -262,7 +262,7 @@ class CsvBulkUpdateStirFuturesPricesView(BaseAPIView):
         ],
     )
     def post(
-        self, validated_data: CsvBulkUpdateStirFuturesPricesValidatedData
+        self, validated_data: _CsvBulkUpdateStirFuturesPricesValidatedData
     ) -> Response:
         """Bulk update stir futures prices from a CSV file."""
         uploaded_file = validated_data["csv_file"]

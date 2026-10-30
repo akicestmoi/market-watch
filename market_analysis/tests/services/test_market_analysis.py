@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from market_analysis.models import DailyRecapModel
 from market_analysis.services.market_analysis import (
-    MarketAnalysisResult,
+    _MarketAnalysisResult,
     run_daily_analysis_pipeline,
     run_daily_analysis_pipeline_with_lock,
 )
@@ -44,7 +44,7 @@ class RunDailyAnalysisPipelineTests(TestCase):
         day = date(2025, 12, 12)
         _make_recap(day)
         result = run_daily_analysis_pipeline(day, force=False)
-        assert result == MarketAnalysisResult(
+        assert result == _MarketAnalysisResult(
             status="skipped",
             reason="Daily recap already exists",
             reporting_date=day.isoformat(),
@@ -85,7 +85,7 @@ class RunDailyAnalysisPipelineTests(TestCase):
         daily_recap = DailyRecapModel.objects.get(reporting_date=day)
         mock_generate.return_value = daily_recap
         result = run_daily_analysis_pipeline(day, force=True)
-        assert result == MarketAnalysisResult(
+        assert result == _MarketAnalysisResult(
             status="success",
             reporting_date=day.isoformat(),
             sources=[],
@@ -109,7 +109,7 @@ class RunDailyAnalysisPipelineTests(TestCase):
         mock_lock.return_value = None
         day = date(2025, 12, 12)
         result = run_daily_analysis_pipeline_with_lock(day, force=True)
-        assert result == MarketAnalysisResult(
+        assert result == _MarketAnalysisResult(
             status="skipped",
             reason="Market analysis pipeline already in progress",
             message="Market analysis pipeline already in progress",

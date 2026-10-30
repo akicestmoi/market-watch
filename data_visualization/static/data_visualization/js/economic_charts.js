@@ -10,35 +10,62 @@ const currentRegion = window.currentRegion;
 // Store chart instances
 const chartInstances = {};
 
-const CHART_SERIES_MODES = new Set(["ABS", "QOQ", "QOQY", "YOY"]);
+const CHART_SERIES_MODES = new Set([
+  "Raw",
+  "Quarter",
+  "Annualized Quarter",
+  "Annual",
+]);
 const CHART_SERIES_MODE_LABELS = {
-  ABS: "Abs",
-  QOQ: "QoQ",
-  QOQY: "QoQy",
-  YOY: "YoY",
+  Raw: "Abs",
+  Quarter: "QoQ",
+  "Annualized Quarter": "QoQy",
+  Annual: "YoY",
 };
 
 function normalizeMode(mode) {
-  const modeUpper = (mode || "ABS").trim().toUpperCase();
-  return CHART_SERIES_MODES.has(modeUpper) ? modeUpper : "ABS";
+  const trimmed = (mode || "Raw").trim();
+  return CHART_SERIES_MODES.has(trimmed) ? trimmed : "Raw";
+}
+
+// Series key (``GDP`` / ``DE|GDP``) → DB default_mode from dropdown payload.
+const defaultModeBySeriesKey = {};
+if (dropdownValues && dropdownValues.indicators_by_category) {
+  dropdownValues.indicators_by_category.forEach((item) => {
+    (item.indicators || []).forEach((indicator) => {
+      if (indicator.type) {
+        defaultModeBySeriesKey[indicator.type] = normalizeMode(
+          indicator.default_mode
+        );
+      }
+    });
+  });
+}
+
+function getDefaultModeForSeriesKey(seriesKey) {
+  return defaultModeBySeriesKey[seriesKey] || "Raw";
 }
 
 function parseIndicatorEntry(raw) {
   // Wire format: [Location|]Type[|MODE]. Location stays on ``type`` for Europe
   // checkbox keys (``DE|GDP``); mode is peeled off separately.
+  // Missing MODE uses the indicator's DB default_mode from the dropdown.
   const text = (raw || "").trim();
   if (!text) {
     return null;
   }
   const tokens = text.split("|").map((part) => part.trim()).filter(Boolean);
-  let mode = "ABS";
-  if (tokens.length && CHART_SERIES_MODES.has(tokens[tokens.length - 1].toUpperCase())) {
+  let mode = null;
+  if (tokens.length && CHART_SERIES_MODES.has(tokens[tokens.length - 1])) {
     mode = normalizeMode(tokens.pop());
   }
   if (!tokens.length) {
     return null;
   }
   const seriesKey = tokens.join("|");
+  if (!mode) {
+    mode = getDefaultModeForSeriesKey(seriesKey);
+  }
   return { type: seriesKey, mode, encoded: `${seriesKey}|${mode}` };
 }
 
@@ -230,7 +257,7 @@ function getModeForType(category, indicatorType) {
   const entry = getSelectedIndicatorsForCategory(category)
     .map(parseIndicatorEntry)
     .find((item) => item && item.type === indicatorType);
-  return entry ? entry.mode : "ABS";
+  return entry ? entry.mode : getDefaultModeForSeriesKey(indicatorType);
 }
 
 function getDefaultIndicatorForCategory(category) {
@@ -443,7 +470,7 @@ function updateIndicatorSelection(category) {
     modeSelect.className = "multiselect-mode-select";
     modeSelect.id = `${categorySafe}-mode-${seriesDomId}`;
     modeSelect.setAttribute("aria-label", `Mode for ${indicator.full_name}`);
-    ["ABS", "QOQ", "QOQY", "YOY"].forEach((mode) => {
+    ["Raw", "Quarter", "Annualized Quarter", "Annual"].forEach((mode) => {
       const option = document.createElement("option");
       option.value = mode;
       option.textContent = CHART_SERIES_MODE_LABELS[mode];
@@ -562,7 +589,9 @@ function updatePendingSelection(category) {
       `${categorySafe}-mode-${seriesDomId}`
     );
     if (checkbox && checkbox.checked) {
-      const mode = modeSelect ? modeSelect.value : "ABS";
+      const mode = modeSelect
+        ? modeSelect.value
+        : getDefaultModeForSeriesKey(indicatorType);
       selected.push(encodeIndicatorEntry(indicatorType, mode));
     }
   });
@@ -622,7 +651,8 @@ function cancelIndicatorSelection(category) {
       checkbox.checked = typesToCheck.includes(indicatorType);
     }
     if (modeSelect) {
-      modeSelect.value = modeByType[indicatorType] || "ABS";
+      modeSelect.value =
+        modeByType[indicatorType] || getDefaultModeForSeriesKey(indicatorType);
     }
   });
 

@@ -20,7 +20,7 @@ ARTICLE_CACHE_TTL_SECONDS = 24 * 60 * 60
 _KEY_PREFIX = "market_analysis:article_analysis"
 
 
-class CachedAnalysisPayload(TypedDict):
+class _CachedAnalysisPayload(TypedDict):
     """Cached analysis payload dictionnary."""
 
     source_url: str
@@ -29,7 +29,7 @@ class CachedAnalysisPayload(TypedDict):
     analysis: "AnalyzedArticle"
 
 
-class CachedAnalysisWireAnalysis(TypedDict, total=False):
+class _CachedAnalysisWireAnalysis(TypedDict, total=False):
     """Wire-format analysis object as stored in Redis JSON (fields we read)."""
 
     title: str
@@ -43,16 +43,16 @@ class CachedAnalysisWireAnalysis(TypedDict, total=False):
     source_url: str
 
 
-class CachedAnalysisWirePayload(TypedDict, total=False):
+class _CachedAnalysisWirePayload(TypedDict, total=False):
     """Wire-format Redis cache JSON root (fields we read before mapping inward)."""
 
     source_url: str
     cached_at: str
     prompt_version: str
-    analysis: CachedAnalysisWireAnalysis
+    analysis: _CachedAnalysisWireAnalysis
 
 
-_CACHED_ANALYSIS_WIRE_ADAPTER = TypeAdapter(CachedAnalysisWirePayload)
+_CACHED_ANALYSIS_WIRE_ADAPTER = TypeAdapter(_CachedAnalysisWirePayload)
 
 
 def _build_entry_key(reporting_date: date, source_url: str) -> str:
@@ -69,9 +69,9 @@ def _build_index_key(reporting_date: date) -> str:
 
 
 def _map_wire_payload_to_cached(
-    data: CachedAnalysisWirePayload,
-) -> CachedAnalysisPayload | None:
-    """Map validated Redis wire JSON into an inward CachedAnalysisPayload."""
+    data: _CachedAnalysisWirePayload,
+) -> _CachedAnalysisPayload | None:
+    """Map validated Redis wire JSON into an inward _CachedAnalysisPayload."""
     # Circular: cache ↔ llm_market_recap
     from market_analysis.services.llm_market_recap import AnalyzedArticle
 
@@ -103,7 +103,7 @@ def _map_wire_payload_to_cached(
         uncertainties=list(raw_analysis.get("uncertainties") or []),
         source_url=raw_analysis.get("source_url") or source_url or "",
     )
-    return CachedAnalysisPayload(
+    return _CachedAnalysisPayload(
         source_url=source_url,
         cached_at=data.get("cached_at") or "",
         prompt_version=data.get("prompt_version") or "",
@@ -113,7 +113,7 @@ def _map_wire_payload_to_cached(
 
 def get_cached_analysis(
     reporting_date: date, source_url: str
-) -> CachedAnalysisPayload | None:
+) -> _CachedAnalysisPayload | None:
     """Fetch one cached analysis by reporting date and article URL."""
     wire = get_cached_json(
         _build_entry_key(reporting_date, source_url),
@@ -139,7 +139,7 @@ def set_cached_analysis(
         client = get_redis_client(decode_responses=True)
         key = _build_entry_key(reporting_date, source_url)
         index = _build_index_key(reporting_date)
-        payload = CachedAnalysisPayload(
+        payload = _CachedAnalysisPayload(
             source_url=source_url,
             cached_at=dj_timezone.now().isoformat(),
             prompt_version=PROMPT_VERSION,
@@ -158,27 +158,27 @@ def set_cached_analysis(
         logger.warning("Article analysis cache set failed: %s", exc)
 
 
-class CachedAnalysesListResult(TypedDict):
+class _CachedAnalysesListResult(TypedDict):
     """Cached analyses list result dictionnary."""
 
     reporting_date: str
     prompt_version: str
     ttl_seconds: int
     count: int
-    items: list[CachedAnalysisPayload]
+    items: list[_CachedAnalysisPayload]
     error: NotRequired[str]
 
 
 def list_cached_analyses(
     reporting_date: date,
     source_url: str | None = None,
-) -> CachedAnalysesListResult:
+) -> _CachedAnalysesListResult:
     """List or fetch cached article analyses for a reporting day."""
     try:
         client = get_redis_client(decode_responses=True)
     except Exception as exc:
         logger.warning("Article analysis cache list failed: %s", exc)
-        return CachedAnalysesListResult(
+        return _CachedAnalysesListResult(
             reporting_date=reporting_date.isoformat(),
             prompt_version=PROMPT_VERSION,
             ttl_seconds=ARTICLE_CACHE_TTL_SECONDS,
@@ -190,7 +190,7 @@ def list_cached_analyses(
     if source_url:
         payload = get_cached_analysis(reporting_date, source_url)
         items = [payload] if payload else []
-        return CachedAnalysesListResult(
+        return _CachedAnalysesListResult(
             reporting_date=reporting_date.isoformat(),
             prompt_version=PROMPT_VERSION,
             ttl_seconds=ARTICLE_CACHE_TTL_SECONDS,
@@ -206,7 +206,7 @@ def list_cached_analyses(
         ), f"Expected Redis set members, got {type(members).__name__}"
         urls.extend(str(member) for member in members)
     except Exception as exc:
-        return CachedAnalysesListResult(
+        return _CachedAnalysesListResult(
             reporting_date=reporting_date.isoformat(),
             prompt_version=PROMPT_VERSION,
             ttl_seconds=ARTICLE_CACHE_TTL_SECONDS,
@@ -215,13 +215,13 @@ def list_cached_analyses(
             error=str(exc),
         )
 
-    items: list[CachedAnalysisPayload] = []
+    items: list[_CachedAnalysisPayload] = []
     for url in sorted(urls):
         payload = get_cached_analysis(reporting_date, url)
         if payload:
             items.append(payload)
 
-    return CachedAnalysesListResult(
+    return _CachedAnalysesListResult(
         reporting_date=reporting_date.isoformat(),
         prompt_version=PROMPT_VERSION,
         ttl_seconds=ARTICLE_CACHE_TTL_SECONDS,

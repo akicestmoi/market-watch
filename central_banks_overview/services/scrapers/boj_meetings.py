@@ -17,7 +17,7 @@ from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from core.services import convert_local_wall_time_to_utc, fetch_html
 
 
-class MonthDay(NamedTuple):
+class _MonthDay(NamedTuple):
     """Calendar month and day of month."""
 
     month: int
@@ -47,7 +47,7 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
     text = re.sub(r"\s+", " ", text.strip())
 
     # Find all (month, day) pairs
-    month_day_pairs: list[MonthDay] = []
+    month_day_pairs: list[_MonthDay] = []
     current_month = None
 
     for part in text.split(","):
@@ -60,7 +60,7 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
 
         if current_month and day_match:
             day = int(day_match.group(1))
-            month_day_pairs.append(MonthDay(month=current_month, day=day))
+            month_day_pairs.append(_MonthDay(month=current_month, day=day))
 
     if not month_day_pairs:
         return None

@@ -27,6 +27,8 @@ Do **not** hardcode a fixed UTC hour for a local announcement (e.g. “FOMC = 13
 | `convert_local_wall_time_to_utc` | UTC-aware `datetime` | Calendar scrapers with known local hour/minute |
 | `convert_to_display_timezone` | Paris `datetime` (same instant) | Clocks / `strftime` labels |
 | `get_local_today` | Paris `date` (no time) | “Today” filters and week focus |
+| `get_previous_business_day` | Previous weekday before a given `date` | Relative T-1 from any as-of |
+| `get_market_watch_as_of_date` | Paris previous business day | Default project data perspective (recaps, calendars, ingestion) |
 
 `SOURCE_TIMEZONE_BY_LOCATION_CODE` in `core.services` is the shared map for economic / market location codes.
 
@@ -41,4 +43,4 @@ Do **not** hardcode a fixed UTC hour for a local announcement (e.g. “FOMC = 13
 
 ## Out of scope / follow-ups
 
-Some ingestion tasks still call `date.today()` (container OS date, often UTC in Docker). Prefer `get_local_today()` when the calendar day should match Paris ops schedules. Period fields that are `DateField` only (no clock) are timezone-agnostic calendar dates.
+Prefer `get_local_today()` / `get_market_watch_as_of_date()` over `date.today()` (container OS date, often UTC in Docker) when the calendar day should match Paris ops schedules. Period fields that are `DateField` only (no clock) are timezone-agnostic calendar dates.

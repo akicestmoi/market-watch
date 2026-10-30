@@ -1,22 +1,29 @@
 """Tests for central bank data services."""
 
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import patch
 
 import pytest
 from django.test import TestCase
 
-from central_banks_overview.models import CentralBankChoices, CentralBankDataModel
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankDataModel,
+    CentralBankMeetingModel,
+)
 from central_banks_overview.services.central_banks_data import (
-    CentralBankData,
-    CentralBankDataBaseInfo,
     CentralBankDataDate,
-    CentralBankDataIngestionResponseItem,
+    _CentralBankData,
+    _CentralBankDataBaseInfo,
+    _CentralBankDataIngestionResponseItem,
+    _DecisionDayKeyRate,
     _get_specific_central_bank_data,
     delete_central_bank_data,
     get_central_bank_data,
+    get_decision_day_key_rates,
     ingest_central_bank_data,
     ingest_requested_central_bank_data,
+    list_central_banks_with_meetings_at_date,
 )
 from core.testing import parse_query_for_testing
 from market_overview.models import PriceSourceChoices
@@ -177,7 +184,7 @@ class TestCentralBankDataServices(TestCase):
         WHEN ingesting central bank data
         THEN data is created in the database
         """
-        mock_get_specific_data.return_value = CentralBankData(
+        mock_get_specific_data.return_value = _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -186,8 +193,8 @@ class TestCentralBankDataServices(TestCase):
             value=5.25,
             comment="",
         )
-        all_data_info: list[CentralBankDataBaseInfo] = [
-            CentralBankDataBaseInfo(
+        all_data_info: list[_CentralBankDataBaseInfo] = [
+            _CentralBankDataBaseInfo(
                 cb_data_id=1,
                 central_bank=CentralBankChoices.FRB,
                 short_name="FRB_FEDFUNDS",
@@ -201,7 +208,7 @@ class TestCentralBankDataServices(TestCase):
             CentralBankChoices.FRB, self.test_date, all_data_info
         )
         assert result == [
-            CentralBankDataIngestionResponseItem(
+            _CentralBankDataIngestionResponseItem(
                 data_name="FRB Target Fed Funds Rate",
                 date=date(2024, 1, 15),
             ),
@@ -234,7 +241,7 @@ class TestCentralBankDataServices(TestCase):
             value=5.0,
             comment="Old comment",
         )
-        mock_get_specific_data.return_value = CentralBankData(
+        mock_get_specific_data.return_value = _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -243,8 +250,8 @@ class TestCentralBankDataServices(TestCase):
             value=5.25,
             comment="",
         )
-        all_data_info: list[CentralBankDataBaseInfo] = [
-            CentralBankDataBaseInfo(
+        all_data_info: list[_CentralBankDataBaseInfo] = [
+            _CentralBankDataBaseInfo(
                 cb_data_id=1,
                 central_bank=CentralBankChoices.FRB,
                 short_name="FRB_FEDFUNDS",
@@ -258,7 +265,7 @@ class TestCentralBankDataServices(TestCase):
             CentralBankChoices.FRB, self.test_date, all_data_info
         )
         assert result == [
-            CentralBankDataIngestionResponseItem(
+            _CentralBankDataIngestionResponseItem(
                 data_name="FRB Target Fed Funds Rate",
                 date=date(2024, 1, 15),
             ),
@@ -284,8 +291,8 @@ class TestCentralBankDataServices(TestCase):
         WHEN ingesting central bank data
         THEN that central bank is skipped
         """
-        all_data_info: list[CentralBankDataBaseInfo] = [
-            CentralBankDataBaseInfo(
+        all_data_info: list[_CentralBankDataBaseInfo] = [
+            _CentralBankDataBaseInfo(
                 cb_data_id=1,
                 central_bank=CentralBankChoices.FRB,
                 short_name="FRB_FEDFUNDS",
@@ -318,7 +325,7 @@ class TestCentralBankDataServices(TestCase):
         """
         CentralBankDataModel.objects.all().delete()
         mock_get_base_info.return_value = [
-            CentralBankDataBaseInfo(
+            _CentralBankDataBaseInfo(
                 cb_data_id=1,
                 central_bank=CentralBankChoices.FRB,
                 short_name="FRB_FEDFUNDS",
@@ -326,7 +333,7 @@ class TestCentralBankDataServices(TestCase):
                 ticker="test_ticker",
                 source=PriceSourceChoices.GLOBAL_RATES,
             ),
-            CentralBankDataBaseInfo(
+            _CentralBankDataBaseInfo(
                 cb_data_id=2,
                 central_bank=CentralBankChoices.ECB,
                 short_name="ECB_Deposit",
@@ -335,7 +342,7 @@ class TestCentralBankDataServices(TestCase):
                 source=PriceSourceChoices.WEBSTAT,
             ),
         ]
-        mock_get_specific_data.return_value = CentralBankData(
+        mock_get_specific_data.return_value = _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -348,7 +355,7 @@ class TestCentralBankDataServices(TestCase):
         result = ingest_central_bank_data(CentralBankChoices.FRB, self.test_date)
         mock_get_base_info.assert_called_once()
         assert result == [
-            CentralBankDataIngestionResponseItem(
+            _CentralBankDataIngestionResponseItem(
                 data_name="FRB Target Fed Funds Rate",
                 date=date(2024, 1, 15),
             ),
@@ -379,8 +386,8 @@ class TestCentralBankDataServices(TestCase):
         WHEN ingesting central bank data
         THEN data with None value is saved
         """
-        all_data_info: list[CentralBankDataBaseInfo] = [
-            CentralBankDataBaseInfo(
+        all_data_info: list[_CentralBankDataBaseInfo] = [
+            _CentralBankDataBaseInfo(
                 cb_data_id=1,
                 central_bank=CentralBankChoices.FRB,
                 short_name="FRB_FEDFUNDS",
@@ -389,7 +396,7 @@ class TestCentralBankDataServices(TestCase):
                 source=PriceSourceChoices.GLOBAL_RATES,
             )
         ]
-        mock_get_specific_data.return_value = CentralBankData(
+        mock_get_specific_data.return_value = _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -403,7 +410,7 @@ class TestCentralBankDataServices(TestCase):
             CentralBankChoices.FRB, self.test_date, all_data_info
         )
         assert result == [
-            CentralBankDataIngestionResponseItem(
+            _CentralBankDataIngestionResponseItem(
                 data_name="FRB Target Fed Funds Rate",
                 date=date(2024, 1, 15),
             ),
@@ -433,7 +440,7 @@ class TestCentralBankDataServices(TestCase):
         """
         CentralBankDataModel.objects.all().delete()
         mock_get_base_info.return_value = [
-            CentralBankDataBaseInfo(
+            _CentralBankDataBaseInfo(
                 cb_data_id=1,
                 central_bank=CentralBankChoices.FRB,
                 short_name="FRB_FEDFUNDS",
@@ -441,7 +448,7 @@ class TestCentralBankDataServices(TestCase):
                 ticker="test_ticker",
                 source=PriceSourceChoices.GLOBAL_RATES,
             ),
-            CentralBankDataBaseInfo(
+            _CentralBankDataBaseInfo(
                 cb_data_id=2,
                 central_bank=CentralBankChoices.ECB,
                 short_name="ECB_Deposit",
@@ -449,7 +456,7 @@ class TestCentralBankDataServices(TestCase):
                 ticker="test_ticker2",
                 source=PriceSourceChoices.WEBSTAT,
             ),
-            CentralBankDataBaseInfo(
+            _CentralBankDataBaseInfo(
                 cb_data_id=3,
                 central_bank=CentralBankChoices.BOJ,
                 short_name="BOJ_MUTAN",
@@ -466,7 +473,7 @@ class TestCentralBankDataServices(TestCase):
                 CentralBankChoices.ECB: 4.0,
                 CentralBankChoices.BOJ: 5.0,
             }
-            return CentralBankData(
+            return _CentralBankData(
                 cb_data_id=base_info["cb_data_id"],
                 central_bank=base_info["central_bank"],
                 short_name=base_info["short_name"],
@@ -489,11 +496,11 @@ class TestCentralBankDataServices(TestCase):
 
         result = ingest_requested_central_bank_data(dates_to_ingest)
         assert result == [
-            CentralBankDataIngestionResponseItem(
+            _CentralBankDataIngestionResponseItem(
                 data_name="FRB Target Fed Funds Rate",
                 date=self.test_date,
             ),
-            CentralBankDataIngestionResponseItem(
+            _CentralBankDataIngestionResponseItem(
                 data_name="ECB Deposit Facility Rate",
                 date=self.test_date_2,
             ),
@@ -531,7 +538,7 @@ class TestCentralBankDataServices(TestCase):
         """
         mock_scrap_function.return_value = ScrapingResult(price=5.25, comment="Success")
 
-        central_bank_data = CentralBankDataBaseInfo(
+        central_bank_data = _CentralBankDataBaseInfo(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -541,7 +548,7 @@ class TestCentralBankDataServices(TestCase):
         )
 
         result = _get_specific_central_bank_data(self.test_date, central_bank_data)
-        assert result == CentralBankData(
+        assert result == _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -563,7 +570,7 @@ class TestCentralBankDataServices(TestCase):
         """
         mock_scrap_function.return_value = ScrapingResult(price=4.0, comment="ECB data")
 
-        central_bank_data = CentralBankDataBaseInfo(
+        central_bank_data = _CentralBankDataBaseInfo(
             cb_data_id=2,
             central_bank=CentralBankChoices.ECB,
             short_name="ECB_Deposit",
@@ -573,7 +580,7 @@ class TestCentralBankDataServices(TestCase):
         )
 
         result = _get_specific_central_bank_data(self.test_date, central_bank_data)
-        assert result == CentralBankData(
+        assert result == _CentralBankData(
             cb_data_id=2,
             central_bank=CentralBankChoices.ECB,
             short_name="ECB_Deposit",
@@ -594,7 +601,7 @@ class TestCentralBankDataServices(TestCase):
         WHEN getting specific central bank data
         THEN None price and error comment are returned
         """
-        central_bank_data = CentralBankDataBaseInfo(
+        central_bank_data = _CentralBankDataBaseInfo(
             cb_data_id=3,
             central_bank=CentralBankChoices.BOJ,
             short_name="BOJ_MUTAN",
@@ -604,7 +611,7 @@ class TestCentralBankDataServices(TestCase):
         )
 
         result = _get_specific_central_bank_data(self.test_date, central_bank_data)
-        assert result == CentralBankData(
+        assert result == _CentralBankData(
             cb_data_id=3,
             central_bank=CentralBankChoices.BOJ,
             short_name="BOJ_MUTAN",
@@ -625,7 +632,7 @@ class TestCentralBankDataServices(TestCase):
             price=None, comment="No data available"
         )
 
-        central_bank_data = CentralBankDataBaseInfo(
+        central_bank_data = _CentralBankDataBaseInfo(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -635,7 +642,7 @@ class TestCentralBankDataServices(TestCase):
         )
 
         result = _get_specific_central_bank_data(self.test_date, central_bank_data)
-        assert result == CentralBankData(
+        assert result == _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -654,7 +661,7 @@ class TestCentralBankDataServices(TestCase):
         """
         mock_scrap_function.return_value = ScrapingResult(price=5.50, comment="")
 
-        central_bank_data = CentralBankDataBaseInfo(
+        central_bank_data = _CentralBankDataBaseInfo(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -664,7 +671,7 @@ class TestCentralBankDataServices(TestCase):
         )
 
         result = _get_specific_central_bank_data(self.test_date, central_bank_data)
-        assert result == CentralBankData(
+        assert result == _CentralBankData(
             cb_data_id=1,
             central_bank=CentralBankChoices.FRB,
             short_name="FRB_FEDFUNDS",
@@ -708,3 +715,55 @@ class TestCentralBankDataServices(TestCase):
 
         assert deleted_count == 0
         assert CentralBankDataModel.objects.count() == 3
+
+    def test_get_decision_day_key_rates_with_previous_change(self):
+        """
+        GIVEN a CB meeting and key-rate prints on that calendar date
+        WHEN getting decision-day key rates
+        THEN current, previous, and absolute change are returned per series
+        """
+        event_date = date(2025, 12, 15)
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            order=1,
+            date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=date(2025, 10, 30),
+            value=2.0,
+        )
+        CentralBankDataModel.objects.create(
+            cb_data_id=2,
+            central_bank=CentralBankChoices.ECB,
+            short_name="ECB_Deposit",
+            full_name="ECB Deposit Facility Rate",
+            date=event_date,
+            value=1.75,
+        )
+
+        assert list_central_banks_with_meetings_at_date(event_date) == [
+            CentralBankChoices.ECB
+        ]
+        assert get_decision_day_key_rates(event_date) == [
+            _DecisionDayKeyRate(
+                central_bank=CentralBankChoices.ECB,
+                short_name="ECB_Deposit",
+                full_name="ECB Deposit Facility Rate",
+                current_value=1.75,
+                previous_value=2.0,
+                change_value=-0.25,
+            )
+        ]
+
+    def test_get_decision_day_key_rates_empty_without_meeting(self):
+        """
+        GIVEN key-rate rows but no CB meeting on that date
+        WHEN getting decision-day key rates
+        THEN an empty list is returned
+        """
+        assert get_decision_day_key_rates(self.test_date) == []
+        assert list_central_banks_with_meetings_at_date(self.test_date) == []

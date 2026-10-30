@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.backends.utils import CursorWrapper
 
 
-class DatabaseTableInfo(TypedDict):
+class _DatabaseTableInfo(TypedDict):
     """Information about a database table."""
 
     name: str
@@ -18,13 +18,13 @@ class DatabaseTableInfo(TypedDict):
     size_bytes: int
 
 
-class ModelWithName(Protocol):
+class _ModelWithName(Protocol):
     """Protocol for objects that have a __name__ attribute."""
 
     __name__: str
 
 
-def _format_model_name(model: ModelWithName) -> str:
+def _format_model_name(model: _ModelWithName) -> str:
     """Format model class name for display.
 
     Uses the actual model class name (e.g., CentralBankDataModel)
@@ -77,7 +77,7 @@ def _get_table_size(cursor: CursorWrapper, table_name: str) -> int:
         return 0
 
 
-def get_database_information() -> list[DatabaseTableInfo]:
+def get_database_information() -> list[_DatabaseTableInfo]:
     """Get information about all database tables."""
     tables_info = []
     admin_total_count = 0
@@ -106,7 +106,7 @@ def get_database_information() -> list[DatabaseTableInfo]:
             else:
                 display_name = _format_model_name(model)
                 tables_info.append(
-                    DatabaseTableInfo(
+                    _DatabaseTableInfo(
                         name=table_name,
                         display_name=display_name,
                         count=count,
@@ -119,7 +119,7 @@ def get_database_information() -> list[DatabaseTableInfo]:
 
     if admin_total_count > 0 or admin_total_size_bytes > 0:
         tables_info.append(
-            DatabaseTableInfo(
+            _DatabaseTableInfo(
                 name="admin",
                 display_name="Admin",
                 count=admin_total_count,

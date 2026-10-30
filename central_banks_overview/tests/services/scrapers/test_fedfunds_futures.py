@@ -14,9 +14,9 @@ from central_banks_overview.models import (
 )
 from central_banks_overview.services.scrapers.common import StirFutures
 from central_banks_overview.services.scrapers.fedfunds_futures import (
-    YFinanceTickerInfo,
     _get_fedfunds_futures_price,
     _get_ticker_info_from_maturity_month,
+    _YFinanceTickerInfo,
     get_fedfunds_futures_prices,
 )
 from market_overview.services.scrapers.yahoo import get_yahoo_finance_closing_prices
@@ -41,21 +41,21 @@ class TestGetTickerInfoFromMaturityMonth(TestCase):
 
         # maturity_month 0: now (2025-12-14) + 0 months = 2025-12-14
         result = _get_ticker_info_from_maturity_month(0)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQZ25.CBT",
             date=datetime(2025, 12, 14, 12, 0, tzinfo=timezone.utc),
         )
 
         # maturity_month 1: now (2025-12-14) + 1 month = 2026-01-14
         result = _get_ticker_info_from_maturity_month(1)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQF26.CBT",
             date=datetime(2026, 1, 14, 12, 0, tzinfo=timezone.utc),
         )
 
         # maturity_month 14: now (2025-12-14) + 14 months = 2027-02-14
         result = _get_ticker_info_from_maturity_month(14)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQG27.CBT",
             date=datetime(2027, 2, 14, 12, 0, tzinfo=timezone.utc),
         )
@@ -76,21 +76,21 @@ class TestGetTickerInfoFromMaturityMonth(TestCase):
 
         # maturity_month 0: now (2025-12-14) + (0 + 1) months = 2026-01-14
         result = _get_ticker_info_from_maturity_month(0)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQF26.CBT",
             date=datetime(2026, 1, 14, 12, 0, tzinfo=timezone.utc),
         )
 
         # maturity_month 1: now (2025-12-14) + (1 + 1) months = 2026-02-14
         result = _get_ticker_info_from_maturity_month(1)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQG26.CBT",
             date=datetime(2026, 2, 14, 12, 0, tzinfo=timezone.utc),
         )
 
         # maturity_month 14: now (2025-12-14) + (14 + 1) months = 2027-03-14
         result = _get_ticker_info_from_maturity_month(14)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQH27.CBT",
             date=datetime(2027, 3, 14, 12, 0, tzinfo=timezone.utc),
         )
@@ -109,7 +109,7 @@ class TestGetTickerInfoFromMaturityMonth(TestCase):
 
         # maturity_month 0: now (2025-12-14) + 0 months = 2025-12-14
         result = _get_ticker_info_from_maturity_month(0)
-        assert result == YFinanceTickerInfo(
+        assert result == _YFinanceTickerInfo(
             ticker="ZQZ25.CBT",
             date=datetime(2025, 12, 14, 12, 0, tzinfo=timezone.utc),
         )

@@ -26,7 +26,7 @@ from market_overview.open_api.response_serializers import HolidayResponseSeriali
 from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
-class IngestHolidaysValidatedData(TypedDict, total=False):
+class _IngestHolidaysValidatedData(TypedDict, total=False):
     """Validated data for ``IngestHolidaysSerializer``."""
 
     date: date
@@ -44,7 +44,7 @@ class IngestHolidaysView(BaseAPIView):
         response=CreatedOpenApiResponse(),
         error_responses=[BadRequestOpenApiResponse("Invalid location or date.")],
     )
-    def post(self, validated_data: IngestHolidaysValidatedData) -> Response:
+    def post(self, validated_data: _IngestHolidaysValidatedData) -> Response:
         """Ingest holidays for a given year and country code."""
         holiday_date: date = validated_data.get("date", date.today())
         location_raw = validated_data.get("location")
@@ -62,7 +62,7 @@ class IngestHolidaysView(BaseAPIView):
         )
 
 
-class ListHolidaysValidatedData(TypedDict, total=False):
+class _ListHolidaysValidatedData(TypedDict, total=False):
     """Validated data for ``ListHolidaysSerializer``."""
 
     location: LocationChoices
@@ -70,7 +70,7 @@ class ListHolidaysValidatedData(TypedDict, total=False):
     months: list[int]
 
 
-class DeleteHolidaysValidatedData(TypedDict):
+class _DeleteHolidaysValidatedData(TypedDict):
     """Validated data for ``DeleteHolidaysSerializer``."""
 
     date: date
@@ -87,7 +87,7 @@ class HolidaysDetailsView(BaseAPIView):
         response=OkOpenApiResponse(HolidayResponseSerializer),
         error_responses=[BadRequestOpenApiResponse("Invalid month.")],
     )
-    def get(self, validated_data: ListHolidaysValidatedData) -> Response:
+    def get(self, validated_data: _ListHolidaysValidatedData) -> Response:
         """List holidays for a given year, country code, and optionally by months."""
         location_raw = validated_data.get("location")
         location = LocationChoices(location_raw) if location_raw else None
@@ -109,7 +109,7 @@ class HolidaysDetailsView(BaseAPIView):
         request_serializer=DeleteHolidaysSerializer,
         error_responses=[BadRequestOpenApiResponse("date is required")],
     )
-    def delete(self, validated_data: DeleteHolidaysValidatedData) -> Response:
+    def delete(self, validated_data: _DeleteHolidaysValidatedData) -> Response:
         """Delete holidays before a given year."""
         holiday_date: date = validated_data["date"]
 

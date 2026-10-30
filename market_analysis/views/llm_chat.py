@@ -18,18 +18,18 @@ from market_analysis.services import llm_interaction
 from market_analysis.services.llm_interaction import ChatMessage
 
 
-class ChatMessageValidatedData(TypedDict):
+class _ChatMessageValidatedData(TypedDict):
     """Validated data for one prior chat turn."""
 
     role: Literal["user", "assistant"]
     content: str
 
 
-class ChatAskValidatedData(TypedDict):
+class _ChatAskValidatedData(TypedDict):
     """Validated data for ``ChatAskSerializer``."""
 
     question: str
-    messages: NotRequired[list[ChatMessageValidatedData]]
+    messages: NotRequired[list[_ChatMessageValidatedData]]
 
 
 class AnalysisChatView(BaseAPIView):
@@ -50,7 +50,7 @@ class AnalysisChatView(BaseAPIView):
             )
         ],
     )
-    def post(self, validated_data: ChatAskValidatedData) -> Response:
+    def post(self, validated_data: _ChatAskValidatedData) -> Response:
         """Ask the market-analysis agent; optional prior messages for continuity."""
         prior_messages = [
             ChatMessage(role=message["role"], content=message["content"])

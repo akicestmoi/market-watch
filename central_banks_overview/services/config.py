@@ -33,6 +33,9 @@ BOJ_SOURCE_TIMEZONE = "Asia/Tokyo"
 """Month abbreviation helpers and how many upcoming meetings to ingest."""
 
 NB_MEETINGS_TO_INGEST = 15
+# Keep recently past meetings in the DB so market-recap / day-events can still
+# show a rates decision after the announcement day (ingest otherwise deletes them).
+MEETING_HISTORY_LOOKBACK_DAYS = 7
 
 CENTRAL_BANKS_DATA_JSON = "central_banks_overview/data_sources/central_banks_data.json"
 

@@ -23,7 +23,7 @@ from economic_overview.open_api.response_serializers import (
 from economic_overview.views.economic_data import EconomicOverviewBaseView
 
 
-class UpdatePublicationScheduleValidatedData(TypedDict, total=False):
+class _UpdatePublicationScheduleValidatedData(TypedDict, total=False):
     """Validated data for ``UpdatePublicationScheduleSerializer``."""
 
     indicator_names: list[str]
@@ -46,7 +46,7 @@ class UpdatePublicationScheduleView(EconomicOverviewBaseView):
             NotFoundOpenApiResponse("Indicator not found"),
         ],
     )
-    def post(self, validated_data: UpdatePublicationScheduleValidatedData) -> Response:
+    def post(self, validated_data: _UpdatePublicationScheduleValidatedData) -> Response:
         """Update publication schedule for specific economic indicators."""
         indicator_names: list[str] = validated_data.get("indicator_names", [])
 

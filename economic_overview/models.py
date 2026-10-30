@@ -112,6 +112,41 @@ class IndicatorBaseUnitChoices(models.TextChoices):
     B = "B", _("Billions")
 
 
+class IndicatorAmountMagnitudeChoices(models.TextChoices):
+    """Currency amount magnitude for storage (K/M/B) or display scaling (+T)."""
+
+    K = "K", _("Thousands")
+    M = "M", _("Millions")
+    B = "B", _("Billions")
+    T = "T", _("Trillions")
+
+    @classmethod
+    def ordered(cls) -> list["IndicatorAmountMagnitudeChoices"]:
+        """Ascending magnitude ladder for display scaling (K → M → B → T)."""
+        return [cls.K, cls.M, cls.B, cls.T]
+
+
+class IndicatorBaseCurrencyChoices(models.TextChoices):
+    """Currency for amount-based indicators (K / M / B base units)."""
+
+    USD = "USD", _("USD")
+    EUR = "EUR", _("EUR")
+    JPY = "JPY", _("JPY")
+
+
+class IndicatorDisplayModeChoices(models.TextChoices):
+    """Default / selectable transform for an indicator's displayed values.
+
+    Stored / JSON values are Raw / Quarter / Annualized Quarter / Annual.
+    UI dropdowns show Abs / QoQ / QoQy / YoY for the same modes.
+    """
+
+    RAW = "Raw", _("Raw")
+    QUARTER = "Quarter", _("Quarter")
+    ANNUALIZED_QUARTER = "Annualized Quarter", _("Annualized Quarter")
+    ANNUAL = "Annual", _("Annual")
+
+
 class EconomicIndicatorInformationModel(BaseModel):
     """Economic Indicator Information Model."""
 
@@ -141,22 +176,48 @@ class EconomicIndicatorInformationModel(BaseModel):
         blank=True,
         help_text="Index base year when base_unit is INDEX (e.g. 2010 = 100).",
     )
+    base_currency = models.CharField(
+        max_length=8,
+        choices=IndicatorBaseCurrencyChoices.choices,
+        blank=True,
+        default="",
+        help_text="Currency code when base_unit is K / M / B (e.g. USD).",
+    )
+    default_mode = models.CharField(
+        max_length=32,
+        choices=IndicatorDisplayModeChoices.choices,
+        default=IndicatorDisplayModeChoices.RAW,
+        help_text=(
+            "Default Raw / Quarter / Annualized Quarter / Annual mode "
+            "(UI labels: Abs / QoQ / QoQy / YoY)."
+        ),
+    )
 
     def __str__(self):
         return f"{self.name}"
 
-    def display_name(self) -> str:
+    def get_amount_unit_label(self) -> str | None:
+        """Compact amount unit such as ``bUSD``, or ``None`` when not an amount."""
+        if self.base_unit not in {
+            IndicatorBaseUnitChoices.K,
+            IndicatorBaseUnitChoices.M,
+            IndicatorBaseUnitChoices.B,
+        }:
+            return None
+        magnitude = self.base_unit.lower()
+        if self.base_currency:
+            return f"{magnitude}{self.base_currency}"
+        return magnitude
+
+    def get_display_name(self) -> str:
         """Default display name where the base unit is specified."""
         if self.base_unit == IndicatorBaseUnitChoices.INDEX and self.base_year:
             return f"{self.type} (base year: {self.base_year})"
         if self.base_unit == IndicatorBaseUnitChoices.PERCENT:
             return f"{self.type} (in %)"
-        if self.base_unit in {
-            IndicatorBaseUnitChoices.K,
-            IndicatorBaseUnitChoices.M,
-            IndicatorBaseUnitChoices.B,
-        }:
-            return f"{self.type} (in {self.base_unit})"
+        amount_label = self.get_amount_unit_label()
+        if amount_label is not None:
+            return f"{self.type} (in {amount_label})"
         return self.type
 
 

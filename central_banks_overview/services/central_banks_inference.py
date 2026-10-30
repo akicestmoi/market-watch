@@ -13,6 +13,11 @@ import pandas as pd
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices, StirFuturesModel
+from central_banks_overview.services.cache import (
+    build_probability_matrix_cache_fingerprint,
+    get_cached_probability_matrix,
+    set_cached_probability_matrix,
+)
 from central_banks_overview.services.config import (
     MAX_MEETINGS,
     MAX_MEETINGS_TO_COVER,
@@ -26,7 +31,7 @@ from core.services import logger
 from market_overview.models import MarketPriceModel
 
 
-class RateChangePerStep(TypedDict):
+class _RateChangePerStep(TypedDict):
     """Rate change per step."""
 
     nb_steps: int
@@ -34,7 +39,7 @@ class RateChangePerStep(TypedDict):
     sign: float
 
 
-class MeetingsByFutures(TypedDict):
+class _MeetingsByFutures(TypedDict):
     """Meetings information for a futures contract."""
 
     accrual_start_date: date
@@ -46,7 +51,7 @@ class MeetingsByFutures(TypedDict):
     meeting_dates: list[date]
 
 
-class ProbabilitiesByStep(TypedDict):
+class _ProbabilitiesByStep(TypedDict):
     """Probabilities for a step."""
 
     expected_rate_step: int
@@ -70,8 +75,8 @@ class ProbabilityMatrixBaseService(ABC):
             self._merge_future_prices_information_with_meeting_dates(remove_na)
         )
         self.meetings_in_period = self._get_meetings_in_period()
-        self.probability_matrix: list[ProbabilitiesByStep] = [
-            ProbabilitiesByStep(
+        self.probability_matrix: list[_ProbabilitiesByStep] = [
+            _ProbabilitiesByStep(
                 expected_rate_step=step_key,
                 probabilities=[],
             )
@@ -101,9 +106,9 @@ class ProbabilityMatrixBaseService(ABC):
 
     def _merge_future_prices_information_with_meeting_dates(
         self, remove_na: bool
-    ) -> list[MeetingsByFutures]:
+    ) -> list[_MeetingsByFutures]:
         """Merge future prices dataframe with meeting dates information."""
-        meetings_by_futures: list[MeetingsByFutures] = []
+        meetings_by_futures: list[_MeetingsByFutures] = []
 
         for future_price in self.future_prices:
             period_start = future_price.first_accrual_date
@@ -125,7 +130,7 @@ class ProbabilityMatrixBaseService(ABC):
 
             if (remove_na and len(meetings_in_period) != 0) or not remove_na:
                 meetings_by_futures.append(
-                    MeetingsByFutures(
+                    _MeetingsByFutures(
                         accrual_start_date=period_start,
                         accrual_end_date=period_end,
                         accrual_days=(period_end - period_start).days + 1,
@@ -176,7 +181,7 @@ class ProbabilityMatrixBaseService(ABC):
         for key in extended_keys:
             if key not in existing_steps:
                 self.probability_matrix.append(
-                    ProbabilitiesByStep(
+                    _ProbabilitiesByStep(
                         expected_rate_step=key,
                         probabilities=[0.0] * current_length,
                     )
@@ -199,11 +204,11 @@ class ProbabilityMatrixBaseService(ABC):
 
     def _calculate_rate_change_per_step(
         self, rate_change_bps: float
-    ) -> RateChangePerStep:
+    ) -> _RateChangePerStep:
         """Calculate number of steps and proportion of rate change."""
         meeting_steps = rate_change_bps / STEP_SIZE
         fractional, integer = math.modf(meeting_steps)
-        return RateChangePerStep(
+        return _RateChangePerStep(
             nb_steps=int(integer),
             proportion=abs(fractional),
             sign=math.copysign(1, meeting_steps),
@@ -313,7 +318,7 @@ class ProbabilityMatrixBaseService(ABC):
 
 
 @dataclass(frozen=True)
-class FuturesCalculationConfig:
+class _FuturesCalculationConfig:
     """Configuration for futures calculation parameters."""
 
     days_per_year: int
@@ -322,14 +327,14 @@ class FuturesCalculationConfig:
     )
 
 
-class AccrualDaysInformation(TypedDict):
+class _AccrualDaysInformation(TypedDict):
     """Accrual days information for a date range."""
 
     nb_weekdays: int
     accrual_days_over_weekend: list[int]
 
 
-class MeetingTotalProbabilityByStep(TypedDict):
+class _MeetingTotalProbabilityByStep(TypedDict):
     """Total probabilities for each step for a given meeting."""
 
     step: int
@@ -345,7 +350,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         initial_base_rate: float,
         future_prices: list[StirFuturesModel],
         meeting_dates: list[datetime],
-        config: FuturesCalculationConfig,
+        config: _FuturesCalculationConfig,
     ):
         super().__init__(initial_base_rate, future_prices, meeting_dates)
         self.config = config
@@ -356,7 +361,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
 
     def _get_accrual_days_information(
         self, start_date: date, end_date: date
-    ) -> AccrualDaysInformation:
+    ) -> _AccrualDaysInformation:
         """Get the accrual days information for a date range.
 
         Counting the number of weekdays that are NOT Friday (Monday-Thursday),
@@ -405,7 +410,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
             nb_weekdays + sum(accrual_days_over_weekend) == num_days
         ), f"Accrual mismatch for {start_date} to {end_date}: weekdays={nb_weekdays}, weekend={sum(accrual_days_over_weekend)}, total={num_days}"
 
-        return AccrualDaysInformation(
+        return _AccrualDaysInformation(
             nb_weekdays=nb_weekdays,
             accrual_days_over_weekend=accrual_days_over_weekend,
         )
@@ -625,7 +630,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
 
     def _get_total_probabilities_from_dataframe(
         self, prob_df: pd.DataFrame, step_keys: list[int], n_meetings: int
-    ) -> list[MeetingTotalProbabilityByStep]:
+    ) -> list[_MeetingTotalProbabilityByStep]:
         """Calculate total probabilities for each step from probability dataframe
         for each meeting date.
 
@@ -633,7 +638,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         - Meeting i probability: Sum of all probabilities where {i}_rate_step == X
           (for individual meeting probabilities)
         """
-        total_probabilities: list[MeetingTotalProbabilityByStep] = []
+        total_probabilities: list[_MeetingTotalProbabilityByStep] = []
         for step_key in step_keys:
             # Aggregate probabilities for each individual meeting
             for i in range(1, n_meetings + 1):
@@ -652,7 +657,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                         else 0.0
                     )
                     total_probabilities.append(
-                        MeetingTotalProbabilityByStep(
+                        _MeetingTotalProbabilityByStep(
                             step=step_key,
                             meeting_i=i,
                             probability=probability,
@@ -1013,14 +1018,14 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
             self._format_probabilities()
 
 
-class FedFuturesRateType(str, Enum):
+class _FedFuturesRateType(str, Enum):
     """Type of rate to calculate for Fed Funds Futures."""
 
     START = "START"
     END = "END"
 
 
-class FedMeetingRateInfo(TypedDict):
+class _FedMeetingRateInfo(TypedDict):
     """Meeting rate information for Fed Funds Futures."""
 
     meeting_date: date
@@ -1044,7 +1049,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
             meeting_dates=meeting_dates[:MAX_MEETINGS_TO_COVER],
             remove_na=False,
         )
-        self.meeting_rate_info: list[FedMeetingRateInfo] = []
+        self.meeting_rate_info: list[_FedMeetingRateInfo] = []
         # Validate that all meetings are covered by futures
         self._validate_meetings_covered_by_futures()
 
@@ -1105,7 +1110,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         meeting_date: date,
         future_average_rate: float,
         period_rate: float,
-        rate_type: FedFuturesRateType,
+        rate_type: _FedFuturesRateType,
     ) -> float:
         """Calculate the rate for a given Fed Funds Futures contract.
 
@@ -1125,10 +1130,10 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         prior_ratio = days_before_meeting / accrual_days
         after_ratio = days_after_meeting / accrual_days
 
-        if rate_type == FedFuturesRateType.START:
+        if rate_type == _FedFuturesRateType.START:
             # Calculate start rate: (implied_rate - end_rate * after_ratio) / prior_ratio
             return (future_average_rate - period_rate * after_ratio) / prior_ratio
-        elif rate_type == FedFuturesRateType.END:
+        elif rate_type == _FedFuturesRateType.END:
             # Calculate end rate: (implied_rate - start_rate * prior_ratio) / after_ratio
             return (future_average_rate - period_rate * prior_ratio) / after_ratio
 
@@ -1163,7 +1168,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                     else (self.initial_base_rate if idx == 0 else None)
                 )
                 self.meeting_rate_info.append(
-                    FedMeetingRateInfo(
+                    _FedMeetingRateInfo(
                         meeting_date=meeting_date,
                         start_rate=start_rate,
                         end_rate=None,  # end_rates are calculated within the loop
@@ -1174,8 +1179,8 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
 
     def _calculate_missing_rate(
         self,
-        rate_info: FedMeetingRateInfo,
-        meeting_by_future: MeetingsByFutures,
+        rate_info: _FedMeetingRateInfo,
+        meeting_by_future: _MeetingsByFutures,
     ):
         """Calculate missing start_rate or end_rate using formulas."""
         accrual_end_date = meeting_by_future["accrual_end_date"]
@@ -1191,7 +1196,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 meeting_date,
                 future_implied_rate,
                 rate_info["end_rate"],
-                FedFuturesRateType.START,
+                _FedFuturesRateType.START,
             )
         elif rate_info["end_rate"] is None and rate_info["start_rate"] is not None:
             # Calculate end_rate from start_rate
@@ -1201,7 +1206,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 meeting_date,
                 future_implied_rate,
                 rate_info["start_rate"],
-                FedFuturesRateType.END,
+                _FedFuturesRateType.END,
             )
         elif rate_info["end_rate"] and rate_info["start_rate"]:
             # Both rates available: recalculate start_rate from end_rate
@@ -1212,7 +1217,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                 meeting_date,
                 future_implied_rate,
                 rate_info["end_rate"],
-                FedFuturesRateType.START,
+                _FedFuturesRateType.START,
             )
 
     def _build_contract_to_meeting_mapping(
@@ -1244,7 +1249,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
     def _propagate_rate_backward(
         self,
         contract_to_meeting_idx: dict[int, int],
-        meeting_lookup: dict[date, MeetingsByFutures],
+        meeting_lookup: dict[date, _MeetingsByFutures],
     ):
         """Propagate calculated start_rate backward as end_rate until non-FOMC anchor."""
         for meeting_idx in range(len(self.meeting_rate_info) - 1, 0, -1):
@@ -1301,7 +1306,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         self._infer_period_rates_from_period_without_meetings()
 
         # Build lookup: meeting_date -> meeting_by_future
-        meeting_lookup: dict[date, MeetingsByFutures] = {}
+        meeting_lookup: dict[date, _MeetingsByFutures] = {}
         for mbf in self.meetings_by_futures:
             for meeting_date in mbf.get("meeting_dates", []):
                 if meeting_date is not None:
@@ -1391,7 +1396,7 @@ class EstrFuturesProbabilityMatrixService(ThreeMonthFuturesProbabilityMatrixServ
         future_prices: list[StirFuturesModel],
         meeting_dates: list[datetime],
     ):
-        config = FuturesCalculationConfig(days_per_year=360)
+        config = _FuturesCalculationConfig(days_per_year=360)
         super().__init__(initial_base_rate, future_prices, meeting_dates, config)
 
 
@@ -1408,7 +1413,7 @@ class MutanFuturesProbabilityMatrixService(ThreeMonthFuturesProbabilityMatrixSer
         future_prices: list[StirFuturesModel],
         meeting_dates: list[datetime],
     ):
-        config = FuturesCalculationConfig(
+        config = _FuturesCalculationConfig(
             days_per_year=365, futures_days_compounding_convention=90
         )
         super().__init__(initial_base_rate, future_prices, meeting_dates, config)
@@ -1449,7 +1454,7 @@ class CentralBankProbabilityMatrix(TypedDict):
 
     central_bank: CentralBankChoices
     meeting_dates: list[date]
-    probability_matrix: list[ProbabilitiesByStep]
+    probability_matrix: list[_ProbabilitiesByStep]
 
 
 def calculate_probability_changes(
@@ -1490,7 +1495,7 @@ def calculate_probability_changes(
                 )
                 previous_by_step_and_date[rate_step][meeting_date_as_date] = prob
 
-    probability_change_matrix: list[ProbabilitiesByStep] = []
+    probability_change_matrix: list[_ProbabilitiesByStep] = []
     for current_entry in current_prob_matrix:
         rate_step = current_entry["expected_rate_step"]
         current_probs = current_entry["probabilities"]
@@ -1512,7 +1517,7 @@ def calculate_probability_changes(
                 differences.append(difference)
 
         probability_change_matrix.append(
-            ProbabilitiesByStep(
+            _ProbabilitiesByStep(
                 expected_rate_step=rate_step,
                 probabilities=differences,
             )
@@ -1612,6 +1617,21 @@ def get_central_bank_probability_matrices(
                 f"No future prices found for {central_bank} on {target_date}"
             )
 
+        cache_fingerprint = build_probability_matrix_cache_fingerprint(
+            central_bank,
+            target_date,
+            meeting_dates,
+            initial_base_rate,
+            future_prices,
+        )
+        cached_probability_matrix = get_cached_probability_matrix(cache_fingerprint)
+        if cached_probability_matrix is not None:
+            cb_probability_matrices.append(cached_probability_matrix)
+            logger.info(
+                f"Using cached probability matrix for {central_bank} on {target_date}"
+            )
+            continue
+
         # Generate probability matrix
         try:
             calculation_service = _initiate_central_bank_probability_matrix_calculation(
@@ -1624,13 +1644,15 @@ def get_central_bank_probability_matrices(
                 for probabilities_by_step in probability_matrix
             )
 
-            cb_probability_matrices.append(
-                CentralBankProbabilityMatrix(
-                    central_bank=central_bank,
-                    meeting_dates=calculation_service.meetings_in_period,
-                    probability_matrix=[] if is_empty else probability_matrix,
-                )
+            computed_probability_matrix = CentralBankProbabilityMatrix(
+                central_bank=central_bank,
+                meeting_dates=calculation_service.meetings_in_period,
+                probability_matrix=[] if is_empty else probability_matrix,
             )
+            set_cached_probability_matrix(
+                cache_fingerprint, computed_probability_matrix
+            )
+            cb_probability_matrices.append(computed_probability_matrix)
             logger.info(f"Successfully generated probability matrix for {central_bank}")
         except Exception as e:
             logger.error(

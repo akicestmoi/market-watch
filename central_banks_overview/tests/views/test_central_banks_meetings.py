@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 from django.test import TestCase
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
 
 
+@freeze_time("2024-01-01 12:00:00")
 class TestCentralBankMeetingsViews(TestCase):
     """Test cases for Central Bank Meetings API Views."""
 

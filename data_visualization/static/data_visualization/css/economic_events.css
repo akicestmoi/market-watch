@@ -230,13 +230,13 @@ body {
     font-weight: 600;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
     .upcoming-weeks-columns {
         grid-template-columns: 1fr;
     }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
     .upcoming-event-row {
         grid-template-columns: 3.75rem 1fr;
     }

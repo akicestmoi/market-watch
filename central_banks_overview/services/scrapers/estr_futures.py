@@ -49,14 +49,14 @@ def _get_third_wednesday_of_month(year: int, month: int) -> date:
     return third_wednesday
 
 
-class EstrReferenceDates(NamedTuple):
+class _EstrReferenceDates(NamedTuple):
     """ESTR futures accrual window derived from maturity."""
 
     start: date
     end: date
 
 
-def calculate_estr_reference_dates(maturity: str) -> EstrReferenceDates:
+def calculate_estr_reference_dates(maturity: str) -> _EstrReferenceDates:
     """Calculate ESTR reference start and end dates from maturity.
 
     Source: https://www.ice.com/products/82908552/Three-Month-ESTR-Indexed-Future
@@ -86,7 +86,7 @@ def calculate_estr_reference_dates(maturity: str) -> EstrReferenceDates:
         )
         last_accrual_date = third_wednesday_third_month - BDay(1)
 
-        return EstrReferenceDates(
+        return _EstrReferenceDates(
             start=first_accrual_date, end=last_accrual_date.date()
         )
 

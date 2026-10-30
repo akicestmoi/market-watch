@@ -8,17 +8,17 @@ from market_analysis.services.article_extraction import (
     SOURCE_SCRAP_MAP,
     ArticleData,
     ArticleExtractionResult,
-    NewsSourceEntry,
     _extract_article,
+    _NewsSourceEntry,
 )
 from market_analysis.services.scrapers.common import ScrapingResult
 
 REPORTING_DATE = date(2026, 10, 23)
 
 
-def _build_news_source() -> NewsSourceEntry:
+def _build_news_source() -> _NewsSourceEntry:
     """Return a Boursier news source entry for tests."""
-    return NewsSourceEntry(
+    return _NewsSourceEntry(
         source=NewsSourceChoices.BOURSIER_CLOTURE_PARIS,
         name="Boursier",
         base_url="https://www.boursier.com",

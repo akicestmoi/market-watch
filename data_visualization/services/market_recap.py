@@ -5,23 +5,30 @@ from enum import Enum
 from typing import Literal, NamedTuple, TypedDict
 
 import pandas as pd
+from django.db.models import Q
 
 import market_overview.services.holidays as holidays
-from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
-from core.services import (
-    ValueChangeOutput,
-    calculate_value_change,
-    convert_to_display_timezone,
+from central_banks_overview.services.central_banks_data import (
+    get_decision_day_key_rates,
 )
+from core.services import convert_to_display_timezone
 from data_visualization.services.config import (
     FX_MATRIX_ORDER,
     FX_PAIRS_FILTER,
     MarketRecapLocationEnum,
 )
+from data_visualization.services.economic_recap import format_indicator_value
 from economic_overview.models import (
     EconomicDataLocationChoices,
     EconomicDataModel,
+    EconomicPublicationFrequencyChoices,
+    IndicatorBaseUnitChoices,
+    IndicatorDisplayModeChoices,
     PublicationScheduleModel,
+)
+from economic_overview.services.economic_data import (
+    change_indicator_values_mode,
+    get_lag_for_mode_change_calculation,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -33,7 +40,7 @@ from market_overview.services.config import HOLIDAY_COUNTRIES
 from market_overview.services.market_data import calculate_price_change
 
 
-class DisplayAsset(TypedDict):
+class _DisplayAsset(TypedDict):
     """Display asset dictionnary."""
 
     country: LocationChoices | Literal["-"]
@@ -46,24 +53,24 @@ class DisplayAsset(TypedDict):
     price_change_pct: float | None
 
 
-class DisplayAssetbyLocation(TypedDict):
+class _DisplayAssetbyLocation(TypedDict):
     """Display asset classes dictionnary."""
 
     location: str  # MarketRecapLocationEnum value (e.g. "North America")
-    assets: list[DisplayAsset]
+    assets: list[_DisplayAsset]
 
 
-class DisplayData(TypedDict):
+class _DisplayData(TypedDict):
     """Display data dictionnary."""
 
     asset_class: str  # human-readable AssetClassChoices label
-    locations: list[DisplayAssetbyLocation]
+    locations: list[_DisplayAssetbyLocation]
 
 
-def _build_assets(group: pd.DataFrame) -> list[DisplayAsset]:
-    """Helper to create DisplayAsset list from a DataFrame group."""
+def _build_assets(group: pd.DataFrame) -> list[_DisplayAsset]:
+    """Helper to create _DisplayAsset list from a DataFrame group."""
     return [
-        DisplayAsset(
+        _DisplayAsset(
             country=row["location"] if pd.notna(row["location"]) else "-",
             asset=row["short_name"],
             name=row["full_name"],
@@ -94,7 +101,7 @@ def _sort_by_location_and_maturity(
 def format_data_for_market_recap_display(
     reference_market_prices: list[MarketPriceModel],
     previous_market_prices: list[MarketPriceModel],
-) -> list[DisplayData]:
+) -> list[_DisplayData]:
     """Format market price data for structured display."""
     price_diff = calculate_price_change(reference_market_prices, previous_market_prices)
     if not price_diff:
@@ -115,7 +122,7 @@ def format_data_for_market_recap_display(
     )
     df = df.sort_values(by="asset_id")
 
-    data_to_display: list[DisplayData] = []
+    data_to_display: list[_DisplayData] = []
     for asset_class, asset_group in df.groupby("asset_class", sort=False):
         locations = []
         for location_group, loc_group in asset_group.groupby(
@@ -127,32 +134,20 @@ def format_data_for_market_recap_display(
             assets = _build_assets(sorted_group)
             if assets:
                 locations.append(
-                    DisplayAssetbyLocation(
+                    _DisplayAssetbyLocation(
                         location=MarketRecapLocationEnum(str(location_group)).value,
                         assets=assets,
                     )
                 )
         if locations:
             data_to_display.append(
-                DisplayData(
+                _DisplayData(
                     asset_class=str(AssetClassChoices(str(asset_class)).label),
                     locations=locations,
                 )
             )
 
     return data_to_display
-
-
-class FxCurrencyPrices(TypedDict, total=False):
-    """Per-base-currency FX levels against ``FX_MATRIX_ORDER`` quotes."""
-
-    EUR: list[float]
-    USD: list[float]
-    GBP: list[float]
-    JPY: list[float]
-    CHF: list[float]
-    AUD: list[float]
-    CNY: list[float]
 
 
 class FxMatrixRow(TypedDict):
@@ -168,14 +163,14 @@ class FxMatrixRow(TypedDict):
     CNY: float
 
 
-class FxPairPrice(NamedTuple):
+class _FxPairPrice(NamedTuple):
     """One FX spot pair price."""
 
     pair: str
     price: float
 
 
-def _lookup_fx_pair_price(fx_prices: list[FxPairPrice], pair: str) -> float | None:
+def _lookup_fx_pair_price(fx_prices: list[_FxPairPrice], pair: str) -> float | None:
     """Return the price for an FX pair short name, if present."""
     for item in fx_prices:
         if item.pair == pair:
@@ -183,9 +178,9 @@ def _lookup_fx_pair_price(fx_prices: list[FxPairPrice], pair: str) -> float | No
     return None
 
 
-def _load_fx_pair_prices(price_date: date) -> list[FxPairPrice]:
+def _load_fx_pair_prices(price_date: date) -> list[_FxPairPrice]:
     """Load FX spot prices for a date as pair/price rows."""
-    rows: list[FxPairPrice] = []
+    rows: list[_FxPairPrice] = []
     for short_name, price in (
         MarketPriceModel.objects.filter(
             asset__asset_type=AssetTypeChoices.FX_SPOT_RATE,
@@ -196,35 +191,23 @@ def _load_fx_pair_prices(price_date: date) -> list[FxPairPrice]:
     ):
         if price is None:
             continue
-        rows.append(FxPairPrice(pair=str(short_name), price=float(price)))
+        rows.append(_FxPairPrice(pair=str(short_name), price=float(price)))
     return rows
 
 
-def _assign_fx_currency_prices(
-    fx_dict: FxCurrencyPrices, base_currency: str, prices: list[float]
-) -> None:
-    """Assign one base-currency price row onto a typed FX matrix dict."""
-    if base_currency == "EUR":
-        fx_dict["EUR"] = prices
-    elif base_currency == "USD":
-        fx_dict["USD"] = prices
-    elif base_currency == "GBP":
-        fx_dict["GBP"] = prices
-    elif base_currency == "JPY":
-        fx_dict["JPY"] = prices
-    elif base_currency == "CHF":
-        fx_dict["CHF"] = prices
-    elif base_currency == "AUD":
-        fx_dict["AUD"] = prices
-    elif base_currency == "CNY":
-        fx_dict["CNY"] = prices
-
-
 def _build_fx_price_dict(
-    fx_prices: list[FxPairPrice], currencies: list[str]
-) -> FxCurrencyPrices:
-    """Build a dictionary of FX prices for a matrix."""
-    fx_dict: FxCurrencyPrices = {}
+    fx_prices: list[_FxPairPrice], currencies: list[str]
+) -> dict[str, list[float]]:
+    """Build base→quote FX levels keyed by currency for ``pd.DataFrame``.
+
+    Returns a ``dict`` (not a TypedDict): keys are the caller’s currency codes
+    (typically ``FX_MATRIX_ORDER``) and are not a closed set at this boundary;
+    values are quote-level rows in that same order. Pandas takes this mapping
+    as column data before transpose in ``get_fx_prices_matrix``.
+    """
+    # Usage of dict: keys are FX matrix currency codes; values are quote-level
+    # price rows in the same order as ``currencies``.
+    fx_dict: dict[str, list[float]] = {}
     for base_currency in currencies:
         prices: list[float] = []
         for quote_currency in currencies:
@@ -245,7 +228,7 @@ def _build_fx_price_dict(
                 continue
 
             prices.append(0.0)
-        _assign_fx_currency_prices(fx_dict, base_currency, prices)
+        fx_dict[base_currency] = prices
     return fx_dict
 
 
@@ -291,7 +274,7 @@ def get_fx_prices_matrix(
     return rows
 
 
-class DayEventChangeClass(str, Enum):
+class _DayEventChangeClass(str, Enum):
     """CSS modifier for day-event change direction."""
 
     POSITIVE = "is-positive"
@@ -299,7 +282,7 @@ class DayEventChangeClass(str, Enum):
     NONE = ""
 
 
-class DayEvent(TypedDict):
+class _DayEvent(TypedDict):
     """Event that occurred on the market-recap target date."""
 
     name: str
@@ -307,60 +290,64 @@ class DayEvent(TypedDict):
     value: str  # Formatted current release value; empty for holidays / unknown
     previous: str  # Formatted prior-period value; empty when unavailable
     change: str  # Signed level change vs previous; empty when unavailable
-    change_class: DayEventChangeClass
+    change_class: _DayEventChangeClass
     is_holiday: bool
 
 
-class DayEventsLocationGroup(TypedDict):
+class _DayEventsLocationGroup(TypedDict):
     """Same-day events for one location card."""
 
     location: str
-    events: list[DayEvent]
+    events: list[_DayEvent]
 
 
-class DayEventChangeDisplay(NamedTuple):
-    """Formatted change text and CSS class for a day-event card."""
+class _DayEventFormattedChange(NamedTuple):
+    """Signed change text and CSS class for a day-event card cell."""
 
     change: str
-    change_class: DayEventChangeClass
+    change_class: _DayEventChangeClass
 
 
-def _format_day_event_value(data_value: float | None) -> str:
-    """Format an economic release value for the day-events card."""
-    if data_value is None:
-        return ""
-    if data_value == int(data_value):
-        return str(int(data_value))
-    return f"{data_value:.4f}".rstrip("0").rstrip(".")
-
-
-def _format_day_event_change(change: float | None) -> DayEventChangeDisplay:
-    """Format signed change and CSS class for the day-events card."""
+def _format_day_event_change(
+    change: float | None,
+    *,
+    base_unit: str = "",
+    base_currency: str = "",
+    mode: IndicatorDisplayModeChoices | str = IndicatorDisplayModeChoices.RAW,
+) -> _DayEventFormattedChange:
+    """Build signed change text and CSS class for a day-event card cell."""
     if change is None:
-        return DayEventChangeDisplay(
+        return _DayEventFormattedChange(
             change="",
-            change_class=DayEventChangeClass.NONE,
+            change_class=_DayEventChangeClass.NONE,
         )
-    formatted = _format_day_event_value(change)
+    formatted_magnitude = format_indicator_value(
+        abs(change),
+        base_unit=base_unit,
+        base_currency=base_currency,
+        mode=mode,
+        include_unit_label=True,
+        digits=2,
+    )
     if change > 0:
-        return DayEventChangeDisplay(
-            change=f"+{formatted}",
-            change_class=DayEventChangeClass.POSITIVE,
+        return _DayEventFormattedChange(
+            change=f"+{formatted_magnitude}",
+            change_class=_DayEventChangeClass.POSITIVE,
         )
     if change < 0:
-        return DayEventChangeDisplay(
-            change=formatted,
-            change_class=DayEventChangeClass.NEGATIVE,
+        return _DayEventFormattedChange(
+            change=f"-{formatted_magnitude}",
+            change_class=_DayEventChangeClass.NEGATIVE,
         )
-    return DayEventChangeDisplay(
-        change=formatted,
-        change_class=DayEventChangeClass.NONE,
+    return _DayEventFormattedChange(
+        change=formatted_magnitude,
+        change_class=_DayEventChangeClass.NONE,
     )
 
 
-def _get_day_holiday_events(event_date: date) -> list[DayEvent]:
+def _get_day_holiday_events(event_date: date) -> list[_DayEvent]:
     """Return holiday events that fall on ``event_date``."""
-    day_events: list[DayEvent] = []
+    day_events: list[_DayEvent] = []
     for location in HOLIDAY_COUNTRIES:
         for holiday in holidays.get_holidays(
             location=location,
@@ -370,20 +357,39 @@ def _get_day_holiday_events(event_date: date) -> list[DayEvent]:
             if holiday.date != event_date:
                 continue
             day_events.append(
-                DayEvent(
+                _DayEvent(
                     name=holiday.name,
                     location=str(LocationChoices(holiday.location).label),
                     value="",
                     previous="",
                     change="",
-                    change_class=DayEventChangeClass.NONE,
+                    change_class=_DayEventChangeClass.NONE,
                     is_holiday=True,
                 )
             )
     return day_events
 
 
-def _get_day_publication_events(event_date: date) -> list[DayEvent]:
+def _does_publication_schedule_match_event_date(
+    publication_schedule: PublicationScheduleModel, event_date: date
+) -> bool:
+    """True when current or previous publication falls on ``event_date`` (display TZ).
+
+    After ingest, a just-released print often moves from ``current`` to
+    ``previous`` while ``current`` advances to the next slot — both must count.
+    """
+    for publication_date in (
+        publication_schedule.current_publication_date,
+        publication_schedule.previous_publication_date,
+    ):
+        if publication_date is None:
+            continue
+        if convert_to_display_timezone(publication_date).date() == event_date:
+            return True
+    return False
+
+
+def _get_day_publication_events(event_date: date) -> list[_DayEvent]:
     """Return economic releases scheduled for ``event_date`` (display TZ)."""
     day_start = datetime.combine(
         event_date - timedelta(days=1), datetime.min.time()
@@ -393,73 +399,118 @@ def _get_day_publication_events(event_date: date) -> list[DayEvent]:
     ).replace(tzinfo=timezone.utc)
     schedules = (
         PublicationScheduleModel.objects.filter(
-            current_publication_date__gte=day_start,
-            current_publication_date__lte=day_end,
+            Q(
+                current_publication_date__gte=day_start,
+                current_publication_date__lte=day_end,
+            )
+            | Q(
+                previous_publication_date__gte=day_start,
+                previous_publication_date__lte=day_end,
+            )
         )
         .select_related("indicator")
         .order_by("indicator__location", "indicator__type")
     )
 
-    day_events: list[DayEvent] = []
-    for schedule in schedules:
-        publication_date = schedule.current_publication_date
-        if not publication_date:
-            continue
-        display_dt = convert_to_display_timezone(publication_date)
-        if display_dt.date() != event_date:
+    day_events: list[_DayEvent] = []
+    for publication_schedule in schedules:
+        if not _does_publication_schedule_match_event_date(
+            publication_schedule, event_date
+        ):
             continue
 
-        records = list(
-            EconomicDataModel.objects.filter(
-                indicator=schedule.indicator,
+        indicator = publication_schedule.indicator
+        indicator_default_display_mode = IndicatorDisplayModeChoices(
+            indicator.default_mode
+        )
+        indicator_frequency = EconomicPublicationFrequencyChoices(indicator.frequency)
+        time_series_max_period = (
+            get_lag_for_mode_change_calculation(
+                indicator_frequency, indicator_default_display_mode
+            )
+            + 2
+        )
+        economic_data_time_series = [
+            float(time_series_point.data_value)
+            for time_series_point in EconomicDataModel.objects.filter(
+                indicator=indicator,
                 data_value__isnull=False,
                 period__isnull=False,
-            ).order_by("-period", "-last_modified")[:2]
+            ).order_by("-period", "-last_modified")[:time_series_max_period]
+            if time_series_point.data_value is not None
+        ]
+        indicator_value_triplet = change_indicator_values_mode(
+            economic_data_time_series,
+            frequency=indicator_frequency,
+            mode=indicator_default_display_mode,
         )
-        current_row = records[0] if records else None
-        previous_row = records[1] if len(records) > 1 else None
-        current_value = current_row.data_value if current_row else None
-        previous_value = previous_row.data_value if previous_row else None
-        change_display = _format_day_event_change(
-            calculate_value_change(
-                current_value, previous_value, ValueChangeOutput.ABSOLUTE
-            )
+        formatted_value_change = _format_day_event_change(
+            indicator_value_triplet.change,
+            base_unit=indicator.base_unit,
+            base_currency=indicator.base_currency,
+            mode=indicator_default_display_mode,
         )
         day_events.append(
-            DayEvent(
-                name=schedule.indicator.type,
-                location=str(
-                    EconomicDataLocationChoices(schedule.indicator.location).label
+            _DayEvent(
+                name=indicator.type,
+                location=str(EconomicDataLocationChoices(indicator.location).label),
+                value=format_indicator_value(
+                    indicator_value_triplet.current,
+                    base_unit=indicator.base_unit,
+                    base_currency=indicator.base_currency,
+                    mode=indicator_default_display_mode,
+                    include_unit_label=True,
+                    digits=2,
                 ),
-                value=_format_day_event_value(current_value),
-                previous=_format_day_event_value(previous_value),
-                change=change_display.change,
-                change_class=change_display.change_class,
+                previous=format_indicator_value(
+                    indicator_value_triplet.previous,
+                    base_unit=indicator.base_unit,
+                    base_currency=indicator.base_currency,
+                    mode=indicator_default_display_mode,
+                    include_unit_label=True,
+                    digits=2,
+                ),
+                change=formatted_value_change.change,
+                change_class=formatted_value_change.change_class,
                 is_holiday=False,
             )
         )
     return day_events
 
 
-def _get_day_central_bank_events(event_date: date) -> list[DayEvent]:
-    """Return central-bank rate decisions that fall on ``event_date``."""
-    day_events: list[DayEvent] = []
-    for meeting in CentralBankMeetingModel.objects.all().order_by(
-        "central_bank", "date"
-    ):
-        display_dt = convert_to_display_timezone(meeting.date)
-        if display_dt.date() != event_date:
-            continue
-        central_bank = CentralBankChoices(meeting.central_bank)
-        central_bank_location = central_bank.get_location()
+def _get_day_central_bank_events(event_date: date) -> list[_DayEvent]:
+    """Return key interest rates for monetary-policy decisions on ``event_date``.
+
+    On a meeting day, emit one card per key rate (current / previous / change)
+    instead of a generic ``Rates Decision`` label.
+    """
+    day_events: list[_DayEvent] = []
+    for decision_day_key_rate in get_decision_day_key_rates(event_date):
+        location_label = str(
+            LocationChoices(decision_day_key_rate["central_bank"].get_location()).label
+        )
+        formatted_value_change = _format_day_event_change(
+            decision_day_key_rate["change_value"],
+            base_unit=IndicatorBaseUnitChoices.PERCENT,
+        )
         day_events.append(
-            DayEvent(
-                name=f"{central_bank.label} Rates Decision",
-                location=str(LocationChoices(central_bank_location).label),
-                value="",
-                previous="",
-                change="",
-                change_class=DayEventChangeClass.NONE,
+            _DayEvent(
+                name=decision_day_key_rate["full_name"],
+                location=location_label,
+                value=format_indicator_value(
+                    decision_day_key_rate["current_value"],
+                    base_unit=IndicatorBaseUnitChoices.PERCENT,
+                    include_unit_label=True,
+                    digits=2,
+                ),
+                previous=format_indicator_value(
+                    decision_day_key_rate["previous_value"],
+                    base_unit=IndicatorBaseUnitChoices.PERCENT,
+                    include_unit_label=True,
+                    digits=2,
+                ),
+                change=formatted_value_change.change,
+                change_class=formatted_value_change.change_class,
                 is_holiday=False,
             )
         )
@@ -468,13 +519,13 @@ def _get_day_central_bank_events(event_date: date) -> list[DayEvent]:
 
 def get_day_events_grouped_by_location(
     event_date: date,
-) -> list[DayEventsLocationGroup]:
+) -> list[_DayEventsLocationGroup]:
     """Build same-day economic releases for the market recap card by location.
 
     Holidays are listed first within each location. Returns an empty list when
     there are no major events that day (UI shows "No major event").
     """
-    events_by_location: dict[str, list[DayEvent]] = {}
+    events_by_location: dict[str, list[_DayEvent]] = {}
     for day_event in (
         _get_day_holiday_events(event_date)
         + _get_day_publication_events(event_date)
@@ -482,7 +533,7 @@ def get_day_events_grouped_by_location(
     ):
         events_by_location.setdefault(day_event["location"], []).append(day_event)
 
-    result: list[DayEventsLocationGroup] = []
+    result: list[_DayEventsLocationGroup] = []
     for location in LocationChoices.ordered():
         location_label = str(location.label)
         location_events = events_by_location.pop(location_label, None)
@@ -492,7 +543,7 @@ def get_day_events_grouped_by_location(
             key=lambda event: (not event["is_holiday"], event["name"].lower())
         )
         result.append(
-            DayEventsLocationGroup(location=location_label, events=location_events)
+            _DayEventsLocationGroup(location=location_label, events=location_events)
         )
     for location_label in sorted(events_by_location.keys()):
         location_events = events_by_location[location_label]
@@ -500,6 +551,6 @@ def get_day_events_grouped_by_location(
             key=lambda event: (not event["is_holiday"], event["name"].lower())
         )
         result.append(
-            DayEventsLocationGroup(location=location_label, events=location_events)
+            _DayEventsLocationGroup(location=location_label, events=location_events)
         )
     return result

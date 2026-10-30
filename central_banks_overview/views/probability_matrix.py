@@ -23,7 +23,7 @@ from core.open_api.schema import (
 from core.views import BaseAPIView
 
 
-class GetCentralBankProbabilityMatrixValidatedData(TypedDict):
+class _GetCentralBankProbabilityMatrixValidatedData(TypedDict):
     """Validated data for ``GetCentralBankProbabilityMatrixSerializer``."""
 
     date: date
@@ -42,7 +42,7 @@ class GetCentralBankProbabilityMatrixView(BaseAPIView):
         error_responses=[BadRequestOpenApiResponse("date is required")],
     )
     def get(
-        self, validated_data: GetCentralBankProbabilityMatrixValidatedData
+        self, validated_data: _GetCentralBankProbabilityMatrixValidatedData
     ) -> Response:
         """Get Central Bank Probability Matrix."""
         target_date: date = validated_data["date"]

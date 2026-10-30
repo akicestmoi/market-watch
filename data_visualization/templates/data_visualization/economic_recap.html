@@ -56,7 +56,7 @@
                     <tr class="indicator-row{% if forloop.last %} category-last-row{% endif %}"
                         data-indicator-name="{{ name_group.grouper }}"
                         data-category="{{ category_group.category }}"
-                        data-default-mode="{% if category_group.category == 'GROWTH' or name_group.grouper == 'Consumer Price Index' or name_group.grouper == 'Retail Sales' %}YOY{% else %}ABS{% endif %}">
+                        data-default-mode="{{ first_record.default_mode|default:'Raw' }}">
                         {% if forloop.first %}
                         <td rowspan="{{ name_groups|length }}" class="category-cell">{{ category_group.category }}</td>
                         {% endif %}
@@ -64,10 +64,10 @@
                         <td class="name-cell" data-base-name="{{ name_group.grouper }}">{{ name_group.grouper }}</td>
                         <td class="mode-cell">
                             <select class="recap-mode-select" aria-label="Display for {{ name_group.grouper }}">
-                                <option value="ABS">Abs</option>
-                                <option value="QOQ">QoQ</option>
-                                <option value="QOQY">QoQy</option>
-                                <option value="YOY">YoY</option>
+                                <option value="Raw">Abs</option>
+                                <option value="Quarter">QoQ</option>
+                                <option value="Annualized Quarter">QoQy</option>
+                                <option value="Annual">YoY</option>
                             </select>
                         </td>
 

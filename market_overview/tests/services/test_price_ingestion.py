@@ -19,9 +19,9 @@ from market_overview.models import (
     SpecialComment,
 )
 from market_overview.services.price_ingestion import (
-    MarketData,
     ScrapingResult,
     _get_specific_asset_market_data,
+    _MarketData,
     get_market_data,
     ingest_market_data,
 )
@@ -455,7 +455,7 @@ class IngestMarketDataTest(TestCase):
         THEN all prices are ingested and none are in asset_not_updated
         """
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=100.0, date=self.target_date, comment=""
             ),
         ]
@@ -488,10 +488,10 @@ class IngestMarketDataTest(TestCase):
         are in asset_not_updated
         """
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=100.0, date=self.target_date, comment=""
             ),
-            MarketData(
+            _MarketData(
                 asset=self.asset,
                 price=None,
                 date=self.target_date + timedelta(days=1),
@@ -526,7 +526,7 @@ class IngestMarketDataTest(TestCase):
         THEN all entries are in asset_not_updated
         """
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=None, date=self.target_date, comment="No price"
             ),
         ]
@@ -557,7 +557,7 @@ class IngestMarketDataTest(TestCase):
         WHEN ingesting market data
         THEN an empty list is returned
         """
-        market_data: list[MarketData] = []
+        market_data: list[_MarketData] = []
 
         result = ingest_market_data(market_data)
 
@@ -573,10 +573,10 @@ class IngestMarketDataTest(TestCase):
         THEN holiday entries are in asset_not_updated_holiday
         """
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=100.0, date=self.target_date, comment=""
             ),
-            MarketData(
+            _MarketData(
                 asset=self.asset,
                 price=None,
                 date=self.target_date + timedelta(days=1),
@@ -602,7 +602,7 @@ class IngestMarketDataTest(TestCase):
             asset=self.asset, date=self.target_date, price=90.0
         )
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=100.0, date=self.target_date, comment=""
             ),
         ]
@@ -630,7 +630,7 @@ class IngestMarketDataTest(TestCase):
             asset=self.asset, date=self.target_date, price=90.0
         )
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=100.0, date=self.target_date, comment="Updated"
             ),
         ]
@@ -664,7 +664,7 @@ class IngestMarketDataTest(TestCase):
             comment="Existing price",
         )
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=None, date=self.target_date, comment="No price"
             ),
         ]
@@ -692,7 +692,7 @@ class IngestMarketDataTest(TestCase):
         THEN the custom comments are stored in the price model
         """
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset,
                 price=100.0,
                 date=self.target_date,
@@ -730,10 +730,10 @@ class IngestMarketDataTest(TestCase):
             asset_type=AssetTypeChoices.EQUITY_INDEX,
         )
         market_data = [
-            MarketData(
+            _MarketData(
                 asset=self.asset, price=100.0, date=self.target_date, comment=""
             ),
-            MarketData(
+            _MarketData(
                 asset=second_asset, price=200.0, date=self.target_date, comment=""
             ),
         ]

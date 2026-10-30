@@ -33,20 +33,20 @@ from economic_overview.services.scrapers.common import (
 )
 
 
-class EurostatJsonStatCategory(TypedDict, total=False):
+class _EurostatJsonStatCategory(TypedDict, total=False):
     """JSON-stat category block (period labels → flat positions)."""
 
     # Usage of dict: keys are dynamic JSON-stat category labels (e.g. time periods).
     index: dict[str, int]
 
 
-class EurostatJsonStatDimension(TypedDict, total=False):
+class _EurostatJsonStatDimension(TypedDict, total=False):
     """JSON-stat dimension block."""
 
-    category: EurostatJsonStatCategory
+    category: _EurostatJsonStatCategory
 
 
-class EurostatJsonStatPayload(TypedDict):
+class _EurostatJsonStatPayload(TypedDict):
     """Eurostat Statistics API JSON-stat subset used for scraping."""
 
     id: list[str]
@@ -54,10 +54,10 @@ class EurostatJsonStatPayload(TypedDict):
     # Usage of dict: keys are JSON-stat flat indexes; values are observation numbers.
     value: dict[str, float | int | None]
     # Usage of dict: keys are dynamic dimension ids (freq, unit, time, …).
-    dimension: dict[str, EurostatJsonStatDimension]
+    dimension: dict[str, _EurostatJsonStatDimension]
 
 
-_EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(EurostatJsonStatPayload)
+_EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(_EurostatJsonStatPayload)
 
 
 def _decode_eurostat_flat_index(flat_index: int, sizes: list[int]) -> list[int]:
@@ -91,7 +91,7 @@ def _parse_eurostat_period_label(period_label: str) -> date | None:
 
 
 def _parse_eurostat_jsonstat_values(
-    payload: EurostatJsonStatPayload,
+    payload: _EurostatJsonStatPayload,
 ) -> list[ScrapingResult]:
     """Parse Eurostat Statistics API JSON-stat ``value`` / ``dimension`` payload."""
     dimension_ids = payload["id"]
@@ -105,8 +105,8 @@ def _parse_eurostat_jsonstat_values(
             )
         ]
 
-    time_dimension = dimensions.get("time", EurostatJsonStatDimension())
-    time_category = time_dimension.get("category", EurostatJsonStatCategory())
+    time_dimension = dimensions.get("time", _EurostatJsonStatDimension())
+    time_category = time_dimension.get("category", _EurostatJsonStatCategory())
     time_index = time_category.get("index")
     if time_index is None:
         return [
@@ -251,21 +251,21 @@ def get_data_from_eurostat(
     )
 
 
-class EurostatCalendarEvent(TypedDict, total=False):
+class _EurostatCalendarEvent(TypedDict, total=False):
     """One FullCalendar event from Eurostat eventsJson (fields we read)."""
 
     title: str
     start: str
 
 
-class EurostatPublicationScheduleRow(TypedDict):
+class _EurostatPublicationScheduleRow(TypedDict):
     """One normalized Eurostat publication schedule row before DataFrame load."""
 
     name: str
     publication_date: str | None
 
 
-_EUROSTAT_CALENDAR_EVENTS_ADAPTER = TypeAdapter(list[EurostatCalendarEvent])
+_EUROSTAT_CALENDAR_EVENTS_ADAPTER = TypeAdapter(list[_EurostatCalendarEvent])
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
@@ -298,10 +298,10 @@ def _get_eurostat_publication_schedule() -> pd.DataFrame:
         logger.warning("Invalid Eurostat publication schedule JSON")
         return default_df
 
-    records: list[EurostatPublicationScheduleRow] = []
+    records: list[_EurostatPublicationScheduleRow] = []
     for event in events:
         records.append(
-            EurostatPublicationScheduleRow(
+            _EurostatPublicationScheduleRow(
                 name=event.get("title", ""),
                 publication_date=event.get("start"),
             )

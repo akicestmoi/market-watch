@@ -9,7 +9,7 @@ from freezegun import freeze_time
 
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
 from central_banks_overview.services.central_banks_meetings import (
-    CentralBankMeetingDates,
+    _CentralBankMeetingDates,
     get_central_bank_meeting_dates,
     get_central_bank_next_meeting_date,
     ingest_all_central_bank_meeting_dates,
@@ -60,24 +60,26 @@ class TestCentralBankMeetingsServices(TestCase):
             date=self.test_date_3,
         )
 
+    @freeze_time("2024-01-01 12:00:00")
     def test_get_central_bank_meeting_dates_all(self):
         """
         GIVEN central bank meetings in the database
         WHEN getting all central bank meeting dates
-        THEN all meeting dates are returned grouped by central bank
+        THEN upcoming meeting dates are returned grouped by central bank
         """
         result = get_central_bank_meeting_dates()
         assert result == [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[self.test_date_3],
             ),
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[self.test_date_1, self.test_date_2],
             ),
         ]
 
+    @freeze_time("2024-01-01 12:00:00")
     def test_get_central_bank_meeting_dates_filtered(self):
         """
         GIVEN central bank meetings for multiple banks
@@ -86,7 +88,7 @@ class TestCentralBankMeetingsServices(TestCase):
         """
         result = get_central_bank_meeting_dates([CentralBankChoices.FRB])
         assert result == [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[self.test_date_1, self.test_date_2],
             ),
@@ -106,7 +108,7 @@ class TestCentralBankMeetingsServices(TestCase):
         """
         GIVEN no meetings for a central bank
         WHEN getting next meeting date
-        THEN an IndexError is raised
+        THEN None is returned
         """
         CentralBankMeetingModel.objects.filter(
             central_bank=CentralBankChoices.BOJ
@@ -114,11 +116,31 @@ class TestCentralBankMeetingsServices(TestCase):
         result = get_central_bank_next_meeting_date(CentralBankChoices.BOJ)
         assert result is None
 
+    @freeze_time("2026-10-30 16:00:00")
+    def test_get_central_bank_next_meeting_date_includes_today_from_t_minus_one(
+        self,
+    ):
+        """
+        GIVEN a meeting on the system calendar day (BoJ decision day)
+        WHEN getting next meeting (Market Watch as-of = previous business day)
+        THEN that same-day meeting is still the next meeting
+        """
+        CentralBankMeetingModel.objects.all().delete()
+        boj_meeting_today = datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc)
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            order=1,
+            date=boj_meeting_today,
+        )
+        result = get_central_bank_next_meeting_date(CentralBankChoices.BOJ)
+        assert result == boj_meeting_today
+
+    @freeze_time("2024-01-01 12:00:00")
     def test_get_central_bank_meeting_dates_ordered_by_date(self):
         """
         GIVEN meetings with different orders
         WHEN getting meeting dates
-        THEN meetings are returned ordered by date
+        THEN upcoming meetings are returned ordered by date
         """
         # Clear and create meetings in non-chronological order
         CentralBankMeetingModel.objects.all().delete()
@@ -139,17 +161,18 @@ class TestCentralBankMeetingsServices(TestCase):
 
         result = get_central_bank_meeting_dates([CentralBankChoices.FRB])
         assert result == [
-            CentralBankMeetingDates(
+            _CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[date_1, date_2, date_3],
             ),
         ]
 
+    @freeze_time("2024-01-01 12:00:00")
     def test_get_central_bank_next_meeting_date(self):
         """
         GIVEN central bank meetings in the database
         WHEN getting next meeting date for a central bank
-        THEN the earliest meeting date is returned
+        THEN the earliest upcoming meeting date is returned
         """
         result = get_central_bank_next_meeting_date(CentralBankChoices.FRB)
         assert result == self.test_date_1
@@ -962,10 +985,10 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         THEN old meetings are deleted and new meetings are created
         and the order of the meetings is updated.
         """
-        # Create existing meetings that should be deleted
+        # Outside lookback — should be deleted
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            date=datetime(2024, 12, 10, 13, 0, 0, tzinfo=timezone.utc),
+            date=datetime(2024, 10, 1, 13, 0, 0, tzinfo=timezone.utc),
             order=1,
         )
         CentralBankMeetingModel.objects.create(
@@ -1137,16 +1160,14 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         """
         GIVEN meeting dates including past dates
         WHEN ingesting central bank meeting dates for FRB
-        THEN past dates are filtered out and old meetings are deleted correctly
+        THEN scraped past dates are not ingested as upcoming meetings
         """
-        # Create existing future meeting
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 2, 1, 13, 0, 0, tzinfo=timezone.utc),
             order=1,
         )
 
-        # Meeting dates list includes past dates (should be filtered out)
         meeting_dates_with_past = [
             datetime(2024, 12, 15, 13, 0, 0, tzinfo=timezone.utc),  # Past
             datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),  # Future
@@ -1171,6 +1192,54 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
                 "central_bank": "FRB",
                 "order": 2,
                 "date": "2025-03-19 13:00:00+0000",
+            },
+        ]
+
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
+    )
+    @freeze_time("2025-01-20 12:00:00")
+    def test_ingest_retains_existing_recent_past_meeting_missing_from_scrape(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
+    ):
+        """
+        GIVEN a recent past meeting already in the DB that the scrape no longer lists
+        WHEN ingesting meeting dates
+        THEN that recent past meeting is retained for day-event display
+        """
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            date=datetime(2025, 1, 15, 13, 15, 0, tzinfo=timezone.utc),
+            order=1,
+        )
+        mock_extract_fomc.return_value = []
+        mock_extract_ecb.return_value = [
+            datetime(2025, 3, 19, 13, 15, 0, tzinfo=timezone.utc),
+        ]
+        mock_extract_boj.return_value = []
+
+        ingest_central_bank_meeting_dates(CentralBankChoices.ECB)
+
+        result = parse_query_for_testing(
+            CentralBankMeetingModel.objects.filter(central_bank="ECB"),
+            sort_keys=["order", "date"],
+        )
+        assert result == [
+            {
+                "central_bank": "ECB",
+                "order": 0,
+                "date": "2025-01-15 13:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 1,
+                "date": "2025-03-19 13:15:00+0000",
             },
         ]
 

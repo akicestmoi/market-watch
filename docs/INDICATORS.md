@@ -18,7 +18,7 @@ Methodology: [Quarterly national accounts (EN)](https://www.insee.fr/en/statisti
 | --- | --- | --- | --- | --- |
 | 14 | GDP | `011794860` | `M` | [PIB total — volume chaîné](https://www.insee.fr/fr/statistiques/serie/011794860) |
 | 15 | Household Consumption | `011794864` | `M` | [Consommation des ménages — volume](https://www.insee.fr/fr/statistiques/serie/011794864) |
-| 16 | Government Consumption | `011794862` | `M` | [Consommation des APU — volume](https://www.insee.fr/fr/statistiques/serie/011794862) |
+| 16 | Government Spending | `011794862` | `M` | [Consommation des APU — volume](https://www.insee.fr/fr/statistiques/serie/011794862) |
 | 17 | GFCF | `011794884` | `M` | [FBCF ensemble des secteurs — volume](https://www.insee.fr/fr/statistiques/serie/011794884) |
 | 18 | Exports (volume) | `011794877` | `M` | [Exportations — volume](https://www.insee.fr/fr/statistiques/serie/011794877) |
 | 19 | Imports (volume) | `011794879` | `M` | [Importations — volume](https://www.insee.fr/fr/statistiques/serie/011794879) |
@@ -323,7 +323,7 @@ US series are ingested via the [FRED API](https://fred.stlouisfed.org/docs/api/f
 | --- | --- | --- | --- | --- | --- |
 | 25 | GDP | `GDPC1` | QUARTERLY | `B` | [Real GDP](https://fred.stlouisfed.org/series/GDPC1) (chained 2017 $, SAAR) |
 | 45 | Household Consumption | `PCECC96` | QUARTERLY | `B` | [Real PCE](https://fred.stlouisfed.org/series/PCECC96) |
-| 46 | Government Consumption | `GCEC1` | QUARTERLY | `B` | [Real gov. consumption & gross investment](https://fred.stlouisfed.org/series/GCEC1) (BEA bundles gov. GFCF here) |
+| 46 | Government Spending | `GCEC1` | QUARTERLY | `B` | [Real gov. consumption & gross investment](https://fred.stlouisfed.org/series/GCEC1) (BEA bundles gov. GFCF here) |
 | 47 | Investment | `GPDIC1` | QUARTERLY | `B` | [Real gross private domestic investment](https://fred.stlouisfed.org/series/GPDIC1) |
 | 48 | Exports (volume) | `EXPGSC1` | QUARTERLY | `B` | [Real exports of G&S](https://fred.stlouisfed.org/series/EXPGSC1) |
 | 49 | Imports (volume) | `IMPGSC1` | QUARTERLY | `B` | [Real imports of G&S](https://fred.stlouisfed.org/series/IMPGSC1) |
@@ -370,7 +370,7 @@ Real seasonally adjusted expenditure levels from the latest `gaku-jk*.csv` ([Qua
 | --- | --- | --- | --- | --- |
 | 33 | GDP | `gaku-jk` | GDP (expenditure) | Headline real SA GDP |
 | 53 | Household Consumption | `gaku-jk-hh` | Consumption of Households | |
-| 54 | Government Consumption | `gaku-jk-gov` | Government Consumption | |
+| 54 | Government Spending | `gaku-jk-gov` | Government Spending | |
 | 55 | Investment | `gaku-jk-gfcf` | Gross Fixed Capital Formation | Total GFCF |
 | 56 | Exports (volume) | `gaku-jk-ex` | Exports | Goods & services |
 | 57 | Imports (volume) | `gaku-jk-im` | Imports | Goods & services |

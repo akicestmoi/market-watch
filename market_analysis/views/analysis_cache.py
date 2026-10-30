@@ -17,7 +17,7 @@ from market_analysis.open_api.response_serializers import ArticleCacheResponseSe
 from market_analysis.services.cache import list_cached_analyses
 
 
-class GetArticleCacheValidatedData(TypedDict):
+class _GetArticleCacheValidatedData(TypedDict):
     """Validated data for ``GetArticleCacheSerializer``."""
 
     reporting_date: date
@@ -39,7 +39,7 @@ class GetArticleAnalysisCacheView(BaseAPIView):
         response=OkOpenApiResponse(ArticleCacheResponseSerializer),
         error_responses=[BadRequestOpenApiResponse("reporting_date is required")],
     )
-    def get(self, validated_data: GetArticleCacheValidatedData) -> Response:
+    def get(self, validated_data: _GetArticleCacheValidatedData) -> Response:
         """List Redis-cached article analyses for a reporting date."""
         reporting_date: date = validated_data["reporting_date"]
         source_url: str | None = validated_data.get("source_url") or None

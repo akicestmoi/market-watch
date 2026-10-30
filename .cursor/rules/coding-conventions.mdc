@@ -88,18 +88,18 @@ message = DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE.get(status_code)
 expected = INSEE_CSV_NAME_BY_FREQUENCY.get(frequency)
 ```
 
-**Exception — `match` for per-branch computation is fine.** When each arm runs different logic (formulas, guards, multi-step work) rather than looking up a precomputed value, keep a `match` (or `if`/`elif`) in the function. Do **not** invent a mapper of lambdas / callables just to avoid `match`. Example: `calculate_value_change` switching on `ValueChangeOutput` to compute absolute / bps / percent / annualized percent.
+**Exception — `match` for per-branch computation is fine.** When each arm runs different logic (formulas, guards, multi-step work) rather than looking up a precomputed value, keep a `match` (or `if`/`elif`) in the function. Do **not** invent a mapper of lambdas / callables just to avoid `match`. Example: `calculate_value_change` switching on `ValueChangeType` to compute absolute / bps / percent / annualized percent.
 
 ```python
 # ✅ GOOD — match arms compute; not a static lookup table
-match output:
-    case ValueChangeOutput.ABSOLUTE:
+match value_change_type:
+    case ValueChangeType.ABSOLUTE:
         return absolute
-    case ValueChangeOutput.BPS:
+    case ValueChangeType.BPS:
         return absolute * 100
-    case ValueChangeOutput.PERCENT:
+    case ValueChangeType.PERCENT:
         return None if previous == 0 else (absolute / previous) * 100
-    case ValueChangeOutput.ANNUALIZED_PERCENT:
+    case ValueChangeType.ANNUALIZED_PERCENT:
         ...
 ```
 
@@ -173,42 +173,65 @@ Shared OpenAPI helpers, tags, and error response classes live in `core/open_api/
 
 ### Function names start with a verb
 
-Public and helper function names must begin with a verb (or verb phrase) that states the action.
+Public and helper function names must begin with a verb (or verb phrase) that states the action. Do **not** lead with the object noun (`schedule_…`, `timezone_…`) — put the verb first.
+
+The name must also match **what is returned**, not only what is touched as input. If the function consumes a full time series but returns a single-point triplet, name the point/values — not the series.
 
 ```python
-# ❌ BAD — noun / adjective as the name
+# ❌ BAD — noun / adjective as the name (incl. noun-led predicates)
 def display_timezone() -> ZoneInfo: ...
 def local_today() -> date: ...
+def schedule_matches_event_date(schedule, event_date) -> bool: ...
+def schedule_publication_on_date(schedule, as_of) -> datetime | None: ...
+
+# ❌ BAD — name implies a full-series transform; return is only current/previous/change
+def change_time_series_mode(...) -> _IndicatorValueTriplet: ...
 
 # ✅ GOOD
 def get_display_timezone() -> ZoneInfo: ...
 def convert_to_display_timezone(value: datetime) -> datetime: ...
 def get_local_today() -> date: ...
+def does_publication_schedule_match_event_date(publication_schedule, event_date) -> bool: ...
+def get_publication_datetime_on_date(publication_schedule, as_of) -> datetime | None: ...
+def change_indicator_values_mode(...) -> _IndicatorValueTriplet: ...
 ```
 
 Exceptions: well-known callables expected by a framework (e.g. Django `save`, `__str__`), and `@property` getters that read as attributes.
 
 ### Variables and parameters are explicit
 
-Names must make the value’s role obvious at the use site. Prefer a short domain phrase over a letter or a vague word.
+Names must make the value’s **role** obvious at the use site without re-reading earlier lines. Prefer a **concise multi-word domain phrase** over a letter, an abbreviation, or a single vague noun.
+
+“Short” here means *not a sentence* — it does **not** mean a one-word stub. A bare `rows`, `levels`, `records`, `latest`, `data`, `item`, `result`, or `transformed` is too thin when the domain object is known (economic time series, publication schedules, display-mode changes, …). Spell the domain noun (and qualifier when needed): `economic_data_time_series`, `indicator_value_triplet`, `indicator_default_display_mode`.
 
 ```python
-# ❌ BAD — cryptic / too abstract
+# ❌ BAD — cryptic, abbreviated, or one vague noun
 m = ChatMessage(...)
 data = fetch()
 item = rows[0]
 tmp = convert(x)
+levels = [float(row.data_value) for row in records]
+transformed = change_indicator_values_mode(levels, ...)
+latest = records[0]
 
-# ✅ GOOD
+# ✅ GOOD — role readable at the use site
 chat_message = ChatMessage(...)
-market_prices = fetch_market_prices()
-price_row = rows[0]
+market_price_time_series = fetch_market_prices()
+latest_market_price = market_price_time_series[0]
 paris_datetime = convert_to_display_timezone(utc_datetime)
+latest_time_series_point = economic_data_time_series[0]
+economic_data_time_series = [
+    float(time_series_point.data_value)
+    for time_series_point in economic_data_time_series
+]
+indicator_value_triplet = change_indicator_values_mode(
+    economic_data_time_series, ...
+)
 ```
 
 Avoid single-letter names except conventional loop indices (`i`, `j`) or well-known math locals in a tiny scope. Do not invent new short aliases for types or modules (`dt` for `datetime`, `cb` for central bank) at call sites — use the real name.
 
-Do **not** reuse an imported module’s name as a local variable (`holidays = holidays.get_…` → UnboundLocalError). Prefer a domain noun for the value (`holiday_rows`, `prices_to_ingest`, `economic_data_rows`).
+Do **not** reuse an imported module’s name as a local variable (`holidays = holidays.get_…` → UnboundLocalError). Prefer a domain noun for the value (`holiday_dates`, `prices_to_ingest`, `economic_data_time_series`).
 
 ## Module layout
 
@@ -253,13 +276,21 @@ def get_recap(...):
 
 ## Leading underscore = module-private
 
-Prefix a function with `_` when it is only used inside its own module. As soon as it is imported or otherwise used from **another non-test module**, drop the leading underscore (do not keep a private name while exporting it).
+Prefix a **function** or a **type** (`TypedDict`, `NamedTuple`, `Enum` / `TextChoices` declared in a service module, small helper class, …) with `_` when it is only used inside its own module. As soon as it is imported or otherwise used from **another non-test module**, drop the leading underscore (do not keep a private name while exporting it).
 
-**Tests do not count as external use.** A helper may stay `_private` if its only callers outside the defining module are under `**/tests/**`. Prefer importing `_helpers` in tests over renaming them public just for coverage.
+**Tests do not count as external use.** A helper or type may stay `_private` if its only callers outside the defining module are under `**/tests/**`. Prefer importing `_helpers` / `_Types` in tests over renaming them public just for coverage.
+
+**Test method names drop the leading `_`.** When a test targets a private helper `_format_amount_unit_label`, name it `test_format_amount_unit_label` — not `test__format_amount_unit_label`. Do not echo the privacy underscore after `test_`.
+
+Django ORM models / app-level `TextChoices` in `<app>/models.py` stay public (no `_`) — they are the app’s shared domain surface even when only one service imports them today.
 
 ```python
 # ✅ GOOD — only used inside this module (+ maybe tests); public tool name via Tool(...)
 def _get_previous_recaps(...) -> list: ...
+
+class _ScaledAmount(NamedTuple):
+    value: float
+    magnitude: IndicatorAmountMagnitudeChoices
 
 def _build_chat_tools() -> list[Tool[None]]:
     return [Tool(_get_previous_recaps, name="get_previous_recaps")]
@@ -267,8 +298,14 @@ def _build_chat_tools() -> list[Tool[None]]:
 # ✅ GOOD — production module imports it → public name
 def build_market_context(...) -> list: ...  # called from llm_interaction
 
+class EconomicChartsFrontData(TypedDict):
+    ...  # imported by data_visualization.views
+
 # ❌ BAD — no underscore but never imported from any non-test module
 def get_previous_recaps(...) -> list: ...
+
+class ScaledAmount(NamedTuple):  # only used in this file (+ tests)
+    ...
 ```
 
 When a private callable is registered with an external API (e.g. an LLM tool), pass an explicit public `name=` so the external name stays verb-led and without `_`.
@@ -397,7 +434,7 @@ Use **`NamedTuple`** for fixed-position multi-field returns / small fixed record
 
 **`tuple` — only when justified (same bar as `dict`).** Prefer `list` for sequences and `NamedTuple` for named fixed fields. Do **not** wrap values in `tuple(...)` or annotate `tuple[...]` just for style, immutability theater, or frozen-dataclass friendliness. Use a `tuple` only when you have a real reason (e.g. a fixed-length positional value that is not worth a `NamedTuple`, or an API that requires a tuple). When you do, comment with `# Usage of tuple: …` stating the reason (same pattern as `dict` below).
 
-**`@dataclass` — only when TypedDict / NamedTuple are a poor fit.** Prefer **`TypedDict`** for trusted internal / config / query shapes (plain `dict` at runtime). Prefer **`NamedTuple`** when every field is required and you want attribute access. Use a **frozen `@dataclass`** only when you need a real constructor (`Foo(...)`) **and** optional fields / defaults that make `TypedDict` or `NamedTuple` awkward (typical: static module config entries like `EurostatSeriesTemplate(...)`). Do **not** reach for dataclass by default; do **not** use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records you already model as TypedDict.
+**`@dataclass` — only when TypedDict / NamedTuple are a poor fit.** Prefer **`TypedDict`** for trusted internal / config / query shapes (plain `dict` at runtime). Prefer **`NamedTuple`** when every field is required and you want attribute access. Use a **frozen `@dataclass`** only when you need a real constructor (`Foo(...)`) **and** optional fields / defaults that make `TypedDict` or `NamedTuple` awkward (typical: static module config entries like `_EurostatSeriesTemplate(...)`). Do **not** reach for dataclass by default; do **not** use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records you already model as TypedDict.
 
 ```python
 # ✅ TypedDict — trusted query / row shape (default choice)
@@ -406,15 +443,15 @@ class EurostatQueryParams(TypedDict, total=False):
     sinceTimePeriod: Required[str]
     geo: str
 
-# ✅ NamedTuple — fixed required fields, attribute access
-class BojTankanSeries(NamedTuple):
+# ✅ NamedTuple — fixed required fields, attribute access (`_` = module-private)
+class _BojTankanSeries(NamedTuple):
     ticker: str
     sector_label: str
     size: str
 
-# ✅ frozen dataclass — constructor + optional defaults for static config
+# ✅ frozen dataclass — constructor + optional defaults for static config (`_` = module-private)
 @dataclass(frozen=True)
-class EurostatSeriesTemplate:
+class _EurostatSeriesTemplate:
     key: str
     dataset: str
     params: EurostatQueryParams
@@ -451,7 +488,7 @@ class EstrReferenceDates(NamedTuple):
     start: date
     end: date
 
-class DayEventChangeDisplay(NamedTuple):
+class DayEventFormattedChange(NamedTuple):
     change: str
     change_class: DayEventChangeClass
 
@@ -464,7 +501,7 @@ class EurostatJsonStatPayload(TypedDict):
 
 def load() -> list[PriceChange]: ...
 def parse() -> EstrReferenceDates: ...
-def format_change(change: float | None) -> DayEventChangeDisplay: ...
+def format_change(change: float | None) -> DayEventFormattedChange: ...
 def parse_eurostat(payload: EurostatJsonStatPayload): ...
 ```
 
@@ -528,6 +565,27 @@ def get_economic_recap_data() -> ...:
 ```
 
 Exceptions: methods required by a framework with no useful prose beyond the name (`save`, `__str__`, `__init__` when trivial). Prefer a one-line docstring over none.
+
+### Failing tests after an implementation change
+
+When a **new or changed implementation causes existing tests to fail**, **stop and raise a short recap to the user** before editing those tests or “fixing forward.” The user decides whether the **test** is outdated or the **implementation** is wrong.
+
+The recap should name the failing test(s), the observed vs expected behavior, and the likely cause in one short block. Do **not** silently rewrite assertions, delete coverage, or weaken checks to make the suite green.
+
+Obvious exceptions only: the same change **intentionally** updates a contract the test hardcodes (e.g. renamed field / new required context key) *and* the user already directed that contract change in the current request — then update the expected payload to match. When in doubt, raise the recap.
+
+### Test naming
+
+Name tests after the unit under test, verb-led after `test_`. **Do not keep a private helper’s leading `_` in the test name** — `test_format_amount_unit_label` for `_format_amount_unit_label`, never `test__format_amount_unit_label`.
+
+```python
+# ✅ GOOD
+def test_format_amount_unit_label(self): ...
+def test_parse_selected_indicator_and_mode(self): ...
+
+# ❌ BAD — doubles the privacy underscore
+def test__format_amount_unit_label(self): ...
+```
 
 ### Test docstrings: GIVEN / WHEN / THEN
 

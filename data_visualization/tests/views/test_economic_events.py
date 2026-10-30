@@ -5,8 +5,8 @@ from freezegun import freeze_time
 
 from core.testing import read_file_content
 from data_visualization.services.economic_events import (
-    UpcomingEventGroup,
-    UpcomingWeekGroup,
+    _UpcomingEventGroup,
+    _UpcomingWeekGroup,
 )
 
 _EXPECTED_HTML = read_file_content(
@@ -32,36 +32,36 @@ class TestEconomicEventsView(TestCase):
         response = self.client.get(self.base_url)
         assert response.status_code == 200
         assert response.context["upcoming_weeks"] == [
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-15",
                 week_label="15 Dec 2025 – 19 Dec 2025",
                 is_current_week=True,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-15",
                         date_display="Monday 15 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-16",
                         date_display="Tuesday 16 December 2025",
                         events=[],
                         is_today=True,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-17",
                         date_display="Wednesday 17 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-18",
                         date_display="Thursday 18 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-19",
                         date_display="Friday 19 December 2025",
                         events=[],
@@ -69,36 +69,36 @@ class TestEconomicEventsView(TestCase):
                     ),
                 ],
             ),
-            UpcomingWeekGroup(
+            _UpcomingWeekGroup(
                 week_start="2025-12-22",
                 week_label="22 Dec 2025 – 26 Dec 2025",
                 is_current_week=False,
                 days=[
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-22",
                         date_display="Monday 22 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-23",
                         date_display="Tuesday 23 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-24",
                         date_display="Wednesday 24 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-25",
                         date_display="Thursday 25 December 2025",
                         events=[],
                         is_today=False,
                     ),
-                    UpcomingEventGroup(
+                    _UpcomingEventGroup(
                         date="2025-12-26",
                         date_display="Friday 26 December 2025",
                         events=[],

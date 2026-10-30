@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 from unittest.mock import patch
 
 from django.test import TestCase
+from freezegun import freeze_time
 
 from central_banks_overview.models import (
     CentralBankChoices,
@@ -36,6 +37,7 @@ from market_overview.models import (
 )
 
 
+@freeze_time("2024-01-15")
 class TestCentralBankRecapServices(TestCase):
     """Test cases for central_banks_recap functions."""
 
@@ -103,16 +105,39 @@ class TestCentralBankRecapServices(TestCase):
 
     def test_get_central_bank_data_item_frb_success(self):
         """
-        GIVEN central bank data, effective rate, and meeting date for FRB
+        GIVEN central bank data, effective rate, meeting date, and US CPI YoY inputs
         WHEN getting central bank data item
-        THEN the correct data items are returned with FRB-specific additional data
+        THEN the correct data items are returned with live US inflation
         """
+        us_cpi = EconomicIndicatorInformationModel.objects.create(
+            id=26,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.INFLATION,
+            type="Consumer Price Index",
+            name="United States CPI",
+            technical_name="Consumer Price Index for All Urban Consumers",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="CPIAUCSL",
+            base_year=1982,
+            base_unit=IndicatorBaseUnitChoices.INDEX,
+        )
+        EconomicDataModel.objects.create(
+            indicator=us_cpi,
+            period=date(2025, 9, 1),
+            data_value=102.5,
+        )
+        EconomicDataModel.objects.create(
+            indicator=us_cpi,
+            period=date(2024, 9, 1),
+            data_value=100.0,
+        )
         result = get_central_bank_data_item(CentralBankChoices.FRB, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "5.25 %"},
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
             {"label": "Next Meeting", "value": "2024-03-20"},
-            {"label": "US Inflation Rate", "value": "-"},
+            {"label": "US Inflation Rate", "value": "2.5 % (Sep 25)"},
         ]
 
     def test_get_central_bank_data_item_ecb_success(self):
@@ -198,9 +223,9 @@ class TestCentralBankRecapServices(TestCase):
 
     def test_get_central_bank_data_item_boj_success(self):
         """
-        GIVEN central bank data, effective rate, and meeting date for BOJ
+        GIVEN central bank data, effective rate, meeting date, and Japan CPI YoY inputs
         WHEN getting central bank data item
-        THEN the correct data items are returned with BOJ-specific additional data
+        THEN the correct data items are returned with live Japan inflation
         """
         CentralBankDataModel.objects.create(
             cb_data_id=5,
@@ -221,13 +246,36 @@ class TestCentralBankRecapServices(TestCase):
             order=1,
             date=datetime(2024, 5, 1, 4, 0, 0, tzinfo=timezone.utc),
         )
+        japan_cpi = EconomicIndicatorInformationModel.objects.create(
+            id=34,
+            location=EconomicDataLocationChoices.JP,
+            category=EconomicDataCategoryChoices.INFLATION,
+            type="Consumer Price Index",
+            name="Japan CPI",
+            technical_name="Consumer Price Index",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.STAT_OF_JP,
+            ticker="0703010601010090000",
+            base_year=2025,
+            base_unit=IndicatorBaseUnitChoices.INDEX,
+        )
+        EconomicDataModel.objects.create(
+            indicator=japan_cpi,
+            period=date(2025, 9, 1),
+            data_value=101.2,
+        )
+        EconomicDataModel.objects.create(
+            indicator=japan_cpi,
+            period=date(2024, 9, 1),
+            data_value=100.0,
+        )
 
         result = get_central_bank_data_item(CentralBankChoices.BOJ, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "0.1 %"},
             {"label": "BOJ Target Uncollateralized Overnight Rate", "value": "0.1 %"},
             {"label": "Next Meeting", "value": "2024-05-01"},
-            {"label": "Japan Inflation Rate", "value": "-"},
+            {"label": "Japan Inflation Rate", "value": "1.2 % (Sep 25)"},
         ]
 
     @patch(

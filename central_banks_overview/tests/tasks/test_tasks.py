@@ -46,8 +46,11 @@ class TestScheduledStirPricesIngestion(TestCase):
     )
 
     def setUp(self):
-        """Set up test fixtures."""
+        """Set up test fixtures and clear scraper TTL caches."""
         self.price_date = date(2025, 12, 12)
+        _get_fedfunds_futures_price.cache_clear()
+        _get_mutan_futures_accrual_dates.cache_clear()
+        _get_mutan_futures_prices_from_tfx.cache_clear()
 
     def tearDown(self):
         """Clear caches to prevent test interference."""
@@ -137,7 +140,9 @@ class TestScheduledStirPricesIngestion(TestCase):
             ],
         }
         stir_futures = parse_query_for_testing(
-            StirFuturesModel.objects.all().order_by("maturity", "date")
+            StirFuturesModel.objects.all().order_by(
+                "maturity", "date", "central_bank", "short_name"
+            )
         )
         assert stir_futures[:5] == [
             {
@@ -281,7 +286,9 @@ class TestScheduledStirPricesIngestion(TestCase):
             ],
         }
         stir_futures = parse_query_for_testing(
-            StirFuturesModel.objects.all().order_by("maturity", "date")
+            StirFuturesModel.objects.all().order_by(
+                "maturity", "date", "central_bank", "short_name"
+            )
         )
         assert stir_futures[:5] == [
             {
@@ -550,9 +557,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_data,
     ):
         """
-        GIVEN multiple central banks with past meeting dates
+        GIVEN multiple central banks with past-only meeting dates
         WHEN the scheduled function is called
-        THEN the task should clean up prices for all and update data
+        THEN cleanup is skipped (next-meeting lookup is upcoming-only)
         """
         # Create meeting records: All central banks have past meetings
         CentralBankMeetingModel.objects.bulk_create(
@@ -625,32 +632,14 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
         )
+        # Next-meeting lookup only returns upcoming dates; past-only rows are skipped.
         assert result == {
             "status": "success",
-            "message": "Central bank meetings updated successfully for ['FRB - 2025-12-08', 'BOJ - 2025-12-08', 'ECB - 2025-12-08']",
+            "message": "No central bank meetings to update",
         }
-
-        # Verify only the price after cutoff remains
-        remaining_prices = StirFuturesModel.objects.all()
-        assert remaining_prices.count() == 1
-        assert parse_query_for_testing(remaining_prices) == [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "comment": "",
-                "date": date(2025, 12, 10),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.04",
-                "price": 96.6,
-                "short_name": StirFuturesNameChoices.FF1M.value,
-                "source": StirFuturesSourceChoices.YAHOO.value,
-            },
-        ]
-        # No meeting records should be left as meeting of 2025-12-10 is past
-        # and mocked extract functions return empty lists
-        assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == []
-        assert mock_ingest_data.call_count == 3
+        assert StirFuturesModel.objects.count() == 4
+        assert CentralBankMeetingModel.objects.count() == 3
+        assert mock_ingest_data.call_count == 0
 
     @freeze_time("2025-12-15")
     @patch(
@@ -677,9 +666,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_data,
     ):
         """
-        GIVEN a mix of past meetings, future meetings, and None
+        GIVEN a mix of past and future meetings
         WHEN the scheduled function is called
-        THEN the task should only clean up prices for central banks with past meetings
+        THEN cleanup is skipped for both (past invisible; future not yet due)
         """
         # Create meeting records
         CentralBankMeetingModel.objects.create(
@@ -771,12 +760,25 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
         )
-        # ECB should not be updated as it has a future meeting
+        # Past FRB is invisible to upcoming-only next-meeting lookup; future ECB
+        # is skipped by meeting_date >= now. Nothing is cleaned up.
         assert result == {
             "status": "success",
-            "message": "Central bank meetings updated successfully for ['FRB - 2025-12-08']",
+            "message": "No central bank meetings to update",
         }
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
+            {
+                "central_bank": CentralBankChoices.FRB.value,
+                "comment": "",
+                "date": date(2025, 12, 5),
+                "first_accrual_date": None,
+                "full_name": "",
+                "last_accrual_date": None,
+                "maturity": "26.03",
+                "price": 96.5,
+                "short_name": StirFuturesNameChoices.FF1M.value,
+                "source": StirFuturesSourceChoices.YAHOO.value,
+            },
             {
                 "central_bank": CentralBankChoices.ECB.value,
                 "comment": "",
@@ -792,10 +794,15 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         ]
         assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == [
             {
+                "central_bank": CentralBankChoices.FRB.value,
+                "date": "2025-12-10 13:00:00+0000",
+                "order": 1,
+            },
+            {
                 "central_bank": CentralBankChoices.ECB.value,
                 "date": "2026-01-15 13:00:00+0000",
                 "order": 1,
-            }
+            },
         ]
 
     @freeze_time("2025-12-15")
@@ -1014,9 +1021,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_data,
     ):
         """
-        GIVEN an error occurs during data ingestion
-        WHEN the scheduled function is called
-        THEN the task should return an error status
+        GIVEN only a past FRB meeting (invisible to upcoming-only next-meeting lookup)
+        WHEN the scheduled function is called even if ingestion would error
+        THEN cleanup is skipped and prices are left unchanged
         """
         # Create meeting record: FRB has past meeting
         CentralBankMeetingModel.objects.create(
@@ -1025,7 +1032,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             date=self.past_meeting_date,
         )
 
-        # Create price to be deleted
+        # Create price that would be deleted if cleanup ran
         StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -1046,7 +1053,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mockextract_fomc_meeting_dates.return_value = []
         mockextract_ecb_meeting_dates.return_value = []
         mockextract_boj_meeting_dates.return_value = []
-        # Mock ingestion to raise an error
+        # Mock ingestion to raise an error (must not be reached)
         mock_ingest_data.side_effect = Exception("Ingestion error")
 
         initial_prices = [
@@ -1070,11 +1077,11 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         )
 
         assert result == {
-            "status": "error",
-            "message": "Error: Ingestion error",
+            "status": "success",
+            "message": "No central bank meetings to update",
         }
-        # Verify price was still deleted (cleanup happens before data ingestion)
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == []
+        assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
+        mock_ingest_data.assert_not_called()
 
     @freeze_time("2025-12-15")
     @patch(
@@ -1105,9 +1112,9 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_meetings,
     ):
         """
-        GIVEN an error occurs during meetings ingestion
-        WHEN the scheduled function is called
-        THEN the task should return an error status
+        GIVEN only a past FRB meeting (invisible to upcoming-only next-meeting lookup)
+        WHEN the scheduled function is called even if meetings ingestion would error
+        THEN cleanup is skipped and prices are left unchanged
         """
         # Create meeting record: FRB has past meeting
         CentralBankMeetingModel.objects.create(
@@ -1116,7 +1123,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             date=self.past_meeting_date,
         )
 
-        # Create price to be deleted
+        # Create price that would be deleted if cleanup ran
         StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -1137,9 +1144,8 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mockextract_fomc_meeting_dates.return_value = []
         mockextract_ecb_meeting_dates.return_value = []
         mockextract_boj_meeting_dates.return_value = []
-        # Mock data ingestion to succeed (so we can test meetings ingestion error)
         mock_ingest_data.return_value = []
-        # Mock meetings ingestion to raise an error
+        # Mock meetings ingestion to raise an error (must not be reached)
         mock_ingest_meetings.side_effect = Exception("Meetings ingestion error")
 
         initial_prices = [
@@ -1163,8 +1169,8 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         )
 
         assert result == {
-            "status": "error",
-            "message": "Error: Meetings ingestion error",
+            "status": "success",
+            "message": "No central bank meetings to update",
         }
-        # Verify price was still deleted (cleanup happens before meetings ingestion)
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == []
+        assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
+        mock_ingest_meetings.assert_not_called()

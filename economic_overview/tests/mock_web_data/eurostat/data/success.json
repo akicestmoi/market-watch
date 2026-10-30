@@ -147,20 +147,8 @@
     "139": 103.69,
     "140": 104.31
   },
-  "id": [
-    "freq",
-    "unit",
-    "coicop18",
-    "geo",
-    "time"
-  ],
-  "size": [
-    1,
-    1,
-    1,
-    1,
-    141
-  ],
+  "id": ["freq", "unit", "coicop18", "geo", "time"],
+  "size": [1, 1, 1, 1, 141],
   "dimension": {
     "freq": {
       "label": "Time frequency",

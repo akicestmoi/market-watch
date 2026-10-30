@@ -25,7 +25,7 @@ class ChartDuration(str, Enum):
     ONE_YEAR = "1Y"
 
 
-class MarketChartsDropdownValues(TypedDict):
+class _MarketChartsDropdownValues(TypedDict):
     """Dropdown values."""
 
     stocks: list[AssetNames]
@@ -36,10 +36,10 @@ class MarketChartsDropdownValues(TypedDict):
     locations: list[str]
 
 
-def get_market_charts_dropdown_values() -> MarketChartsDropdownValues:
+def get_market_charts_dropdown_values() -> _MarketChartsDropdownValues:
     """Get dropdown values."""
     locations = LocationChoices.get_labels()
-    return MarketChartsDropdownValues(
+    return _MarketChartsDropdownValues(
         stocks=market_data.get_asset_names({"asset_class": AssetClassChoices.STOCKS}),
         fx=market_data.get_asset_names({"asset_class": AssetClassChoices.FX}),
         crypto=market_data.get_asset_names({"asset_class": AssetClassChoices.CRYPTO}),
@@ -74,7 +74,7 @@ class MarketChartsFrontData(TypedDict):
     spread_rate: str | None
 
 
-class MarketChartsLabels(TypedDict):
+class _MarketChartsLabels(TypedDict):
     """Labels."""
 
     stocks: str | None
@@ -106,8 +106,8 @@ def _get_asset_full_name(
 
 
 def get_market_charts_labels(
-    dropdown_values: MarketChartsDropdownValues, front_data: MarketChartsFrontData
-) -> MarketChartsLabels:
+    dropdown_values: _MarketChartsDropdownValues, front_data: MarketChartsFrontData
+) -> _MarketChartsLabels:
     """Get labels."""
 
     def _get_generic_asset_label(
@@ -120,7 +120,7 @@ def get_market_charts_labels(
             else None
         )
 
-    return MarketChartsLabels(
+    return _MarketChartsLabels(
         stocks=_get_generic_asset_label("stocks", front_data["stock_name"]),
         fx=_get_generic_asset_label("fx", front_data["fx_name"]),
         crypto=_get_generic_asset_label("crypto", front_data["crypto_name"]),
@@ -142,7 +142,7 @@ def get_market_charts_labels(
     )
 
 
-class MarketChartsData(TypedDict):
+class _MarketChartsData(TypedDict):
     """Price series and curves for the market charts page."""
 
     stock_prices: list[HistoricalPrice]
@@ -186,7 +186,7 @@ def _to_historical_prices(frame: pd.DataFrame) -> list[HistoricalPrice]:
 
 def get_market_charts_data(
     reference_date: date, previous_curve_date: date, front_data: MarketChartsFrontData
-) -> MarketChartsData:
+) -> _MarketChartsData:
     """Load price series and yield curves for the market charts page."""
     main_rate_historical_yield = market_data.get_historical_prices(
         front_data["main_rate"],
@@ -233,7 +233,7 @@ def get_market_charts_data(
             spread_rates = _to_historical_prices(spread_rate_df)
         else:
             spread_rates = []
-    return MarketChartsData(
+    return _MarketChartsData(
         stock_prices=market_data.get_historical_prices(
             front_data["stock_name"],
             start_date=_get_start_date(
