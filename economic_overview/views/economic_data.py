@@ -84,12 +84,9 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
             indicator, _ = EconomicIndicatorInformationModel.objects.update_or_create(
                 id=economic_indicator["id"], defaults=economic_indicator
             )
-            PublicationScheduleModel.objects.update_or_create(
-                indicator=indicator,
-                previous_publication_date=None,
-                current_publication_date=None,
-                next_publication_date=None,
-            )
+            # Lookup by indicator only — including null date fields in the
+            # lookup creates a second empty schedule whenever dates are filled.
+            PublicationScheduleModel.objects.get_or_create(indicator=indicator)
 
         return Response(
             data={

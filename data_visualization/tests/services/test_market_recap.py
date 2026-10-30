@@ -727,8 +727,8 @@ class TestDayEvents(TestCase):
                         "location": "Europe",
                         "value": "2.00 %",
                         "previous": "2.00 %",
-                        "change": "0.00 %",
-                        "change_class": _DayEventChangeClass.NONE,
+                        "change": "(unch)",
+                        "change_class": _DayEventChangeClass.UNCHANGED,
                         "is_holiday": False,
                     },
                     {
@@ -736,8 +736,8 @@ class TestDayEvents(TestCase):
                         "location": "Europe",
                         "value": "2.15 %",
                         "previous": "2.15 %",
-                        "change": "0.00 %",
-                        "change_class": _DayEventChangeClass.NONE,
+                        "change": "(unch)",
+                        "change_class": _DayEventChangeClass.UNCHANGED,
                         "is_holiday": False,
                     },
                     {

@@ -17,7 +17,11 @@ from central_banks_overview.services.scrapers.ecb_meetings import (
 from central_banks_overview.services.scrapers.fomc_meetings import (
     extract_fomc_meeting_dates,
 )
-from core.services import get_market_watch_as_of_date, logger
+from core.services import (
+    convert_to_display_timezone,
+    get_market_watch_as_of_date,
+    logger,
+)
 
 CB_MEETINGS_EXTRACT_MAP = {
     CentralBankChoices.FRB: lambda: extract_fomc_meeting_dates(),
@@ -41,32 +45,39 @@ def ingest_central_bank_meeting_dates(central_bank: CentralBankChoices):
     """Ingest specific central bank meeting dates.
 
     Updates or creates the next ``NB_MEETINGS_TO_INGEST`` upcoming meetings from
-    the T-1 business-day perspective. Recently past meetings (within
-    ``MEETING_HISTORY_LOOKBACK_DAYS`` before that cutoff) already in the DB are
-    retained so day-event UIs can still show a rates decision after announcement
-    day; older meetings are deleted.
+    the T-1 business-day perspective. Recently past meetings already in the DB
+    whose Paris display date falls in
+    ``[as_of - (LOOKBACK - 1 days), as_of + 1 day]`` (through "today") are
+    retained so day-event UIs still show a rates decision after the source
+    calendar drops the meeting; older meetings are deleted.
     """
     if central_bank not in CB_MEETINGS_EXTRACT_MAP:
         return []
     scraped_meeting_dates = CB_MEETINGS_EXTRACT_MAP[central_bank]()
 
-    upcoming_cutoff = _get_upcoming_meetings_cutoff(get_market_watch_as_of_date())
-    lookback_start = upcoming_cutoff - timedelta(days=MEETING_HISTORY_LOOKBACK_DAYS)
+    as_of = get_market_watch_as_of_date()
+    upcoming_cutoff = _get_upcoming_meetings_cutoff(as_of)
+    lookback_first_date = as_of - timedelta(days=MEETING_HISTORY_LOOKBACK_DAYS - 1)
+    lookback_last_date = as_of + timedelta(days=1)
     future_meeting_dates = sorted(
         meeting_date
         for meeting_date in scraped_meeting_dates
         if meeting_date >= upcoming_cutoff
     )[:NB_MEETINGS_TO_INGEST]
-    # Already-stored meetings in [lookback_start, upcoming_cutoff): keep them so
-    # day-event UIs can still show a rates decision after announcement day.
-    past_meeting_dates_within_lookback = list(
-        CentralBankMeetingModel.objects.filter(
-            central_bank=central_bank,
-            date__gte=lookback_start,
-            date__lt=upcoming_cutoff,
-        ).values_list("date", flat=True)
-    )
-    meeting_dates_to_keep = set(future_meeting_dates) | set(
+    future_meeting_dates_set = set(future_meeting_dates)
+    # Keep already-stored meetings whose display calendar day is still in the
+    # lookback window, including "today" (as_of + 1). A same-day UTC afternoon
+    # meeting is >= upcoming_cutoff, so a naive ``date__lt=cutoff`` lookback
+    # would drop it once the scrape stops listing it after the announcement.
+    past_meeting_dates_within_lookback = [
+        meeting.date
+        for meeting in CentralBankMeetingModel.objects.filter(central_bank=central_bank)
+        if meeting.date not in future_meeting_dates_set
+        and lookback_first_date
+        <= convert_to_display_timezone(meeting.date).date()
+        <= lookback_last_date
+    ]
+    meeting_dates_to_keep = future_meeting_dates_set | set(
         past_meeting_dates_within_lookback
     )
     logger.info(f"Ingesting meeting dates for {central_bank.label}")

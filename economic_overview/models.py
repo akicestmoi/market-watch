@@ -224,7 +224,7 @@ class EconomicIndicatorInformationModel(BaseModel):
 class PublicationScheduleModel(BaseModel):
     """Publication Schedule Model."""
 
-    indicator = models.ForeignKey(
+    indicator = models.OneToOneField(
         EconomicIndicatorInformationModel,
         on_delete=models.CASCADE,
         related_name="publication_schedule",

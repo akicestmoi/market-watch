@@ -213,11 +213,21 @@ class TestPublicationServices(TestCase):
         start_date = date.today()
         end_date = date.today() + timedelta(days=10)
         schedule_date = django_timezone.now() + timedelta(days=5)
-
+        out_of_range_indicator = EconomicIndicatorInformationModel.objects.create(
+            id=3,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="Out Of Range",
+            name="Out Of Range Indicator",
+            technical_name="out_of_range",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="OOR",
+        )
         PublicationScheduleModel.objects.create(
-            indicator=self.indicator,
+            indicator=out_of_range_indicator,
             previous_publication_date=None,
-            current_publication_date=start_date + timedelta(days=-1),
+            current_publication_date=django_timezone.now() + timedelta(days=-1),
             next_publication_date=None,
         )
 
@@ -247,11 +257,21 @@ class TestPublicationServices(TestCase):
         """
         start_date = date.today()
         schedule_date = django_timezone.now() + timedelta(days=5)
-
+        before_start_indicator = EconomicIndicatorInformationModel.objects.create(
+            id=4,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="Before Start",
+            name="Before Start Indicator",
+            technical_name="before_start",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="BEFORE",
+        )
         PublicationScheduleModel.objects.create(
-            indicator=self.indicator,
+            indicator=before_start_indicator,
             previous_publication_date=None,
-            current_publication_date=start_date + timedelta(days=-1),
+            current_publication_date=django_timezone.now() + timedelta(days=-1),
             next_publication_date=None,
         )
         new_indicator = EconomicIndicatorInformationModel.objects.create(
@@ -303,11 +323,21 @@ class TestPublicationServices(TestCase):
         """
         end_date = date.today() + timedelta(days=10)
         schedule_date = django_timezone.now() + timedelta(days=5)
-
+        after_end_indicator = EconomicIndicatorInformationModel.objects.create(
+            id=5,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="After End",
+            name="After End Indicator",
+            technical_name="after_end",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="AFTER",
+        )
         PublicationScheduleModel.objects.create(
-            indicator=self.indicator,
+            indicator=after_end_indicator,
             previous_publication_date=None,
-            current_publication_date=end_date + timedelta(days=1),
+            current_publication_date=django_timezone.now() + timedelta(days=11),
             next_publication_date=None,
         )
         new_indicator = EconomicIndicatorInformationModel.objects.create(
@@ -392,3 +422,4 @@ class TestPublicationServices(TestCase):
         )
         result_dict = convert_query_to_dictionary_list(result)
         assert result_dict == []
+

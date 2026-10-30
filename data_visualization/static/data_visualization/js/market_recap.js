@@ -299,7 +299,7 @@ function getRecapChangeClass(value, unit) {
 }
 
 function colorizeChanges(html) {
-  return html.replace(
+  const withNumericChanges = html.replace(
     /\(([+-]?\d+(?:\.\d+)?)\s*(%|bps|pts)((?:\s+[^)]*)?)\)/gi,
     (match, number, unit, suffix) => {
       const value = Number(number);
@@ -313,6 +313,11 @@ function colorizeChanges(html) {
       const colored = `<span class="daily-recap-change ${className}">${number}${unit}</span>`;
       return `(${colored}${suffix || ""})`;
     }
+  );
+  // Unchanged prints in summary prose — same visual role as +/- coloring.
+  return withNumericChanges.replace(
+    /\(unch\)/gi,
+    '<span class="daily-recap-change daily-recap-change-unchanged">(unch)</span>'
   );
 }
 

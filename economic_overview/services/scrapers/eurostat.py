@@ -317,11 +317,17 @@ def _get_eurostat_publication_schedule() -> pd.DataFrame:
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def get_publication_dates_from_eurostat(name: str) -> list[datetime]:
-    """Get publication dates from Eurostat."""
+    """Get upcoming publication dates from Eurostat."""
     publication_schedule = _get_eurostat_publication_schedule()
     publication_dates = publication_schedule[publication_schedule["name"] == name][
         "publication_date"
     ]
-    return [
-        pd_timestamp.to_pydatetime() for pd_timestamp in publication_dates.tolist()[:2]
+    now = timezone.now()
+    upcoming_publication_dates = [
+        pd_timestamp.to_pydatetime()
+        for pd_timestamp in publication_dates.tolist()
+        if pd_timestamp.to_pydatetime() >= now
     ]
+    # At most two: schedule update maps [0]/[1] onto current/next after rolling
+    # the just-released slot into previous; past dates must not be re-fed.
+    return upcoming_publication_dates[:2]

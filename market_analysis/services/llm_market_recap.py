@@ -17,6 +17,7 @@ from central_banks_overview.services.central_banks_data import (
 from core.services import (
     ValueChangeType,
     calculate_value_change,
+    convert_to_display_timezone,
     get_previous_business_day,
     logger,
 )
@@ -40,6 +41,7 @@ from economic_overview.models import (
     IndicatorDisplayModeChoices,
     PublicationScheduleModel,
 )
+from economic_overview.services.config import INDICATOR_DISPLAY_MODE_UI_LABEL_BY_MODE
 from economic_overview.services.economic_data import (
     change_indicator_values_mode,
     get_lag_for_mode_change_calculation,
@@ -206,8 +208,28 @@ def build_market_context(as_of: date) -> list[MarketContextRow]:
     return rows
 
 
+class _EconomicContextModeValues(TypedDict):
+    """One display-mode triplet for an economic indicator in LLM context."""
+
+    mode: str  # Raw / Quarter / Annualized Quarter / Annual
+    mode_label: str  # Abs / QoQ / QoQy / YoY
+    is_default: bool  # True for the indicator's seeded main/default mode
+    current_value: float | None
+    previous_value: float | None
+    change_value: float | None
+    display_current_value: str
+    display_previous_value: str
+    display_change_value: str
+
+
 class EconomicContextRow(TypedDict):
-    """Economic indicator context row for LLM prompts."""
+    """Economic indicator context row for LLM prompts.
+
+    ``values_by_mode`` carries Abs / QoQ / QoQy / YoY so article figures can be
+    matched to the correct convention. ``default_mode`` / ``is_default`` mark the
+    indicator's main mode from ``EconomicIndicatorInformationModel.default_mode``
+    (seeded from ``economic_data.json``).
+    """
 
     name: str
     location: EconomicDataLocationChoices
@@ -215,20 +237,15 @@ class EconomicContextRow(TypedDict):
     frequency: EconomicPublicationFrequencyChoices
     period: str | None  # ISO date string for the LLM/JSON boundary
     period_display: str | None  # Display period label for the LLM
-    display_mode: str  # Raw / Quarter / Annualized Quarter / Annual
+    # Main mode from the indicator model / economic_data.json seed.
+    default_mode: str  # Raw / Quarter / Annualized Quarter / Annual
+    default_mode_label: str  # Abs / QoQ / QoQy / YoY
     base_unit: str
     base_currency: str
     # Raw stored observations (before display-mode change).
     raw_current_value: float | None
     raw_previous_value: float | None
-    # Values after applying ``display_mode`` (YoY %, Abs, …).
-    current_value: float | None
-    previous_value: float | None
-    change_value: float | None
-    # Same figures formatted for display (units in parentheses when applicable).
-    display_current_value: str
-    display_previous_value: str
-    display_change_value: str
+    values_by_mode: list[_EconomicContextModeValues]
     comment: str | None
     publication_date: str | None  # ISO datetime/date string for the LLM/JSON boundary
     kind: str
@@ -241,6 +258,7 @@ def _get_publication_datetime_on_date(
 
     Prefers ``current`` when both current and previous land on the same date.
     After ingest, the just-released print is often on ``previous`` only.
+    Compare in Europe/Paris so the calendar day matches market recap.
     """
     for publication_date in (
         publication_schedule.current_publication_date,
@@ -248,15 +266,59 @@ def _get_publication_datetime_on_date(
     ):
         if publication_date is None:
             continue
-        if publication_date.date() == as_of:
+        if convert_to_display_timezone(publication_date).date() == as_of:
             return publication_date
     return None
+
+
+def _build_economic_context_mode_values(
+    economic_data_time_series: list[float],
+    *,
+    frequency: EconomicPublicationFrequencyChoices,
+    mode: IndicatorDisplayModeChoices,
+    is_default: bool,
+    base_unit: str,
+    base_currency: str,
+) -> _EconomicContextModeValues:
+    """Build current / previous / change for one indicator display mode."""
+    indicator_value_triplet = change_indicator_values_mode(
+        economic_data_time_series,
+        frequency=frequency,
+        mode=mode,
+    )
+    return _EconomicContextModeValues(
+        mode=mode.value,
+        mode_label=INDICATOR_DISPLAY_MODE_UI_LABEL_BY_MODE[mode],
+        is_default=is_default,
+        current_value=indicator_value_triplet.current,
+        previous_value=indicator_value_triplet.previous,
+        change_value=indicator_value_triplet.change,
+        display_current_value=format_indicator_value(
+            indicator_value_triplet.current,
+            base_unit=base_unit,
+            base_currency=base_currency,
+            mode=mode,
+        ),
+        display_previous_value=format_indicator_value(
+            indicator_value_triplet.previous,
+            base_unit=base_unit,
+            base_currency=base_currency,
+            mode=mode,
+        ),
+        display_change_value=format_indicator_value(
+            indicator_value_triplet.change,
+            base_unit=base_unit,
+            base_currency=base_currency,
+            mode=mode,
+        ),
+    )
 
 
 def build_economic_context(as_of: date) -> list[EconomicContextRow]:
     """Economic indicators scheduled for publication on ``as_of``.
 
     Matches ``current`` or ``previous`` publication date (post-ingest roll).
+    Includes every display mode so article figures can be matched correctly.
     """
     economic_context_rows: list[EconomicContextRow] = []
     publication_schedules = (
@@ -279,8 +341,9 @@ def build_economic_context(as_of: date) -> list[EconomicContextRow]:
         )
         indicator_frequency = EconomicPublicationFrequencyChoices(indicator.frequency)
         time_series_max_period = (
-            get_lag_for_mode_change_calculation(
-                indicator_frequency, indicator_default_display_mode
+            max(
+                get_lag_for_mode_change_calculation(indicator_frequency, mode)
+                for mode in IndicatorDisplayModeChoices
             )
             + 2
         )
@@ -297,17 +360,23 @@ def build_economic_context(as_of: date) -> list[EconomicContextRow]:
             for time_series_point in economic_data_time_series
             if time_series_point.data_value is not None
         ]
-        indicator_value_triplet = change_indicator_values_mode(
-            economic_data_time_series,
-            frequency=indicator_frequency,
-            mode=indicator_default_display_mode,
-        )
         raw_current_value = (
             economic_data_time_series[0] if economic_data_time_series else None
         )
         raw_previous_value = (
             economic_data_time_series[1] if len(economic_data_time_series) > 1 else None
         )
+        values_by_mode = [
+            _build_economic_context_mode_values(
+                economic_data_time_series,
+                frequency=indicator_frequency,
+                mode=mode,
+                is_default=mode == indicator_default_display_mode,
+                base_unit=indicator.base_unit or "",
+                base_currency=indicator.base_currency or "",
+            )
+            for mode in IndicatorDisplayModeChoices
+        ]
         economic_context_rows.append(
             EconomicContextRow(
                 name=indicator.name,
@@ -324,32 +393,15 @@ def build_economic_context(as_of: date) -> list[EconomicContextRow]:
                     if latest_time_series_point
                     else None
                 ),
-                display_mode=indicator_default_display_mode.value,
+                default_mode=indicator_default_display_mode.value,
+                default_mode_label=INDICATOR_DISPLAY_MODE_UI_LABEL_BY_MODE[
+                    indicator_default_display_mode
+                ],
                 base_unit=indicator.base_unit or "",
                 base_currency=indicator.base_currency or "",
                 raw_current_value=raw_current_value,
                 raw_previous_value=raw_previous_value,
-                current_value=indicator_value_triplet.current,
-                previous_value=indicator_value_triplet.previous,
-                change_value=indicator_value_triplet.change,
-                display_current_value=format_indicator_value(
-                    indicator_value_triplet.current,
-                    base_unit=indicator.base_unit,
-                    base_currency=indicator.base_currency,
-                    mode=indicator_default_display_mode,
-                ),
-                display_previous_value=format_indicator_value(
-                    indicator_value_triplet.previous,
-                    base_unit=indicator.base_unit,
-                    base_currency=indicator.base_currency,
-                    mode=indicator_default_display_mode,
-                ),
-                display_change_value=format_indicator_value(
-                    indicator_value_triplet.change,
-                    base_unit=indicator.base_unit,
-                    base_currency=indicator.base_currency,
-                    mode=indicator_default_display_mode,
-                ),
+                values_by_mode=values_by_mode,
                 comment=(
                     latest_time_series_point.comment
                     if latest_time_series_point
@@ -874,7 +926,14 @@ def generate_daily_recap(
         f"{format_skills_as_prompt_block()}\n\n"
         "Verified market prices from the database (authoritative):\n"
         f"{json.dumps(market_context, ensure_ascii=False)}\n\n"
-        "Economic indicators from the database (authoritative):\n"
+        "Economic indicators from the database (authoritative). Each row "
+        "includes values_by_mode for Abs (Raw), QoQ (Quarter), QoQy "
+        "(Annualized Quarter), and YoY (Annual). The indicator's main mode is "
+        "default_mode / default_mode_label (from the seeded indicator "
+        "default_mode); the matching values_by_mode entry has is_default=true. "
+        "Use that main mode when stating the DB print unless the article "
+        "clearly uses another convention — then match that mode before "
+        "comparing:\n"
         f"{json.dumps(economic_context, ensure_ascii=False)}\n\n"
         "Central bank context from the database / Central Banks page "
         "(authoritative — figures: effective rates, CB macro prints, next "

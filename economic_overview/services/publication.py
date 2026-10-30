@@ -48,10 +48,15 @@ PUBLICATION_SOURCE_MAP: dict[
 def _update_publication_schedule(
     indicator: EconomicIndicatorInformationModel,
 ) -> PublicationScheduleModel | None:
-    """Update publication schedule."""
+    """Update publication schedule.
+
+    When ``current`` has passed, move it to ``previous`` and advance ``current`` /
+    ``next`` from the source scrape so market-recap day events still match the
+    release calendar day via ``previous_publication_date``.
+    """
     logger.info(f"Updating publication schedule for indicator: {indicator.name}")
-    publication_schedule = PublicationScheduleModel.objects.get(
-        indicator=indicator,
+    publication_schedule, _created = PublicationScheduleModel.objects.get_or_create(
+        indicator=indicator
     )
     if (
         publication_schedule.current_publication_date

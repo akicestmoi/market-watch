@@ -6,6 +6,7 @@ from datetime import timezone as dt_timezone
 from unittest.mock import patch
 
 from django.test import TestCase
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -56,6 +57,7 @@ class TestUpdatePublicationScheduleView(TestCase):
         _get_insee_publication_schedule.cache_clear()
         get_publication_dates_from_insee.cache_clear()
 
+    @freeze_time("2025-11-01")
     @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_update_publication_schedule_success(self, mock_post):
         """
@@ -93,6 +95,7 @@ class TestUpdatePublicationScheduleView(TestCase):
             ),
         }
 
+    @freeze_time("2025-11-01")
     @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_update_publication_schedule_empty_list_updates_all(self, mock_post):
         """

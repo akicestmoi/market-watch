@@ -22,12 +22,13 @@ Include, when material:
 - Market moves across equities, rates, FX, commodities, crypto, and vol (e.g. VIX).
 - **Verified DB market prices**: if a move is **worth noting** — e.g. more than **±1.25%** (price assets), more than **±5bps** (rates / yields), or more than **±5pts** (volatility indices) on DoD, **or** a strong **WoW** / **MoM** move in the context fields — **include it** in the relevant zone even if **no article mentions it**. Articles do **not** gate what DB moves you report. Do **not** list every asset; only notable ones (the UI already shows the full price table below).
 - **Volatility** (e.g. VIX / `VOLATILITY_INDEX`): judge and cite moves by **absolute point change** (`change_*_pts` in context), **not** percent. Write `(+2.1pts)` / `(-1.4pts)`.
-- **Economic indicators** scheduled for release on the reporting date in the economic context: **name the release and state its DB value** even if **no article mentions it**. Articles do **not** gate what DB prints you report. Do **not** invent older prints or dig for non-scheduled “recent observations”. When **no** indicators are scheduled for that date, simply omit that topic — do **not** add filler such as “no indicators were scheduled.”
+- **Economic indicators** scheduled for release on the reporting date in the economic context: **name the release and state its DB value** even if **no article mentions it**. Use the context’s **main / default mode** (`default_mode`, or the `values_by_mode` entry with `is_default=true` — from the indicator seed) unless the article clearly uses another convention. Articles do **not** gate what DB prints you report. Do **not** invent older prints or dig for non-scheduled “recent observations”. When **no** indicators are scheduled for that date, simply omit that topic — do **not** add filler such as “no indicators were scheduled.”
 - When an article provides an **economic-data consensus**, include that **consensus value alongside the verified realized (DB) value** in the relevant summary. Clearly **distinguish the realized result from consensus**, and describe the **observed market response** when relevant. **Never invent** consensus figures when they are not provided.
 - When a scheduled release is **below consensus** and the indicator also **deteriorates** (e.g. confidence or GDP **falls**, or prices **rise** when that is the adverse direction), describe it as a **negative economic signal**. The **other way around** — **above consensus** and the indicator also **improves** (e.g. confidence or GDP **rises**, or prices **fall** when that is the favorable direction) — describe it as a **positive economic signal**. In either case, then assess its **observed** market impact: state whether relevant assets **fell**, **rose**, or showed **little response**. Do **not** invent causality. Prefer **verified DB release values** over conflicting article values; after the user resolves a data point, write it assertively and **do not** leave that resolved item in **Uncertainties**.
 - Central-bank decisions, speeches, and policy signals.
 - **Central bank key figures** from the prompt’s CB context (effective rate, CB macro prints, next meeting): include them **only when they materially help** explain the session or the near-term policy outlook. Do **not** dump them as boilerplate every day. Never invent CB prints or meeting dates.
 - On a **decision day** (`is_decision_day=true`), **always** report the verified **`decision_rates`** prints (name + current / previous / change) for that bank — same authority as scheduled economic releases. Do **not** invent a hold/cut/hike if `decision_rates` is empty (rates not ingested yet); note the meeting without inventing levels.
+- **Central-bank rate-action wording:** describe a bank **raising** its policy rate as a **hike** / **rate hike**, and **lowering** it as a **cut** / **rate cut**. Avoid **“increase”** / **“decrease”** for the policy-rate action itself. Still give the verified rate **level** and **change** where required. Leaving rates unchanged is a **hold** / **rates unchanged** (e.g. “left rates unchanged”, “put on hold”).
 - Earnings or corporate news only when they move markets or the zone narrative.
 - Geopolitical / world events only when they clearly affect risk appetite or the zones below.
 - **EUR rates**: assess **German–French** and other relevant **sovereign spreads separately** from the level and direction of **core** yields whenever it is relevant (mild/strong move) (see §3b).
@@ -57,13 +58,18 @@ Include, when material:
   - that a catalyst / logic is missing from articles
   - attribution hedges like “the article says…”, “according to the wrap…”, “DB shows…”, “the database indicates…”
 - Prefer direct phrasing: `S&P 500 fell (-1.4%) as higher energy costs weighed on risk appetite` — not `The article says equities fell while the DB shows (-1.4%)`.
+- **Keep source / database comparisons out of assertive summary prose.** Do not write “the article/wrap says,” “DB shows,” or similar commentary in the body. State the relevant market move or release **directly** using the best-supported value.
 - Missing catalysts, weak causal links, **unresolved** article-vs-DB figure disagreements, and source/pipeline limits belong **only** under **Uncertainties**.
 
 ### DB vs article discrepancies (mandatory when present)
 
-- If an article quotes a **level, change, or print** for an asset or indicator that also appears in the DB context, and the figures **disagree** (or the article omits a material DB print/move you are reporting), **flag the discrepancy** under that zone’s **Uncertainties** (or Additional).
-- Prefer the **DB value** for the assertive narrative (including economic releases); put what the article claimed under Uncertainties. Do not silently average or invent a reconciliation.
-- **Once the user confirms a fact or resolves an article/DB discrepancy** (chat revision): write the **resolved information assertively** in the relevant summary using verified DB values where applicable, and **preserve** any user-confirmed explanatory context (e.g. a futures contract rollover). **Remove** that resolved discrepancy / caveat from Uncertainties — **do not leave a user-resolved data point in Uncertainties**. Do **not** keep “the article says…” comparisons or article-attribution wording for confirmed facts.
+- Put a source-versus-DB discrepancy under **Uncertainties** **only when it is material and remains unresolved**. Do **not** flag a small difference (**±1bps**, **±0.3%**) that is consistent with rounding, timing, or a different snapshot and does **not** change the interpretation. Use the **authoritative DB value** when the same asset or release is represented there.
+- If an article gives a figure for an asset that has **no corresponding DB row**, the figure may still be included as available reported information (**flag it in Uncertainties**); the **absence of a DB row alone is not an uncertainty**. Do **not** imply the figure is DB-verified or invent a reconciliation. Keep genuinely conflicting or questionable figures under Uncertainties when material.
+- Prefer the **DB value** for the assertive narrative (including economic releases) when a match exists. Do not silently average or invent a reconciliation.
+- **Match economic releases to the right DB observation before flagging a discrepancy.** Match by indicator, reference period, units, and convention. Check the relevant variants in economic context — e.g. GDP may be annualized quarter-on-quarter (QoQy) alongside Abs / QoQ / YoY in ``values_by_mode``. Prefer the **default / main mode** (`is_default=true`) when the article does not specify a measure; otherwise use the DB observation that corresponds to the article’s stated or customary measure when the match is clear. Raise a discrepancy only if **no corresponding DB observation** can be identified, or if a **material** difference remains after matching measures.
+- If an article’s **qualitative** claim seems inconsistent with the matched verified result or observed market response, investigate it and place the **unresolved qualitative conflict** under Uncertainties rather than silently repeating or forcing the claim.
+- **Once the user confirms a fact or resolves an article/DB discrepancy** (chat revision): write the **resolved information assertively** in the relevant summary using verified DB values where applicable, and **preserve** any user-confirmed explanatory context (e.g. a futures contract rollover). **Remove** that resolved discrepancy / caveat from Uncertainties — **do not leave a user-resolved data point in Uncertainties**. Do **not** retain article-versus-DB wording for a resolved point. Still preserve **pipeline gaps** that remain relevant.
+- Keep these rules **conditional on available evidence**. Do **not** add boilerplate source comparisons or uncertainties, and do **not** invent figures, explanations, or missing article content.
 
 ### Wording
 
@@ -168,9 +174,10 @@ Use these context blocks **only when they are relevant** to the session’s mark
 ### Probability-matrix shift (what the market is pricing)
 
 - When policy path / rate-cut or hike pricing matters for the session, use the **probability-matrix shift** context (DoD change in meeting-date rate-step probabilities for FRB / ECB / BOJ).
-- **Most important:** the direction implied by the **two closest meetings** — whether probabilities show a **hike / cut / neutral** case (and how that shifted DoD). Lead any policy-pricing read from those near meetings.
+- **Most important:** the direction implied by the **two closest meetings** — whether probabilities show a **hike / cut / hold (unchanged)** case (and how that shifted DoD). Lead any policy-pricing read from those near meetings.
 - **Far / long-end meetings** are useful for the **overall structure** of investors’ views but have **little concrete tangibility** for the session narrative — do not overweight them relative to the two nearest meetings.
 - For probability matrices, **omit** changes smaller than **25pts**. Describe **material** moves as pricing of **one or more rate hikes/cuts**, with **one rate step = 25bps**.
+- **Describe probability categories clearly.** Write e.g. “market pricing (or probability) of the ECB leaving rates unchanged fell,” not the ambiguous “unchanged pricing fell.” Make clear whether a probability refers to a **hold**, **hike**, or **cut** outcome.
 - On a **central-bank decision day**, use **`decision_rates`** for the verified policy-rate outcome, then compare with the **prior day’s market pricing** (probability-matrix context) to assess whether it was **in line** or a **surprise**.
 - State what the market is **pricing** (or has **repriced**) in assertive terms when the near-meeting shift is material and supported — e.g. higher odds of fewer cuts, or a hawkish/dovish skew into the next meeting.
 - Do **not** invent path shifts that are not in the matrix context. Quiet / near-zero shifts can be omitted.
@@ -275,8 +282,8 @@ Keep explanations **focused**. Do **not** reproduce large chunks of unnecessary 
 ### Resolved facts and discrepancies in chat edits
 
 - When the user **confirms a fact** or **resolves** an article/DB discrepancy, update the relevant summary to state the resolved information **directly and assertively** (prefer verified DB values; keep user-confirmed explanatory context such as a futures rollover).
-- **Remove** the resolved discrepancy or caveat from Uncertainties. Do **not** retain “the article says…” / wrap-attribution comparisons for confirmed facts.
-- Still preserve **pipeline gaps** that remain relevant.
+- **Remove** the resolved discrepancy or caveat from Uncertainties. Do **not** retain article-versus-DB / “the article says…” wording for a resolved point.
+- Still preserve **pipeline gaps** that remain relevant — resolving one discrepancy must **not** erase real pipeline-gap items.
 
 ### Repairing pipeline gaps
 

@@ -3,9 +3,10 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import NotRequired, TypedDict
 
-import central_banks_overview.services.central_banks_meetings as central_banks_meetings
+from django.db.models import Q
+
 import market_overview.services.holidays as holidays
-from central_banks_overview.models import CentralBankChoices
+from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
 from core.services import convert_to_display_timezone, get_local_today
 from economic_overview.models import (
     EconomicDataLocationChoices,
@@ -39,66 +40,96 @@ def _format_day_label(day: date) -> str:
     return f"{day.strftime('%A')} {day.day} {day.strftime('%B %Y')}"
 
 
+def _get_utc_lookback_start(start_date: date) -> datetime:
+    """UTC lower bound one calendar day before ``start_date`` (display-TZ buffer)."""
+    return datetime.combine(
+        start_date - timedelta(days=1), datetime.min.time()
+    ).replace(tzinfo=timezone.utc)
+
+
+def _append_upcoming_event(
+    events_by_date: dict[str, list[_UpcomingEvent]],
+    event: _UpcomingEvent,
+) -> None:
+    """Append ``event`` under its display calendar date key."""
+    date_key = convert_to_display_timezone(event["publication_date"]).strftime(
+        "%Y-%m-%d"
+    )
+    if date_key not in events_by_date:
+        events_by_date[date_key] = []
+    events_by_date[date_key].append(event)
+
+
 def _get_upcoming_events_from_publication_schedules(
     start_date: date,
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Get upcoming events from publication schedules."""
+    """Publication events from ``start_date`` onward (current and previous slots).
+
+    After ingest, a just-released print often lives only on
+    ``previous_publication_date`` while ``current`` advances — both must count
+    when their Europe/Paris display day is on or after ``start_date``.
+    """
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
-    upcoming_schedules = (
-        PublicationScheduleModel.objects.filter(
-            current_publication_date__gte=start_date
-        )
-        .select_related("indicator")
-        .order_by("next_publication_date")[:100]
-    )
+    # UTC day-before buffer: Paris calendar start_date can still be prior-day UTC
+    # (e.g. Mon 08:45 CET = Sun 23:45 UTC). Exact Paris day filter is below.
+    lookback_utc = _get_utc_lookback_start(start_date)
+    publication_schedules = PublicationScheduleModel.objects.filter(
+        Q(current_publication_date__gte=lookback_utc)
+        | Q(previous_publication_date__gte=lookback_utc)
+    ).select_related("indicator")
 
-    for schedule in upcoming_schedules:
-        publication_date = schedule.current_publication_date
-        if not publication_date:
-            continue
-
-        display_dt = convert_to_display_timezone(publication_date)
-        event = _UpcomingEvent(
-            name=schedule.indicator.type,
-            location=str(
-                EconomicDataLocationChoices(schedule.indicator.location).label
-            ),
-            publication_date=publication_date,
-            time_str=display_dt.strftime("%H:%M"),
-            is_holiday=False,
-        )
-
-        date_key = display_dt.strftime("%Y-%m-%d")
-        if date_key not in events_by_date:
-            events_by_date[date_key] = []
-        events_by_date[date_key].append(event)
+    for schedule in publication_schedules:
+        for publication_date in (
+            schedule.current_publication_date,
+            schedule.previous_publication_date,
+        ):
+            if publication_date is None:
+                continue
+            display_dt = convert_to_display_timezone(publication_date)
+            if display_dt.date() < start_date:
+                continue
+            _append_upcoming_event(
+                events_by_date,
+                _UpcomingEvent(
+                    name=schedule.indicator.type,
+                    location=str(
+                        EconomicDataLocationChoices(schedule.indicator.location).label
+                    ),
+                    publication_date=publication_date,
+                    time_str=display_dt.strftime("%H:%M"),
+                    is_holiday=False,
+                ),
+            )
 
     return events_by_date
 
 
-def _get_upcoming_central_bank_events() -> dict[str, list[_UpcomingEvent]]:
-    """Get upcoming central bank events."""
+def _get_upcoming_central_bank_events(
+    start_date: date,
+) -> dict[str, list[_UpcomingEvent]]:
+    """Central-bank rate decisions from ``start_date`` onward (display TZ)."""
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
-    for (
-        central_bank_meeting_date
-    ) in central_banks_meetings.get_central_bank_meeting_dates():
-        central_bank = CentralBankChoices(central_bank_meeting_date["central_bank"])
-        central_bank_location = central_bank.get_location()
-        meeting_date = central_bank_meeting_date["meeting_dates"][0]
-        display_dt = convert_to_display_timezone(meeting_date)
-
-        event = _UpcomingEvent(
-            name=f"{central_bank.label} Rates Decision",
-            location=str(EconomicDataLocationChoices(central_bank_location).label),
-            publication_date=meeting_date,
-            time_str=display_dt.strftime("%H:%M"),
-            is_holiday=False,
+    # Same UTC day-before buffer as publication schedules (Paris vs UTC).
+    lookback_utc = _get_utc_lookback_start(start_date)
+    for meeting in CentralBankMeetingModel.objects.filter(
+        date__gte=lookback_utc
+    ).order_by("date"):
+        display_dt = convert_to_display_timezone(meeting.date)
+        if display_dt.date() < start_date:
+            continue
+        central_bank = CentralBankChoices(meeting.central_bank)
+        _append_upcoming_event(
+            events_by_date,
+            _UpcomingEvent(
+                name=f"{central_bank.label} Rates Decision",
+                location=str(
+                    EconomicDataLocationChoices(central_bank.get_location()).label
+                ),
+                publication_date=meeting.date,
+                time_str=display_dt.strftime("%H:%M"),
+                is_holiday=False,
+            ),
         )
-
-        date_key = display_dt.strftime("%Y-%m-%d")
-        if date_key not in events_by_date:
-            events_by_date[date_key] = []
-        events_by_date[date_key].append(event)
 
     return events_by_date
 
@@ -161,15 +192,20 @@ def _merge_events_by_date(
 
 
 def _get_upcoming_events() -> list[_UpcomingEventGroup]:
-    """Build day-level upcoming events for the Economic Events page."""
+    """Build day-level events from the focus-week Monday through later dates.
+
+    Past Mon–Fri slots in the current week keep already-released schedules
+    (``previous_publication_date`` / still-current past days), not only today+.
+    """
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
     today = get_local_today()
+    start_date = _get_focus_week_start(today)
 
     _merge_events_by_date(
-        events_by_date, _get_upcoming_events_from_publication_schedules(today)
+        events_by_date, _get_upcoming_events_from_publication_schedules(start_date)
     )
-    _merge_events_by_date(events_by_date, _get_upcoming_central_bank_events())
-    _merge_events_by_date(events_by_date, _get_upcoming_holidays_events(today))
+    _merge_events_by_date(events_by_date, _get_upcoming_central_bank_events(start_date))
+    _merge_events_by_date(events_by_date, _get_upcoming_holidays_events(start_date))
     upcoming_events: list[_UpcomingEventGroup] = []
     for date_key in sorted(events_by_date.keys()):
         day = date.fromisoformat(date_key)

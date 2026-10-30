@@ -12,15 +12,29 @@ from central_banks_overview.models import (
 )
 from data_visualization.services.config import FX_MATRIX_ORDER
 from data_visualization.services.market_recap import FxMatrixRow
+from economic_overview.models import (
+    EconomicDataCategoryChoices,
+    EconomicDataLocationChoices,
+    EconomicDataModel,
+    EconomicDataSourceChoices,
+    EconomicIndicatorInformationModel,
+    EconomicPublicationFrequencyChoices,
+    IndicatorBaseUnitChoices,
+    IndicatorDisplayModeChoices,
+    PublicationScheduleModel,
+)
 from market_analysis.services.llm_market_recap import (
     CentralBankContextRow,
+    EconomicContextRow,
     FxHeatmapContext,
     ProbabilityMatrixShiftContextRow,
     _CentralBankDecisionRateRow,
     _CentralBankFigureRow,
+    _EconomicContextModeValues,
     _compute_fx_currency_strength,
     _ProbabilityStepRow,
     build_central_bank_context,
+    build_economic_context,
     build_fx_heatmap_context,
     build_probability_matrix_shift_context,
 )
@@ -216,6 +230,117 @@ class TestProbabilityMatrixShiftContext(TestCase):
         mock_get_matrix.side_effect = ValueError("missing futures")
         result = build_probability_matrix_shift_context(date(2025, 12, 16))
         assert result == []
+
+
+class TestEconomicContext(TestCase):
+    """Tests for scheduled economic-release LLM context."""
+
+    def test_build_economic_context_includes_all_display_modes(self):
+        """
+        GIVEN a quarterly GDP indicator scheduled on the reporting date
+        WHEN building economic context
+        THEN values_by_mode includes Abs / QoQ / QoQy / YoY with is_default on the seeded main mode
+        """
+        as_of = date(2025, 12, 16)
+        publication_datetime = datetime(2025, 12, 16, 13, 30, 0, tzinfo=timezone.utc)
+        indicator = EconomicIndicatorInformationModel.objects.create(
+            id=9001,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.GROWTH,
+            type="GDP",
+            name="US GDP",
+            technical_name="us_gdp",
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="GDP",
+            base_unit=IndicatorBaseUnitChoices.B,
+            base_currency="USD",
+            default_mode=IndicatorDisplayModeChoices.ANNUALIZED_QUARTER,
+        )
+        PublicationScheduleModel.objects.create(
+            indicator=indicator,
+            current_publication_date=publication_datetime,
+        )
+        for period, data_value in (
+            (date(2025, 10, 1), 110.0),
+            (date(2025, 7, 1), 100.0),
+            (date(2025, 4, 1), 95.0),
+            (date(2025, 1, 1), 90.0),
+            (date(2024, 10, 1), 85.0),
+            (date(2024, 7, 1), 80.0),
+        ):
+            EconomicDataModel.objects.create(
+                indicator=indicator,
+                period=period,
+                data_value=data_value,
+            )
+
+        result = build_economic_context(as_of)
+        assert result == [
+            EconomicContextRow(
+                name="US GDP",
+                location=EconomicDataLocationChoices.US,
+                category=EconomicDataCategoryChoices.GROWTH,
+                frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+                period="2025-10-01",
+                period_display="25Q4",
+                default_mode="Annualized Quarter",
+                default_mode_label="QoQy",
+                base_unit="B",
+                base_currency="USD",
+                raw_current_value=110.0,
+                raw_previous_value=100.0,
+                values_by_mode=[
+                    _EconomicContextModeValues(
+                        mode="Raw",
+                        mode_label="Abs",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 (bUSD)",
+                        display_previous_value="100.00 (bUSD)",
+                        display_change_value="10.00 (bUSD)",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Quarter",
+                        mode_label="QoQ",
+                        is_default=False,
+                        current_value=10.0,
+                        previous_value=5.263157894736842,
+                        change_value=4.736842105263158,
+                        display_current_value="10.00 %",
+                        display_previous_value="5.26 %",
+                        display_change_value="4.74 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Annualized Quarter",
+                        mode_label="QoQy",
+                        is_default=True,
+                        current_value=46.41000000000004,
+                        previous_value=22.77376631548251,
+                        change_value=23.636233684517528,
+                        display_current_value="46.41 %",
+                        display_previous_value="22.77 %",
+                        display_change_value="23.64 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Annual",
+                        mode_label="YoY",
+                        is_default=False,
+                        current_value=29.411764705882355,
+                        previous_value=25.0,
+                        change_value=4.411764705882355,
+                        display_current_value="29.41 %",
+                        display_previous_value="25.00 %",
+                        display_change_value="4.41 %",
+                    ),
+                ],
+                comment=None,
+                publication_date=publication_datetime.isoformat(),
+                kind="scheduled_release",
+            )
+        ]
 
 
 class TestCentralBankContext(TestCase):

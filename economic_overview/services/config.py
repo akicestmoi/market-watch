@@ -3,7 +3,18 @@
 from dataclasses import dataclass
 from typing import NamedTuple, Required, TypedDict
 
-from economic_overview.models import EconomicPublicationFrequencyChoices
+from economic_overview.models import (
+    EconomicPublicationFrequencyChoices,
+    IndicatorDisplayModeChoices,
+)
+
+# UI / LLM short labels for indicator display modes (charts, recap, context).
+INDICATOR_DISPLAY_MODE_UI_LABEL_BY_MODE: dict[IndicatorDisplayModeChoices, str] = {
+    IndicatorDisplayModeChoices.RAW: "Abs",
+    IndicatorDisplayModeChoices.QUARTER: "QoQ",
+    IndicatorDisplayModeChoices.ANNUALIZED_QUARTER: "QoQy",
+    IndicatorDisplayModeChoices.ANNUAL: "YoY",
+}
 
 # ---------------------------------------------------------------------------
 # INSEE

@@ -135,12 +135,15 @@ function getCategoryString(category) {
   return String(category);
 }
 
-// Convert economicData list to object keyed by category
+// Convert economicData list to objects keyed by category
 const economicDataByCategory = {};
+const valueAxisLabelByCategory = {};
 if (Array.isArray(economicData)) {
   economicData.forEach((item) => {
     const categoryStr = getCategoryString(item.category);
     economicDataByCategory[categoryStr] = item.category_data || [];
+    valueAxisLabelByCategory[categoryStr] =
+      item.value_axis_label || "Data Value";
   });
 }
 
@@ -674,6 +677,8 @@ function renderCharts() {
   categories.forEach((category) => {
     const categoryStr = getCategoryString(category);
     const categoryData = economicDataByCategory[categoryStr] || [];
+    const valueAxisLabel =
+      valueAxisLabelByCategory[categoryStr] || "Data Value";
     const categorySafe = getCategorySafeName(category);
     const selectedIndicators = getSelectedIndicatorsForCategory(category);
     const defaultIndicator = getDefaultIndicatorForCategory(category);
@@ -757,7 +762,7 @@ function renderCharts() {
               y: {
                 title: {
                   display: true,
-                  text: "Data Value",
+                  text: valueAxisLabel,
                 },
               },
             },

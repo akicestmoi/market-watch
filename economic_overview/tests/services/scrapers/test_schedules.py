@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 from django.test import TestCase, override_settings
+from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
 from core.testing import MockResponse, load_json_mock
@@ -97,12 +98,13 @@ class TestInseePublicationScheduleScraping(TestCase):
         assert isinstance(result, pd.DataFrame)
         assert result.empty
 
+    @freeze_time("2025-11-01")
     @patch("economic_overview.services.scrapers.insee.requests.post")
     def test_get_publication_dates_from_insee_success(self, mock_post):
         """
         GIVEN a publication schedule with matching indicator name
         WHEN getting publication dates for that indicator
-        THEN the first two publication dates should be returned
+        THEN the first two upcoming publication dates should be returned
         """
         mock_post.return_value = MockResponse(
             status_code=200,

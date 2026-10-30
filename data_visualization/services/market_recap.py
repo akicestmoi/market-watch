@@ -279,6 +279,7 @@ class _DayEventChangeClass(str, Enum):
 
     POSITIVE = "is-positive"
     NEGATIVE = "is-negative"
+    UNCHANGED = "is-unchanged"
     NONE = ""
 
 
@@ -340,8 +341,8 @@ def _format_day_event_change(
             change_class=_DayEventChangeClass.NEGATIVE,
         )
     return _DayEventFormattedChange(
-        change=formatted_magnitude,
-        change_class=_DayEventChangeClass.NONE,
+        change="(unch)",
+        change_class=_DayEventChangeClass.UNCHANGED,
     )
 
 

@@ -527,8 +527,8 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         self.future_meeting_date = datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc)
         # With freeze_time("2025-12-15"), price_date = 2025-12-15 - 7 days = 2025-12-08
         self.expected_price_date = date(2025, 12, 8)
-        # date_to_ingest = (2025-12-15 - BDay(1)) = 2025-12-12 (Friday)
-        self.expected_date_to_ingest = date(2025, 12, 12)
+        # Key-rate ingestion uses the past meeting's display calendar date.
+        self.expected_date_to_ingest = date(2025, 12, 10)
 
     def tearDown(self):
         """Clear cache after each test to prevent state leakage between tests."""

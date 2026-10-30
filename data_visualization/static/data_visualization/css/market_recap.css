@@ -222,6 +222,11 @@ body {
     color: #b91c1c;
 }
 
+.day-events-change.is-unchanged {
+    /* Distinct muted grey so (unch) reads like +/- styling, not default ink. */
+    color: #57534e;
+}
+
 .day-events-empty {
     color: #6b7280;
     font-style: italic;
@@ -293,6 +298,10 @@ body {
 
 .daily-recap-change-negative {
     color: #7f1d1d;
+}
+
+.daily-recap-change-unchanged {
+    color: #57534e;
 }
 
 /* Agent chat modal */

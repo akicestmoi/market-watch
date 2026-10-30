@@ -1252,6 +1252,55 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
     @patch(
         "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
+    @freeze_time("2026-10-30 16:00:00")
+    def test_ingest_retains_same_day_meeting_missing_from_scrape(
+        self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
+    ):
+        """
+        GIVEN today's ECB meeting still in the DB after the scrape dropped it
+        WHEN ingesting meeting dates (as_of = previous business day)
+        THEN that same-day afternoon meeting is retained for economic releases
+        """
+        same_day_meeting = datetime(2026, 10, 30, 12, 15, 0, tzinfo=timezone.utc)
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.ECB,
+            date=same_day_meeting,
+            order=1,
+        )
+        mock_extract_fomc.return_value = []
+        mock_extract_ecb.return_value = [
+            datetime(2026, 12, 17, 13, 15, 0, tzinfo=timezone.utc),
+        ]
+        mock_extract_boj.return_value = []
+
+        ingest_central_bank_meeting_dates(CentralBankChoices.ECB)
+
+        result = parse_query_for_testing(
+            CentralBankMeetingModel.objects.filter(central_bank="ECB"),
+            sort_keys=["order", "date"],
+        )
+        assert result == [
+            {
+                "central_bank": "ECB",
+                "order": 0,
+                "date": "2026-10-30 12:15:00+0000",
+            },
+            {
+                "central_bank": "ECB",
+                "order": 1,
+                "date": "2026-12-17 13:15:00+0000",
+            },
+        ]
+
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_fomc_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_ecb_meeting_dates"
+    )
+    @patch(
+        "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
+    )
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_updates_order_existing_meetings(
         self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc

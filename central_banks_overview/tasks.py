@@ -9,7 +9,12 @@ import central_banks_overview.services.central_banks_meetings as central_banks_m
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices
 from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import get_market_watch_as_of_date, get_previous_business_day, logger
+from core.services import (
+    convert_to_display_timezone,
+    get_market_watch_as_of_date,
+    get_previous_business_day,
+    logger,
+)
 
 
 @shared_task
@@ -128,7 +133,9 @@ def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
             stir_prices_ingestion.delete_stir_futures_prices_before_date(
                 central_bank, price_date
             )
-            cb_data_date = get_market_watch_as_of_date()
+            # Stamp key rates on the meeting's display calendar day so market
+            # recap economic releases can join them via that event date.
+            cb_data_date = convert_to_display_timezone(meeting_date).date()
             cb_lock_key = central_banks_data.get_cb_data_ingestion_lock_key(
                 central_bank, cb_data_date
             )

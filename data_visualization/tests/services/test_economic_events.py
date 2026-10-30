@@ -610,6 +610,80 @@ class TestUpcomingEvents(TestCase):
             ]
         }
 
+    def test_get_upcoming_events_from_publication_schedules_includes_previous(self):
+        """
+        GIVEN a schedule whose just-released print is only on previous_publication_date
+        WHEN listing events from the focus-week Monday
+        THEN that previous slot appears on its display day
+        """
+        week_monday = date(2025, 12, 15)
+        previous_publication = datetime(2025, 12, 16, 9, 0, 0, tzinfo=timezone.utc)
+        next_publication = datetime(2026, 1, 16, 9, 0, 0, tzinfo=timezone.utc)
+        PublicationScheduleModel.objects.create(
+            indicator=self.indicator,
+            previous_publication_date=previous_publication,
+            current_publication_date=next_publication,
+            next_publication_date=next_publication + timedelta(days=30),
+        )
+
+        result = _get_upcoming_events_from_publication_schedules(week_monday)
+        assert result == {
+            "2025-12-16": [
+                {
+                    "name": "Test Indicator",
+                    "location": "France",
+                    "publication_date": previous_publication,
+                    "time_str": "10:00",
+                    "is_holiday": False,
+                }
+            ],
+            "2026-01-16": [
+                {
+                    "name": "Test Indicator",
+                    "location": "France",
+                    "publication_date": next_publication,
+                    "time_str": "10:00",
+                    "is_holiday": False,
+                }
+            ],
+        }
+
+    @patch("data_visualization.services.economic_events.get_local_today")
+    def test_get_upcoming_events_starts_from_focus_week_monday(
+        self, mock_get_local_today
+    ):
+        """
+        GIVEN today is mid-week and a release fell earlier in the same week
+        WHEN building upcoming events for the Economic Events page
+        THEN that earlier-week release is included (not only today+)
+        """
+        mock_get_local_today.return_value = date(2025, 12, 18)  # Thursday
+        monday_release = datetime(2025, 12, 15, 9, 0, 0, tzinfo=timezone.utc)
+        PublicationScheduleModel.objects.create(
+            indicator=self.indicator,
+            previous_publication_date=monday_release,
+            current_publication_date=datetime(
+                2026, 1, 15, 9, 0, 0, tzinfo=timezone.utc
+            ),
+            next_publication_date=datetime(2026, 2, 15, 9, 0, 0, tzinfo=timezone.utc),
+        )
+
+        result = _get_upcoming_events()
+        monday_group = next(group for group in result if group["date"] == "2025-12-15")
+        assert monday_group == {
+            "date": "2025-12-15",
+            "date_display": "Monday 15 December 2025",
+            "events": [
+                {
+                    "name": "Test Indicator",
+                    "location": "France",
+                    "publication_date": monday_release,
+                    "time_str": "10:00",
+                    "is_holiday": False,
+                }
+            ],
+        }
+
     def test_get_upcoming_holidays_events(self):
         """
         GIVEN upcoming holidays
