@@ -28,24 +28,24 @@ class EconomicDisplayCacheType(str, Enum):
 
 
 def get_economic_display_cache_version() -> str:
-    """Build a cache version stamp from indicator / observation table state.
+    """Build a cache version stamp from indicator / economic-data table state.
 
-    When rows are ingested or indicators reseeded, the stamp changes and old
-    Redis keys miss without an explicit invalidate call.
+    When economic data is ingested or indicators are reseeded, the stamp changes
+    and old Redis keys miss without an explicit invalidate call.
     """
-    observation_stats = EconomicDataModel.objects.aggregate(
-        row_count=Count("id"),
+    economic_data_stats = EconomicDataModel.objects.aggregate(
+        value_count=Count("id"),
         latest_id=Max("id"),
         latest_modified=Max("last_modified"),
     )
     indicator_count = EconomicIndicatorInformationModel.objects.count()
-    latest_modified = observation_stats["latest_modified"]
+    latest_modified = economic_data_stats["latest_modified"]
     latest_token = (
         latest_modified.isoformat() if latest_modified is not None else "none"
     )
-    latest_id = observation_stats["latest_id"]
+    latest_id = economic_data_stats["latest_id"]
     return (
-        f"ind{indicator_count}:obs{observation_stats['row_count']}:"
+        f"ind{indicator_count}:vals{economic_data_stats['value_count']}:"
         f"id{latest_id or 0}:{latest_token}"
     )
 

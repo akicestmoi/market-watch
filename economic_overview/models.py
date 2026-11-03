@@ -1,4 +1,4 @@
-"""Economic indicator, observation, and publication-schedule models."""
+"""Economic indicator, economic-data, and publication-schedule models."""
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -35,7 +35,7 @@ class EconomicDataLocationChoices(models.TextChoices):
 
     @classmethod
     def get_labels(cls) -> list[str]:
-        """Display labels in ``ordered()`` order."""
+        """Display labels in 'ordered()' order."""
         return get_choice_labels(cls)
 
 
@@ -85,7 +85,7 @@ class EconomicDataCategoryChoices(models.TextChoices):
 
     @classmethod
     def get_labels(cls) -> list[str]:
-        """Display labels in ``ordered()`` order."""
+        """Display labels in 'ordered()' order."""
         return get_choice_labels(cls)
 
 
@@ -150,26 +150,52 @@ class IndicatorDisplayModeChoices(models.TextChoices):
 class EconomicIndicatorInformationModel(BaseModel):
     """Economic Indicator Information Model."""
 
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(
+        primary_key=True,
+        help_text="Stable indicator id from the economic catalog JSON.",
+    )
     location = models.CharField(
-        max_length=255, choices=EconomicDataLocationChoices.choices
+        max_length=255,
+        choices=EconomicDataLocationChoices.choices,
+        help_text="Economy / region this indicator covers.",
     )
     category = models.CharField(
-        max_length=255, choices=EconomicDataCategoryChoices.choices
+        max_length=255,
+        choices=EconomicDataCategoryChoices.choices,
+        help_text="Thematic category (growth, inflation, labour, …).",
     )
-    type = models.CharField(max_length=255)
-    name = models.CharField(max_length=255)
-    technical_name = models.CharField(max_length=255)
+    type = models.CharField(
+        max_length=255,
+        help_text="Short indicator type label used in charts / dropdowns.",
+    )
+    name = models.CharField(
+        max_length=255,
+        help_text="Human-readable indicator name.",
+    )
+    technical_name = models.CharField(
+        max_length=255,
+        help_text="Source-side technical series name when distinct from 'name'.",
+    )
     frequency = models.CharField(
-        max_length=255, choices=EconomicPublicationFrequencyChoices.choices
+        max_length=255,
+        choices=EconomicPublicationFrequencyChoices.choices,
+        help_text="Publication frequency (monthly / quarterly / annual).",
     )
-    source = models.CharField(max_length=255, choices=EconomicDataSourceChoices.choices)
-    ticker = models.CharField(max_length=255)
+    source = models.CharField(
+        max_length=255,
+        choices=EconomicDataSourceChoices.choices,
+        help_text="Upstream data source for this indicator.",
+    )
+    ticker = models.CharField(
+        max_length=255,
+        help_text="Source series / ticker code used for ingest.",
+    )
     base_unit = models.CharField(
         max_length=16,
         choices=IndicatorBaseUnitChoices.choices,
         blank=True,
         default="",
+        help_text="Stored unit (INDEX, PERCENT, or K / M / B amount magnitude).",
     )
     base_year = models.PositiveIntegerField(
         null=True,
@@ -197,7 +223,7 @@ class EconomicIndicatorInformationModel(BaseModel):
         return f"{self.name}"
 
     def get_amount_unit_label(self) -> str | None:
-        """Compact amount unit such as ``bUSD``, or ``None`` when not an amount."""
+        """Compact amount unit such as 'bUSD', or 'None' when not an amount."""
         if self.base_unit not in {
             IndicatorBaseUnitChoices.K,
             IndicatorBaseUnitChoices.M,
@@ -228,10 +254,23 @@ class PublicationScheduleModel(BaseModel):
         EconomicIndicatorInformationModel,
         on_delete=models.CASCADE,
         related_name="publication_schedule",
+        help_text="Indicator this publication schedule belongs to.",
     )
-    previous_publication_date = models.DateTimeField(null=True, blank=True)
-    current_publication_date = models.DateTimeField(null=True, blank=True)
-    next_publication_date = models.DateTimeField(null=True, blank=True)
+    previous_publication_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="UTC datetime of the previous release; null when unknown.",
+    )
+    current_publication_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="UTC datetime of the current / most recent release; null when unknown.",
+    )
+    next_publication_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="UTC datetime of the next scheduled release; null when unknown.",
+    )
 
 
 class EconomicDataModel(BaseModel):
@@ -241,10 +280,23 @@ class EconomicDataModel(BaseModel):
         EconomicIndicatorInformationModel,
         on_delete=models.CASCADE,
         related_name="economic_data",
+        help_text="Indicator this data point belongs to.",
     )
-    period = models.DateField(null=True, blank=True)
-    data_value = models.FloatField(null=True, blank=True)
-    comment = models.TextField(null=True, blank=True)
+    period = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Reference period start date (month / quarter / year as applicable).",
+    )
+    data_value = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Stored indicator value for the period; null when missing.",
+    )
+    comment = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Optional scrape / ingest note.",
+    )
 
     def get_period_display(self):
         """Get period display."""
@@ -271,4 +323,5 @@ class EconomicDataUpdateLogModel(BaseLogModel):
         "EconomicDataModel",
         on_delete=models.CASCADE,
         related_name="economic_data_update_logs",
+        help_text="Economic data point this update log belongs to.",
     )

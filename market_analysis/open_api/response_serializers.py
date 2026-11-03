@@ -64,3 +64,42 @@ class ArticleCacheResponseSerializer(serializers.Serializer):
     count = serializers.IntegerField()
     items = serializers.JSONField()
     error = serializers.CharField(required=False)
+
+
+class ExtractedArticleItemSerializer(serializers.Serializer):
+    """One scraped wrap returned by article extraction."""
+
+    source_key = serializers.CharField()
+    source_name = serializers.CharField()
+    regions = serializers.ListField(child=serializers.CharField())
+    url = serializers.CharField()
+    title = serializers.CharField()
+    content = serializers.CharField()
+
+
+class ExtractArticleSourceResultSerializer(serializers.Serializer):
+    """Per-source scrape status for an extract-article run (no nested articles)."""
+
+    source_id = serializers.CharField()
+    name = serializers.CharField()
+    base_url = serializers.CharField()
+    regions = serializers.ListField(child=serializers.CharField())
+    comment = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+class ExtractArticleResponseSerializer(serializers.Serializer):
+    """Result of scraping catalog news wraps for a reporting date."""
+
+    reporting_date = serializers.DateField()
+    source = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Source filter applied to this extraction, when provided.",
+    )
+    region = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Region filter applied to this extraction, when provided.",
+    )
+    articles = ExtractedArticleItemSerializer(many=True)
+    sources = ExtractArticleSourceResultSerializer(many=True)

@@ -2,6 +2,8 @@
 
 from rest_framework import serializers
 
+from market_analysis.models import ArticleRegionChoices, NewsSourceChoices
+
 
 class ReportingDateSerializer(serializers.Serializer):
     """Reporting date plus optional force flag for pipeline / generate."""
@@ -38,3 +40,36 @@ class GetArticleCacheSerializer(serializers.Serializer):
     source_url = serializers.CharField(
         max_length=1000, required=False, allow_blank=True, default=""
     )
+
+
+class ExtractArticleSerializer(serializers.Serializer):
+    """Query params to scrape catalog news wraps for a reporting date."""
+
+    reporting_date = serializers.DateField()
+    source = serializers.ChoiceField(
+        choices=NewsSourceChoices.choices,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=None,
+        help_text="Optional catalog source. Omit to scrape every configured source.",
+    )
+    region = serializers.ChoiceField(
+        choices=ArticleRegionChoices.choices,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=None,
+        help_text=(
+            "Optional catalog region. Omit for every region; with a source, "
+            "limits multi-region scrapers (e.g. Boursorama FR vs EU)."
+        ),
+    )
+
+    def validate_source(self, value: str | None) -> str | None:
+        """Treat blank query values as no source filter."""
+        return value or None
+
+    def validate_region(self, value: str | None) -> str | None:
+        """Treat blank query values as no region filter."""
+        return value or None

@@ -41,7 +41,9 @@ def get_mutan_rate_from_boj(target_date: date) -> ScrapingResult:
             price=None, comment="BoJ file has likely changed. Review of code is needed."
         )
 
+    # After the uniqueness check, index 0 is the only Mutan label cell match.
     mutan_location_row = match_locations[0][0]
+    # Column index is one to the right of the matched label cell (the rate value).
     mutan_location_column = match_locations[0][1] + 1
     mutan_rate = df.iloc[mutan_location_row, mutan_location_column]
     if not pd.isna(df.iloc[mutan_location_row, mutan_location_column]):

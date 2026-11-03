@@ -26,7 +26,7 @@ from market_analysis.services import llm_market_recap, market_analysis
 
 
 class _GetRecapValidatedData(TypedDict, total=False):
-    """Validated data for ``GetRecapSerializer``."""
+    """Validated data for 'GetRecapSerializer'."""
 
     reporting_date: date
     id: int
@@ -47,7 +47,7 @@ class GetDailyRecapView(BaseAPIView):
         ],
     )
     def get(self, validated_data: _GetRecapValidatedData) -> Response:
-        """Return a daily recap by id, reporting date, or the latest row."""
+        """Return a daily recap by id, reporting date, or the latest recap."""
         recap_id: int | None = validated_data.get("id")
         reporting_date: date | None = validated_data.get("reporting_date")
         if recap_id:
@@ -60,7 +60,7 @@ class GetDailyRecapView(BaseAPIView):
 
 
 class _ReportingDateValidatedData(TypedDict):
-    """Validated data for ``ReportingDateSerializer``."""
+    """Validated data for 'ReportingDateSerializer'."""
 
     reporting_date: date
     force: NotRequired[bool]

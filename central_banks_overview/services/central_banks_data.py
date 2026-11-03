@@ -6,6 +6,7 @@ from datetime import date
 from typing import TypedDict
 
 from django.db.models import F, Max, OuterRef, QuerySet, Subquery
+from pydantic import TypeAdapter, ValidationError
 
 from central_banks_overview.models import (
     CentralBankChoices,
@@ -40,7 +41,7 @@ def get_cb_data_ingestion_lock_key(
 
 
 class _CentralBankDataBaseInfo(TypedDict):
-    """Central Bank Data Information."""
+    """Static series metadata loaded from 'central_banks_data.json'."""
 
     cb_data_id: int
     central_bank: CentralBankChoices
@@ -51,7 +52,7 @@ class _CentralBankDataBaseInfo(TypedDict):
 
 
 class _CentralBankData(TypedDict):
-    """Central Bank Data."""
+    """Scraped key-rate values ready to upsert for one series and date."""
 
     cb_data_id: int
     central_bank: CentralBankChoices
@@ -62,29 +63,44 @@ class _CentralBankData(TypedDict):
     comment: str | None
 
 
+class _CentralBankDataUpsertDefaults(TypedDict):
+    """Fields updated on an existing 'CentralBankDataModel' during upsert."""
+
+    value: float | None
+    comment: str | None
+
+
 class _CentralBankDataIngestionResponseItem(TypedDict):
-    """Central Bank Data Ingestion Response Item."""
+    """One series that was upserted during a key-rate ingest run."""
 
     data_name: str
     date: date
 
 
+_CENTRAL_BANK_BASE_INFO_ADAPTER = TypeAdapter(list[_CentralBankDataBaseInfo])
+
+
 def _get_central_bank_base_info() -> list[_CentralBankDataBaseInfo]:
-    """Get central bank base info."""
+    """Load and validate series metadata from 'central_banks_data.json'."""
     with open(CENTRAL_BANKS_DATA_JSON) as f:
-        return [_CentralBankDataBaseInfo(**data) for data in json.load(f)]
+        raw_payload = json.load(f)
+    try:
+        return _CENTRAL_BANK_BASE_INFO_ADAPTER.validate_python(raw_payload)
+    except ValidationError as exc:
+        raise ValueError(f"Invalid central_banks_data.json: {exc}") from exc
 
 
 def _get_specific_central_bank_data(
-    target_date: date, central_bank_data: _CentralBankDataBaseInfo
+    target_date: date, central_bank_series: _CentralBankDataBaseInfo
 ) -> _CentralBankData:
-    """Ingest central bank data."""
+    """Scrape one central-bank series for 'target_date' and return upsert values."""
     logger.info(
-        f"Ingesting central bank data for {central_bank_data['short_name']} on {target_date}"
+        f"Ingesting central bank data for {central_bank_series['short_name']} "
+        f"on {target_date}"
     )
-    scraping_function = CENTRAL_BANK_DATA_MAP.get(central_bank_data["source"])
+    scraping_function = CENTRAL_BANK_DATA_MAP.get(central_bank_series["source"])
     scraping_result: ScrapingResult = (
-        scraping_function(target_date, central_bank_data["ticker"])
+        scraping_function(target_date, central_bank_series["ticker"])
         if scraping_function
         else ScrapingResult(price=None, comment="No scraping function found.")
     )
@@ -93,10 +109,10 @@ def _get_specific_central_bank_data(
         logger.warning("No price found.")
 
     return _CentralBankData(
-        cb_data_id=central_bank_data["cb_data_id"],
-        central_bank=central_bank_data["central_bank"],
-        short_name=central_bank_data["short_name"],
-        full_name=central_bank_data["full_name"],
+        cb_data_id=central_bank_series["cb_data_id"],
+        central_bank=central_bank_series["central_bank"],
+        short_name=central_bank_series["short_name"],
+        full_name=central_bank_series["full_name"],
         date=target_date,
         value=scraping_result.get("price"),
         comment=scraping_result.get("comment"),
@@ -106,40 +122,42 @@ def _get_specific_central_bank_data(
 def ingest_central_bank_data(
     central_bank: CentralBankChoices,
     date_to_ingest: date,
-    all_data_info: list[_CentralBankDataBaseInfo] = [],
+    all_series_info: list[_CentralBankDataBaseInfo] | None = None,
 ) -> list[_CentralBankDataIngestionResponseItem]:
-    """Ingest central bank data.
+    """Upsert key-rate series for one central bank on 'date_to_ingest'.
 
-    The function can act as a standalone function or
-    as part of the ingest_all_central_bank_data function.
+    Pass 'all_series_info' when calling from a multi-bank loop so the JSON file is
+    loaded once; otherwise the catalog is loaded here.
     """
-    central_bank_data_updated = []
-    if not all_data_info:
-        all_data_info = _get_central_bank_base_info()
-    for data_info in all_data_info:
-        if data_info["central_bank"] == central_bank:
-            data = _get_specific_central_bank_data(date_to_ingest, data_info)
-            CentralBankDataModel.objects.update_or_create(
-                central_bank=data["central_bank"],
-                short_name=data["short_name"],
-                full_name=data["full_name"],
-                date=data["date"],
-                cb_data_id=data["cb_data_id"],
-                defaults={
-                    "value": data["value"],
-                    "comment": data["comment"],
-                },
+    central_bank_data_updated: list[_CentralBankDataIngestionResponseItem] = []
+    if all_series_info is None:
+        all_series_info = _get_central_bank_base_info()
+    for series_info in all_series_info:
+        if series_info["central_bank"] != central_bank:
+            continue
+        scraped_key_rate = _get_specific_central_bank_data(date_to_ingest, series_info)
+        upsert_defaults = _CentralBankDataUpsertDefaults(
+            value=scraped_key_rate["value"],
+            comment=scraped_key_rate["comment"],
+        )
+        CentralBankDataModel.objects.update_or_create(
+            central_bank=scraped_key_rate["central_bank"],
+            short_name=scraped_key_rate["short_name"],
+            full_name=scraped_key_rate["full_name"],
+            date=scraped_key_rate["date"],
+            cb_data_id=scraped_key_rate["cb_data_id"],
+            defaults=upsert_defaults,
+        )
+        central_bank_data_updated.append(
+            _CentralBankDataIngestionResponseItem(
+                data_name=series_info["full_name"], date=date_to_ingest
             )
-            central_bank_data_updated.append(
-                _CentralBankDataIngestionResponseItem(
-                    data_name=data_info["full_name"], date=date_to_ingest
-                )
-            )
+        )
     return central_bank_data_updated
 
 
 class CentralBankDataDate(TypedDict):
-    """Central Bank Data Dates."""
+    """One central bank and the date whose key rates should be ingested."""
 
     central_bank: CentralBankChoices
     date: date
@@ -148,8 +166,8 @@ class CentralBankDataDate(TypedDict):
 def ingest_requested_central_bank_data(
     dates_to_ingest_by_central_bank: list[CentralBankDataDate],
 ) -> list[_CentralBankDataIngestionResponseItem]:
-    """Ingest central bank data."""
-    central_bank_data_updated = []
+    """Upsert key rates for each requested central-bank / date pair."""
+    central_bank_data_updated: list[_CentralBankDataIngestionResponseItem] = []
     central_bank_base_info = _get_central_bank_base_info()
 
     for central_bank_data_date in dates_to_ingest_by_central_bank:
@@ -165,10 +183,10 @@ def ingest_requested_central_bank_data(
 
 def get_central_bank_data(
     target_date: date | None = None,
-    central_banks: list[CentralBankChoices] = [],
+    central_banks: list[CentralBankChoices] | None = None,
     last_value: bool = False,
 ) -> QuerySet[CentralBankDataModel]:
-    """Get central bank data."""
+    """Return stored key-rate series, optionally filtered by date or bank."""
     central_bank_data = CentralBankDataModel.objects.all()
 
     if central_banks:
@@ -178,13 +196,14 @@ def get_central_bank_data(
         raise ValueError("Last value is not supported when target date is provided.")
 
     if last_value:
-        # This subquery finds the max date for each short_name
+        # This subquery finds the max date for each short_name.
         max_date_subquery = (
             CentralBankDataModel.objects.filter(short_name=OuterRef("short_name"))
             .values("short_name")
             .annotate(max_date=Max("date"))
             .values("max_date")
         )
+        # Subquery.values returns one aggregated max date; [:1] keeps that single cell.
         central_bank_data = (
             central_bank_data.annotate(max_date=Subquery(max_date_subquery[:1]))
             .filter(date=F("max_date"))
@@ -198,28 +217,17 @@ def get_central_bank_data(
 
 
 def delete_central_bank_data(ids: list[int]) -> int:
-    """Delete central bank data by IDs."""
+    """Delete central-bank key-rate series by primary key and return how many matched."""
     queryset = CentralBankDataModel.objects.filter(pk__in=ids)
     deleted_count = queryset.count()
     queryset.delete()
     return deleted_count
 
 
-class _DecisionDayKeyRate(TypedDict):
-    """One key policy rate observed on a monetary-policy decision day."""
-
-    central_bank: CentralBankChoices
-    short_name: str
-    full_name: str
-    current_value: float | None
-    previous_value: float | None
-    change_value: float | None
-
-
 def get_previous_central_bank_rate(
     short_name: str, event_date: date
 ) -> CentralBankDataModel | None:
-    """Return the latest key-rate observation strictly before ``event_date``."""
+    """Return the latest key rate strictly before a given date."""
     return (
         CentralBankDataModel.objects.filter(
             short_name=short_name,
@@ -249,35 +257,46 @@ def list_central_banks_with_meetings_at_date(
     return central_banks
 
 
-def get_decision_day_key_rates(event_date: date) -> list[_DecisionDayKeyRate]:
-    """Return key rates for CB meetings whose display calendar date is ``event_date``.
+class _DecisionDayKeyRate(TypedDict):
+    """One key policy rate on a monetary-policy decision day."""
 
-    One row per key-rate series with a print on that date (current / previous /
-    absolute change). Empty when there is no meeting that day or rates are not
-    ingested yet.
+    central_bank: CentralBankChoices
+    short_name: str
+    full_name: str
+    current_value: float | None
+    previous_value: float | None
+    change_value: float | None
+
+
+def get_decision_day_key_rates(event_date: date) -> list[_DecisionDayKeyRate]:
+    """Return key rates for CB meetings whose display calendar date is 'event_date'.
+
+    Returns one key rate per series on that date, with current, previous, and
+    absolute change. Returns an empty list when there is no meeting that day or
+    rates are not ingested yet.
     """
     decision_day_key_rates: list[_DecisionDayKeyRate] = []
     for central_bank in list_central_banks_with_meetings_at_date(event_date):
-        rate_rows = list(
+        key_rates = list(
             get_central_bank_data(
                 target_date=event_date,
                 central_banks=[central_bank],
             ).order_by("cb_data_id", "short_name")
         )
-        for rate_row in rate_rows:
-            previous_row = get_previous_central_bank_rate(
-                rate_row.short_name, event_date
+        for key_rate in key_rates:
+            previous_key_rate = get_previous_central_bank_rate(
+                key_rate.short_name, event_date
             )
-            previous_value = previous_row.value if previous_row else None
+            previous_value = previous_key_rate.value if previous_key_rate else None
             decision_day_key_rates.append(
                 _DecisionDayKeyRate(
                     central_bank=central_bank,
-                    short_name=rate_row.short_name,
-                    full_name=rate_row.full_name,
-                    current_value=rate_row.value,
+                    short_name=key_rate.short_name,
+                    full_name=key_rate.full_name,
+                    current_value=key_rate.value,
                     previous_value=previous_value,
                     change_value=calculate_value_change(
-                        rate_row.value,
+                        key_rate.value,
                         previous_value,
                         ValueChangeType.ABSOLUTE,
                     ),

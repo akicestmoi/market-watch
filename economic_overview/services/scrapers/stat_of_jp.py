@@ -23,7 +23,7 @@ from economic_overview.services.scrapers.common import (
 
 
 class _StatOfJpDataObj(TypedDict, total=False):
-    """Wrapper around a single VALUE object (``@time`` / ``$`` keys)."""
+    """Wrapper around a single VALUE object ('@time' / '$' keys)."""
 
     # Open-key map of already-typed attribute / value strings from the API.
     VALUE: dict[str, str]
@@ -57,7 +57,7 @@ _STAT_OF_JP_PAYLOAD_ADAPTER = TypeAdapter(_StatOfJpPayload)
 
 
 def _parse_stat_of_jp_time_label(time_label: str) -> date | None:
-    """Parse e-Stat Dashboard time codes (``YYYYMM00`` / ``YYYY nQ00``)."""
+    """Parse e-Stat Dashboard time codes ('YYYYMM00' / 'YYYY nQ00')."""
     monthly_match = re.fullmatch(r"(\d{4})(\d{2})00", time_label)
     if monthly_match:
         year = int(monthly_match.group(1))
@@ -75,7 +75,7 @@ def _parse_stat_of_jp_time_label(time_label: str) -> date | None:
 
 
 def _parse_stat_of_jp_values(payload: _StatOfJpPayload) -> list[ScrapingResult]:
-    """Parse e-Stat Dashboard ``DATA_OBJ`` values into scraping results."""
+    """Parse e-Stat Dashboard 'DATA_OBJ' values into scraping results."""
     data_objects = (
         payload.get("GET_STATS", {})
         .get("STATISTICAL_DATA", {})
@@ -99,7 +99,10 @@ def _parse_stat_of_jp_values(payload: _StatOfJpPayload) -> list[ScrapingResult]:
         economic_data.append(
             ScrapingResult(period=period, data_value=data_value, comment="")
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min,
+        reverse=True,
+    )
     return economic_data
 
 
@@ -111,8 +114,8 @@ def get_data_from_stat_of_jp(
 ) -> list[ScrapingResult]:
     """Get Japan series from the e-Stat Statistics Dashboard API.
 
-    ``ticker`` is our configured series ID. The e-Stat ``IndicatorCode`` and
-    filters come from ``STAT_OF_JP_SERIES_BY_TICKER``.
+    'ticker' is our configured series ID. The e-Stat 'IndicatorCode' and
+    filters come from 'STAT_OF_JP_SERIES_BY_TICKER'.
 
     Source: https://dashboard.e-stat.go.jp/en/static/api
     """
@@ -141,7 +144,6 @@ def get_data_from_stat_of_jp(
         STAT_OF_JP_DATA_URL,
         params=stat_of_jp_request_params,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping JP e-Stat data: {response.text}")

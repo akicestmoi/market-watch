@@ -44,7 +44,7 @@ DEFAULT_ERROR_MESSAGE_BY_STATUS_CODE: dict[int, str] = {
 
 
 class _MessageOpenApiResponse(OpenApiResponse):
-    """OpenAPI error response with a single ``message`` example body."""
+    """OpenAPI error response with a single 'message' example body."""
 
     def __init__(
         self,

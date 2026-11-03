@@ -28,19 +28,16 @@ class TestCentralBankMeetingsViews(TestCase):
         # Create FRB meetings
         self.frb_meeting_1 = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=self.test_date_1,
         )
         self.frb_meeting_2 = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=2,
             date=self.test_date_2,
         )
 
         # Create ECB meetings
         self.ecb_meeting_1 = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=self.test_date_3,
         )
 

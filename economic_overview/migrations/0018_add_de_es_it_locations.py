@@ -4,7 +4,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    """Widen indicator ``location`` choices for Eurostat DE / ES / IT series."""
+    """Widen indicator 'location' choices for Eurostat DE / ES / IT series."""
 
     dependencies = [
         ("economic_overview", "0017_add_fred_and_japan_sources"),

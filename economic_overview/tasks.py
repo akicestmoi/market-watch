@@ -1,6 +1,7 @@
 """Celery tasks for economic data updates and publication schedules."""
 
 from datetime import date
+from typing import Required, TypedDict
 
 from celery import shared_task
 
@@ -11,8 +12,16 @@ from core.locks import release_redis_lock, try_acquire_redis_lock
 from core.services import logger
 
 
+class _CeleryTaskResult(TypedDict, total=False):
+    """Standard Celery task status payload returned to the broker UI."""
+
+    status: Required[str]
+    message: Required[str]
+    date: str
+
+
 @shared_task
-def scheduled_economic_data_and_schedule_update():
+def scheduled_economic_data_and_schedule_update() -> _CeleryTaskResult:
     """
     Celery task to ingest economic data and update schedules.
     This task will be scheduled to run daily.
@@ -25,11 +34,11 @@ def scheduled_economic_data_and_schedule_update():
             "Skipping economic data ingestion for %s: already in progress.",
             today.isoformat(),
         )
-        return {
-            "status": "skipped",
-            "message": "Economic data ingestion already in progress.",
-            "date": today.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="skipped",
+            message="Economic data ingestion already in progress.",
+            date=today.isoformat(),
+        )
 
     try:
         economic_indicators_to_update = economic_data.get_economic_indicators_to_update(
@@ -37,11 +46,11 @@ def scheduled_economic_data_and_schedule_update():
         )
         if not economic_indicators_to_update.exists():
             logger.info(f"No economic indicators to update found for {today}")
-            return {
-                "status": "success",
-                "message": "No economic indicators to update found.",
-                "date": today.isoformat(),
-            }
+            return _CeleryTaskResult(
+                status="success",
+                message="No economic indicators to update found.",
+                date=today.isoformat(),
+            )
 
         logger.info(
             f"Ingesting economic data: {[indicator.name for indicator in economic_indicators_to_update]} for {today}"
@@ -49,24 +58,24 @@ def scheduled_economic_data_and_schedule_update():
         data_ingestion.ingest_latest_economic_data(economic_indicators_to_update)
         logger.info("Updating publication schedules.")
         publication.update_publication_schedules(economic_indicators_to_update)
-        return {
-            "status": "success",
-            "message": "Economic data ingested successfully.",
-            "date": today.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="success",
+            message="Economic data ingested successfully.",
+            date=today.isoformat(),
+        )
     except Exception as e:
         logger.error(f"Error in economic data ingestion task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-            "date": today.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=today.isoformat(),
+        )
     finally:
         release_redis_lock(lock, lock_key)
 
 
 @shared_task
-def scheduled_economic_data_update_logs_cleanup():
+def scheduled_economic_data_update_logs_cleanup() -> _CeleryTaskResult:
     """
     Celery task to clean up economic data update logs.
     This task will be scheduled to run daily.
@@ -80,15 +89,15 @@ def scheduled_economic_data_update_logs_cleanup():
     try:
         logger.info(f"Cleaning up economic data update logs for {logs_date}")
         economic_data.delete_economic_data_update_logs_before_date(logs_date)
-        return {
-            "status": "success",
-            "message": f"Economic data update logs deleted successfully for {logs_date}",
-            "date": logs_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="success",
+            message=f"Economic data update logs deleted successfully for {logs_date}",
+            date=logs_date.isoformat(),
+        )
     except Exception as e:
         logger.error(f"Error in economic data update logs cleanup task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-            "date": logs_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=logs_date.isoformat(),
+        )

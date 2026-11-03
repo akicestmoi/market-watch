@@ -36,7 +36,7 @@ def _format_amount_unit_label(
     magnitude: IndicatorAmountMagnitudeChoices,
     currency: IndicatorBaseCurrencyChoices | None = None,
 ) -> str:
-    """Build a compact amount label such as ``bUSD`` or ``m``."""
+    """Build a compact amount label such as 'bUSD' or 'm'."""
     magnitude_label = magnitude.value.lower()
     if currency is None:
         return magnitude_label
@@ -48,7 +48,7 @@ def _scale_amount_for_display(
     amount_magnitude: IndicatorAmountMagnitudeChoices,
     base_currency: IndicatorBaseCurrencyChoices | None = None,
 ) -> _ScaledAmount:
-    """Divide by 1_000 until ``abs(value) <= 999``, bumping K→M→B→T."""
+    """Divide by 1_000 until 'abs(value) <= 999', bumping K→M→B→T."""
     magnitude_order = IndicatorAmountMagnitudeChoices.ordered()
     scaled_magnitude = amount_magnitude
     scaled_value = float(value)
@@ -64,7 +64,7 @@ def _scale_amount_for_display(
 
 
 def _format_spaced_number(value: float, digits: int = 2) -> str:
-    """Format with space thousands separators, e.g. ``1 234.56``."""
+    """Format with space thousands separators, e.g. '1 234.56'."""
     sign = "-" if value < 0 else ""
     absolute_value = abs(value)
     formatted_number = f"{absolute_value:.{digits}f}"
@@ -92,8 +92,8 @@ def format_indicator_value(
 ) -> str:
     """Format a single indicator value for UI / LLM display.
 
-    Amounts append a parenthesis unit with currency (``(bUSD)``). Percent and
-    growth modes append `` %`` (no parentheses). Index series have no unit suffix.
+    Amounts append a parenthesis unit with currency ('(bUSD)'). Percent and
+    growth modes append ' %' (no parentheses). Index series have no unit suffix.
     """
     if value is None:
         return ""
@@ -127,16 +127,39 @@ def format_indicator_value(
     return _format_spaced_number(value, digits=digits)
 
 
-def _format_recap_row_unit_parenthesis(
+class _RecapLineKey(NamedTuple):
+    """Identity of one aligned recap table line."""
+
+    category: EconomicDataCategoryChoices
+    line_name: str
+
+
+class _IndicatorAtLocation(NamedTuple):
+    """One indicator contributing a cell on a recap line."""
+
+    location: EconomicDataLocationChoices
+    indicator: EconomicIndicatorInformationModel
+
+
+class _RecapLineGrouping(NamedTuple):
+    """Indicators grouped by recap line, plus a template indicator per line."""
+
+    # Usage of dict: keys are runtime (category, line_name) pairs from the DB.
+    indicators_at_locations_for_line: dict[_RecapLineKey, list[_IndicatorAtLocation]]
+    # Usage of dict: keys are the same line keys; value is the first indicator seen.
+    template_indicator_by_line: dict[_RecapLineKey, EconomicIndicatorInformationModel]
+
+
+def _format_recap_line_unit_parenthesis(
     indicators: list[EconomicIndicatorInformationModel],
     *,
     mode: IndicatorDisplayModeChoices = IndicatorDisplayModeChoices.RAW,
 ) -> str:
-    """parenthesis unit / base-year suffix for a cross-location recap row title.
+    """Return the parenthesis unit or base-year suffix for a recap line title.
 
-    When locations disagree on base year or amount unit, join with `` / `` and
-    include short location codes (e.g. ``(in mUSD / bJPY)``,
-    ``(base year: 2010 US / 2025 FR)``).
+    When locations disagree on base year or amount unit, join with ' / ' and
+    include short location codes (e.g. '(in mUSD / bJPY)',
+    '(base year: 2010 US / 2025 FR)').
     """
     if mode != IndicatorDisplayModeChoices.RAW:
         return "(in %)"
@@ -156,6 +179,7 @@ def _format_recap_row_unit_parenthesis(
             return ""
         unique_base_years = {year for year, _ in base_years_with_locations}
         if len(unique_base_years) == 1:
+            # All locations share one base year; [0][0] is that year from any pair.
             return f"(base year: {base_years_with_locations[0][0]})"
         base_year_parts = [
             f"{base_year} {location}"
@@ -176,66 +200,43 @@ def _format_recap_row_unit_parenthesis(
     return f"(in {' / '.join(unique_amount_unit_labels)})"
 
 
-class _RecapRowKey(NamedTuple):
-    """Identity of one aligned recap table row."""
-
-    category: EconomicDataCategoryChoices
-    row_name: str
-
-
-class _IndicatorAtLocation(NamedTuple):
-    """One indicator contributing a cell on a recap row."""
-
-    location: EconomicDataLocationChoices
-    indicator: EconomicIndicatorInformationModel
-
-
-class _RecapRowGrouping(NamedTuple):
-    """Indicators grouped by recap row, plus a template indicator per row."""
-
-    # Usage of dict: keys are runtime (category, row_name) pairs from the DB.
-    indicators_at_locations_for_row: dict[_RecapRowKey, list[_IndicatorAtLocation]]
-    # Usage of dict: keys are the same row keys; value is the first indicator seen.
-    template_indicator_by_row: dict[_RecapRowKey, EconomicIndicatorInformationModel]
-
-
-def _group_indicators_by_recap_row(
+def _group_indicators_by_recap_line(
     indicators: list[EconomicIndicatorInformationModel],
-) -> _RecapRowGrouping:
-    """Group indicators into cross-location recap rows (shared type or unique name)."""
+) -> _RecapLineGrouping:
+    """Group indicators into cross-location recap lines (shared type or unique name)."""
     # Usage of dict: keys are runtime (type, location) pairs from the DB query.
     type_count_in_location: dict[tuple[str, str], int] = defaultdict(int)
     for indicator in indicators:
         type_count_in_location[(indicator.type, indicator.location)] += 1
 
-    # Usage of dict: keys are runtime row keys from the DB query.
-    indicators_at_locations_for_row: dict[_RecapRowKey, list[_IndicatorAtLocation]] = (
-        defaultdict(list)
-    )
-    template_indicator_by_row: dict[_RecapRowKey, EconomicIndicatorInformationModel] = (
-        {}
-    )
+    # Usage of dict: keys are runtime line keys from the DB query.
+    indicators_at_locations_for_line: dict[
+        _RecapLineKey, list[_IndicatorAtLocation]
+    ] = defaultdict(list)
+    template_indicator_by_line: dict[
+        _RecapLineKey, EconomicIndicatorInformationModel
+    ] = {}
     for indicator in indicators:
         # Shared type across countries when unique in-location; else name (e.g. Tankan).
-        row_name = (
+        line_name = (
             indicator.name
             if type_count_in_location[(indicator.type, indicator.location)] > 1
             else indicator.type
         )
-        recap_row_key = _RecapRowKey(
+        recap_line_key = _RecapLineKey(
             category=EconomicDataCategoryChoices(indicator.category),
-            row_name=row_name,
+            line_name=line_name,
         )
-        indicators_at_locations_for_row[recap_row_key].append(
+        indicators_at_locations_for_line[recap_line_key].append(
             _IndicatorAtLocation(
                 location=EconomicDataLocationChoices(indicator.location),
                 indicator=indicator,
             )
         )
-        template_indicator_by_row.setdefault(recap_row_key, indicator)
-    return _RecapRowGrouping(
-        indicators_at_locations_for_row=indicators_at_locations_for_row,
-        template_indicator_by_row=template_indicator_by_row,
+        template_indicator_by_line.setdefault(recap_line_key, indicator)
+    return _RecapLineGrouping(
+        indicators_at_locations_for_line=indicators_at_locations_for_line,
+        template_indicator_by_line=template_indicator_by_line,
     )
 
 
@@ -244,11 +245,11 @@ def _get_time_series_by_indicator_id(
 ) -> dict[
     int, list[EconomicDataModel]
 ]:  # Usage of dict: keys are runtime indicator PKs.
-    """Fetch newest-first absolute observations (capped at TIME_SERIES_HISTORY_WINDOW)."""
+    """Fetch newest-first absolute economic data (cap: TIME_SERIES_HISTORY_WINDOW)."""
     if not indicator_ids:
         return {}
     time_series_by_indicator_id: dict[int, list[EconomicDataModel]] = defaultdict(list)
-    observation_rows = (
+    economic_data_values = (
         EconomicDataModel.objects.filter(
             indicator_id__in=indicator_ids,
             data_value__isnull=False,
@@ -258,17 +259,17 @@ def _get_time_series_by_indicator_id(
         .order_by("indicator_id", "-period")
         .iterator(chunk_size=2000)
     )
-    for observation_row in observation_rows:
-        indicator_pk = observation_row.indicator.pk
-        observation_time_series = time_series_by_indicator_id[indicator_pk]
-        if len(observation_time_series) >= TIME_SERIES_HISTORY_WINDOW:
+    for economic_data_value in economic_data_values:
+        indicator_pk = economic_data_value.indicator.pk
+        economic_data_time_series = time_series_by_indicator_id[indicator_pk]
+        if len(economic_data_time_series) >= TIME_SERIES_HISTORY_WINDOW:
             continue
-        observation_time_series.append(observation_row)
+        economic_data_time_series.append(economic_data_value)
     return time_series_by_indicator_id
 
 
-class _EconomicRecapTimeSeriesPoint(TypedDict):
-    """One absolute observation for client-side Abs/QoQ/QoQy/YoY transforms."""
+class _EconomicRecapTimeSeriesValue(TypedDict):
+    """One absolute value for client-side Abs/QoQ/QoQy/YoY transforms."""
 
     period: str  # Display period label
     period_date: str  # ISO date string for the UI
@@ -291,43 +292,50 @@ class _EconomicRecapItem(TypedDict):
     previous: float | None
     change: float | None
     period: str | None  # Display period label
-    time_series: list[_EconomicRecapTimeSeriesPoint]
+    time_series: list[_EconomicRecapTimeSeriesValue]
 
 
-def _build_time_series_from_observation_rows(
-    observation_rows: list[EconomicDataModel],
-) -> list[_EconomicRecapTimeSeriesPoint]:
-    """Build chronological time-series points from newest-first observation rows."""
+def _build_time_series_from_economic_data_values(
+    economic_data_values: list[EconomicDataModel],
+) -> list[_EconomicRecapTimeSeriesValue]:
+    """Build chronological time-series values from newest-first economic data."""
     return [
-        _EconomicRecapTimeSeriesPoint(
-            period=observation_row.get_period_display() or "",
-            period_date=observation_row.period.isoformat(),
-            value=float(observation_row.data_value),
+        _EconomicRecapTimeSeriesValue(
+            period=economic_data_value.get_period_display() or "",
+            period_date=economic_data_value.period.isoformat(),
+            value=float(economic_data_value.data_value),
         )
-        for observation_row in reversed(observation_rows)
-        if observation_row.period is not None and observation_row.data_value is not None
+        for economic_data_value in reversed(economic_data_values)
+        if economic_data_value.period is not None
+        and economic_data_value.data_value is not None
     ]
 
 
-def _build_recap_item_from_observation_rows(
+def _build_recap_item_from_economic_data_values(
     indicator: EconomicIndicatorInformationModel,
     location: EconomicDataLocationChoices,
-    row_name: str,
-    observation_rows: list[EconomicDataModel],
+    line_name: str,
+    economic_data_values: list[EconomicDataModel],
 ) -> _EconomicRecapItem:
-    """Build one location cell from prefetched newest-first observation rows."""
-    padded_observation_rows = observation_rows + [None, None]
-    current_observation = padded_observation_rows[0]
-    previous_observation = padded_observation_rows[1]
+    """Build one location cell from newest-first economic data values."""
+    padded_economic_data_values = economic_data_values + [None, None]
+    # The series is newest-first, so index 0 is the current value (None if empty).
+    current_economic_data_value = padded_economic_data_values[0]
+    # The series is newest-first, so index 1 is the previous value for the change.
+    previous_economic_data_value = padded_economic_data_values[1]
     current_value = (
-        current_observation.data_value if current_observation is not None else None
+        current_economic_data_value.data_value
+        if current_economic_data_value is not None
+        else None
     )
     previous_value = (
-        previous_observation.data_value if previous_observation is not None else None
+        previous_economic_data_value.data_value
+        if previous_economic_data_value is not None
+        else None
     )
     period_display = (
-        current_observation.get_period_display()
-        if current_observation is not None
+        current_economic_data_value.get_period_display()
+        if current_economic_data_value is not None
         else None
     )
     value_change = (
@@ -338,7 +346,7 @@ def _build_recap_item_from_observation_rows(
     return _EconomicRecapItem(
         category=EconomicDataCategoryChoices(indicator.category),
         location=location,
-        name=row_name,
+        name=line_name,
         display_name=indicator.get_display_name(),
         frequency=EconomicPublicationFrequencyChoices(indicator.frequency),
         base_year=indicator.base_year,
@@ -357,24 +365,24 @@ def _build_recap_item_from_observation_rows(
         previous=previous_value,
         change=value_change,
         period=period_display,
-        time_series=_build_time_series_from_observation_rows(observation_rows),
+        time_series=_build_time_series_from_economic_data_values(economic_data_values),
     )
 
 
-def _build_recap_items_for_one_row(
-    recap_row_key: _RecapRowKey,
+def _build_recap_items_for_one_line(
+    recap_line_key: _RecapLineKey,
     indicators_at_locations: list[_IndicatorAtLocation],
     template_indicator: EconomicIndicatorInformationModel,
     locations: list[EconomicDataLocationChoices],
     # Usage of dict: keys are runtime indicator primary keys from the DB query.
     time_series_by_indicator_id: dict[int, list[EconomicDataModel]],
 ) -> list[_EconomicRecapItem]:
-    """Build one cell per requested location for a single recap row."""
+    """Build one cell per requested location for a single recap line."""
     present_indicators = [entry.indicator for entry in indicators_at_locations]
     indicator_default_display_mode = IndicatorDisplayModeChoices(
         template_indicator.default_mode
     )
-    unit_parenthesis = _format_recap_row_unit_parenthesis(
+    unit_parenthesis = _format_recap_line_unit_parenthesis(
         present_indicators, mode=indicator_default_display_mode
     )
     display_name = (
@@ -405,12 +413,12 @@ def _build_recap_items_for_one_row(
             None,
         )
         if indicator_for_location is None:
-            # Placeholder so every location column stays aligned in the row.
+            # Placeholder so every location column stays aligned on the recap line.
             recap_items.append(
                 _EconomicRecapItem(
-                    category=recap_row_key.category,
+                    category=recap_line_key.category,
                     location=location,
-                    name=recap_row_key.row_name,
+                    name=recap_line_key.line_name,
                     display_name=display_name,
                     frequency=frequency,
                     base_year=base_year,
@@ -425,10 +433,10 @@ def _build_recap_items_for_one_row(
                 )
             )
             continue
-        recap_item = _build_recap_item_from_observation_rows(
+        recap_item = _build_recap_item_from_economic_data_values(
             indicator_for_location,
             location,
-            recap_row_key.row_name,
+            recap_line_key.line_name,
             time_series_by_indicator_id.get(indicator_for_location.id, []),
         )
         recap_item["display_name"] = display_name
@@ -441,8 +449,8 @@ class _EconomicRecapCategoryGroup(TypedDict):
     """One category section of the economic recap table (ordered payload)."""
 
     category: EconomicDataCategoryChoices
-    # Named ``rows`` (not ``items``) so Django templates do not resolve ``dict.items``.
-    rows: list[_EconomicRecapItem]
+    # Named 'entries' (not 'items') so Django templates do not resolve 'dict.items'.
+    entries: list[_EconomicRecapItem]
 
 
 _RECAP_CACHE_ADAPTER = TypeAdapter(list[_EconomicRecapCategoryGroup])
@@ -451,30 +459,30 @@ _RECAP_CACHE_ADAPTER = TypeAdapter(list[_EconomicRecapCategoryGroup])
 def _build_economic_recap_data(
     locations: list[EconomicDataLocationChoices],
 ) -> list[_EconomicRecapCategoryGroup]:
-    """Build economic recap rows for the requested locations."""
+    """Build the economic recap for the requested locations."""
     indicators = list(
         EconomicIndicatorInformationModel.objects.filter(
             location__in=[location.value for location in locations]
         ).order_by("id")
     )
-    row_grouping = _group_indicators_by_recap_row(indicators)
+    line_grouping = _group_indicators_by_recap_line(indicators)
     time_series_by_indicator_id = _get_time_series_by_indicator_id(
         [indicator.id for indicator in indicators]
     )
 
-    # Preserve indicator discovery order (first id that defined each row).
-    recap_rows_by_key: list[tuple[_RecapRowKey, list[_EconomicRecapItem]]] = []
+    # Preserve indicator discovery order (first id that defined each line).
+    recap_lines_by_key: list[tuple[_RecapLineKey, list[_EconomicRecapItem]]] = []
     for (
-        recap_row_key,
+        recap_line_key,
         indicators_at_locations,
-    ) in row_grouping.indicators_at_locations_for_row.items():
-        recap_rows_by_key.append(
+    ) in line_grouping.indicators_at_locations_for_line.items():
+        recap_lines_by_key.append(
             (
-                recap_row_key,
-                _build_recap_items_for_one_row(
-                    recap_row_key,
+                recap_line_key,
+                _build_recap_items_for_one_line(
+                    recap_line_key,
                     indicators_at_locations,
-                    row_grouping.template_indicator_by_row[recap_row_key],
+                    line_grouping.template_indicator_by_line[recap_line_key],
                     locations,
                     time_series_by_indicator_id,
                 ),
@@ -486,14 +494,14 @@ def _build_economic_recap_data(
     for category in EconomicDataCategoryChoices.ordered():
         category_recap_items = [
             recap_item
-            for recap_row_key, recap_items in recap_rows_by_key
-            if recap_row_key.category == category
+            for recap_line_key, recap_items in recap_lines_by_key
+            if recap_line_key.category == category
             for recap_item in recap_items
         ]
         if category_recap_items:
             economic_data_by_category.append(
                 _EconomicRecapCategoryGroup(
-                    category=category, rows=category_recap_items
+                    category=category, entries=category_recap_items
                 )
             )
     return economic_data_by_category
@@ -504,11 +512,11 @@ def get_economic_recap_data(
 ) -> list[_EconomicRecapCategoryGroup]:
     """Get economic recap data.
 
-    Rows are keyed by indicator ``type`` when that type is unique per location
-    (so US/FR/JP GDP share one row). Duplicate types in the same location use
-    ``name`` instead. Each row includes exactly one cell per requested location.
+    Lines are keyed by indicator 'type' when that type is unique per location
+    (so US/FR/JP GDP share one line). Duplicate types in the same location use
+    'name' instead. Each line includes exactly one cell per requested location.
 
-    Results are Redis-cached (versioned by observation/indicator table state).
+    Results are Redis-cached (versioned by economic-data / indicator table state).
     """
     fingerprint = ",".join(sorted(location.value for location in locations))
     cached = get_cached_economic_display(

@@ -100,7 +100,7 @@ def get_lag_for_mode_change_calculation(
     frequency: EconomicPublicationFrequencyChoices | str,
     mode: IndicatorDisplayModeChoices | str,
 ) -> int:
-    """How many prior observations to use when changing a series' mode."""
+    """Return how many prior values to use when changing a series' mode."""
     mode_value = (
         mode.value if isinstance(mode, IndicatorDisplayModeChoices) else str(mode)
     )
@@ -141,9 +141,9 @@ def change_indicator_values_mode(
     frequency: EconomicPublicationFrequencyChoices | str,
     mode: IndicatorDisplayModeChoices | str,
 ) -> _IndicatorValueTriplet:
-    """Change newest / previous indicator values (and their delta) into ``mode``.
+    """Change newest / previous indicator values (and their delta) into 'mode'.
 
-    Input is a newest-first raw series (``[0]`` = latest). Output is only the
+    Input is a newest-first raw series ('[0]' = latest). Output is only the
     current / previous / change triplet — not a transformed full series.
     """
     mode_value = (
@@ -153,7 +153,9 @@ def change_indicator_values_mode(
         return _IndicatorValueTriplet(current=None, previous=None, change=None)
 
     if mode_value == IndicatorDisplayModeChoices.RAW:
+        # The series is newest-first, so index 0 is the latest value.
         current_value = economic_data_time_series[0]
+        # The series is newest-first, so index 1 is the prior value for the change.
         previous_value = (
             economic_data_time_series[1] if len(economic_data_time_series) > 1 else None
         )
@@ -176,6 +178,8 @@ def change_indicator_values_mode(
     )
 
     lookback_index_for_current_value = lag
+    # The series is newest-first, so index 0 compared with the value 'lag' periods
+    # earlier forms the current mode value.
     current_value = (
         calculate_value_change(
             economic_data_time_series[0],
@@ -187,6 +191,8 @@ def change_indicator_values_mode(
         else None
     )
     lookback_index_for_previous_value = 1 + lag
+    # The series is newest-first, so index 1 compared with index '1 + lag' forms
+    # the previous mode value.
     previous_value = (
         calculate_value_change(
             economic_data_time_series[1],

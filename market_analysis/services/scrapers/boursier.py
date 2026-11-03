@@ -14,12 +14,15 @@ from market_analysis.services.config import (
     BOURSIER_DAY_URL_TEMPLATE,
     HTTP_REQUEST_TIMEOUT_SECONDS,
 )
-from market_analysis.services.scrapers.common import ArticleLink, ScrapingResult
-from market_analysis.services.scrapers.html_text import extract_main_text
+from market_analysis.services.scrapers.common import (
+    ArticleLink,
+    ScrapingResult,
+    extract_main_text,
+)
 
 
 def _parse_boursier_cloture_link(html: str, base_url: str) -> ArticleLink | None:
-    """Find the first article link whose visible text starts with ``Clôture Paris``."""
+    """Find the first article link whose visible text starts with 'Clôture Paris'."""
     soup = BeautifulSoup(html, "lxml")
     cloture_paris_pattern = re.compile(r"^\s*Cl[oô]ture\s+Paris\b", re.IGNORECASE)
 
@@ -44,7 +47,7 @@ def _parse_boursier_cloture_link(html: str, base_url: str) -> ArticleLink | None
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def scrap_boursier_cloture_paris(reporting_date: date) -> ScrapingResult:
-    """Scrape Boursier day index → Clôture Paris article for ``reporting_date``."""
+    """Scrape Boursier day index → Clôture Paris article for 'reporting_date'."""
     listing_url = BOURSIER_DAY_URL_TEMPLATE.format(
         yyyymmdd=reporting_date.strftime("%Y%m%d")
     )

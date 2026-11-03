@@ -3,6 +3,7 @@
 import io
 import re
 from datetime import date, datetime
+from typing import NamedTuple
 from urllib.parse import urljoin
 
 import openpyxl
@@ -44,12 +45,12 @@ def _find_japan_cabinet_office_quarterly_estimates_csv_url(
     Cabinet Office does not publish a stable direct link. This helper:
 
     1. Opens the year archive page (current year, then previous) and finds the
-       latest quarterly-estimates English menu (``…/qe…/gdemenuea.html``).
-    2. Opens that menu and finds an ``href`` whose filename contains
-       ``csv_filename_prefix`` and ends in ``.csv``
-       (e.g. ``gaku-jk`` → ``…/gaku-jk2622.csv``).
+       latest quarterly-estimates English menu ('…/qe…/gdemenuea.html').
+    2. Opens that menu and finds an 'href' whose filename contains
+       'csv_filename_prefix' and ends in '.csv'
+       (e.g. 'gaku-jk' → '…/gaku-jk2622.csv').
 
-    Returns ``None`` if any step fails or no matching link is found.
+    Returns 'None' if any step fails or no matching link is found.
     """
     years_to_try = [date.today().year, date.today().year - 1]
     release_menu_path: str | None = None
@@ -57,7 +58,6 @@ def _find_japan_cabinet_office_quarterly_estimates_csv_url(
         archive_response = requests.get(
             JP_CAO_YEAR_ARCHIVE_URL.format(year=year),
             timeout=60,
-            headers={"User-Agent": "market-watch/1.0"},
         )
         if archive_response.status_code >= 400:
             continue
@@ -74,7 +74,6 @@ def _find_japan_cabinet_office_quarterly_estimates_csv_url(
     menu_response = requests.get(
         urljoin(JP_CAO_SITE_ORIGIN, release_menu_path),
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if menu_response.status_code >= 400:
         return None
@@ -91,14 +90,13 @@ def _find_japan_cabinet_office_quarterly_estimates_csv_url(
 def _find_japan_cabinet_office_gross_debt_xlsx_url() -> str | None:
     """Return the download URL of the General Government Gross Debt workbook.
 
-    Opens the SDDS Plus top page and finds the ``tables/ggd.xlsx`` link
-    (outstanding debt by quarter). Returns ``None`` if the page or link is
+    Opens the SDDS Plus top page and finds the 'tables/ggd.xlsx' link
+    (outstanding debt by quarter). Returns 'None' if the page or link is
     missing.
     """
     response = requests.get(
         JP_CAO_SDDS_PLUS_PAGE_URL,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         return None
@@ -116,13 +114,12 @@ def _find_japan_cabinet_office_net_lending_xlsx_url() -> str | None:
     """Return the download URL of annual SNA table 18 (net lending / borrowing).
 
     Opens the annual-accounts top page, picks the newest
-    ``…/NNNN/NNNNannual_report_e.html``, then finds ``tables/…s18_en.xlsx`` on
-    that report. Returns ``None`` if any step fails.
+    '…/NNNN/NNNNannual_report_e.html', then finds 'tables/…s18_en.xlsx' on
+    that report. Returns 'None' if any step fails.
     """
     top_response = requests.get(
         JP_CAO_ANNUAL_ACCOUNTS_TOP_URL,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if top_response.status_code >= 400:
         return None
@@ -133,13 +130,12 @@ def _find_japan_cabinet_office_net_lending_xlsx_url() -> str | None:
     )
     if not report_matches:
         return None
-    # Prefer the newest calendar year listed on the annual-accounts top page.
+    # Prefer the newest calendar year; index 0 of the (path, year) match is the href path.
     report_path = max(report_matches, key=lambda match: int(match[1]))[0]
     report_url = urljoin(JP_CAO_SITE_ORIGIN, report_path)
     report_response = requests.get(
         report_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if report_response.status_code >= 400:
         return None
@@ -153,20 +149,31 @@ def _find_japan_cabinet_office_net_lending_xlsx_url() -> str | None:
     return urljoin(report_url, xlsx_match.group(1))
 
 
+class _ParsedCabinetOfficeQuarterLabel(NamedTuple):
+    """Quarter start date and tracked year from a Cabinet Office period label."""
+
+    period: date | None
+    year: int | None
+
+
 def _parse_japan_cabinet_office_quarter_label(
     period_label: str, current_year: int | None
-) -> tuple[date | None, int | None]:
-    """Parse a Cabinet Office quarter label, tracking year across rows."""
+) -> _ParsedCabinetOfficeQuarterLabel:
+    """Parse a Cabinet Office quarter label, tracking year across table lines."""
     with_year = re.fullmatch(r"(\d{4})/\s*(\d{1,2})\s*-\s*(\d{1,2})\.?", period_label)
     if with_year:
         year = int(with_year.group(1))
         start_month = int(with_year.group(2))
-        return date(year, start_month, 1), year
+        return _ParsedCabinetOfficeQuarterLabel(
+            period=date(year, start_month, 1), year=year
+        )
     without_year = re.fullmatch(r"(\d{1,2})\s*-\s*(\d{1,2})\.?", period_label)
     if without_year and current_year is not None:
         start_month = int(without_year.group(1))
-        return date(current_year, start_month, 1), current_year
-    return None, current_year
+        return _ParsedCabinetOfficeQuarterLabel(
+            period=date(current_year, start_month, 1), year=current_year
+        )
+    return _ParsedCabinetOfficeQuarterLabel(period=None, year=current_year)
 
 
 def _parse_japan_cabinet_office_levels_csv(
@@ -197,7 +204,9 @@ def _parse_japan_cabinet_office_levels_csv(
         economic_data.append(
             ScrapingResult(period=period, data_value=data_value, comment="")
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min, reverse=True
+    )
     return economic_data
 
 
@@ -212,12 +221,12 @@ def _parse_japan_cabinet_office_ggd_workbook(
     year_row = [cell.value for cell in worksheet[4]]
     month_row = [cell.value for cell in worksheet[5]]
     total_row: list[object] | None = None
-    for row in worksheet.iter_rows(
+    for worksheet_cells in worksheet.iter_rows(
         min_row=6, max_row=worksheet.max_row, values_only=True
     ):
-        label = row[0]
+        label = worksheet_cells[0]
         if isinstance(label, str) and label.strip() == "Total gross debt":
-            total_row = list(row)
+            total_row = list(worksheet_cells)
             break
     if total_row is None:
         return []
@@ -243,7 +252,9 @@ def _parse_japan_cabinet_office_ggd_workbook(
                 comment="",
             )
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min, reverse=True
+    )
     return economic_data
 
 
@@ -258,15 +269,15 @@ def _parse_japan_cabinet_office_net_lending_workbook(
     worksheet = workbook[sheet_name]
     year_row: list[object] | None = None
     general_government_row: list[object] | None = None
-    for row in worksheet.iter_rows(
+    for worksheet_cells in worksheet.iter_rows(
         min_row=1, max_row=worksheet.max_row, values_only=True
     ):
-        label = row[0]
+        label = worksheet_cells[0]
         if not isinstance(label, str):
             continue
         label_stripped = label.strip()
         if label_stripped == "Items":
-            year_row = list(row)
+            year_row = list(worksheet_cells)
             continue
         if (
             year_row is not None
@@ -275,7 +286,7 @@ def _parse_japan_cabinet_office_net_lending_workbook(
         ):
             # First "(3) General government" is capital-account net lending (not
             # the later financial-account block).
-            general_government_row = list(row)
+            general_government_row = list(worksheet_cells)
             break
     if year_row is None or general_government_row is None:
         return []
@@ -295,14 +306,17 @@ def _parse_japan_cabinet_office_net_lending_workbook(
                 comment="",
             )
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min, reverse=True
+    )
     return economic_data
 
 
 def _is_japan_cabinet_office_error_result(
     economic_data: list[ScrapingResult],
 ) -> bool:
-    """Return True when ``economic_data`` is a single unresolved error row."""
+    """Return True when 'economic_data' is a single unresolved error result."""
+    # A failed scrape returns exactly one empty error result at index 0.
     return (
         len(economic_data) == 1
         and economic_data[0]["period"] is None
@@ -331,7 +345,6 @@ def _download_japan_cabinet_office_csv(
     response = requests.get(
         csv_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping Japan Cabinet Office CSV: {response.text}")
@@ -372,7 +385,6 @@ def _download_japan_cabinet_office_real_sa_column(
     response = requests.get(
         csv_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping Japan Cabinet Office GDP: {response.text}")
@@ -408,7 +420,6 @@ def _download_japan_cabinet_office_ggd_outstanding() -> list[ScrapingResult]:
     response = requests.get(
         xlsx_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping Japan Cabinet Office GGD: {response.text}")
@@ -441,7 +452,6 @@ def _download_japan_cabinet_office_net_lending(
     response = requests.get(
         xlsx_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(
@@ -476,15 +486,15 @@ def _build_japan_cabinet_office_debt_pct_of_gdp() -> list[ScrapingResult]:
         return nominal_gdp
     # Open-key map of already-typed nominal GDP levels by quarter-start date.
     nominal_by_period: dict[date, float] = {}
-    for nominal_row in nominal_gdp:
-        nominal_period = nominal_row["period"]
-        nominal_value = nominal_row["data_value"]
+    for nominal_gdp_result in nominal_gdp:
+        nominal_period = nominal_gdp_result["period"]
+        nominal_value = nominal_gdp_result["data_value"]
         if nominal_period is not None and nominal_value is not None:
             nominal_by_period[nominal_period] = nominal_value
     economic_data: list[ScrapingResult] = []
-    for debt_row in outstanding:
-        period = debt_row["period"]
-        debt_value = debt_row["data_value"]
+    for debt_result in outstanding:
+        period = debt_result["period"]
+        debt_value = debt_result["data_value"]
         if period is None or debt_value is None:
             continue
         gdp_value = nominal_by_period.get(period)
@@ -497,7 +507,10 @@ def _build_japan_cabinet_office_debt_pct_of_gdp() -> list[ScrapingResult]:
                 comment="",
             )
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min,
+        reverse=True,
+    )
     return economic_data
 
 
@@ -510,11 +523,11 @@ def get_data_from_japan_cabinet_office(
     """Get Japan SNA / SDDS Plus series from Cabinet Office ESRI.
 
     Supported tickers:
-    - ``gaku-jk*`` real SA expenditure GDP and demand components (quarterly)
-    - ``ggd_total`` general government gross debt outstanding (billion yen)
-    - ``ggd_pct_gdp`` debt / annualized nominal SA GDP × 100
-    - ``net_lending_gg_cy`` calendar-year general-government net lending (billion yen)
-    - ``net_lending_gg_cy_pct_gdp`` same flow as % of nominal GDP
+    - 'gaku-jk*' real SA expenditure GDP and demand components (quarterly)
+    - 'ggd_total' general government gross debt outstanding (billion yen)
+    - 'ggd_pct_gdp' debt / annualized nominal SA GDP × 100
+    - 'net_lending_gg_cy' calendar-year general-government net lending (billion yen)
+    - 'net_lending_gg_cy_pct_gdp' same flow as % of nominal GDP
 
     Source: https://www.esri.cao.go.jp/en/sna/sokuhou/sokuhou_top.html
     Debt: https://www.esri.cao.go.jp/en/sna/sddsplus/sddsplus_top.html

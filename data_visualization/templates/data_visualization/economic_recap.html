@@ -49,7 +49,7 @@
 
                 <tbody>
                     {% for category_group in economic_data %}
-                    {% regroup category_group.rows by name as name_groups %}
+                    {% regroup category_group.entries by name as name_groups %}
 
                     {% for name_group in name_groups %}
                     {% with first_record=name_group.list.0 %}

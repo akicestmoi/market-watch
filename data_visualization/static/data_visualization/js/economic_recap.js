@@ -203,7 +203,7 @@ function findRecord(indicatorName, category, location) {
   const section = economicRecapSections.find(
     (categoryGroup) => categoryGroup.category === category
   );
-  const group = section ? section.rows : [];
+  const group = section ? section.entries : [];
   return group.find(
     (item) => item.name === indicatorName && item.location === location
   );

@@ -1,12 +1,62 @@
 [
   {
-    "source": "BOURSIER_CLOTURE_PARIS",
-    "name": "Boursier — Clôture Paris",
-    "base_url": "https://www.boursier.com"
-  },
-  {
     "source": "SWISSINFO_MARKET_WRAP",
     "name": "Swissinfo — Bloomberg Markets Wrap",
-    "base_url": "https://www.swissinfo.ch"
+    "base_url": "https://www.swissinfo.ch",
+    "regions": ["GLOBAL"]
+  },
+  {
+    "source": "THE_EDGE_GLOBAL_MARKETS",
+    "name": "The Edge — Global Markets",
+    "base_url": "https://theedgemalaysia.com",
+    "regions": ["GLOBAL"]
+  },
+  {
+    "source": "CNBC_STOCK_MARKET_DAILY_RECAP",
+    "name": "CNBC — Stock Market Daily Recap",
+    "base_url": "https://www.cnbc.com",
+    "regions": ["US"]
+  },
+  {
+    "source": "NEWSQUAWK_US_MARKET_WRAP",
+    "name": "Newsquawk — US Market Wrap",
+    "base_url": "https://www.newsquawk.com",
+    "regions": ["US"]
+  },
+  {
+    "source": "TBS_US_MARKETS",
+    "name": "TBS Bloomberg — 米国市況",
+    "base_url": "https://newsdig.tbs.co.jp",
+    "regions": ["US"]
+  },
+  {
+    "source": "BOURSIER_CLOTURE_PARIS",
+    "name": "Boursier — Clôture Paris",
+    "base_url": "https://www.boursier.com",
+    "regions": ["FR"]
+  },
+  {
+    "source": "ZONEBOURSE",
+    "name": "Zonebourse",
+    "base_url": "https://www.zonebourse.com",
+    "regions": ["US", "EU", "FR"]
+  },
+  {
+    "source": "BOURSORAMA",
+    "name": "Boursorama",
+    "base_url": "https://www.boursorama.com",
+    "regions": ["EU", "FR"]
+  },
+  {
+    "source": "TOKYO_CLOSING_BELL",
+    "name": "Tokyo Closing Bell",
+    "base_url": "https://tokyoclosingbell.com",
+    "regions": ["JP"]
+  },
+  {
+    "source": "TBS_JAPAN_MARKETS",
+    "name": "TBS Bloomberg — 日本市況",
+    "base_url": "https://newsdig.tbs.co.jp",
+    "regions": ["JP"]
   }
 ]

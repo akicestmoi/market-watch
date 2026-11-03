@@ -3,6 +3,8 @@
 import json
 from typing import TypedDict
 
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticValidationError
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -36,6 +38,36 @@ from market_overview.open_api.response_serializers import (
 MARKET_DATA_JSON = "market_overview/data_sources/market_data.json"
 
 
+class _AssetJsonRecord(TypedDict):
+    """One asset record from 'market_data.json'."""
+
+    id: int
+    short_name: str
+    asset_class: AssetClassChoices
+    location: LocationChoices | None
+    full_name: str
+    maturity: float | None
+    asset_type: AssetTypeChoices
+    ticker: str
+    source: PriceSourceChoices
+
+
+class _AssetModelDefaults(TypedDict):
+    """ORM defaults for 'AssetModel.update_or_create' from a JSON catalog record."""
+
+    asset_id: int
+    asset_class: AssetClassChoices
+    location: LocationChoices | None
+    full_name: str
+    maturity: float | None
+    asset_type: AssetTypeChoices
+    ticker: str
+    source: PriceSourceChoices
+
+
+_ASSET_JSON_ADAPTER = TypeAdapter(list[_AssetJsonRecord])
+
+
 class GenerateBaseAssetsDataView(BaseAPIView):
     """Generate Base Assets Data APIView."""
 
@@ -43,36 +75,50 @@ class GenerateBaseAssetsDataView(BaseAPIView):
         tags=[ApiTags.ASSETS],
         summary="Generate Base Assets Data",
         description="Generate base assets data from JSON file.",
-        error_responses=[BadRequestOpenApiResponse("short_name is required")],
+        error_responses=[
+            BadRequestOpenApiResponse(
+                "short_name is required | Duplicate asset short_name found | "
+                "Invalid market_data.json"
+            )
+        ],
     )
     def post(self, _request: Request) -> Response:
-        """Generate asset data from market_data.json."""
+        """Generate asset data from 'market_data.json'."""
         with open(MARKET_DATA_JSON) as f:
-            assets_base_info = json.load(f)
+            raw_payload = json.load(f)
+        try:
+            asset_json_entries = _ASSET_JSON_ADAPTER.validate_python(raw_payload)
+        except PydanticValidationError as exc:
+            raise ValidationError(detail=f"Invalid market_data.json: {exc}") from exc
 
-        short_names = set()
-        duplicates = []
-        for asset in assets_base_info:
-            short_name = asset.get("short_name")
-            if short_name:
-                if short_name in short_names:
-                    if short_name not in duplicates:
-                        duplicates.append(short_name)
-                short_names.add(short_name)
+        short_names: set[str] = set()
+        duplicates: list[str] = []
+        for asset_json_entry in asset_json_entries:
+            short_name = asset_json_entry["short_name"]
+            if not short_name:
+                raise ValidationError(detail="short_name is required")
+            if short_name in short_names:
+                if short_name not in duplicates:
+                    duplicates.append(short_name)
+            short_names.add(short_name)
         if duplicates:
             raise ValidationError(
                 detail=f"Duplicate asset short_name found: {duplicates}"
             )
 
-        for asset in assets_base_info:
-            asset_data = {
-                **{k: v for k, v in asset.items() if k != "id"},
-                "asset_id": asset["id"],
-            }
-            if "short_name" not in asset_data:
-                raise ValidationError(detail="short_name is required")
+        for asset_json_entry in asset_json_entries:
             AssetModel.objects.update_or_create(
-                short_name=asset_data["short_name"], defaults=asset_data
+                short_name=asset_json_entry["short_name"],
+                defaults=_AssetModelDefaults(
+                    asset_id=asset_json_entry["id"],
+                    asset_class=asset_json_entry["asset_class"],
+                    location=asset_json_entry["location"],
+                    full_name=asset_json_entry["full_name"],
+                    maturity=asset_json_entry["maturity"],
+                    asset_type=asset_json_entry["asset_type"],
+                    ticker=asset_json_entry["ticker"],
+                    source=asset_json_entry["source"],
+                ),
             )
 
         return Response(
@@ -82,7 +128,7 @@ class GenerateBaseAssetsDataView(BaseAPIView):
 
 
 class _GetAssetNamesValidatedData(TypedDict, total=False):
-    """Validated data for ``GetAssetNamesSerializer``."""
+    """Validated data for 'GetAssetNamesSerializer'."""
 
     asset_class: AssetClassChoices | None
     asset_type: AssetTypeChoices | None
@@ -115,7 +161,7 @@ class GetAssetNamesView(BaseAPIView):
 
 
 class _BaseAssetValidatedData(TypedDict):
-    """Validated data for ``BaseAssetSerializer``."""
+    """Validated data for 'BaseAssetSerializer'."""
 
     short_name: str
 

@@ -100,7 +100,6 @@ class TestCentralBanksRecapView(TestCase):
         # Create meeting dates
         self.frb_meeting = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=datetime(2026, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
         )
 
@@ -365,12 +364,10 @@ class TestCentralBanksRecapView(TestCase):
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=datetime(2026, 4, 15, 13, 15, 0, tzinfo=timezone.utc),
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.BOJ,
-            order=1,
             date=datetime(2026, 5, 1, 4, 0, 0, tzinfo=timezone.utc),
         )
 

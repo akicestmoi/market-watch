@@ -44,6 +44,41 @@ def test_parse_swissinfo_market_wrap_for_date():
     </body></html>
     """
     article_link = _parse_swissinfo_market_wrap_card(html, date(2026, 10, 23))
-    assert article_link is not None
-    assert "92260391" in article_link["url"]
-    assert "Markets Wrap" in article_link["title"]
+    assert article_link == {
+        "title": "Stocks Fall as Oil Rally Keeps a Lid on Treasuries: Markets Wrap",
+        "url": (
+            "https://www.swissinfo.ch/eng/"
+            "stocks-fall-as-oil-rally-keeps-a-lid-on-treasuries%3a-markets-wrap/92260391"
+        ),
+    }
+
+
+def test_parse_swissinfo_market_wrap_maps_overnight_publish_to_us_session_date():
+    """
+    GIVEN a Markets Wrap published early Saturday morning in Europe
+    WHEN _parse_swissinfo_market_wrap_card is called for the Friday US session
+    THEN that overnight wrap is returned
+    """
+    html = """
+    <html><body>
+      <article class="teaser-wide-card">
+        <h3 class="teaser-wide-card__title">
+          Stocks Slump as Wall Street Gets AI Wake-Up Call: Markets Wrap
+        </h3>
+        <time class="teaser-wide-card__published" datetime="2026-10-31T01:32:36+01:00">
+          October 31, 2026 - 01:32
+        </time>
+        <a class="teaser-wide-card__link"
+           href="https://www.swissinfo.ch/eng/stocks-slump-as-wall-street-gets-ai-wake-up-call%3a-markets-wrap/92299351">
+        </a>
+      </article>
+    </body></html>
+    """
+    article_link = _parse_swissinfo_market_wrap_card(html, date(2026, 10, 30))
+    assert article_link == {
+        "title": "Stocks Slump as Wall Street Gets AI Wake-Up Call: Markets Wrap",
+        "url": (
+            "https://www.swissinfo.ch/eng/"
+            "stocks-slump-as-wall-street-gets-ai-wake-up-call%3a-markets-wrap/92299351"
+        ),
+    }

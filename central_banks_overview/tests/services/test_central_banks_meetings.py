@@ -3,17 +3,25 @@
 from datetime import datetime, timezone
 from unittest.mock import patch
 
+import pytest
 from dateutil.relativedelta import relativedelta
 from django.test import TestCase
 from freezegun import freeze_time
 
-from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
+from central_banks_overview.models import (
+    CentralBankChoices,
+    CentralBankMeetingModel,
+    CentralBankMeetingStatusChoices,
+)
 from central_banks_overview.services.central_banks_meetings import (
     _CentralBankMeetingDates,
     get_central_bank_meeting_dates,
     get_central_bank_next_meeting_date,
+    has_past_meeting,
     ingest_all_central_bank_meeting_dates,
     ingest_central_bank_meeting_dates,
+    list_past_meetings_pending_rates_ingest,
+    mark_meeting_status,
 )
 from central_banks_overview.services.config import (
     BOJ_MPM_URL,
@@ -44,19 +52,16 @@ class TestCentralBankMeetingsServices(TestCase):
         # Create FRB meetings
         self.frb_meeting_1 = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=self.test_date_1,
         )
         self.frb_meeting_2 = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=2,
             date=self.test_date_2,
         )
 
         # Create ECB meetings
         self.ecb_meeting_1 = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=self.test_date_3,
         )
 
@@ -129,16 +134,140 @@ class TestCentralBankMeetingsServices(TestCase):
         boj_meeting_today = datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc)
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.BOJ,
-            order=1,
             date=boj_meeting_today,
         )
         result = get_central_bank_next_meeting_date(CentralBankChoices.BOJ)
         assert result == boj_meeting_today
 
+    @freeze_time("2026-10-30 16:00:00")
+    def test_has_past_meeting_true_after_scheduled_time(self):
+        """
+        GIVEN a same-day BoJ meeting whose scheduled UTC time has passed
+        WHEN checking whether the bank has a past meeting
+        THEN True is returned
+        """
+        CentralBankMeetingModel.objects.all().delete()
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc),
+        )
+        assert has_past_meeting(CentralBankChoices.BOJ) is True
+
+    @freeze_time("2026-10-30 05:00:00")
+    def test_has_past_meeting_false_before_scheduled_time(self):
+        """
+        GIVEN a same-day meeting whose scheduled UTC time is still ahead
+        WHEN checking whether the bank has a past meeting
+        THEN False is returned
+        """
+        CentralBankMeetingModel.objects.all().delete()
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc),
+        )
+        assert has_past_meeting(CentralBankChoices.BOJ) is False
+
+    @freeze_time("2026-10-30 16:00:00")
+    def test_list_past_meetings_pending_rates_ingest_same_day_after_scheduled_time(
+        self,
+    ):
+        """
+        GIVEN a same-day BoJ meeting whose scheduled UTC time has passed
+        WHEN listing past meetings pending a rates ingest
+        THEN that meeting is returned even though it is still as-of 'next'
+        """
+        CentralBankMeetingModel.objects.all().delete()
+        boj_meeting_today = datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc)
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=boj_meeting_today,
+        )
+        assert get_central_bank_next_meeting_date(CentralBankChoices.BOJ) == (
+            boj_meeting_today
+        )
+        pending_meetings = list_past_meetings_pending_rates_ingest(
+            CentralBankChoices.BOJ
+        )
+        assert [meeting.date for meeting in pending_meetings] == [boj_meeting_today]
+
+    @freeze_time("2026-11-02 10:00:00")
+    def test_list_past_meetings_pending_rates_ingest_lookback_past_not_next(
+        self,
+    ):
+        """
+        GIVEN a recent past BoJ meeting retained in lookback (no longer as-of next)
+        WHEN listing past meetings pending a rates ingest
+        THEN that past meeting is returned while next meeting is None
+        """
+        CentralBankMeetingModel.objects.all().delete()
+        boj_meeting_past = datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc)
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=boj_meeting_past,
+        )
+        assert get_central_bank_next_meeting_date(CentralBankChoices.BOJ) is None
+        pending_meetings = list_past_meetings_pending_rates_ingest(
+            CentralBankChoices.BOJ
+        )
+        assert [meeting.date for meeting in pending_meetings] == [boj_meeting_past]
+
+    @freeze_time("2026-10-30 05:00:00")
+    def test_list_past_meetings_pending_rates_ingest_before_scheduled_time(
+        self,
+    ):
+        """
+        GIVEN a same-day meeting whose scheduled UTC time is still ahead
+        WHEN listing past meetings pending a rates ingest
+        THEN an empty list is returned
+        """
+        CentralBankMeetingModel.objects.all().delete()
+        boj_meeting_today = datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc)
+        CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=boj_meeting_today,
+        )
+        assert list_past_meetings_pending_rates_ingest(CentralBankChoices.BOJ) == []
+
+    @freeze_time("2026-11-02 10:00:00")
+    def test_mark_meeting_status_lifecycle(self):
+        """
+        GIVEN an UPCOMING meeting
+        WHEN marking OCCURRED then RATES_INGESTED
+        THEN status moves along the allowed lifecycle
+        """
+        meeting = CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc),
+        )
+        assert meeting.status == CentralBankMeetingStatusChoices.UPCOMING
+        mark_meeting_status(meeting, CentralBankMeetingStatusChoices.OCCURRED)
+        meeting.refresh_from_db()
+        assert meeting.status == CentralBankMeetingStatusChoices.OCCURRED
+        mark_meeting_status(meeting, CentralBankMeetingStatusChoices.RATES_INGESTED)
+        meeting.refresh_from_db()
+        assert meeting.status == CentralBankMeetingStatusChoices.RATES_INGESTED
+        assert list_past_meetings_pending_rates_ingest(CentralBankChoices.BOJ) == []
+
+    @freeze_time("2026-11-02 10:00:00")
+    def test_mark_meeting_status_rejects_upcoming_to_rates_ingested(self):
+        """
+        GIVEN an UPCOMING meeting
+        WHEN marking RATES_INGESTED directly
+        THEN a ValueError is raised and status stays UPCOMING
+        """
+        meeting = CentralBankMeetingModel.objects.create(
+            central_bank=CentralBankChoices.BOJ,
+            date=datetime(2026, 10, 30, 6, 30, tzinfo=timezone.utc),
+        )
+        with pytest.raises(ValueError, match="RATES_INGESTED"):
+            mark_meeting_status(meeting, CentralBankMeetingStatusChoices.RATES_INGESTED)
+        meeting.refresh_from_db()
+        assert meeting.status == CentralBankMeetingStatusChoices.UPCOMING
+
     @freeze_time("2024-01-01 12:00:00")
     def test_get_central_bank_meeting_dates_ordered_by_date(self):
         """
-        GIVEN meetings with different orders
+        GIVEN meetings created in non-chronological date order
         WHEN getting meeting dates
         THEN upcoming meetings are returned ordered by date
         """
@@ -150,13 +279,13 @@ class TestCentralBankMeetingsServices(TestCase):
         date_2 = datetime(2024, 5, 15, 13, 0, 0, tzinfo=timezone.utc)
 
         CentralBankMeetingModel.objects.create(
-            central_bank=CentralBankChoices.FRB, order=3, date=date_3
+            central_bank=CentralBankChoices.FRB, date=date_3
         )
         CentralBankMeetingModel.objects.create(
-            central_bank=CentralBankChoices.FRB, order=1, date=date_1
+            central_bank=CentralBankChoices.FRB, date=date_1
         )
         CentralBankMeetingModel.objects.create(
-            central_bank=CentralBankChoices.FRB, order=2, date=date_2
+            central_bank=CentralBankChoices.FRB, date=date_2
         )
 
         result = get_central_bank_meeting_dates([CentralBankChoices.FRB])
@@ -203,7 +332,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         """
         GIVEN FOMC meeting dates are extracted from HTML
         WHEN ingesting central bank meeting dates for FRB
-        THEN future meeting dates are created in the database with correct order
+        THEN future meeting dates are created in the database
         """
 
         def mock_get_side_effect(url, **kwargs):
@@ -224,82 +353,82 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.assert_any_call(FOMC_MEETING_URL, timeout=10)
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2024-01-31 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2024-03-20 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2024-05-01 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2024-06-12 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2024-07-31 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2024-09-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2024-11-07 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2024-12-18 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 10,
+                "status": "UPCOMING",
                 "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 11,
+                "status": "UPCOMING",
                 "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 12,
+                "status": "UPCOMING",
                 "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 13,
+                "status": "UPCOMING",
                 "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 14,
+                "status": "UPCOMING",
                 "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 15,
+                "status": "UPCOMING",
                 "date": "2025-10-29 18:00:00+0000",
             },
         ]
@@ -310,7 +439,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         """
         GIVEN ECB meeting dates are extracted from HTML
         WHEN ingesting central bank meeting dates for ECB
-        THEN future meeting dates are created in the database with correct order
+        THEN future meeting dates are created in the database
         """
 
         def mock_get_side_effect(url, **kwargs):
@@ -331,52 +460,52 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.assert_any_call(ECB_MEETING_URL, timeout=10)
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "ECB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-12-18 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2026-02-05 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2026-03-19 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2026-04-30 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2026-06-11 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2026-07-23 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2026-09-10 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2026-10-29 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2026-12-17 13:15:00+0000",
             },
         ]
@@ -387,7 +516,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         """
         GIVEN BoJ meeting dates are extracted from HTML
         WHEN ingesting central bank meeting dates for BoJ
-        THEN future meeting dates are created in the database with correct order
+        THEN future meeting dates are created in the database
         """
 
         def mock_get_side_effect(url, **kwargs):
@@ -408,82 +537,82 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         mock_get.assert_any_call(BOJ_MPM_URL, timeout=10)
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "BOJ",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-01-24 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2025-03-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2025-05-01 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2025-06-17 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2025-07-31 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2025-09-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2025-10-30 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2025-12-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2026-01-23 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 10,
+                "status": "UPCOMING",
                 "date": "2026-03-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 11,
+                "status": "UPCOMING",
                 "date": "2026-04-28 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 12,
+                "status": "UPCOMING",
                 "date": "2026-06-16 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 13,
+                "status": "UPCOMING",
                 "date": "2026-07-31 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 14,
+                "status": "UPCOMING",
                 "date": "2026-09-18 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 15,
+                "status": "UPCOMING",
                 "date": "2026-10-30 06:30:00+0000",
             },
         ]
@@ -521,202 +650,202 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ingest_all_central_bank_meeting_dates()
 
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "date"]
         )
         assert result == [
             {
                 "central_bank": "BOJ",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-01-24 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2025-03-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2025-05-01 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2025-06-17 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2025-07-31 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2025-09-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2025-10-30 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2025-12-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2026-01-23 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 10,
+                "status": "UPCOMING",
                 "date": "2026-03-19 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 11,
+                "status": "UPCOMING",
                 "date": "2026-04-28 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 12,
+                "status": "UPCOMING",
                 "date": "2026-06-16 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 13,
+                "status": "UPCOMING",
                 "date": "2026-07-31 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 14,
+                "status": "UPCOMING",
                 "date": "2026-09-18 06:30:00+0000",
             },
             {
                 "central_bank": "BOJ",
-                "order": 15,
+                "status": "UPCOMING",
                 "date": "2026-10-30 06:30:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-12-18 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2026-02-05 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2026-03-19 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2026-04-30 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2026-06-11 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2026-07-23 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2026-09-10 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2026-10-29 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2026-12-17 13:15:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2024-01-31 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2024-03-20 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2024-05-01 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2024-06-12 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2024-07-31 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2024-09-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2024-11-07 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2024-12-18 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 10,
+                "status": "UPCOMING",
                 "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 11,
+                "status": "UPCOMING",
                 "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 12,
+                "status": "UPCOMING",
                 "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 13,
+                "status": "UPCOMING",
                 "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 14,
+                "status": "UPCOMING",
                 "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 15,
+                "status": "UPCOMING",
                 "date": "2025-10-29 18:00:00+0000",
             },
         ]
@@ -727,13 +856,12 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         """
         GIVEN existing meeting date in the database
         WHEN ingesting the same meeting date from HTML
-        THEN the existing record is updated (order may change)
+        THEN the existing meeting is updated
         """
         existing_date = datetime(2024, 1, 31, 19, 0, 0, tzinfo=timezone.utc)
         existing_meeting = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=existing_date,
-            order=5,  # Old order
         )
 
         def mock_get_side_effect(url, **kwargs):
@@ -754,85 +882,85 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ingest_all_central_bank_meeting_dates()
 
         existing_meeting.refresh_from_db()
-        assert existing_meeting.order == 1
+        assert existing_meeting.status == CentralBankMeetingStatusChoices.UPCOMING
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
-        # Should have 15 meetings total, with existing meeting updated to order 1
+        # Should have 15 meetings total, with existing meeting kept as UPCOMING
         assert result == [
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2024-01-31 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2024-03-20 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2024-05-01 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2024-06-12 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2024-07-31 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2024-09-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2024-11-07 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2024-12-18 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 10,
+                "status": "UPCOMING",
                 "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 11,
+                "status": "UPCOMING",
                 "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 12,
+                "status": "UPCOMING",
                 "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 13,
+                "status": "UPCOMING",
                 "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 14,
+                "status": "UPCOMING",
                 "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 15,
+                "status": "UPCOMING",
                 "date": "2025-10-29 18:00:00+0000",
             },
         ]
@@ -886,82 +1014,82 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ingest_all_central_bank_meeting_dates()
 
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-01-29 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2025-03-19 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2025-05-07 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 4,
+                "status": "UPCOMING",
                 "date": "2025-06-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 5,
+                "status": "UPCOMING",
                 "date": "2025-07-30 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 6,
+                "status": "UPCOMING",
                 "date": "2025-09-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 7,
+                "status": "UPCOMING",
                 "date": "2025-10-29 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 8,
+                "status": "UPCOMING",
                 "date": "2025-12-10 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 9,
+                "status": "UPCOMING",
                 "date": "2026-01-28 19:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 10,
+                "status": "UPCOMING",
                 "date": "2026-03-18 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 11,
+                "status": "UPCOMING",
                 "date": "2026-04-29 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 12,
+                "status": "UPCOMING",
                 "date": "2026-06-17 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 13,
+                "status": "UPCOMING",
                 "date": "2026-07-29 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 14,
+                "status": "UPCOMING",
                 "date": "2026-09-16 18:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 15,
+                "status": "UPCOMING",
                 "date": "2026-10-28 18:00:00+0000",
             },
         ]
@@ -989,18 +1117,15 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=datetime(2024, 10, 1, 13, 0, 0, tzinfo=timezone.utc),
-            order=1,
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),
-            order=2,
         )
         # Create a meeting that should be kept (it's in the new list)
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
-            order=3,
         )
 
         new_meeting_dates = [
@@ -1015,22 +1140,22 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-01-29 13:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2025-03-19 13:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 3,
+                "status": "UPCOMING",
                 "date": "2025-05-07 13:00:00+0000",
             },
         ]
@@ -1057,14 +1182,12 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 2, 1, 13, 0, 0, tzinfo=timezone.utc),
-            order=1,
         )
 
         # Create ECB meeting that should NOT be deleted
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
             date=datetime(2025, 2, 1, 13, 15, 0, tzinfo=timezone.utc),
-            order=1,
         )
 
         # New FRB meeting dates
@@ -1079,22 +1202,22 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["central_bank", "date"]
         )
         assert result == [
             {
                 "central_bank": "ECB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-02-01 13:15:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-01-29 13:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2025-03-19 13:00:00+0000",
             },
         ]
@@ -1122,7 +1245,6 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             CentralBankMeetingModel.objects.create(
                 central_bank=CentralBankChoices.FRB,
                 date=datetime(2025, 2, i + 1, 13, 0, 0, tzinfo=timezone.utc),
-                order=i + 1,
             )
 
         # New meeting dates list with more than NB_MEETINGS_TO_INGEST (15)
@@ -1165,7 +1287,6 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             date=datetime(2025, 2, 1, 13, 0, 0, tzinfo=timezone.utc),
-            order=1,
         )
 
         meeting_dates_with_past = [
@@ -1180,17 +1301,17 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "FRB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-01-29 13:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "UPCOMING",
                 "date": "2025-03-19 13:00:00+0000",
             },
         ]
@@ -1216,7 +1337,6 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
             date=datetime(2025, 1, 15, 13, 15, 0, tzinfo=timezone.utc),
-            order=1,
         )
         mock_extract_fomc.return_value = []
         mock_extract_ecb.return_value = [
@@ -1228,17 +1348,17 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.filter(central_bank="ECB"),
-            sort_keys=["order", "date"],
+            sort_keys=["date"],
         )
         assert result == [
             {
                 "central_bank": "ECB",
-                "order": 0,
+                "status": "OCCURRED",
                 "date": "2025-01-15 13:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2025-03-19 13:15:00+0000",
             },
         ]
@@ -1265,7 +1385,6 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
             date=same_day_meeting,
-            order=1,
         )
         mock_extract_fomc.return_value = []
         mock_extract_ecb.return_value = [
@@ -1277,17 +1396,17 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
 
         result = parse_query_for_testing(
             CentralBankMeetingModel.objects.filter(central_bank="ECB"),
-            sort_keys=["order", "date"],
+            sort_keys=["date"],
         )
         assert result == [
             {
                 "central_bank": "ECB",
-                "order": 0,
+                "status": "OCCURRED",
                 "date": "2026-10-30 12:15:00+0000",
             },
             {
                 "central_bank": "ECB",
-                "order": 1,
+                "status": "UPCOMING",
                 "date": "2026-12-17 13:15:00+0000",
             },
         ]
@@ -1301,50 +1420,50 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
     @patch(
         "central_banks_overview.services.central_banks_meetings.extract_boj_meeting_dates"
     )
-    @freeze_time("2025-01-01 12:00:00")
-    def test_ingest_central_bank_meeting_dates_updates_order_existing_meetings(
+    @freeze_time("2025-01-20 12:00:00")
+    def test_ingest_preserves_rates_ingested_and_marks_past_occurred(
         self, mock_extract_boj, mock_extract_ecb, mock_extract_fomc
     ):
         """
-        GIVEN existing meetings with incorrect order
-        WHEN ingesting central bank meeting dates for FRB
-        THEN existing meetings are updated with correct order using bulk_update
+        GIVEN a RATES_INGESTED past meeting and an UPCOMING past meeting in lookback
+        WHEN ingesting meeting dates
+        THEN RATES_INGESTED is kept and the other past meeting becomes OCCURRED
         """
-        # Create existing meetings with wrong order
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            date=datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
-            order=99,  # Wrong order
+            date=datetime(2025, 1, 15, 13, 0, 0, tzinfo=timezone.utc),
+            status=CentralBankMeetingStatusChoices.RATES_INGESTED,
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            date=datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),
-            order=88,  # Wrong order
+            date=datetime(2025, 1, 18, 13, 0, 0, tzinfo=timezone.utc),
+            status=CentralBankMeetingStatusChoices.UPCOMING,
         )
-
-        # New meeting dates in specific order
-        new_meeting_dates = [
-            datetime(2025, 1, 29, 13, 0, 0, tzinfo=timezone.utc),  # Should be order 1
-            datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),  # Should be order 2
+        mock_extract_fomc.return_value = [
+            datetime(2025, 3, 19, 13, 0, 0, tzinfo=timezone.utc),
         ]
-        mock_extract_fomc.return_value = new_meeting_dates
         mock_extract_ecb.return_value = []
         mock_extract_boj.return_value = []
 
         ingest_central_bank_meeting_dates(CentralBankChoices.FRB)
 
         result = parse_query_for_testing(
-            CentralBankMeetingModel.objects.all(), sort_keys=["order"]
+            CentralBankMeetingModel.objects.all(), sort_keys=["date"]
         )
         assert result == [
             {
                 "central_bank": "FRB",
-                "order": 1,
-                "date": "2025-01-29 13:00:00+0000",
+                "status": "RATES_INGESTED",
+                "date": "2025-01-15 13:00:00+0000",
             },
             {
                 "central_bank": "FRB",
-                "order": 2,
+                "status": "OCCURRED",
+                "date": "2025-01-18 13:00:00+0000",
+            },
+            {
+                "central_bank": "FRB",
+                "status": "UPCOMING",
                 "date": "2025-03-19 13:00:00+0000",
             },
         ]

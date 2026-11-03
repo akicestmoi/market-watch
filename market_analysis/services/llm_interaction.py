@@ -18,12 +18,12 @@ from market_analysis.llm.config import (
 from market_analysis.llm.schemas import ChatAnswerOutput
 from market_analysis.models import DailyRecapModel
 from market_analysis.services.llm_market_recap import (
-    CentralBankContextRow,
-    EconomicContextRow,
+    CentralBankContextEntry,
+    EconomicContextEntry,
     EvidenceEntry,
     FxHeatmapContext,
-    MarketContextRow,
-    ProbabilityMatrixShiftContextRow,
+    MarketContextEntry,
+    ProbabilityMatrixShiftContextEntry,
     build_central_bank_context,
     build_economic_context,
     build_fx_heatmap_context,
@@ -39,14 +39,14 @@ _recap_updated_this_turn: ContextVar[bool] = ContextVar(
 
 
 class ChatMessage(TypedDict):
-    """Chat message dictionnary."""
+    """One user or assistant turn in the market-analysis chat."""
 
     role: Literal["user", "assistant"]
     content: str
 
 
 class _ChatAskResult(TypedDict):
-    """Chat ask result dictionnary."""
+    """Answer, citations, and proposed recap fields from one chat ask."""
 
     answer: str
     citations: list[EvidenceEntry]
@@ -65,7 +65,7 @@ class _ChatAskResult(TypedDict):
 
 
 class _PreviousRecapItem(TypedDict):
-    """One daily recap row returned by the get_previous_recaps tool."""
+    """One daily recap returned by the get_previous_recaps tool."""
 
     id: int
     reporting_date: str
@@ -109,21 +109,24 @@ def _get_previous_recaps(days: int = 7, limit: int = 5) -> list[_PreviousRecapIt
     ]
 
 
-def _get_market_context(reporting_date: str) -> list[MarketContextRow]:
+def _get_market_context(reporting_date: str) -> list[MarketContextEntry]:
     """Return verified market prices for all assets as of an ISO date (YYYY-MM-DD)."""
     day = date.fromisoformat(reporting_date)
     return list(build_market_context(day))
 
 
-def _get_economic_context(reporting_date: str) -> list[EconomicContextRow]:
+def _get_economic_context(reporting_date: str) -> list[EconomicContextEntry]:
     """Return economic indicator context for an ISO reporting date (YYYY-MM-DD)."""
     day = date.fromisoformat(reporting_date)
     return list(build_economic_context(day))
 
 
-def _get_central_bank_context(reporting_date: str) -> list[CentralBankContextRow]:
-    """Return Central Banks page key figures (effective rate, CB prints, next meeting)
-    for FRB / ECB / BOJ as of an ISO date (YYYY-MM-DD). Use for policy outlook."""
+def _get_central_bank_context(reporting_date: str) -> list[CentralBankContextEntry]:
+    """Return Central Banks page key figures for FRB / ECB / BOJ as of an ISO date.
+
+    Includes effective rate, key rates, and next meeting. Use for policy outlook.
+    'reporting_date' must be YYYY-MM-DD.
+    """
     day = date.fromisoformat(reporting_date)
     return list(build_central_bank_context(day))
 
@@ -136,7 +139,7 @@ def _get_fx_heatmap_context(reporting_date: str) -> FxHeatmapContext:
 
 def _get_probability_matrix_shift_context(
     reporting_date: str,
-) -> list[ProbabilityMatrixShiftContextRow]:
+) -> list[ProbabilityMatrixShiftContextEntry]:
     """Return FRB / ECB / BOJ probability matrices and DoD shifts for an ISO date."""
     day = date.fromisoformat(reporting_date)
     return list(build_probability_matrix_shift_context(day))

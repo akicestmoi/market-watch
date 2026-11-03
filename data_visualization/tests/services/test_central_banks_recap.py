@@ -99,7 +99,6 @@ class TestCentralBankRecapServices(TestCase):
         # Create meeting dates
         self.frb_meeting = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=datetime(2024, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
         )
 
@@ -162,7 +161,6 @@ class TestCentralBankRecapServices(TestCase):
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=datetime(2024, 4, 15, 13, 15, 0, tzinfo=timezone.utc),
         )
         france_hicp = EconomicIndicatorInformationModel.objects.create(
@@ -243,7 +241,6 @@ class TestCentralBankRecapServices(TestCase):
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.BOJ,
-            order=1,
             date=datetime(2024, 5, 1, 4, 0, 0, tzinfo=timezone.utc),
         )
         japan_cpi = EconomicIndicatorInformationModel.objects.create(

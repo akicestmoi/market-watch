@@ -279,42 +279,10 @@ function initializePeriodWindowSelect() {
 }
 
 // ==========================================
-// Dropdown Population
-// ==========================================
-
-function populateDropdown(selectId, options, selectedValue, excludeValues = []) {
-  const select = document.getElementById(selectId);
-  if (!select) return;
-
-  select.innerHTML = "";
-
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.text = "-- Select Indicator to Add --";
-  placeholder.disabled = true;
-  placeholder.selected = !selectedValue;
-  select.appendChild(placeholder);
-
-  options.forEach((opt) => {
-    // Skip if in exclude list
-    if (excludeValues.includes(opt.name)) return;
-
-    const option = document.createElement("option");
-    option.value = opt.name;
-    option.text = opt.full_name;
-    if (opt.name === selectedValue) {
-      option.selected = true;
-      placeholder.selected = false;
-    }
-    select.appendChild(option);
-  });
-}
-
-// ==========================================
 // Chart Creation
 // ==========================================
 
-function createEconomicChart(category, data, selectedIndicators) {
+function createEconomicChart(category, data) {
   // Get all unique periods from all indicators (sorted)
   const allPeriods = new Set();
   data.forEach((item) => {
@@ -327,9 +295,7 @@ function createEconomicChart(category, data, selectedIndicators) {
   // Get unique indicator names from the data (backend returns indicator_name which is the type)
   const uniqueIndicatorNames = [...new Set(data.map(item => item.indicator_name))];
 
-  // Create datasets for each indicator in the data
-  // Note: selectedIndicators contains type values, and data has indicator_name (type field)
-  // Backend should have filtered, so we show all data returned
+  // Create datasets for each indicator in the data (backend already filtered the series).
   const datasets = [];
 
   uniqueIndicatorNames.forEach((indicatorName, index) => {
@@ -732,7 +698,7 @@ function renderCharts() {
 
       // Only create chart if we have data
       if (categoryData.length > 0) {
-        const chartData = createEconomicChart(category, categoryData, finalSelectedIndicators);
+        const chartData = createEconomicChart(category, categoryData);
         const ctx = canvas.getContext("2d");
 
         // Destroy existing chart if any

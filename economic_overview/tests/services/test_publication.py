@@ -422,4 +422,3 @@ class TestPublicationServices(TestCase):
         )
         result_dict = convert_query_to_dictionary_list(result)
         assert result_dict == []
-

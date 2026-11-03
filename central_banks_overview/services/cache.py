@@ -46,7 +46,11 @@ def build_probability_matrix_cache_fingerprint(
         )
         for future_price in sorted(
             future_prices,
-            key=lambda row: (row.short_name, row.maturity or "", row.date.isoformat()),
+            key=lambda future_price: (
+                future_price.short_name,
+                future_price.maturity or "",
+                future_price.date.isoformat(),
+            ),
         )
     ]
     return (

@@ -15,7 +15,7 @@ import data_visualization.services.market_recap as market_recap
 import market_overview.services.market_data as market_data
 from central_banks_overview.models import CentralBankChoices
 from core.services import get_market_watch_as_of_date, get_previous_business_day
-from data_visualization.services.config import ECONOMIC_RECAP_LOCATIONS
+from data_visualization.services.config import ECONOMIC_RECAP_LOCATIONS, FX_MATRIX_ORDER
 from data_visualization.services.economic_charts import EconomicChartsFrontData
 from data_visualization.services.market_charts import (
     ChartDuration,
@@ -101,7 +101,7 @@ def market_recap_view(request):
         "left_asset_classes": left_asset_classes,
         "right_asset_classes": right_asset_classes,
         "fx_matrix": fx_matrix,
-        "fx_matrix_order": market_recap.FX_MATRIX_ORDER,
+        "fx_matrix_order": FX_MATRIX_ORDER,
         "day_events_by_location": day_events_by_location,
     }
     if errors:

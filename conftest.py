@@ -8,8 +8,8 @@ from django.urls import get_resolver
 def preload_django_urlconf():
     """Import ROOT_URLCONF before any freezegun patch.
 
-    Loading URLConf under ``@freeze_time`` can import ``pydantic_ai``, whose
-    ``TypeAdapter(datetime)`` then sees freezegun's ``FakeDatetime`` and fails.
-    Warm the resolver once with real ``datetime`` for the whole suite.
+    Loading URLConf under '@freeze_time' can import 'pydantic_ai', whose
+    'TypeAdapter(datetime)' then sees freezegun's 'FakeDatetime' and fails.
+    Warm the resolver once with real 'datetime' for the whole suite.
     """
     get_resolver().urlconf_module

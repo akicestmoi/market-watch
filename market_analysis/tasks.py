@@ -6,10 +6,13 @@ from celery import shared_task
 
 from core.services import logger
 from market_analysis.services import market_analysis
+from market_analysis.services.market_analysis import MarketAnalysisResult
 
 
 @shared_task
-def scheduled_analysis_pipeline(reporting_date: str, force: bool = False):
+def scheduled_analysis_pipeline(
+    reporting_date: str, force: bool = False
+) -> MarketAnalysisResult:
     """Collect news into memory, analyze, and persist daily recap with market data.
 
     Articles are not stored. Skips when a recap already exists (unless force).
@@ -27,12 +30,16 @@ def scheduled_analysis_pipeline(reporting_date: str, force: bool = False):
         logger.info(
             "Celery market analysis task finished for %s: %s",
             reporting_date,
-            result.get("status") if isinstance(result, dict) else result,
+            result.get("status"),
         )
         return result
     except Exception as exc:
         logger.error("Market analysis pipeline failed for %s: %s", reporting_date, exc)
-        return {"status": "error", "message": str(exc)}
+        return MarketAnalysisResult(
+            status="error",
+            reporting_date=reporting_date,
+            message=str(exc),
+        )
 
 
 def schedule_market_analysis_after_ingestion(price_date: date) -> None:

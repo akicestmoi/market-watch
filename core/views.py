@@ -46,11 +46,11 @@ class BaseErrorResponseModel:
         detail: _ErrorResponseDetail | None = None,
     ) -> _ErrorResponseBody:
         """Create a standardized error response dictionary."""
-        body: _ErrorResponseBody = {
-            "error": error_type,
-            "message": message,
-            "status_code": status_code,
-        }
+        body = _ErrorResponseBody(
+            error=error_type,
+            message=message,
+            status_code=status_code,
+        )
         if detail is not None:
             body["detail"] = detail
         return body

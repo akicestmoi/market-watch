@@ -22,7 +22,7 @@ _EUROSTAT_JSONSTAT_ADAPTER = TypeAdapter(_EurostatJsonStatPayload)
 
 
 class TestEurostatHicpIngestion(TestCase):
-    """Tests for Eurostat ``prc_hicp_minr`` scraping helpers."""
+    """Tests for Eurostat 'prc_hicp_minr' scraping helpers."""
 
     MOCK_EUROSTAT_HICP_SUCCESS = load_json_mock(
         "economic_overview/tests/mock_web_data/eurostat/data/success.json"
@@ -59,7 +59,7 @@ class TestEurostatHicpIngestion(TestCase):
         """
         GIVEN a successful Eurostat JSON-stat response
         WHEN getting data without target period
-        THEN all observations are returned with the latest first
+        THEN all values are returned with the latest first
         """
         mock_get.return_value = MockResponse(
             status_code=200,
@@ -212,7 +212,7 @@ class TestEurostatHicpIngestion(TestCase):
         """
         GIVEN an annual tec00127 JSON-stat payload
         WHEN scraping with ANNUAL frequency
-        THEN yearly observations are returned
+        THEN yearly values are returned
         """
         mock_get.return_value = MockResponse(
             status_code=200,

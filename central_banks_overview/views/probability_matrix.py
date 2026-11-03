@@ -24,7 +24,7 @@ from core.views import BaseAPIView
 
 
 class _GetCentralBankProbabilityMatrixValidatedData(TypedDict):
-    """Validated data for ``GetCentralBankProbabilityMatrixSerializer``."""
+    """Validated data for 'GetCentralBankProbabilityMatrixSerializer'."""
 
     date: date
     central_banks: NotRequired[list[CentralBankChoices] | None]

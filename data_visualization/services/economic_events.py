@@ -36,12 +36,12 @@ class _UpcomingEventGroup(TypedDict):
 
 
 def _format_day_label(day: date) -> str:
-    """Full weekday label, e.g. ``Monday 26 October 2026``."""
+    """Full weekday label, e.g. 'Monday 26 October 2026'."""
     return f"{day.strftime('%A')} {day.day} {day.strftime('%B %Y')}"
 
 
 def _get_utc_lookback_start(start_date: date) -> datetime:
-    """UTC lower bound one calendar day before ``start_date`` (display-TZ buffer)."""
+    """UTC lower bound one calendar day before 'start_date' (display-TZ buffer)."""
     return datetime.combine(
         start_date - timedelta(days=1), datetime.min.time()
     ).replace(tzinfo=timezone.utc)
@@ -51,7 +51,8 @@ def _append_upcoming_event(
     events_by_date: dict[str, list[_UpcomingEvent]],
     event: _UpcomingEvent,
 ) -> None:
-    """Append ``event`` under its display calendar date key."""
+    """Append 'event' under its display calendar date key."""
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
     date_key = convert_to_display_timezone(event["publication_date"]).strftime(
         "%Y-%m-%d"
     )
@@ -63,12 +64,13 @@ def _append_upcoming_event(
 def _get_upcoming_events_from_publication_schedules(
     start_date: date,
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Publication events from ``start_date`` onward (current and previous slots).
+    """Publication events from 'start_date' onward (current and previous slots).
 
-    After ingest, a just-released print often lives only on
-    ``previous_publication_date`` while ``current`` advances — both must count
-    when their Europe/Paris display day is on or after ``start_date``.
+    After ingest, a just-released value often lives only on
+    'previous_publication_date' while 'current' advances — both must count
+    when their Europe/Paris display day is on or after 'start_date'.
     """
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
     # UTC day-before buffer: Paris calendar start_date can still be prior-day UTC
     # (e.g. Mon 08:45 CET = Sun 23:45 UTC). Exact Paris day filter is below.
@@ -107,7 +109,8 @@ def _get_upcoming_events_from_publication_schedules(
 def _get_upcoming_central_bank_events(
     start_date: date,
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Central-bank rate decisions from ``start_date`` onward (display TZ)."""
+    """Central-bank rate decisions from 'start_date' onward (display TZ)."""
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
     # Same UTC day-before buffer as publication schedules (Paris vs UTC).
     lookback_utc = _get_utc_lookback_start(start_date)
@@ -136,6 +139,7 @@ def _get_upcoming_central_bank_events(
 
 def _get_upcoming_holidays_events(start_date: date) -> dict[str, list[_UpcomingEvent]]:
     """Get upcoming holidays events."""
+    # Usage of dict: keys are runtime YYYY-MM-DD holiday dates; values are events.
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
     current_month = start_date.month
     current_year = start_date.year
@@ -183,53 +187,13 @@ def _merge_events_by_date(
     new: dict[str, list[_UpcomingEvent]],
 ) -> dict[str, list[_UpcomingEvent]]:
     """Merge events dictionaries by extending lists when keys exist."""
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
     for date_key, events in new.items():
         if date_key in base:
             base[date_key].extend(events)
         else:
             base[date_key] = events
     return base
-
-
-def _get_upcoming_events() -> list[_UpcomingEventGroup]:
-    """Build day-level events from the focus-week Monday through later dates.
-
-    Past Mon–Fri slots in the current week keep already-released schedules
-    (``previous_publication_date`` / still-current past days), not only today+.
-    """
-    events_by_date: dict[str, list[_UpcomingEvent]] = {}
-    today = get_local_today()
-    start_date = _get_focus_week_start(today)
-
-    _merge_events_by_date(
-        events_by_date, _get_upcoming_events_from_publication_schedules(start_date)
-    )
-    _merge_events_by_date(events_by_date, _get_upcoming_central_bank_events(start_date))
-    _merge_events_by_date(events_by_date, _get_upcoming_holidays_events(start_date))
-    upcoming_events: list[_UpcomingEventGroup] = []
-    for date_key in sorted(events_by_date.keys()):
-        day = date.fromisoformat(date_key)
-        upcoming_events.append(
-            {
-                "date": date_key,
-                "date_display": _format_day_label(day),
-                "events": events_by_date[date_key],
-            }
-        )
-
-    return upcoming_events
-
-
-class _UpcomingWeekGroup(TypedDict):
-    """Upcoming events for one ISO week (Mon–Fri day slots).
-
-    The UI pages these two-by-two; only one pair is visible at a time.
-    """
-
-    week_start: str
-    week_label: str
-    is_current_week: bool
-    days: list[_UpcomingEventGroup]
 
 
 def _get_week_start_date(day: date) -> date:
@@ -247,6 +211,48 @@ def _get_focus_week_start(today: date) -> date:
     return _get_week_start_date(today)
 
 
+def _get_upcoming_events() -> list[_UpcomingEventGroup]:
+    """Build day-level events from the focus-week Monday through later dates.
+
+    Past Mon–Fri slots in the current week keep already-released schedules
+    ('previous_publication_date' / still-current past days), not only today+.
+    """
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
+    events_by_date: dict[str, list[_UpcomingEvent]] = {}
+    today = get_local_today()
+    start_date = _get_focus_week_start(today)
+
+    _merge_events_by_date(
+        events_by_date, _get_upcoming_events_from_publication_schedules(start_date)
+    )
+    _merge_events_by_date(events_by_date, _get_upcoming_central_bank_events(start_date))
+    _merge_events_by_date(events_by_date, _get_upcoming_holidays_events(start_date))
+    upcoming_events: list[_UpcomingEventGroup] = []
+    for date_key in sorted(events_by_date.keys()):
+        day = date.fromisoformat(date_key)
+        upcoming_events.append(
+            _UpcomingEventGroup(
+                date=date_key,
+                date_display=_format_day_label(day),
+                events=events_by_date[date_key],
+            )
+        )
+
+    return upcoming_events
+
+
+class _UpcomingWeekGroup(TypedDict):
+    """Upcoming events for one ISO week (Mon–Fri day slots).
+
+    The UI pages these two-by-two; only one pair is visible at a time.
+    """
+
+    week_start: str
+    week_label: str
+    is_current_week: bool
+    days: list[_UpcomingEventGroup]
+
+
 def _format_week_label(week_start: date) -> str:
     """Mon–Fri date range label without a 'Week of' prefix."""
     week_friday = week_start + timedelta(days=4)
@@ -259,6 +265,7 @@ def _build_week_days(
     today: date,
 ) -> list[_UpcomingEventGroup]:
     """Always return Mon–Fri day slots for a week (empty days included)."""
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates with events.
     days: list[_UpcomingEventGroup] = []
     for day_offset in range(5):
         day = week_start + timedelta(days=day_offset)
@@ -303,24 +310,24 @@ def group_upcoming_events_by_week(
     week_start = focus_week_start
     while week_start <= last_week_start:
         result.append(
-            {
-                "week_start": week_start.isoformat(),
-                "week_label": _format_week_label(week_start),
-                "is_current_week": week_start == focus_week_start,
-                "days": _build_week_days(week_start, days_by_date, today),
-            }
+            _UpcomingWeekGroup(
+                week_start=week_start.isoformat(),
+                week_label=_format_week_label(week_start),
+                is_current_week=week_start == focus_week_start,
+                days=_build_week_days(week_start, days_by_date, today),
+            )
         )
         week_start += timedelta(days=7)
 
     if len(result) % 2 == 1:
         pad_week_start = week_start
         result.append(
-            {
-                "week_start": pad_week_start.isoformat(),
-                "week_label": _format_week_label(pad_week_start),
-                "is_current_week": False,
-                "days": _build_week_days(pad_week_start, days_by_date, today),
-            }
+            _UpcomingWeekGroup(
+                week_start=pad_week_start.isoformat(),
+                week_label=_format_week_label(pad_week_start),
+                is_current_week=False,
+                days=_build_week_days(pad_week_start, days_by_date, today),
+            )
         )
 
     return result

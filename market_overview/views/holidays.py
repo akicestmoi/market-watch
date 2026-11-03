@@ -27,7 +27,7 @@ from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
 class _IngestHolidaysValidatedData(TypedDict, total=False):
-    """Validated data for ``IngestHolidaysSerializer``."""
+    """Validated data for 'IngestHolidaysSerializer'."""
 
     date: date
     location: LocationChoices
@@ -63,7 +63,7 @@ class IngestHolidaysView(BaseAPIView):
 
 
 class _ListHolidaysValidatedData(TypedDict, total=False):
-    """Validated data for ``ListHolidaysSerializer``."""
+    """Validated data for 'ListHolidaysSerializer'."""
 
     location: LocationChoices
     year: int
@@ -71,7 +71,7 @@ class _ListHolidaysValidatedData(TypedDict, total=False):
 
 
 class _DeleteHolidaysValidatedData(TypedDict):
-    """Validated data for ``DeleteHolidaysSerializer``."""
+    """Validated data for 'DeleteHolidaysSerializer'."""
 
     date: date
 

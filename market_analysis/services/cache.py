@@ -12,6 +12,7 @@ from core.cache import get_cached_json, get_redis_client
 from core.services import logger
 from market_analysis.llm.config import PROMPT_VERSION
 from market_analysis.llm.schemas import EventType, Sentiment
+from market_analysis.models import ArticleRegionChoices
 
 if TYPE_CHECKING:
     from market_analysis.services.llm_market_recap import AnalyzedArticle
@@ -21,7 +22,7 @@ _KEY_PREFIX = "market_analysis:article_analysis"
 
 
 class _CachedAnalysisPayload(TypedDict):
-    """Cached analysis payload dictionnary."""
+    """Redis-cached article analysis with cache metadata."""
 
     source_url: str
     cached_at: str
@@ -41,6 +42,8 @@ class _CachedAnalysisWireAnalysis(TypedDict, total=False):
     key_facts: list[str]
     uncertainties: list[str]
     source_url: str
+    source_name: str
+    regions: list[str]
 
 
 class _CachedAnalysisWirePayload(TypedDict, total=False):
@@ -92,6 +95,14 @@ def _map_wire_payload_to_cached(
         sentiment = Sentiment(str(raw_analysis.get("sentiment") or "NEUTRAL"))
     except ValueError:
         sentiment = Sentiment.NEUTRAL
+    regions: list[ArticleRegionChoices] = []
+    for region_value in raw_analysis.get("regions") or []:
+        try:
+            regions.append(ArticleRegionChoices(str(region_value)))
+        except ValueError:
+            continue
+    if not regions:
+        regions = [ArticleRegionChoices.GLOBAL]
     analysis = AnalyzedArticle(
         title=raw_analysis.get("title") or "",
         summary=raw_analysis.get("summary") or "",
@@ -102,6 +113,8 @@ def _map_wire_payload_to_cached(
         key_facts=list(raw_analysis.get("key_facts") or []),
         uncertainties=list(raw_analysis.get("uncertainties") or []),
         source_url=raw_analysis.get("source_url") or source_url or "",
+        source_name=raw_analysis.get("source_name") or "",
+        regions=regions,
     )
     return _CachedAnalysisPayload(
         source_url=source_url,
@@ -133,7 +146,7 @@ def set_cached_analysis(
     """Store an analysis digest keyed by reporting date and article URL.
 
     Uses a Redis pipeline so the entry and day index stay in sync (beyond the
-    plain ``set_cached_json`` helper).
+    plain 'set_cached_json' helper).
     """
     try:
         client = get_redis_client(decode_responses=True)
@@ -159,7 +172,7 @@ def set_cached_analysis(
 
 
 class _CachedAnalysesListResult(TypedDict):
-    """Cached analyses list result dictionnary."""
+    """Listed Redis-cached article analyses for one reporting date."""
 
     reporting_date: str
     prompt_version: str

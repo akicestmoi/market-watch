@@ -48,7 +48,7 @@ def _get_default_mode_for_indicator_type(
     location: EconomicDataLocationChoices,
     indicator_type: str,
 ) -> IndicatorDisplayModeChoices:
-    """Look up ``default_mode`` for ``location`` + ``type``; Raw if missing."""
+    """Look up 'default_mode' for 'location' + 'type'; Raw if missing."""
     indicator = (
         EconomicIndicatorInformationModel.objects.filter(
             location=location.value,
@@ -69,7 +69,7 @@ def _encode_indicator_selection(
 ) -> str:
     """Encode a chart selection for form / URL values.
 
-    Single-region: ``Type|MODE``. Europe curves: ``Location|Type|MODE``.
+    Single-region: 'Type|MODE'. Europe curves: 'Location|Type|MODE'.
     """
     if location is None:
         return f"{indicator_type}|{mode.value}"
@@ -91,10 +91,10 @@ def _encode_eu_default_curves(indicator_type: str) -> str:
 def get_default_indicator_selections(
     location: EconomicDataLocationChoices,
 ) -> _EconomicChartsCategoryDefaults:
-    """Chart category defaults for ``location`` using each indicator's DB mode.
+    """Chart category defaults for 'location' using each indicator's DB mode.
 
     Confidence type comes from
-    ``ECONOMIC_CHARTS_DEFAULT_CONFIDENCE_TYPE_BY_LOCATION`` (empty when absent).
+    'ECONOMIC_CHARTS_DEFAULT_CONFIDENCE_TYPE_BY_LOCATION' (empty when absent).
     """
     confidence_type = ECONOMIC_CHARTS_DEFAULT_CONFIDENCE_TYPE_BY_LOCATION.get(location)
     return _EconomicChartsCategoryDefaults(
@@ -155,7 +155,7 @@ def get_default_eu_indicator_selections() -> _EconomicChartsCategoryDefaults:
 class _ChartIndicatorOption(TypedDict):
     """One selectable series in the charts multiselect."""
 
-    type: str  # Series key: ``GDP`` or ``DE|GDP``
+    type: str  # Series key: 'GDP' or 'DE|GDP'
     name: str  # Display label
     default_mode: str  # IndicatorDisplayModeChoices value from the DB
 
@@ -268,7 +268,7 @@ class EconomicChartsFrontData(TypedDict):
 
 
 class _SelectedIndicatorsByCategory(TypedDict):
-    """Selected Indicators by Category"""
+    """Selected indicators grouped by category for the charts UI."""
 
     category: EconomicDataCategoryChoices
     selected_indicators: list[str]  # UI Type or Type|MODE display strings
@@ -296,7 +296,7 @@ def get_selected_indicators_by_category(
 
 
 class _TimeSeriesPoint(NamedTuple):
-    """One period/value observation (raw absolute or after Abs/QoQ/QoQy/YoY)."""
+    """One chart series entry: the period date and the numeric value for that period."""
 
     period: date
     value: float
@@ -393,14 +393,14 @@ class _SelectedIndicatorAndModeWithLocation(NamedTuple):
 
 
 class _IndicatorLocationTypeKey(NamedTuple):
-    """Lookup key for an indicator row by location code and type."""
+    """Lookup key for an indicator by location code and type."""
 
     location: str
     type: str
 
 
 def _parse_selected_indicator_and_mode(raw: str) -> _SelectedIndicatorAndMode:
-    """Parse ``[Location|]Type[|MODE]`` into type, mode, and optional location."""
+    """Parse '[Location|]Type[|MODE]' into type, mode, and optional location."""
     text = (raw or "").strip()
     if not text:
         return _SelectedIndicatorAndMode(
@@ -412,15 +412,18 @@ def _parse_selected_indicator_and_mode(raw: str) -> _SelectedIndicatorAndMode:
     mode_values = {mode.value for mode in IndicatorDisplayModeChoices}
 
     location: EconomicDataLocationChoices | None = None
+    # Selection may start with a location (e.g. FR|GDP|YOY); index 0 is that location.
     if tokens and tokens[0] in location_values:
         location = EconomicDataLocationChoices(tokens.pop(0))
 
     mode = IndicatorDisplayModeChoices.RAW
+    # Selection may end with a display mode; index -1 is that mode when present.
     if tokens and tokens[-1] in mode_values:
         mode = IndicatorDisplayModeChoices(tokens.pop(-1))
 
     if len(tokens) != 1:
         raise ValueError(f"Invalid indicator selection: {raw}")
+    # What remains after removing optional location and mode is the indicator type.
     return _SelectedIndicatorAndMode(type=tokens[0], mode=mode, location=location)
 
 
@@ -487,8 +490,8 @@ def _build_series_label(
     """Series legend label.
 
     Abs → documented base_unit paren from INDICATORS.md (base year / in M / …).
-    QoQ / QoQy / YoY → always ``(in %)`` (transformed growth rates), never abs unit.
-    When ``include_location`` is true, prefix with the country display label so
+    QoQ / QoQy / YoY → always '(in %)' (transformed growth rates), never abs unit.
+    When 'include_location' is true, prefix with the country display label so
     multi-country series stay distinct.
     """
     if mode == IndicatorDisplayModeChoices.RAW:
@@ -537,16 +540,17 @@ def _get_time_series_by_indicator_name(
     if not indicators:
         return time_series_by_indicator_name
 
-    for data_row in economic_data.get_economic_data(
+    for economic_data_value in economic_data.get_economic_data(
         indicator_names=[indicator.name for indicator in indicators]
     ):
-        if data_row.period is None or data_row.data_value is None:
+        if economic_data_value.period is None or economic_data_value.data_value is None:
             continue
-        indicator_name = data_row.indicator.name
+        indicator_name = economic_data_value.indicator.name
         if indicator_name in time_series_by_indicator_name:
             time_series_by_indicator_name[indicator_name].append(
                 _TimeSeriesPoint(
-                    period=data_row.period, value=float(data_row.data_value)
+                    period=economic_data_value.period,
+                    value=float(economic_data_value.data_value),
                 )
             )
     return time_series_by_indicator_name
@@ -597,9 +601,10 @@ def _build_value_axis_label(
 def _resolve_value_axis_label(
     axis_labels: list[str],
 ) -> str:
-    """Use a shared axis title when all series agree; otherwise ``Data Value``."""
+    """Use a shared axis title when all series agree; otherwise 'Data Value'."""
     unique_labels = list(dict.fromkeys(axis_labels))
     if len(unique_labels) == 1:
+        # All series share one axis title; index 0 is that shared label.
         return unique_labels[0]
     return "Data Value"
 

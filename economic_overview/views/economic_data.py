@@ -4,8 +4,10 @@ import json
 from datetime import date
 from typing import NotRequired, TypedDict
 
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticValidationError
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -25,7 +27,12 @@ from core.open_api.schema import (
 from core.services import logger
 from core.views import BaseAPIView
 from economic_overview.models import (
+    EconomicDataCategoryChoices,
+    EconomicDataLocationChoices,
+    EconomicDataSourceChoices,
     EconomicIndicatorInformationModel,
+    EconomicPublicationFrequencyChoices,
+    IndicatorDisplayModeChoices,
     PublicationScheduleModel,
 )
 from economic_overview.open_api.request_serializers import (
@@ -65,6 +72,44 @@ class EconomicOverviewBaseView(BaseAPIView):
             )
 
 
+class _EconomicIndicatorJsonRecord(TypedDict):
+    """One indicator record from 'economic_data.json'."""
+
+    id: int
+    location: EconomicDataLocationChoices
+    category: EconomicDataCategoryChoices
+    type: str
+    name: str
+    technical_name: str
+    frequency: EconomicPublicationFrequencyChoices
+    source: EconomicDataSourceChoices
+    ticker: str
+    base_unit: str
+    base_currency: str
+    default_mode: IndicatorDisplayModeChoices
+    base_year: NotRequired[int]
+
+
+class _EconomicIndicatorDefaults(TypedDict):
+    """ORM defaults for 'EconomicIndicatorInformationModel.update_or_create'."""
+
+    location: EconomicDataLocationChoices
+    category: EconomicDataCategoryChoices
+    type: str
+    name: str
+    technical_name: str
+    frequency: EconomicPublicationFrequencyChoices
+    source: EconomicDataSourceChoices
+    ticker: str
+    base_unit: str
+    base_currency: str
+    default_mode: IndicatorDisplayModeChoices
+    base_year: NotRequired[int]
+
+
+_ECONOMIC_INDICATOR_JSON_ADAPTER = TypeAdapter(list[_EconomicIndicatorJsonRecord])
+
+
 class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
     """Generate Base Economic Indicator Information APIView."""
 
@@ -72,17 +117,44 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
         tags=[ApiTags.ECONOMIC_INDICATOR_INFORMATION],
         summary="Generate Base Economic Data",
         description="Generate base economic indicator information from JSON file.",
+        error_responses=[
+            BadRequestOpenApiResponse("Invalid economic_data.json"),
+        ],
     )
     def post(self, _request: Request) -> Response:
-        """Generate economic indicator information from economic_data.json."""
+        """Generate economic indicator information from 'economic_data.json'."""
         with open(ECONOMIC_DATA_JSON) as f:
             indicator_records = json.load(f)
-        for economic_indicator in indicator_records:
-            logger.info(
-                f"Generating economic indicator information: {economic_indicator}"
+        try:
+            indicator_json_entries = _ECONOMIC_INDICATOR_JSON_ADAPTER.validate_python(
+                indicator_records
             )
+        except PydanticValidationError as exc:
+            raise ValidationError(detail=f"Invalid economic_data.json: {exc}") from exc
+
+        for indicator_json_entry in indicator_json_entries:
+            logger.info(
+                "Generating economic indicator information: %s",
+                indicator_json_entry["name"],
+            )
+            indicator_defaults = _EconomicIndicatorDefaults(
+                location=indicator_json_entry["location"],
+                category=indicator_json_entry["category"],
+                type=indicator_json_entry["type"],
+                name=indicator_json_entry["name"],
+                technical_name=indicator_json_entry["technical_name"],
+                frequency=indicator_json_entry["frequency"],
+                source=indicator_json_entry["source"],
+                ticker=indicator_json_entry["ticker"],
+                base_unit=indicator_json_entry["base_unit"],
+                base_currency=indicator_json_entry["base_currency"],
+                default_mode=indicator_json_entry["default_mode"],
+            )
+            if "base_year" in indicator_json_entry:
+                indicator_defaults["base_year"] = indicator_json_entry["base_year"]
             indicator, _ = EconomicIndicatorInformationModel.objects.update_or_create(
-                id=economic_indicator["id"], defaults=economic_indicator
+                id=indicator_json_entry["id"],
+                defaults=indicator_defaults,
             )
             # Lookup by indicator only — including null date fields in the
             # lookup creates a second empty schedule whenever dates are filled.
@@ -97,19 +169,19 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
 
 
 class _LatestEconomicDataIngestionValidatedData(TypedDict, total=False):
-    """Validated data for ``LatestEconomicDataIngestionSerializer``."""
+    """Validated data for 'LatestEconomicDataIngestionSerializer'."""
 
     update_schedule: bool
 
 
 class IngestLatestEconomicDataView(EconomicOverviewBaseView):
-    """Ingest the latest observation for every economic indicator."""
+    """Ingest the latest value for every economic indicator."""
 
     @open_api(
         tags=[ApiTags.ECONOMIC_DATA],
         summary="Ingest Latest Economic Data",
         description=(
-            "Ingest the latest available observation for every seeded economic "
+            "Ingest the latest available value for every economic "
             "indicator. Optionally refresh publication schedules for those indicators."
         ),
         request_serializer=LatestEconomicDataIngestionSerializer,
@@ -122,7 +194,7 @@ class IngestLatestEconomicDataView(EconomicOverviewBaseView):
     def post(
         self, validated_data: _LatestEconomicDataIngestionValidatedData
     ) -> Response:
-        """Ingest the latest observation for all indicators."""
+        """Ingest the latest value for all indicators."""
         update_schedule: bool = validated_data.get("update_schedule", True)
         indicators = economic_data.get_economic_indicators_by_names()
 
@@ -152,7 +224,7 @@ class IngestLatestEconomicDataView(EconomicOverviewBaseView):
 
 
 class _HistoricalEconomicDataIngestionValidatedData(TypedDict):
-    """Validated data for ``HistoricalEconomicDataIngestionSerializer``."""
+    """Validated data for 'HistoricalEconomicDataIngestionSerializer'."""
 
     start_date: date
     end_date: date
@@ -160,13 +232,13 @@ class _HistoricalEconomicDataIngestionValidatedData(TypedDict):
 
 
 class IngestHistoricalEconomicDataView(EconomicOverviewBaseView):
-    """Ingest historical observations for a date window."""
+    """Ingest historical economic data for a date window."""
 
     @open_api(
         tags=[ApiTags.ECONOMIC_DATA],
         summary="Ingest Historical Economic Data",
         description=(
-            "Ingest every available observation whose period falls in "
+            "Ingest every available value whose period falls in "
             "[start_date, end_date] inclusive. Pass `indicators` as indicator names "
             "to restrict the run; omit or pass an empty list to ingest all indicators."
         ),
@@ -215,7 +287,7 @@ class IngestHistoricalEconomicDataView(EconomicOverviewBaseView):
 
 
 class _SpecificEconomicDataIngestionItemValidatedData(TypedDict):
-    """Validated data for ``SpecificEconomicDataIngestionSerializerItem``."""
+    """Validated data for 'SpecificEconomicDataIngestionSerializerItem'."""
 
     indicator_name: str
     periods: list[str]
@@ -270,14 +342,14 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
 
 
 class _ListEconomicDataValidatedData(TypedDict, total=False):
-    """Validated data for ``ListEconomicDataSerializer``."""
+    """Validated data for 'ListEconomicDataSerializer'."""
 
     indicator_names: list[str]
     period: str
 
 
 class _DeleteEconomicDataValidatedData(TypedDict, total=False):
-    """Validated data for ``DeleteEconomicDataSerializer``."""
+    """Validated data for 'DeleteEconomicDataSerializer'."""
 
     ids: list[int] | None
 

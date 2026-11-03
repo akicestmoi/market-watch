@@ -6,9 +6,9 @@ from rest_framework import serializers
 
 
 class CommaSeparatedChoiceField(serializers.CharField):
-    """CSV query value; each token validated via ``ChoiceField``.
+    """CSV query value; each token validated via 'ChoiceField'.
 
-    Pass ``enum_class`` (e.g. a Django ``TextChoices``) to wrap each validated
+    Pass 'enum_class' (e.g. a Django 'TextChoices') to wrap each validated
     value as that enum member; otherwise raw choice values are returned.
     """
 
@@ -19,13 +19,13 @@ class CommaSeparatedChoiceField(serializers.CharField):
         enum_class: type | None = None,
         **kwargs,
     ):
-        """Initialize with ``ChoiceField``-compatible ``choices``."""
+        """Initialize with 'ChoiceField'-compatible 'choices'."""
         self.choice_field = serializers.ChoiceField(choices=choices)
         self.enum_class = enum_class
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
-        """Split on commas and validate each token against ``choices``."""
+        """Split on commas and validate each token against 'choices'."""
         value = super().to_internal_value(data)
         if not value or not str(value).strip():
             return None

@@ -314,10 +314,10 @@ function colorizeChanges(html) {
       return `(${colored}${suffix || ""})`;
     }
   );
-  // Unchanged prints in summary prose — same visual role as +/- coloring.
+  // Unchanged levels in summary prose — same visual role as +/- coloring.
   return withNumericChanges.replace(
     /\(unch\)/gi,
-    '<span class="daily-recap-change daily-recap-change-unchanged">(unch)</span>'
+    "<span class=\"daily-recap-change daily-recap-change-unchanged\">(unch)</span>"
   );
 }
 
@@ -403,27 +403,85 @@ function sourceLabelFromUrl(url) {
   }
 }
 
+const ARTICLE_SOURCE_REGION_ORDER = ["GLOBAL", "US", "EU", "FR", "JP"];
+const ARTICLE_SOURCE_REGION_LABELS = {
+  GLOBAL: "Global",
+  US: "US",
+  EU: "EU",
+  FR: "FR",
+  JP: "JP",
+};
+
 function buildArticleSourcesSection(sourceUrls) {
-  const urls = (Array.isArray(sourceUrls) ? sourceUrls : [])
-    .map((item) => (typeof item === "string" ? item : item && item.url))
+  const entries = (Array.isArray(sourceUrls) ? sourceUrls : [])
+    .map((item) => {
+      if (typeof item === "string") {
+        return { url: item, regions: [], label: sourceLabelFromUrl(item) };
+      }
+      if (!item || !item.url) {
+        return null;
+      }
+      const regions = Array.isArray(item.regions)
+        ? item.regions.map((region) => String(region || "").toUpperCase())
+        : item.region
+          ? [String(item.region).toUpperCase()]
+          : [];
+      return {
+        url: item.url,
+        regions,
+        label: item.label || sourceLabelFromUrl(item.url),
+      };
+    })
     .filter(Boolean);
-  if (!urls.length) {
+  if (!entries.length) {
     return "";
   }
-  const items = urls
-    .map((url) => {
-      const name = escapeHtml(sourceLabelFromUrl(url));
-      const href = escapeHtml(url);
+
+  const grouped = {};
+  ARTICLE_SOURCE_REGION_ORDER.forEach((region) => {
+    grouped[region] = [];
+  });
+  const ungrouped = [];
+  entries.forEach((entry) => {
+    const matchedRegions = entry.regions.filter((region) => grouped[region]);
+    if (!matchedRegions.length) {
+      ungrouped.push(entry);
+      return;
+    }
+    matchedRegions.forEach((region) => {
+      grouped[region].push(entry);
+    });
+  });
+
+  const renderItems = (items) =>
+    items
+      .map((entry) => {
+        const name = escapeHtml(entry.label);
+        const href = escapeHtml(entry.url);
+        return (
+          `<li><strong>${name}:</strong> ` +
+          `<a href="${href}" target="_blank" rel="noopener noreferrer">${href}</a></li>`
+        );
+      })
+      .join("");
+
+  const subsections = ARTICLE_SOURCE_REGION_ORDER.filter(
+    (region) => grouped[region].length > 0
+  )
+    .map((region) => {
+      const heading = escapeHtml(ARTICLE_SOURCE_REGION_LABELS[region] || region);
       return (
-        `<li><strong>${name}:</strong> ` +
-        `<a href="${href}" target="_blank" rel="noopener noreferrer">${href}</a></li>`
+        `<h4 class="daily-recap-article-region-title">${heading}</h4>` +
+        `<ul>${renderItems(grouped[region])}</ul>`
       );
     })
     .join("");
+  const leftover = ungrouped.length ? `<ul>${renderItems(ungrouped)}</ul>` : "";
+
   return (
     "<section class=\"daily-recap-section daily-recap-article-sources\">" +
     "<h3 class=\"daily-recap-section-title\">Article URL</h3>" +
-    `<div class="daily-recap-section-body"><ul>${items}</ul></div>` +
+    `<div class="daily-recap-section-body">${subsections}${leftover}</div>` +
     "</section>"
   );
 }

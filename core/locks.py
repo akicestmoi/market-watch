@@ -23,7 +23,7 @@ _termination_handlers_installed = False
 
 
 def _get_lock_token(lock: redis.lock.Lock) -> bytes | None:
-    """Return the ownership token for ``lock``, if any."""
+    """Return the ownership token for 'lock', if any."""
     token = getattr(lock.local, "token", None)
     if token is None:
         return None
@@ -38,7 +38,7 @@ def _unregister_held_lock(key: str) -> None:
 
 
 def _force_delete_lock_if_token_matches(key: str, token: bytes) -> bool:
-    """Delete ``key`` only when Redis still holds our ``token``."""
+    """Delete 'key' only when Redis still holds our 'token'."""
     client = get_redis_client()
     current = client.get(key)
     if current == token:
@@ -48,9 +48,9 @@ def _force_delete_lock_if_token_matches(key: str, token: bytes) -> bool:
 
 
 def release_redis_lock(lock: redis.lock.Lock, key: str) -> None:
-    """Release ``lock``; force-delete ``key`` if we still own the token.
+    """Release 'lock'; force-delete 'key' if we still own the token.
 
-    Use after ``try_acquire_redis_lock`` (Celery tasks) and from context managers
+    Use after 'try_acquire_redis_lock' (Celery tasks) and from context managers
     so ingestion errors / LockError / flaky Redis still clear our lock.
     """
     token = _get_lock_token(lock)
@@ -169,11 +169,11 @@ def acquire_redis_lock(
     raise_if_locked: bool = True,
     locked_detail: str | None = None,
 ) -> Iterator[bool]:
-    """Acquire a Redis lock for ``key``.
+    """Acquire a Redis lock for 'key'.
 
-    Yields ``True`` when acquired. If the lock is held elsewhere: raises
-    ``ResourceLocked`` when ``raise_if_locked`` is True, otherwise yields
-    ``False``.
+    Yields 'True' when acquired. If the lock is held elsewhere: raises
+    'ResourceLocked' when 'raise_if_locked' is True, otherwise yields
+    'False'.
 
     Always releases on exit (success, exception, or ingestion error). Process
     termination (e.g. Django autoreload SIGTERM) also clears locks we still own.

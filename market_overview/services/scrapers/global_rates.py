@@ -28,6 +28,7 @@ def _parse_euribor_rate_from_table(
         if len(cells) != 2:
             continue
 
+        # Two-column Euribor table: column 0 is the date, column 1 is the rate.
         raw_date = cells[0].get_text(strip=True)
         raw_rate = cells[1].get_text(strip=True)
 
@@ -63,6 +64,7 @@ def _parse_central_bank_rate_from_table(table: Tag) -> ScrapingResult:
     if len(cells) < 2:
         return ScrapingResult(price=None, comment="Row has insufficient columns")
 
+    # Central-bank rate table: column 1 on the first body row is the rate cell.
     rate_text = cells[1].get_text(strip=True)
     if not rate_text:
         return ScrapingResult(price=None, comment="Rate cell is empty")

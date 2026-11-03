@@ -92,6 +92,9 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
                 "frequency": "MONTHLY",
                 "source": "INSEE",
                 "ticker": "001565530",
+                "base_unit": "",
+                "base_currency": "",
+                "default_mode": "Raw",
             }
         ]
 
@@ -412,7 +415,7 @@ class TestIngestLatestEconomicDataView(TestCase):
         """
         GIVEN seeded indicators
         WHEN ingesting latest economic data
-        THEN the latest observation is ingested for each indicator
+        THEN the latest value is ingested for each indicator
         """
         mock_get_indicators.return_value = [self.indicator]
         mock_ingest.return_value = []
@@ -466,7 +469,7 @@ class TestIngestLatestEconomicDataView(TestCase):
         """
         GIVEN a date window
         WHEN ingesting historical economic data
-        THEN observations in the window are ingested
+        THEN values in the window are ingested
         """
         mock_get_indicators.return_value = [self.indicator]
         mock_ingest.return_value = []

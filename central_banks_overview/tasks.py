@@ -1,28 +1,29 @@
 """Celery tasks for STIR prices, CB data, and meetings ingestion."""
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
+from typing import Required, TypedDict
 
 from celery import shared_task
 
-import central_banks_overview.services.central_banks_data as central_banks_data
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices
 from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import (
-    convert_to_display_timezone,
-    get_market_watch_as_of_date,
-    get_previous_business_day,
-    logger,
-)
+from core.services import get_market_watch_as_of_date, get_previous_business_day, logger
+
+
+class _CeleryTaskResult(TypedDict, total=False):
+    """Standard Celery task status payload returned to the broker UI."""
+
+    status: Required[str]
+    message: Required[str]
+    date: str
+    stir_futures_updated: list[str]
 
 
 @shared_task
-def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
-    """
-    Celery task to ingest STIR Futures prices.
-    This task will be scheduled to run twice a day.
-    """
+def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False) -> _CeleryTaskResult:
+    """Ingest STIR futures prices for the as-of date (or two business days ago)."""
     match two_bdays_ago:
         case True:
             price_date = get_previous_business_day(get_market_watch_as_of_date())
@@ -36,14 +37,14 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
             "Skipping STIR Futures prices ingestion for %s: already in progress.",
             price_date.isoformat(),
         )
-        return {
-            "status": "skipped",
-            "message": (
+        return _CeleryTaskResult(
+            status="skipped",
+            message=(
                 "STIR Futures prices ingestion already in progress for "
                 f"{price_date.isoformat()}"
             ),
-            "date": price_date.isoformat(),
-        }
+            date=price_date.isoformat(),
+        )
 
     try:
         logger.info(f"Ingesting STIR Futures prices for {price_date}")
@@ -53,33 +54,30 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False):
         stir_futures_updated = stir_prices_ingestion.ingest_stir_futures_prices(
             stir_futures_prices
         )
-        return {
-            "status": "success",
-            "message": f"STIR Futures prices successfully ingested for {price_date}",
-            "stir_futures_updated": [
+        return _CeleryTaskResult(
+            status="success",
+            message=f"STIR Futures prices successfully ingested for {price_date}",
+            stir_futures_updated=[
                 f"{stir_future_price['short_name']}.{stir_future_price['maturity']}"
                 for stir_future_price in stir_futures_updated
             ],
-            "date": price_date.isoformat(),
-        }
+            date=price_date.isoformat(),
+        )
 
     except Exception as e:
         logger.error(f"Error in STIR Futures prices ingestion task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-            "date": price_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=price_date.isoformat(),
+        )
     finally:
         release_redis_lock(lock, lock_key)
 
 
 @shared_task
-def scheduled_stir_futures_price_update_logs_cleanup():
-    """
-    Celery task to clean up stir futures price update logs.
-    This task will be scheduled to run daily.
-    """
+def scheduled_stir_futures_price_update_logs_cleanup() -> _CeleryTaskResult:
+    """Delete STIR futures price-update logs older than the prior calendar month."""
     today = date.today()
     logs_date = (
         date(today.year - 1, 12, 1)
@@ -91,82 +89,69 @@ def scheduled_stir_futures_price_update_logs_cleanup():
         stir_prices_ingestion.delete_stir_futures_price_update_logs_before_date(
             logs_date
         )
-        return {
-            "status": "success",
-            "message": f"Stir futures price update logs deleted successfully for {logs_date}",
-            "date": logs_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="success",
+            message=(
+                f"Stir futures price update logs deleted successfully for {logs_date}"
+            ),
+            date=logs_date.isoformat(),
+        )
     except Exception as e:
         logger.error(f"Error in stir futures price update logs cleanup task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-            "date": logs_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=logs_date.isoformat(),
+        )
 
 
 @shared_task
-def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings():
-    """
-    Celery task to update central bank meetings and stir futures prices.
-    This task will be scheduled to run daily.
-    """
-    DAYS_TO_KEEP = 7
-    results = []
+def scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings() -> (
+    _CeleryTaskResult
+):
+    """Run past-meeting key-rate ingest, calendar refresh, and STIR price cleanup."""
+    days_to_keep = 7
+    processed_central_banks: list[str] = []
     try:
         for central_bank in CentralBankChoices:
             logger.info(f"Checking Central Bank: {central_bank.label}")
-            meeting_date = central_banks_meetings.get_central_bank_next_meeting_date(
-                central_bank
-            )
-            if not meeting_date or meeting_date >= datetime.now(timezone.utc):
+
+            # Meetings: stamp key rates for past meetings still pending ingest,
+            # then refresh the stored calendar.
+            if not central_banks_meetings.has_past_meeting(central_bank):
                 logger.info(
-                    f"No central bank meeting date found for Central Bank: {central_bank.label}. Skipping cleanup."
+                    "No past meeting for Central Bank: %s. Skipping cleanup.",
+                    central_bank.label,
                 )
                 continue
 
-            price_date = date.today() - timedelta(days=DAYS_TO_KEEP)
-            results.append(f"{central_bank.value} - {price_date.isoformat()}")
+            central_banks_meetings.ingest_pending_decision_day_key_rates(central_bank)
+            central_banks_meetings.ingest_central_bank_meeting_dates(central_bank)
+
+            # STIR cleanup: drop prices older than the keep window for this bank.
+            price_date = date.today() - timedelta(days=days_to_keep)
+            processed_central_banks.append(
+                f"{central_bank.value} - {price_date.isoformat()}"
+            )
             logger.info(
-                f"Cleaning up stir futures prices for Central Bank: {central_bank.label} on {price_date}"
+                f"Cleaning up stir futures prices for Central Bank: "
+                f"{central_bank.label} on {price_date}"
             )
             stir_prices_ingestion.delete_stir_futures_prices_before_date(
                 central_bank, price_date
             )
-            # Stamp key rates on the meeting's display calendar day so market
-            # recap economic releases can join them via that event date.
-            cb_data_date = convert_to_display_timezone(meeting_date).date()
-            cb_lock_key = central_banks_data.get_cb_data_ingestion_lock_key(
-                central_bank, cb_data_date
-            )
-            cb_lock = try_acquire_redis_lock(cb_lock_key)
-            if cb_lock is None:
-                logger.warning(
-                    "Skipping CB data ingestion for %s on %s: already in progress.",
-                    central_bank.value,
-                    cb_data_date.isoformat(),
-                )
-            else:
-                try:
-                    central_banks_data.ingest_central_bank_data(
-                        central_bank=central_bank,
-                        date_to_ingest=cb_data_date,
-                    )
-                finally:
-                    release_redis_lock(cb_lock, cb_lock_key)
-            central_banks_meetings.ingest_central_bank_meeting_dates(central_bank)
 
-        return {
-            "status": "success",
-            "message": (
-                "No central bank meetings to update"
-                if not results
-                else f"Central bank meetings updated successfully for {results}"
+        return _CeleryTaskResult(
+            status="success",
+            message=(
+                "No central banks with past meetings to process"
+                if not processed_central_banks
+                else f"Past-meeting cleanup completed for {processed_central_banks}"
             ),
-        }
+        )
     except Exception as e:
         logger.error(f"Error in stir futures prices cleanup task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+        )

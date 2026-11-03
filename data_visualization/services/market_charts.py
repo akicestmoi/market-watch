@@ -172,13 +172,13 @@ def _get_start_date(reference_date: date, chart_duration: ChartDuration) -> date
 
 
 def _to_historical_prices(frame: pd.DataFrame) -> list[HistoricalPrice]:
-    """Build ``HistoricalPrice`` rows from a DataFrame with price_date/price."""
+    """Build 'HistoricalPrice' values from a DataFrame with price_date/price."""
     prices: list[HistoricalPrice] = []
-    for row in frame[["price_date", "price"]].to_dict(orient="records"):
+    for price_record in frame[["price_date", "price"]].to_dict(orient="records"):
         prices.append(
             HistoricalPrice(
-                price_date=row["price_date"],
-                price=row["price"],
+                price_date=price_record["price_date"],
+                price=price_record["price"],
             )
         )
     return prices

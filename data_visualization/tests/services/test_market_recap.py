@@ -10,8 +10,8 @@ from central_banks_overview.models import (
     CentralBankDataModel,
     CentralBankMeetingModel,
 )
+from data_visualization.services.config import FX_MATRIX_ORDER
 from data_visualization.services.market_recap import (
-    FX_MATRIX_ORDER,
     _DayEventChangeClass,
     format_data_for_market_recap_display,
     get_day_events_grouped_by_location,
@@ -520,7 +520,7 @@ class TestMarketRecapServices(TestCase):
         assert len(result) == len(FX_MATRIX_ORDER)
 
         # Create a lookup map for easier access
-        result_map = {row["currency"]: row for row in result}
+        result_map = {fx_entry["currency"]: fx_entry for fx_entry in result}
 
         # All values should be 0 (no previous data to compare)
         for currency1 in FX_MATRIX_ORDER:
@@ -565,7 +565,7 @@ class TestMarketRecapServices(TestCase):
         assert len(result) == len(FX_MATRIX_ORDER)
 
         # Create a lookup map for easier access
-        result_map = {row["currency"]: row for row in result}
+        result_map = {fx_entry["currency"]: fx_entry for fx_entry in result}
 
         # All values should be 0 (no previous data to compare)
         for currency1 in FX_MATRIX_ORDER:
@@ -665,7 +665,6 @@ class TestDayEvents(TestCase):
         """
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
         )
         CentralBankDataModel.objects.create(

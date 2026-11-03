@@ -34,7 +34,7 @@
     // Handle dictionary of error messages (keys as subheaders, values as messages)
     if (message && typeof message === "object" && !Array.isArray(message)) {
       body.innerHTML = "";
-      Object.entries(message).forEach(([key, value], index) => {
+      Object.entries(message).forEach(([key, value]) => {
         const errorSection = document.createElement("div");
         errorSection.className = "error-message-section";
 

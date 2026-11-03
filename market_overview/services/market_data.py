@@ -19,13 +19,15 @@ from market_overview.models import (
     SpecialComment,
 )
 
+# Usage of tuple: fixed CSV header column order for bulk asset-price uploads.
 EXPECTED_CSV_COLUMNS: tuple[
     Literal["date"],
     Literal["short_name"],
     Literal["price"],
     Literal["logs"],
 ] = ("date", "short_name", "price", "logs")
-# Pandas DtypeArg needs dict[Hashable, ...]; invariance blocks TypedDict/Literal keys.
+# Usage of dict: Pandas DtypeArg needs dict[Hashable, ...]; invariance blocks
+# TypedDict/Literal keys. Values are column dtypes for read_csv.
 ASSETS_PRICES_CSV_DTYPES: dict[Hashable, type[str]] = {
     column: str for column in EXPECTED_CSV_COLUMNS
 }
@@ -34,7 +36,9 @@ ASSETS_PRICES_CSV_DTYPES: dict[Hashable, type[str]] = {
 def get_all_asset_prices_for_date(price_date: date) -> list[MarketPriceModel]:
     """Get market prices for a specific date."""
     return list(
-        MarketPriceModel.objects.filter(date=price_date).select_related("asset")
+        MarketPriceModel.objects.filter(date=price_date)
+        .select_related("asset")
+        .order_by("asset__short_name", "id")
     )
 
 
@@ -67,14 +71,14 @@ def get_price_update_logs(
 
 
 class AssetNames(TypedDict):
-    """Asset names dictionnary."""
+    """Short and full name pair for one asset."""
 
     short_name: str
     full_name: str
 
 
 class _GetAssetNamesFilters(TypedDict, total=False):
-    """Optional filters for ``get_asset_names``."""
+    """Optional filters for 'get_asset_names'."""
 
     asset_class: AssetClassChoices | None
     asset_type: AssetTypeChoices | None
@@ -169,7 +173,7 @@ def get_yield_curve(
 
 
 class _AssetWithoutPrice(TypedDict):
-    """Asset without price dictionnary."""
+    """Asset that is missing a market price on a given date."""
 
     id: int
     date: date
@@ -255,7 +259,7 @@ def get_all_asset_prices_for_date_without_holidays(
 
 
 class BulkUpdateAssetsPricesItem(TypedDict):
-    """Bulk update assets prices dictionnary."""
+    """One asset price update for a bulk update request."""
 
     date: date
     short_name: str
@@ -308,32 +312,32 @@ def bulk_update_assets_prices_from_csv(
 
     updates = [
         BulkUpdateAssetsPricesItem(
-            date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
-            short_name=row["short_name"],
-            price=float(row["price"]),
+            date=datetime.strptime(csv_record["date"], "%Y-%m-%d").date(),
+            short_name=csv_record["short_name"],
+            price=float(csv_record["price"]),
             logs=(
-                row["logs"]
-                if row["logs"]
+                csv_record["logs"]
+                if csv_record["logs"]
                 else (
-                    f"Bulk update from CSV file of {row['short_name']} "
-                    f"to price: {row['price']}."
+                    f"Bulk update from CSV file of {csv_record['short_name']} "
+                    f"to price: {csv_record['price']}."
                 )
             ),
         )
-        for row in df.to_dict(orient="records")
+        for csv_record in df.to_dict(orient="records")
     ]
     return bulk_update_assets_prices(updates)
 
 
 class MarkAsHolidayItem(TypedDict):
-    """Mark as holiday item dictionnary."""
+    """Asset and date to mark as a bank holiday."""
 
     short_name: str
     date: date
 
 
 class _MarkAsHolidayResult(TypedDict):
-    """Mark as holiday result dictionnary."""
+    """Counts and missing assets after marking prices as holiday."""
 
     updated_count: int
     not_found: list[str]
@@ -361,8 +365,8 @@ def mark_prices_as_holiday(items: list[MarkAsHolidayItem]) -> _MarkAsHolidayResu
     return _MarkAsHolidayResult(updated_count=updated_count, not_found=not_found)
 
 
-class _MarketPriceRow(TypedDict):
-    """Merged asset + market-price row used by price-change calculations."""
+class _MarketPriceEntry(TypedDict):
+    """Merged asset and market-price entry used by price-change calculations."""
 
     asset_id: int
     asset_class: AssetClassChoices
@@ -379,7 +383,7 @@ class _MarketPriceRow(TypedDict):
 
 
 class _PriceChange(TypedDict):
-    """Price change dictionnary."""
+    """Current and previous price with absolute and percent change for one asset."""
 
     asset_id: int
     asset_class: AssetClassChoices
@@ -399,13 +403,13 @@ class _PriceChange(TypedDict):
 
 def _convert_market_prices_to_data(
     market_prices: list[MarketPriceModel],
-) -> list[_MarketPriceRow]:
+) -> list[_MarketPriceEntry]:
     """Convert market prices to dictionary format."""
-    data_list: list[_MarketPriceRow] = []
+    data_list: list[_MarketPriceEntry] = []
     for market_price in market_prices:
         asset = market_price.asset
         data_list.append(
-            _MarketPriceRow(
+            _MarketPriceEntry(
                 asset_id=asset.asset_id,
                 asset_class=AssetClassChoices(asset.asset_class),
                 location=(LocationChoices(asset.location) if asset.location else None),

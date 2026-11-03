@@ -275,7 +275,7 @@ Project-owned Django apps (see `INSTALLED_APPS` in `core/settings.py`). URL moun
 |---|---|---|---|
 | Core | `core` | *(project root)* | Project kernel: settings, Celery, shared utilities, OpenAPI |
 | Market Overview | `market_overview` | `/markets/` | Asset catalog, daily closes, holidays, price audit logs |
-| Economic Overview | `economic_overview` | `/economics/` | Macro indicators, observations, publication calendars |
+| Economic Overview | `economic_overview` | `/economics/` | Macro indicators, economic data, publication calendars |
 | Central Banks | `central_banks_overview` | `/central-banks/` | CB meetings, STIR futures, implied rate-path probabilities |
 | Data Visualization | `data_visualization` | `/` (site root pages) | Operator UI: HTML recaps, charts, DB management |
 | Market Analysis | `market_analysis` | `/analysis/` | LLM T-1 news recap + interactive chat over verified data |
@@ -311,7 +311,7 @@ Catalogs equities, rates, FX, crypto, and commodities; ingests daily prices from
 
 **Purpose:** track macro releases — indicator definitions, published values, and when the next prints are due.
 
-Maintains the economic calendar and observation history used by the economic recap/charts and by market analysis when building daily context. Scheduled jobs refresh due indicators and scrape publication schedules so the UI and LLM stay aligned with official calendars.
+Maintains the economic calendar and value history used by the economic recap/charts and by market analysis when building daily context. Scheduled jobs refresh due indicators and scrape publication schedules so the UI and LLM stay aligned with official calendars.
 
 - **Models:** `EconomicIndicatorInformationModel`; `PublicationScheduleModel`; `EconomicDataModel`; `EconomicDataUpdateLogModel`.
 - **Services:** `data_ingestion_services` — scrape/ingest series (e.g. INSEE, Eurostat; JP Cabinet Office stubs); `economic_data_services` — due indicators, CRUD helpers, log cleanup; `publication_services` — scrape/update publication schedules.
@@ -491,8 +491,7 @@ market_analysis/
   tasks.py
   services/
     scrapers/
-      common.py                      # ScrapingResult, ArticleLink
-      html_text.py                   # shared HTML → main text
+      common.py                      # ScrapingResult, ArticleLink, extract_main_text
     market_analysis_services.py      # gates + pipeline
     article_extraction.py            # SOURCE_SCRAP_MAP + orchestration
     llm_market_recap_services.py     # analyze + recap

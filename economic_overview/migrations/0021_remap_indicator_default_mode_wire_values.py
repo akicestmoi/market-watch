@@ -1,4 +1,4 @@
-"""Remap ``default_mode`` wire codes to Raw / Quarter / Annualized Quarter / Annual."""
+"""Remap 'default_mode' wire codes to Raw / Quarter / Annualized Quarter / Annual."""
 
 from django.db import migrations, models
 

@@ -16,7 +16,7 @@ class BaseManager(models.Manager):
     """Default manager for BaseModel subclasses."""
 
     def get(self, *args, **kwargs):
-        """Get a row, raising DRF NotFound when it does not exist."""
+        """Get one model instance, raising DRF NotFound when it does not exist."""
         try:
             return super().get(*args, **kwargs)
         except ObjectDoesNotExist:
@@ -24,7 +24,7 @@ class BaseManager(models.Manager):
 
 
 def get_choice_from_label(choices: type[ChoiceT], label: str) -> ChoiceT:
-    """Return the member of ``choices`` whose display label matches ``label``."""
+    """Return the member of 'choices' whose display label matches 'label'."""
     for choice in choices:
         if str(choice.label) == label:
             return choice
@@ -35,7 +35,7 @@ def get_choice_from_label(choices: type[ChoiceT], label: str) -> ChoiceT:
 
 
 def get_choice_labels(choices: type[ChoiceT]) -> list[str]:
-    """Display labels in ``ordered()`` order when defined, else declaration order."""
+    """Display labels in 'ordered()' order when defined, else declaration order."""
     ordered_attr = getattr(choices, "ordered", None)
     if callable(ordered_attr):
         ordered_members = ordered_attr()
@@ -51,8 +51,14 @@ def get_choice_labels(choices: type[ChoiceT]) -> list[str]:
 class BaseModel(models.Model):
     """Base Model to be inherited accross entire application."""
 
-    date_added = models.DateTimeField(auto_now_add=True)
-    last_modified = models.DateTimeField(auto_now=True)
+    date_added = models.DateTimeField(
+        auto_now_add=True,
+        help_text="UTC timestamp when this record was first created.",
+    )
+    last_modified = models.DateTimeField(
+        auto_now=True,
+        help_text="UTC timestamp of the most recent save of this record.",
+    )
 
     objects = BaseManager()
 
@@ -100,7 +106,9 @@ class BaseModel(models.Model):
 class BaseLogModel(BaseModel):
     """Base Log Model to keep log of changes."""
 
-    logs = models.TextField()
+    logs = models.TextField(
+        help_text="Human-readable change / ingest log for the related domain record.",
+    )
 
     class Meta:
         """Base log model metadata (newest first)."""

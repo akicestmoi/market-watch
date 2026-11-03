@@ -70,7 +70,7 @@ class LocationChoices(models.TextChoices):
 
     @classmethod
     def get_labels(cls) -> list[str]:
-        """Display labels in ``ordered()`` order."""
+        """Display labels in 'ordered()' order."""
         return get_choice_labels(cls)
 
 
@@ -96,23 +96,52 @@ class SpecialComment(str, Enum):
 class AssetModel(BaseModel):
     """Asset Model."""
 
-    asset_id = models.IntegerField()
-    asset_class = models.CharField(max_length=50, choices=AssetClassChoices.choices)
-    location = models.CharField(
-        max_length=2, choices=LocationChoices.choices, null=True, blank=True
+    asset_id = models.IntegerField(
+        help_text="Stable numeric id from the asset catalog JSON.",
     )
-    short_name = models.CharField(max_length=100, primary_key=True)
-    full_name = models.CharField(max_length=100)
-    maturity = models.FloatField(null=True, blank=True)
+    asset_class = models.CharField(
+        max_length=50,
+        choices=AssetClassChoices.choices,
+        help_text="Broad asset class (stocks, rates, FX, crypto, commodities, …).",
+    )
+    location = models.CharField(
+        max_length=2,
+        choices=LocationChoices.choices,
+        null=True,
+        blank=True,
+        help_text="Market / economy location when the asset is region-specific.",
+    )
+    short_name = models.CharField(
+        max_length=100,
+        primary_key=True,
+        help_text="Short asset code used as primary key (e.g. SPX, US10Y).",
+    )
+    full_name = models.CharField(
+        max_length=100,
+        help_text="Human-readable asset name for UI / recap cards.",
+    )
+    maturity = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Bond / rate maturity in years when applicable; null otherwise.",
+    )
     asset_type = models.CharField(
         max_length=100,
         choices=AssetTypeChoices.choices,
         null=True,
         blank=True,
         default=None,
+        help_text="Finer instrument type within the asset class.",
     )
-    ticker = models.CharField(max_length=100)
-    source = models.CharField(max_length=100, choices=PriceSourceChoices.choices)
+    ticker = models.CharField(
+        max_length=100,
+        help_text="Upstream source ticker / series code used for price ingest.",
+    )
+    source = models.CharField(
+        max_length=100,
+        choices=PriceSourceChoices.choices,
+        help_text="Upstream price source for this asset.",
+    )
 
     def __str__(self):
         return f"{self.short_name}"
@@ -126,10 +155,22 @@ class MarketPriceModel(BaseModel):
         db_column="asset_short_name",
         on_delete=models.CASCADE,
         related_name="market_prices",
+        help_text="Asset this price belongs to.",
     )
-    date = models.DateField()
-    price = models.FloatField(null=True, blank=True)
-    comment = models.TextField(null=True, blank=True, default="")
+    date = models.DateField(
+        help_text="Price date (calendar day).",
+    )
+    price = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Settled / last price; null when missing.",
+    )
+    comment = models.TextField(
+        null=True,
+        blank=True,
+        default="",
+        help_text="Optional scrape / ingest note (e.g. bank holiday).",
+    )
 
     class Meta:
         """Market price model metadata (unique per asset and date)."""
@@ -167,13 +208,25 @@ class PriceUpdateLogModel(BaseLogModel):
 
     fk_name = "market_price"
     market_price = models.ForeignKey(
-        "MarketPriceModel", on_delete=models.CASCADE, related_name="price_update_logs"
+        "MarketPriceModel",
+        on_delete=models.CASCADE,
+        related_name="price_update_logs",
+        help_text="Market price this update log belongs to.",
     )
 
 
 class HolidayModel(BaseModel):
     """Holiday Model."""
 
-    date = models.DateField()
-    name = models.CharField(max_length=100)
-    location = models.CharField(max_length=100, choices=LocationChoices.choices)
+    date = models.DateField(
+        help_text="Calendar day of the market holiday.",
+    )
+    name = models.CharField(
+        max_length=100,
+        help_text="Holiday display name (e.g. New Year's Day).",
+    )
+    location = models.CharField(
+        max_length=100,
+        choices=LocationChoices.choices,
+        help_text="Market location for which this day is a holiday.",
+    )

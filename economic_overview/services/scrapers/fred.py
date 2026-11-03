@@ -1,4 +1,4 @@
-"""Scrape FRED observations and FRED release dates."""
+"""Scrape FRED series values and FRED release dates."""
 
 from datetime import date, datetime
 from datetime import timezone as datetime_timezone
@@ -25,30 +25,31 @@ from economic_overview.services.scrapers.common import (
 )
 
 
-class _FredObservation(TypedDict, total=False):
-    """One FRED observation row (fields we read)."""
+class _FredSeriesValue(TypedDict, total=False):
+    """One FRED series value from the API payload (fields we read)."""
 
     date: str
     value: str
 
 
-class _FredObservationsPayload(TypedDict, total=False):
-    """FRED ``series/observations`` JSON root (fields we read)."""
+class _FredSeriesValuesPayload(TypedDict, total=False):
+    """FRED 'series/observations' JSON root (fields we read)."""
 
-    observations: list[_FredObservation]
-
-
-_FRED_OBSERVATIONS_ADAPTER = TypeAdapter(_FredObservationsPayload)
+    # API field name is 'observations'; values are series values we parse.
+    observations: list[_FredSeriesValue]
 
 
-def _parse_fred_observations(
-    payload: _FredObservationsPayload,
+_FRED_SERIES_VALUES_ADAPTER = TypeAdapter(_FredSeriesValuesPayload)
+
+
+def _parse_fred_series_values(
+    payload: _FredSeriesValuesPayload,
 ) -> list[ScrapingResult]:
-    """Parse FRED observation rows into scraping results (newest first)."""
+    """Parse FRED series values into scraping results (newest first)."""
     economic_data: list[ScrapingResult] = []
-    for observation in payload.get("observations", []):
-        period_label = observation.get("date")
-        raw_value = observation.get("value")
+    for series_value in payload.get("observations", []):
+        period_label = series_value.get("date")
+        raw_value = series_value.get("value")
         if not period_label or raw_value is None or raw_value == ".":
             continue
         try:
@@ -59,7 +60,10 @@ def _parse_fred_observations(
         economic_data.append(
             ScrapingResult(period=period, data_value=data_value, comment="")
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min,
+        reverse=True,
+    )
     return economic_data
 
 
@@ -69,7 +73,7 @@ def get_data_from_fred(
     target_period: str | None = None,
     frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.MONTHLY,
 ) -> list[ScrapingResult]:
-    """Get FRED series observations (all rows, or a single matching period).
+    """Get FRED series values (all periods, or a single matching period).
 
     Source: https://fred.stlouisfed.org/docs/api/fred/series_observations.html
     """
@@ -99,21 +103,21 @@ def get_data_from_fred(
         return [ScrapingResult(period=None, data_value=None, comment=response.text)]
 
     try:
-        payload = _FRED_OBSERVATIONS_ADAPTER.validate_python(response.json())
+        payload = _FRED_SERIES_VALUES_ADAPTER.validate_python(response.json())
     except (ValueError, ValidationError) as exc:
         return [
             ScrapingResult(
                 period=None,
                 data_value=None,
-                comment=f"Invalid FRED observations JSON: {exc}",
+                comment=f"Invalid FRED series JSON: {exc}",
             )
         ]
 
-    economic_data = _parse_fred_observations(payload)
+    economic_data = _parse_fred_series_values(payload)
     if not economic_data:
         return [
             ScrapingResult(
-                period=None, data_value=None, comment="No FRED observations found."
+                period=None, data_value=None, comment="No FRED series values found."
             )
         ]
     return filter_scraping_results_by_target_period(
@@ -122,13 +126,13 @@ def get_data_from_fred(
 
 
 class _FredReleaseDate(TypedDict, total=False):
-    """One FRED release date row (fields we read)."""
+    """One FRED release date from the API payload (fields we read)."""
 
     date: str
 
 
 class _FredReleaseDatesPayload(TypedDict, total=False):
-    """FRED ``release/dates`` JSON root (fields we read)."""
+    """FRED 'release/dates' JSON root (fields we read)."""
 
     release_dates: list[_FredReleaseDate]
 
@@ -153,9 +157,9 @@ def get_publication_dates_from_fred(name: str) -> list[datetime]:
         return []
 
     today = timezone.now().date()
-    # ``realtime_start=today`` is required: without it, ``sort_order=asc`` +
-    # ``limit`` returns the oldest historical dates and long-history releases
-    # (e.g. G.17 / release 13) never reach upcoming schedule rows.
+    # 'realtime_start=today' is required: without it, 'sort_order=asc' +
+    # 'limit' returns the oldest historical dates and long-history releases
+    # (e.g. G.17 / release 13) never reach upcoming schedule dates.
     response = requests.get(
         FRED_RELEASE_DATES_URL,
         params={
@@ -180,8 +184,8 @@ def get_publication_dates_from_fred(name: str) -> list[datetime]:
         return []
 
     upcoming: list[datetime] = []
-    for release_date_row in payload.get("release_dates", []):
-        date_label = release_date_row.get("date")
+    for release_date_entry in payload.get("release_dates", []):
+        date_label = release_date_entry.get("date")
         if not date_label:
             continue
         try:

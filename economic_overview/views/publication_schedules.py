@@ -24,7 +24,7 @@ from economic_overview.views.economic_data import EconomicOverviewBaseView
 
 
 class _UpdatePublicationScheduleValidatedData(TypedDict, total=False):
-    """Validated data for ``UpdatePublicationScheduleSerializer``."""
+    """Validated data for 'UpdatePublicationScheduleSerializer'."""
 
     indicator_names: list[str]
 

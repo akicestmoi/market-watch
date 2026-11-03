@@ -12,7 +12,7 @@ BOJ_MPM_URL = "https://www.boj.or.jp/mopo/mpmsche_minu/index.htm"
 ECB_MEETING_URL = "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html"
 
 # ---------------------------------------------------------------------------
-# Announcement wall clocks
+# Announcement local times
 # ---------------------------------------------------------------------------
 """Local announcement times (DST-aware → UTC on ingest) per central bank."""
 

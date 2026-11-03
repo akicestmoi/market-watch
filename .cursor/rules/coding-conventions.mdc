@@ -11,6 +11,24 @@ This is a **personal project with a single environment**. Do **not** keep parall
 
 If a change **needs** a schema/migration (models, persisted `TextChoices`, etc.), **stop and ask** before adding or running migration files — do not invent compatibility layers to avoid that conversation.
 
+## Django model fields
+
+Every new or changed field on a Django model **must** be documented with a non-empty `help_text=` (what the column means in domain terms — not a restatement of the Python type). Do this in the same change that adds or renames the field; do not leave bare `CharField` / `DateField` / FKs without description.
+
+```python
+# ❌ BAD — no description
+date = models.DateTimeField()
+
+# ✅ GOOD
+date = models.DateTimeField(
+    help_text=(
+        "Scheduled announcement time in UTC (local announcement time converted on ingest)."
+    ),
+)
+```
+
+When you touch an app’s `models.py` for schema work, bring undocumented sibling fields on the models you edit up to the same bar (add `help_text`) rather than leaving a mixed file.
+
 ## App / API structure
 
 Each Django app keeps a fixed layout. Do not invent parallel folders for the same concern.
@@ -34,7 +52,7 @@ Each Django app keeps a fixed layout. Do not invent parallel folders for the sam
 
 When an app stores computed payloads in Redis (display digests, article analyses, …), put those get/set/list helpers in **`<app>/services/cache.py`**. Create the module only if the app has at least one Redis-backed cache. Do not scatter Redis key builders or clients across domain service modules.
 
-**Belong in `services/cache.py`:** key / version stamps, TTL constants for those entries, domain serialize/deserialize (when wire shape ≠ inward shape), and public `get_cached_*` / `set_cached_*` / `list_cached_*` entry points. Use **`core.cache.get_cached_json` / `set_cached_json`** for Redis JSON get/set with a Pydantic ``TypeAdapter``; obtain the client only via **`core.cache.get_redis_client`** when you need set membership / pipelines / non-JSON ops — never call `redis.from_url` in app modules.
+**Belong in `services/cache.py`:** key / version stamps, TTL constants for those entries, domain serialize/deserialize (when wire shape ≠ inward shape), and public `get_cached_*` / `set_cached_*` / `list_cached_*` entry points. Use **`core.cache.get_cached_json` / `set_cached_json`** for Redis JSON get/set with a Pydantic `TypeAdapter`; obtain the client only via **`core.cache.get_redis_client`** when you need set membership / pipelines / non-JSON ops — never call `redis.from_url` in app modules.
 
 **Stay in sibling service modules:** cache fingerprints built from domain inputs, adapters / TypedDicts for the live payload shape, and the compute-then-cache orchestration that calls into `cache.py`.
 
@@ -54,7 +72,7 @@ Public scraper entry points are verb-led and **without** a leading `_` when impo
 
 App-wide **static** values used by services — URLs, timeouts, series/ticker maps, release-id tables, layout constants, frozen dataclass / TypedDict templates — belong in **`<app>/services/config.py`**, not scattered as globals across service modules. Import them from there.
 
-**Prefer global dict mappers over `match` / `get_*` lookup helpers when the branch only returns a static value.** When a closed set of keys maps to static values (strings, constants, config rows), declare `SOME_NAME_BY_KEY: dict[…] = {…}` and use `.get(...)` / `[...]` at the call site. Do **not** wrap that table in a `match` statement or a one-line `get_*` function.
+**Prefer global dict mappers over `match` / `get_*` lookup helpers when the branch only returns a static value.** When a closed set of keys maps to static values (strings, constants, config entries), declare `SOME_NAME_BY_KEY: dict[…] = {…}` and use `.get(...)` / `[...]` at the call site. Do **not** wrap that table in a `match` statement or a one-line `get_*` function.
 
 ```python
 # ❌ BAD — match / get_* wrapper around a fixed table (any module)
@@ -171,6 +189,26 @@ Shared OpenAPI helpers, tags, and error response classes live in `core/open_api/
 
 ## Naming
 
+### Prefer plain, casual wording
+
+Names and docstrings should read like clear speech with a light technical touch — not formal or corporate jargon. Prefer everyday words the domain already uses (`keep`, `past`, `already landed`) over abstract verbs (`persist`, `elapsed`, `materialize`) when both mean the same thing.
+
+```python
+# ❌ BAD — stiff / abstract
+def get_most_recent_elapsed_meeting_date(...): ...
+meeting_dates_to_persist = _build_meeting_dates_to_persist(...)
+
+# ✅ GOOD — plain domain wording
+def get_latest_past_meeting_date(...): ...
+meeting_dates_to_keep = _list_meeting_dates_to_keep(...)
+```
+
+Docstrings: **always complete English sentences** (capital start, verb, period) — never telegraphic fragments like “One key rate per series on that date.” Keep them short and say **why** when that matters; do not stack as-of / lookback / timezone essays unless the reader needs them to use the API safely.
+
+**Name the domain object — not “row”, “print”, or similar stand-ins.** In names, docstrings, `help_text`, and comments about persisted or domain entities, do **not** say “row” / “rows”, “print” / “prints”, or other generic placeholders. Use the real noun: meeting, key rate, data set, price, series, … (e.g. “excludes meetings already marked…” not “excludes rows…”; `key_rate` not `key_rate_print`; “this data set belongs to…” not “this data row…”). A rate print **is** a rate — prefer `key_rate` / “key rate” over “key-rate print”. Loop locals over a literal HTML table / CSV / DataFrame may still use `row` when the source is structurally a table.
+
+**Renames need approval first.** When the user asks to rename something (function, type, field, docstring phrase, status label, …), **propose several concrete options** and **wait for an explicit pick** before editing. Do not implement a rename in the same turn as the proposal unless they already chose one.
+
 ### Function names start with a verb
 
 Public and helper function names must begin with a verb (or verb phrase) that states the action. Do **not** lead with the object noun (`schedule_…`, `timezone_…`) — put the verb first.
@@ -202,7 +240,7 @@ Exceptions: well-known callables expected by a framework (e.g. Django `save`, `_
 
 Names must make the value’s **role** obvious at the use site without re-reading earlier lines. Prefer a **concise multi-word domain phrase** over a letter, an abbreviation, or a single vague noun.
 
-“Short” here means *not a sentence* — it does **not** mean a one-word stub. A bare `rows`, `levels`, `records`, `latest`, `data`, `item`, `result`, or `transformed` is too thin when the domain object is known (economic time series, publication schedules, display-mode changes, …). Spell the domain noun (and qualifier when needed): `economic_data_time_series`, `indicator_value_triplet`, `indicator_default_display_mode`.
+“Short” here means _not a sentence_ — it does **not** mean a one-word stub. A bare `rows`, `levels`, `records`, `latest`, `data`, `item`, `result`, or `transformed` is too thin when the domain object is known (economic time series, publication schedules, display-mode changes, …). Spell the domain noun (and qualifier when needed): `economic_data_time_series`, `indicator_value_triplet`, `indicator_default_display_mode`.
 
 ```python
 # ❌ BAD — cryptic, abbreviated, or one vague noun
@@ -217,12 +255,14 @@ latest = records[0]
 # ✅ GOOD — role readable at the use site
 chat_message = ChatMessage(...)
 market_price_time_series = fetch_market_prices()
+# The series is newest-first, so index 0 is the latest value.
 latest_market_price = market_price_time_series[0]
 paris_datetime = convert_to_display_timezone(utc_datetime)
-latest_time_series_point = economic_data_time_series[0]
+# The series is newest-first, so index 0 is the latest value.
+latest_time_series_value = economic_data_time_series[0]
 economic_data_time_series = [
-    float(time_series_point.data_value)
-    for time_series_point in economic_data_time_series
+    float(time_series_value.data_value)
+    for time_series_value in economic_data_time_series
 ]
 indicator_value_triplet = change_indicator_values_mode(
     economic_data_time_series, ...
@@ -232,6 +272,31 @@ indicator_value_triplet = change_indicator_values_mode(
 Avoid single-letter names except conventional loop indices (`i`, `j`) or well-known math locals in a tiny scope. Do not invent new short aliases for types or modules (`dt` for `datetime`, `cb` for central bank) at call sites — use the real name.
 
 Do **not** reuse an imported module’s name as a local variable (`holidays = holidays.get_…` → UnboundLocalError). Prefer a domain noun for the value (`holiday_dates`, `prices_to_ingest`, `economic_data_time_series`).
+
+### Indexed / sliced access needs a why-comment
+
+When taking a fixed index or slice (`[0]`, `[-1]`, `[:2]`, …) that encodes domain meaning (newest, only entry, current+next, …), put a **one-line `# …` comment immediately above** that states **why that index/slice** — not what the syntax does. Write it as a **full sentence**: capital start, period at the end.
+
+```python
+# ❌ BAD — magic index; reader must reverse-engineer the invariant
+return extracted_articles["sources"][0]
+upcoming = publication_datetimes[:2]
+latest = economic_data_time_series[0]
+
+# ❌ BAD — explains why, but not a full sentence; do not use 'name=' kwarg shorthand in prose
+# source= filters to one source result
+# newest-first series
+
+# ✅ GOOD — full sentence naming the invariant that makes this index/slice correct
+# extract_all_articles was called with one source, so sources has that single result.
+return extracted_articles["sources"][0]
+# Schedule roll uses at most current and next; past dates must not be re-fed.
+upcoming_publication_dates = publication_datetimes[:2]
+# The series is newest-first, so index 0 is the latest value.
+latest_time_series_value = economic_data_time_series[0]
+```
+
+Skip the comment only when the index is a conventional loop/`enumerate` counter, or the meaning is already obvious from a **named** local built for that role on the previous line (`only_source_result = …` then return it without re-indexing). Prefer naming the value when that removes the need to index at the return site.
 
 ## Module layout
 
@@ -385,8 +450,9 @@ def build(...) -> EurostatTickerParams | None:
     return EurostatTickerParams(dataset=template.dataset, params=params)
 ```
 
-Do **not** call a TypedDict as ``SomeTypedDict(**other_typed_dict, extra=...)`` — pyright cannot match that ``__init__`` overload. Merge into an annotated ``SomeTypedDict`` local (or pass fields explicitly), then pass that value into the outer TypedDict constructor.
-```
+Do **not** call a TypedDict as `SomeTypedDict(**other_typed_dict, extra=...)` — pyright cannot match that `__init__` overload. Merge into an annotated `SomeTypedDict` local (or pass fields explicitly), then pass that value into the outer TypedDict constructor.
+
+````
 
 ### TypedDict vs Pydantic `BaseModel` vs Django `BaseModel`
 
@@ -402,7 +468,7 @@ Three different “model” concepts — do not mix them:
 
 **Third-party / cache JSON (required):** Do **not** annotate scraped or loaded JSON as bare `dict`, `dict[str, Any]`, or a **`Protocol`**. `Protocol` is for behavioral duck typing (methods), not JSON object shapes. Declare a **`TypedDict`** (nested as needed; `total=False` when fields may be absent) for the keys we read, then validate once at the edge with **`TypeAdapter(ThatTypedDict).validate_python(raw)`** (catch `ValidationError`). Pass only the TypedDict inward. Do **not** hand-write nested field-by-field coerce trees.
 
-Flat maps with **truly dynamic keys not known in advance** (e.g. JSON-stat flat indexes) may stay `dict[str, …]` of already-typed values; comment with `# Usage of dict: …` (e.g. `# Usage of dict: keys are JSON-stat flat indexes; values are observation numbers.`). If every key is **known in advance**, do **not** use that exception — pick a typed shape instead (e.g. a `TypedDict` with those fields, a `list` of TypedDicts, a `NamedTuple`, … — whatever fits; not limited to these examples).
+Flat maps with **truly dynamic keys not known in advance** (e.g. JSON-stat flat indexes) may stay `dict[str, …]` of already-typed values; comment with `# Usage of dict: …` (e.g. `# Usage of dict: keys are JSON-stat flat indexes; values are numbers.`). If every key is **known in advance**, do **not** use that exception — pick a typed shape instead (e.g. a `TypedDict` with those fields, a `list` of TypedDicts, a `NamedTuple`, … — whatever fits; not limited to these examples).
 
 **LLM pipeline pattern (required):** Pydantic schema at the agent boundary → map into a **TypedDict** (or ORM fields) for process memory, cache, and persistence. Do not thread Pydantic instances through services/UI; do not re-validate trusted internal dicts with Pydantic.
 
@@ -416,10 +482,10 @@ class ArticleAnalysisOutput(BaseModel):
 class AnalyzedArticle(TypedDict):
     title: str
     ...
-```
+````
 
 ```python
-# ❌ BAD — Pydantic for an internal service row we construct ourselves
+# ❌ BAD — Pydantic for an internal service record we construct ourselves
 class PriceChange(BaseModel):
     asset_id: int
     short_name: str
@@ -437,7 +503,7 @@ Use **`NamedTuple`** for fixed-position multi-field returns / small fixed record
 **`@dataclass` — only when TypedDict / NamedTuple are a poor fit.** Prefer **`TypedDict`** for trusted internal / config / query shapes (plain `dict` at runtime). Prefer **`NamedTuple`** when every field is required and you want attribute access. Use a **frozen `@dataclass`** only when you need a real constructor (`Foo(...)`) **and** optional fields / defaults that make `TypedDict` or `NamedTuple` awkward (typical: static module config entries like `_EurostatSeriesTemplate(...)`). Do **not** reach for dataclass by default; do **not** use dataclasses as a substitute for Pydantic validation or for JSON-shaped service records you already model as TypedDict.
 
 ```python
-# ✅ TypedDict — trusted query / row shape (default choice)
+# ✅ TypedDict — trusted query / record shape (default choice)
 class EurostatQueryParams(TypedDict, total=False):
     freq: Required[str]
     sinceTimePeriod: Required[str]
@@ -495,7 +561,7 @@ class DayEventFormattedChange(NamedTuple):
 class EurostatJsonStatPayload(TypedDict):
     id: list[str]
     size: list[int]
-    # Usage of dict: keys are JSON-stat flat indexes; values are observation numbers.
+    # Usage of dict: keys are JSON-stat flat indexes; values are numbers.
     value: dict[str, float | int | None]
     dimension: dict[str, EurostatJsonStatDimension]
 
@@ -560,11 +626,27 @@ Every module (except `__init__.py`), and every function and class, must have a d
 ```python
 """Build market recap payloads for the visualization UI."""
 
+# ❌ BAD — telegraphic fragment; “rows” as a stand-in
+"""Economic recap rows for the current window."""
+
+# ✅ GOOD — complete sentence; names the domain payload
 def get_economic_recap_data() -> ...:
-    """Return economic recap rows for the current comparison window."""
+    """Return economic recap data for the current comparison window."""
 ```
 
 Exceptions: methods required by a framework with no useful prose beyond the name (`save`, `__str__`, `__init__` when trivial). Prefer a one-line docstring over none.
+
+**Inline names use single quotes, not double backticks.** In docstrings, wrap identifiers, field names, literals, and short code fragments in `'…'` — never RST-style `…`.
+
+```python
+# ❌ BAD — RST double backticks; telegraphic fragments
+"""Parse ``article:published_time`` from article HTML."""
+"""Wraps for ``reporting_date``. When ``region`` set, that region only."""
+
+# ✅ GOOD — single quotes; complete sentences
+"""Parse 'article:published_time' from article HTML."""
+"""Scrape wraps for 'reporting_date'. When 'region' is set, only that region is scraped."""
+```
 
 ### Failing tests after an implementation change
 
@@ -572,7 +654,7 @@ When a **new or changed implementation causes existing tests to fail**, **stop a
 
 The recap should name the failing test(s), the observed vs expected behavior, and the likely cause in one short block. Do **not** silently rewrite assertions, delete coverage, or weaken checks to make the suite green.
 
-Obvious exceptions only: the same change **intentionally** updates a contract the test hardcodes (e.g. renamed field / new required context key) *and* the user already directed that contract change in the current request — then update the expected payload to match. When in doubt, raise the recap.
+Obvious exceptions only: the same change **intentionally** updates a contract the test hardcodes (e.g. renamed field / new required context key) _and_ the user already directed that contract change in the current request — then update the expected payload to match. When in doubt, raise the recap.
 
 ### Test naming
 
@@ -645,11 +727,11 @@ assert response_context == {
 - Mock call verification: `assert_called_once_with(...)`, `assert_not_called()`
 - Tiny unit helpers that return a **single scalar** (or a small fixed NamedTuple / enum) — assert that value directly
 - Inequalities / ordering checks in methodology tests (`assert x > y`) when the contract is relative, not an exact payload
-- **Very large** homogeneous sequences (e.g. 100+ scraped observations) where hardcoding every row is impractical: assert `len(result)` plus full equality on a few sentinel rows (`result[0]`, `result[-1]`, …). Prefer full-list equality whenever the list is small or medium
+- **Very large** homogeneous sequences (e.g. 100+ scraped values) where hardcoding every item is impractical: assert `len(result)` plus full equality on a few sentinel items (`result[0]`, `result[-1]`, …). Prefer full-list equality whenever the list is small or medium
 
-Do **not** use the large-sequence exception to justify field-by-field checks on week grids, recap rows, cache payloads, LLM context TypedDicts, or other closed-shape objects — those always get one full equality.
+Do **not** use the large-sequence exception to justify field-by-field checks on week grids, recap payloads, cache payloads, LLM context TypedDicts, or other closed-shape objects — those always get one full equality.
 
-**HTML / template views:** assert the full template **context** when the view passes one (same rule as JSON). Also assert the full rendered body with ``assert response.content == expected_html`` (bytes or a fixture file of the exact markup) — never ``assert needle in response.content`` / other partial membership checks. Update the expected HTML when the template or hashed static URLs change.
+**HTML / template views:** assert the full template **context** when the view passes one (same rule as JSON). Also assert the full rendered body with `assert response.content == expected_html` (bytes or a fixture file of the exact markup) — never `assert needle in response.content` / other partial membership checks. Update the expected HTML when the template or hashed static URLs change.
 
 ### Test mocks: decorator only; configure inside the test
 

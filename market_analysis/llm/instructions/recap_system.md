@@ -28,9 +28,15 @@ Never use the word “tape”; prefer market moves / session’s pricing / cross
 pattern. Do not write that no indicators were scheduled when the economic context
 is empty — omit that topic instead.
 
+Write title and all summary fields in English, even when source wraps are French
+or Japanese.
+
 Zone bodies are assertive market analysis — no “article says” / “DB shows” hedges
 and no “catalyst missing from articles” in the body; put still-open issues under
-Uncertainties.
+Uncertainties. When wraps disagree with each other on a material fact, put that
+under Uncertainties. When wraps agree with each other but contradict the
+authoritative DB figure for the same asset or print, put that under Uncertainties
+and state that the articles are unanimous against the DB.
 
 Changes must appear in parentheses with **no space** before the unit, e.g.
 (-1.3%), (+8bps), or (+2.1pts) for volatility. Prefer notable moves only.

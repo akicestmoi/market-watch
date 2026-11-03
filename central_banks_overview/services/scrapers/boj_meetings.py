@@ -65,11 +65,13 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
     if not month_day_pairs:
         return None
 
-    # For single-day meetings, use the same date as start and end
+    # Single-day meetings duplicate the only pair so start and end share one date.
     if len(month_day_pairs) == 1:
         month_day_pairs.append(month_day_pairs[0])
 
+    # Index 0 is the first calendar day of the meeting window (start month).
     start_month, _ = month_day_pairs[0]
+    # Index -1 is the last calendar day (announcement / end of the window).
     end_month, end_day = month_day_pairs[-1]
 
     # Handle year rollover (Dec → Jan)
@@ -116,10 +118,10 @@ def extract_boj_meeting_dates() -> list[datetime]:
 
         year = int(year_match.group(1))
 
-        for row in table.select("tbody tr"):
-            if not isinstance(row, Tag):
+        for table_line in table.select("tbody tr"):
+            if not isinstance(table_line, Tag):
                 continue
-            first_td = row.find("td")
+            first_td = table_line.find("td")
             if not isinstance(first_td, Tag):
                 continue
 

@@ -18,7 +18,7 @@ from market_analysis.services.cache import list_cached_analyses
 
 
 class _GetArticleCacheValidatedData(TypedDict):
-    """Validated data for ``GetArticleCacheSerializer``."""
+    """Validated data for 'GetArticleCacheSerializer'."""
 
     reporting_date: date
     source_url: NotRequired[str]

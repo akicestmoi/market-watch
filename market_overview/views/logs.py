@@ -23,7 +23,7 @@ from market_overview.open_api.response_serializers import (
 
 
 class _GetPriceUpdateLogsValidatedData(TypedDict, total=False):
-    """Validated data for ``GetPriceUpdateLogsSerializer``."""
+    """Validated data for 'GetPriceUpdateLogsSerializer'."""
 
     price_date: date
     short_name: str

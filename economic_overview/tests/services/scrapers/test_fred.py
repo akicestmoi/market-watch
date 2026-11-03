@@ -12,7 +12,7 @@ from economic_overview.services.scrapers.fred import get_data_from_fred
 
 
 class TestFredDataIngestion(TestCase):
-    """Tests for FRED ``series/observations`` scraping helpers."""
+    """Tests for FRED series/observations scraping helpers."""
 
     MOCK_FRED_OBSERVATIONS_SUCCESS = load_json_mock(
         "economic_overview/tests/mock_web_data/fred/data/success.json"
@@ -42,9 +42,9 @@ class TestFredDataIngestion(TestCase):
     @patch("economic_overview.services.scrapers.fred.requests.get")
     def test_get_data_from_fred_success_no_target_period(self, mock_get):
         """
-        GIVEN a successful FRED observations response
+        GIVEN a successful FRED series/observations response
         WHEN getting data without target period
-        THEN observations are returned newest-first and missing values are skipped
+        THEN values are returned newest-first and missing values are skipped
         """
         mock_get.return_value = MockResponse(
             status_code=200,
@@ -101,9 +101,9 @@ class TestFredDataIngestion(TestCase):
     @patch("economic_overview.services.scrapers.fred.requests.get")
     def test_get_data_from_fred_annual_deficit_filters_year(self, mock_get):
         """
-        GIVEN annual FRED surplus/deficit observations
+        GIVEN annual FRED surplus/deficit values
         WHEN requesting a specific calendar year
-        THEN only the matching fiscal-year observation is returned
+        THEN only the matching fiscal-year value is returned
         """
         mock_get.return_value = MockResponse(
             status_code=200,

@@ -13,8 +13,8 @@ from market_analysis.services.llm_market_recap import ArticleAnalysisFailure
 PIPELINE_LOCK_KEY_PREFIX = "market_analysis:pipeline:"
 
 
-class _MarketAnalysisResult(TypedDict):
-    """Analysis pipeline result dictionnary."""
+class MarketAnalysisResult(TypedDict):
+    """Outcome of the daily market-analysis pipeline for one reporting date."""
 
     status: str
     reporting_date: str
@@ -32,7 +32,7 @@ class _MarketAnalysisResult(TypedDict):
 def run_daily_analysis_pipeline(
     reporting_date: date,
     force: bool = False,
-) -> _MarketAnalysisResult:
+) -> MarketAnalysisResult:
     """Extract news → analyze in memory → save recap with DB market context.
 
     Skips when a recap already exists (unless `force` is True).
@@ -45,7 +45,7 @@ def run_daily_analysis_pipeline(
             "Market analysis pipeline skipped for %s: a daily recap already exists",
             reporting_date.isoformat(),
         )
-        return _MarketAnalysisResult(
+        return MarketAnalysisResult(
             status="skipped",
             reason="Daily recap already exists",
             reporting_date=reporting_date.isoformat(),
@@ -111,7 +111,7 @@ def run_daily_analysis_pipeline(
         "Market analysis pipeline finished successfully for %s",
         reporting_date.isoformat(),
     )
-    return _MarketAnalysisResult(
+    return MarketAnalysisResult(
         status="success",
         reporting_date=reporting_date.isoformat(),
         sources=extracted_articles["sources"],
@@ -127,7 +127,7 @@ def run_daily_analysis_pipeline(
 def run_daily_analysis_pipeline_with_lock(
     reporting_date: date,
     force: bool = False,
-) -> _MarketAnalysisResult:
+) -> MarketAnalysisResult:
     """Run the pipeline under a per-date Redis lock (HTTP and Celery share this)."""
     lock_key = f"{PIPELINE_LOCK_KEY_PREFIX}{reporting_date.isoformat()}"
     lock = try_acquire_redis_lock(lock_key)
@@ -136,7 +136,7 @@ def run_daily_analysis_pipeline_with_lock(
             "Market analysis pipeline skipped for %s: already in progress",
             reporting_date.isoformat(),
         )
-        return _MarketAnalysisResult(
+        return MarketAnalysisResult(
             status="skipped",
             reason="Market analysis pipeline already in progress",
             message="Market analysis pipeline already in progress",

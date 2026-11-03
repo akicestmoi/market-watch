@@ -268,13 +268,13 @@ class TestEstrFuturesPricesIngestion(TestCase):
 
     def test_extract_estr_prices_from_pdf_no_valid_rows(self):
         """
-        GIVEN a PDF with no valid ESTR rows
+        GIVEN a PDF with no valid ESTR prices
         WHEN extracting ESTR prices from PDF
         THEN an empty list is returned
         """
         # Create a minimal PDF that will parse but has no ER3 data
         # Using a simple PDF structure that pdfplumber can parse
-        # but won't contain ER3 rows
+        # but won't contain ER3 prices
         pdf_content = (
             b"%PDF-1.4\n"
             b"1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n"

@@ -24,7 +24,7 @@ INDICATOR_DISPLAY_MODE_UI_LABEL_BY_MODE: dict[IndicatorDisplayModeChoices, str] 
 INSEE_SERIES_CSV_URL_TEMPLATE = "https://bdm.insee.fr/series/{ticker}/csv"
 # INSEE publication schedule (agenda-diffusion) search endpoint.
 INSEE_PUBLICATION_SCHEDULE_URL = "https://www.insee.fr/fr/agenda-diffusion"
-# ZIP member basename (no ``.csv``) for the values file inside each BDM series ZIP.
+# ZIP member basename (no '.csv') for the values file inside each BDM series ZIP.
 INSEE_CSV_NAME_BY_FREQUENCY: dict[EconomicPublicationFrequencyChoices, str] = {
     EconomicPublicationFrequencyChoices.MONTHLY: "valeurs_mensuelles",
     EconomicPublicationFrequencyChoices.QUARTERLY: "valeurs_trimestrielles",
@@ -35,12 +35,12 @@ INSEE_CSV_NAME_BY_FREQUENCY: dict[EconomicPublicationFrequencyChoices, str] = {
 # ---------------------------------------------------------------------------
 # Eurostat
 # ---------------------------------------------------------------------------
-"""Eurostat Statistics API observations, series templates, and publication calendar.
+"""Eurostat Statistics API values, series templates, and publication calendar.
 
-Configured series IDs match ``economic_data.json`` tickers (e.g. ``namq_10_gdp``).
-Geo comes from the indicator ``location`` (same codes as Eurostat), except our ``EU``
-location uses Eurostat geo ``EA`` (``EUROSTAT_GEO_FOR_EU_LOCATION``). ``dataset`` is
-the Statistics API path segment (may differ from ``series_id`` for unit variants).
+Configured series IDs match 'economic_data.json' tickers (e.g. 'namq_10_gdp').
+Geo comes from the indicator 'location' (same codes as Eurostat), except our 'EU'
+location uses Eurostat geo 'EA' ('EUROSTAT_GEO_FOR_EU_LOCATION'). 'dataset' is
+the Statistics API path segment (may differ from 'series_id' for unit variants).
 """
 
 
@@ -86,7 +86,7 @@ class EurostatTickerParams(TypedDict):
 class _EurostatSeriesTemplate:
     """One Eurostat series keyed by our configured series ID (seed ticker).
 
-    Frozen dataclass: needs ``_EurostatSeriesTemplate(...)``.
+    Frozen dataclass: needs '_EurostatSeriesTemplate(...)'.
     """
 
     series_id: str
@@ -97,11 +97,11 @@ class _EurostatSeriesTemplate:
 EUROSTAT_STATISTICS_API_BASE_URL = (
     "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/"
 )
-EUROSTAT_API_DEFAULT_PARAMS: _EurostatApiDefaultParams = {
-    "format": "JSON",
-    "lang": "en",
-}
-# Eurostat ``geo`` for our ``EU`` location (euro area);
+EUROSTAT_API_DEFAULT_PARAMS = _EurostatApiDefaultParams(
+    format="JSON",
+    lang="en",
+)
+# Eurostat 'geo' for our 'EU' location (euro area);
 # other locations use their code as-is.
 EUROSTAT_GEO_FOR_EU_LOCATION = "EA"
 
@@ -110,137 +110,137 @@ EUROSTAT_SERIES_TEMPLATES: list[_EurostatSeriesTemplate] = [
     _EurostatSeriesTemplate(
         series_id="prc_hicp_minr",
         dataset="prc_hicp_minr",
-        params={
-            "freq": "M",
-            "sinceTimePeriod": "2015-01",
-            "unit": "I25",
-            "coicop18": "TOTAL",
-        },
+        params=EurostatQueryParams(
+            freq="M",
+            sinceTimePeriod="2015-01",
+            unit="I25",
+            coicop18="TOTAL",
+        ),
     ),
     # Real GDP, chain-linked volumes 2020, million euro, SCA.
     _EurostatSeriesTemplate(
         series_id="namq_10_gdp",
         dataset="namq_10_gdp",
-        params={
-            "freq": "Q",
-            "sinceTimePeriod": "2010-Q1",
-            "unit": "CLV20_MEUR",
-            "na_item": "B1GQ",
-            "s_adj": "SCA",
-        },
+        params=EurostatQueryParams(
+            freq="Q",
+            sinceTimePeriod="2010-Q1",
+            unit="CLV20_MEUR",
+            na_item="B1GQ",
+            s_adj="SCA",
+        ),
     ),
     # General government consolidated gross debt, % of GDP.
     _EurostatSeriesTemplate(
         series_id="gov_10q_ggdebt_pct",
         dataset="gov_10q_ggdebt",
-        params={
-            "freq": "Q",
-            "sinceTimePeriod": "2010-Q1",
-            "unit": "PC_GDP",
-            "na_item": "GD",
-            "sector": "S13",
-        },
+        params=EurostatQueryParams(
+            freq="Q",
+            sinceTimePeriod="2010-Q1",
+            unit="PC_GDP",
+            na_item="GD",
+            sector="S13",
+        ),
     ),
     # General government consolidated gross debt, million euro.
     _EurostatSeriesTemplate(
         series_id="gov_10q_ggdebt_mio",
         dataset="gov_10q_ggdebt",
-        params={
-            "freq": "Q",
-            "sinceTimePeriod": "2010-Q1",
-            "unit": "MIO_EUR",
-            "na_item": "GD",
-            "sector": "S13",
-        },
+        params=EurostatQueryParams(
+            freq="Q",
+            sinceTimePeriod="2010-Q1",
+            unit="MIO_EUR",
+            na_item="GD",
+            sector="S13",
+        ),
     ),
     # Industrial production volume index (2021=100), SCA.
     _EurostatSeriesTemplate(
         series_id="sts_inpr_m",
         dataset="sts_inpr_m",
-        params={
-            "freq": "M",
-            "sinceTimePeriod": "2015-01",
-            "unit": "I21",
-            "indic_bt": "PRD",
-            "nace_r2": "B-D",
-            "s_adj": "SCA",
-        },
+        params=EurostatQueryParams(
+            freq="M",
+            sinceTimePeriod="2015-01",
+            unit="I21",
+            indic_bt="PRD",
+            nace_r2="B-D",
+            s_adj="SCA",
+        ),
     ),
     # Retail trade volume of sales index (2021=100), SCA.
     _EurostatSeriesTemplate(
         series_id="sts_trtu_m",
         dataset="sts_trtu_m",
-        params={
-            "freq": "M",
-            "sinceTimePeriod": "2015-01",
-            "unit": "I21",
-            "indic_bt": "VOL_SLS",
-            "nace_r2": "G47",
-            "s_adj": "SCA",
-        },
+        params=EurostatQueryParams(
+            freq="M",
+            sinceTimePeriod="2015-01",
+            unit="I21",
+            indic_bt="VOL_SLS",
+            nace_r2="G47",
+            s_adj="SCA",
+        ),
     ),
     # Unemployment rate, % of active population, SA.
     _EurostatSeriesTemplate(
         series_id="une_rt_m",
         dataset="une_rt_m",
-        params={
-            "freq": "M",
-            "sinceTimePeriod": "2015-01",
-            "unit": "PC_ACT",
-            "s_adj": "SA",
-            "age": "TOTAL",
-            "sex": "T",
-        },
+        params=EurostatQueryParams(
+            freq="M",
+            sinceTimePeriod="2015-01",
+            unit="PC_ACT",
+            s_adj="SA",
+            age="TOTAL",
+            sex="T",
+        ),
     ),
     # House price index, 2015=100, quarterly.
     _EurostatSeriesTemplate(
         series_id="prc_hpi_q",
         dataset="prc_hpi_q",
-        params={
-            "freq": "Q",
-            "sinceTimePeriod": "2010-Q1",
-            "unit": "I15_Q",
-            "purchase": "TOTAL",
-        },
+        params=EurostatQueryParams(
+            freq="Q",
+            sinceTimePeriod="2010-Q1",
+            unit="I15_Q",
+            purchase="TOTAL",
+        ),
     ),
     # Goods trade balance (BoP), million euro.
     _EurostatSeriesTemplate(
         series_id="bop_c6_m",
         dataset="bop_c6_m",
-        params={
-            "freq": "M",
-            "sinceTimePeriod": "2015-01",
-            "bop_item": "G",
-            "partner": "WRL_REST",
-            "stk_flow": "BAL",
-            "currency": "MIO_EUR",
-            "sector10": "S1",
-            "sectpart": "S1",
-        },
+        params=EurostatQueryParams(
+            freq="M",
+            sinceTimePeriod="2015-01",
+            bop_item="G",
+            partner="WRL_REST",
+            stk_flow="BAL",
+            currency="MIO_EUR",
+            sector10="S1",
+            sectpart="S1",
+        ),
     ),
     # Maastricht B9 deficit/surplus % of GDP — annual.
     _EurostatSeriesTemplate(
         series_id="tec00127_pct",
         dataset="tec00127",
-        params={
-            "freq": "A",
-            "sinceTimePeriod": "2010",
-            "unit": "PC_GDP",
-            "sector": "S13",
-            "na_item": "B9",
-        },
+        params=EurostatQueryParams(
+            freq="A",
+            sinceTimePeriod="2010",
+            unit="PC_GDP",
+            sector="S13",
+            na_item="B9",
+        ),
     ),
     # Maastricht B9 deficit/surplus million euro — annual.
     _EurostatSeriesTemplate(
         series_id="tec00127_mio",
         dataset="tec00127",
-        params={
-            "freq": "A",
-            "sinceTimePeriod": "2010",
-            "unit": "MIO_EUR",
-            "sector": "S13",
-            "na_item": "B9",
-        },
+        params=EurostatQueryParams(
+            freq="A",
+            sinceTimePeriod="2010",
+            unit="MIO_EUR",
+            sector="S13",
+            na_item="B9",
+        ),
     ),
 ]
 
@@ -254,14 +254,14 @@ EUROSTAT_PUBLICATION_LOOKAHEAD_DAYS = 400
 # ---------------------------------------------------------------------------
 # FRED (Federal Reserve of St. Louis)
 # ---------------------------------------------------------------------------
-"""FRED observations endpoint and release-dates calendar for publication schedules."""
+"""FRED series endpoint and release-dates calendar for publication schedules."""
 
 FRED_OBSERVATIONS_URL = "https://api.stlouisfed.org/fred/series/observations"
 FRED_OBSERVATION_START = "2010-01-01"
 
 # FRED release calendar API URL.
 FRED_RELEASE_DATES_URL = "https://api.stlouisfed.org/fred/release/dates"
-# Seeded indicator ``technical_name`` → FRED release id (from ``fred/series/release``).
+# Seeded indicator 'technical_name' → FRED release id (from 'fred/series/release').
 FRED_RELEASE_ID_BY_TECHNICAL_NAME: dict[str, int] = {
     "Gross Domestic Product": 53,
     "Consumer Price Index": 10,
@@ -310,36 +310,36 @@ class _StatOfJpSeriesConfig(TypedDict):
 
 
 STAT_OF_JP_DATA_URL = "https://dashboard.e-stat.go.jp/api/1.0/Json/getData"
-STAT_OF_JP_DEFAULT_PARAMS: _StatOfJpDefaultParams = {
-    "Lang": "EN",
-    "RegionCode": "00000",
-    "TimeFrom": "20100100",
-}
+STAT_OF_JP_DEFAULT_PARAMS = _StatOfJpDefaultParams(
+    Lang="EN",
+    RegionCode="00000",
+    TimeFrom="20100100",
+)
 STAT_OF_JP_SERIES_BY_TICKER: dict[str, _StatOfJpSeriesConfig] = {
-    "0703010601010090000": {
-        "ticker": "0703010601010090000",
-        "name": "Japan CPI",
-        "indicator_code": "0703010601010090000",
-        "params": {"Cycle": "1", "IsSeasonalAdjustment": "1"},
-    },
-    "0301010000020020010": {
-        "ticker": "0301010000020020010",
-        "name": "Japan Unemployment Rate",
-        "indicator_code": "0301010000020020010",
-        "params": {"Cycle": "1", "IsSeasonalAdjustment": "2"},
-    },
-    "0502070301000090010": {
-        "ticker": "0502070301000090010",
-        "name": "Japan Industrial Production",
-        "indicator_code": "0502070301000090010",
-        "params": {"Cycle": "1", "IsSeasonalAdjustment": "2"},
-    },
-    "0601010201010010000": {
-        "ticker": "0601010201010010000",
-        "name": "Japan Retail Sales",
-        "indicator_code": "0601010201010010000",
-        "params": {"Cycle": "1", "IsSeasonalAdjustment": "1"},
-    },
+    "0703010601010090000": _StatOfJpSeriesConfig(
+        ticker="0703010601010090000",
+        name="Japan CPI",
+        indicator_code="0703010601010090000",
+        params=_StatOfJpSeriesParams(Cycle="1", IsSeasonalAdjustment="1"),
+    ),
+    "0301010000020020010": _StatOfJpSeriesConfig(
+        ticker="0301010000020020010",
+        name="Japan Unemployment Rate",
+        indicator_code="0301010000020020010",
+        params=_StatOfJpSeriesParams(Cycle="1", IsSeasonalAdjustment="2"),
+    ),
+    "0502070301000090010": _StatOfJpSeriesConfig(
+        ticker="0502070301000090010",
+        name="Japan Industrial Production",
+        indicator_code="0502070301000090010",
+        params=_StatOfJpSeriesParams(Cycle="1", IsSeasonalAdjustment="2"),
+    ),
+    "0601010201010010000": _StatOfJpSeriesConfig(
+        ticker="0601010201010010000",
+        name="Japan Retail Sales",
+        indicator_code="0601010201010010000",
+        params=_StatOfJpSeriesParams(Cycle="1", IsSeasonalAdjustment="1"),
+    ),
 }
 
 
@@ -359,7 +359,7 @@ JP_CAO_ANNUAL_ACCOUNTS_TOP_URL = (
     "https://www.esri.cao.go.jp/en/sna/kakuhou/kakuhou_top.html"
 )
 # Filename prefix of the real SA expenditure CSV on the quarterly-estimates menu
-# (e.g. ``gaku-jk`` matches ``gaku-jk2622.csv``). Columns are 0-based.
+# (e.g. 'gaku-jk' matches 'gaku-jk2622.csv'). Columns are 0-based.
 JP_CAO_REAL_SA_CSV_FILENAME_PREFIX = "gaku-jk"
 JP_CAO_REAL_SA_COLUMN_BY_TICKER: dict[str, int] = {
     "gaku-jk": 1,  # GDP (expenditure approach)
@@ -418,7 +418,7 @@ class _BojTankanSeries(NamedTuple):
     size: str
 
 
-# Latest ``tkaYYMM.zip`` is linked from the Tankan English index (not gaiyo/index).
+# Latest 'tkaYYMM.zip' is linked from the Tankan English index (not gaiyo/index).
 BOJ_TANKAN_INDEX_URL = "https://www.boj.or.jp/en/statistics/tk/index.htm"
 BOJ_SITE_ORIGIN = "https://www.boj.or.jp"
 BOJ_TANKAN_CURRENT_ACTUAL_COLUMN_BY_SIZE: dict[str, int] = {

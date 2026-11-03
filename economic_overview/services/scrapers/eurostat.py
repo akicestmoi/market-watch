@@ -30,6 +30,7 @@ from economic_overview.services.config import (
 from economic_overview.services.scrapers.common import (
     ScrapingResult,
     filter_scraping_results_by_target_period,
+    filter_upcoming_publication_dates,
 )
 
 
@@ -51,7 +52,7 @@ class _EurostatJsonStatPayload(TypedDict):
 
     id: list[str]
     size: list[int]
-    # Usage of dict: keys are JSON-stat flat indexes; values are observation numbers.
+    # Usage of dict: keys are JSON-stat flat indexes; values are numbers.
     value: dict[str, float | int | None]
     # Usage of dict: keys are dynamic dimension ids (freq, unit, time, …).
     dimension: dict[str, _EurostatJsonStatDimension]
@@ -71,7 +72,7 @@ def _decode_eurostat_flat_index(flat_index: int, sizes: list[int]) -> list[int]:
 
 
 def _parse_eurostat_period_label(period_label: str) -> date | None:
-    """Parse Eurostat time labels (``YYYY-MM``, ``YYYY-Qn``, or annual ``YYYY``)."""
+    """Parse Eurostat time labels ('YYYY-MM', 'YYYY-Qn', or annual 'YYYY')."""
     monthly_match = re.fullmatch(r"(\d{4})-(\d{2})", period_label)
     if monthly_match:
         year = int(monthly_match.group(1))
@@ -93,7 +94,7 @@ def _parse_eurostat_period_label(period_label: str) -> date | None:
 def _parse_eurostat_jsonstat_values(
     payload: _EurostatJsonStatPayload,
 ) -> list[ScrapingResult]:
-    """Parse Eurostat Statistics API JSON-stat ``value`` / ``dimension`` payload."""
+    """Parse Eurostat Statistics API JSON-stat 'value' / 'dimension' payload."""
     dimension_ids = payload["id"]
     sizes = payload["size"]
     values = payload["value"]
@@ -141,7 +142,7 @@ def _parse_eurostat_jsonstat_values(
         )
 
     economic_data.sort(
-        key=lambda row: row["period"] or date.min,
+        key=lambda scraping_result: scraping_result["period"] or date.min,
         reverse=True,
     )
     return economic_data
@@ -177,11 +178,11 @@ def get_data_from_eurostat(
     frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.MONTHLY,
     location: str = "",
 ) -> list[ScrapingResult]:
-    """Get Eurostat economic data (all rows, or a single matching period).
+    """Get Eurostat economic data (all periods, or a single matching period).
 
     Dataset path and filters come from the configured series ID (seed ticker) and
-    indicator ``location`` as geo. Periods are ``YYYY-MM``, ``YYYY-Qn``, or annual
-    ``YYYY``.
+    indicator 'location' as geo. Periods are 'YYYY-MM', 'YYYY-Qn', or annual
+    'YYYY'.
 
     Source: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/
     """
@@ -243,6 +244,7 @@ def get_data_from_eurostat(
                 period=None, data_value=None, comment="No Eurostat values found."
             )
         ]
+    # Parse may return a single empty error result; index 0 is that result.
     if economic_data[0]["data_value"] is None and economic_data[0]["period"] is None:
         return economic_data
 
@@ -259,7 +261,7 @@ class _EurostatCalendarEvent(TypedDict, total=False):
 
 
 class _EurostatPublicationScheduleRow(TypedDict):
-    """One normalized Eurostat publication schedule row before DataFrame load."""
+    """One normalized Eurostat publication schedule entry before DataFrame load."""
 
     name: str
     publication_date: str | None
@@ -274,7 +276,7 @@ def _get_eurostat_publication_schedule() -> pd.DataFrame:
 
     Source: https://ec.europa.eu/eurostat/news/release-calendar/
     JSON feed: https://ec.europa.eu/eurostat/o/calendars/eventsJson
-    Event ``start`` values are UTC (``…Z``); the UI labels Europe/Luxembourg.
+    Event 'start' values are UTC ('…Z'); the UI labels Europe/Luxembourg.
     """
     default_df = pd.DataFrame(columns=["name", "publication_date"])
     range_start = timezone.now()
@@ -322,12 +324,7 @@ def get_publication_dates_from_eurostat(name: str) -> list[datetime]:
     publication_dates = publication_schedule[publication_schedule["name"] == name][
         "publication_date"
     ]
-    now = timezone.now()
-    upcoming_publication_dates = [
-        pd_timestamp.to_pydatetime()
-        for pd_timestamp in publication_dates.tolist()
-        if pd_timestamp.to_pydatetime() >= now
+    publication_datetimes = [
+        pd_timestamp.to_pydatetime() for pd_timestamp in publication_dates.tolist()
     ]
-    # At most two: schedule update maps [0]/[1] onto current/next after rolling
-    # the just-released slot into previous; past dates must not be re-fed.
-    return upcoming_publication_dates[:2]
+    return filter_upcoming_publication_dates(publication_datetimes)

@@ -26,7 +26,7 @@ class _ChatMessageValidatedData(TypedDict):
 
 
 class _ChatAskValidatedData(TypedDict):
-    """Validated data for ``ChatAskSerializer``."""
+    """Validated data for 'ChatAskSerializer'."""
 
     question: str
     messages: NotRequired[list[_ChatMessageValidatedData]]

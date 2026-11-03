@@ -41,7 +41,7 @@ class TestInseeDataScraping(TestCase):
         """
         GIVEN a successful INSEE ZIP response with CSV data
         WHEN getting data without target period
-        THEN all observations are returned with the latest first
+        THEN all values are returned with the latest first
         """
         mock_get.return_value = MockResponse(
             status_code=200, content=self.MOCK_INSEE_SUCCESS_ZIP, text=""
@@ -215,7 +215,7 @@ class TestInseeDataScraping(TestCase):
         """
         GIVEN a successful quarterly INSEE ZIP response
         WHEN getting data with QUARTERLY frequency
-        THEN all quarterly observations are returned with the latest first
+        THEN all quarterly values are returned with the latest first
         """
         csv_content = (
             "Libellé;Valeur;Codes\n" "Période;;\n" "2026-T2;8.3;A\n" "2026-T1;8.1;A\n"
@@ -237,7 +237,7 @@ class TestInseeDataScraping(TestCase):
         """
         GIVEN a quarterly INSEE ZIP response
         WHEN getting data for a specific YYYY-Tn period
-        THEN that quarter's observation should be returned
+        THEN that quarter's value should be returned
         """
         csv_content = (
             "Libellé;Valeur;Codes\n" "Période;;\n" "2026-T2;8.3;A\n" "2026-T1;8.1;A\n"

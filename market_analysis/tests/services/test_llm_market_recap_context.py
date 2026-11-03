@@ -11,7 +11,7 @@ from central_banks_overview.models import (
     CentralBankMeetingModel,
 )
 from data_visualization.services.config import FX_MATRIX_ORDER
-from data_visualization.services.market_recap import FxMatrixRow
+from data_visualization.services.market_recap import FxMatrixEntry
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
@@ -24,15 +24,15 @@ from economic_overview.models import (
     PublicationScheduleModel,
 )
 from market_analysis.services.llm_market_recap import (
-    CentralBankContextRow,
-    EconomicContextRow,
+    CentralBankContextEntry,
+    EconomicContextEntry,
     FxHeatmapContext,
-    ProbabilityMatrixShiftContextRow,
-    _CentralBankDecisionRateRow,
-    _CentralBankFigureRow,
-    _EconomicContextModeValues,
+    ProbabilityMatrixShiftContextEntry,
+    _CentralBankDecisionRate,
+    _CentralBankFigure,
     _compute_fx_currency_strength,
-    _ProbabilityStepRow,
+    _EconomicContextModeValues,
+    _ProbabilityStepEntry,
     build_central_bank_context,
     build_economic_context,
     build_fx_heatmap_context,
@@ -45,12 +45,12 @@ class TestFxHeatmapContext(TestCase):
 
     def test_compute_fx_currency_strength_rms_off_diagonal(self):
         """
-        GIVEN an FX matrix row with known pairwise DoD % changes
+        GIVEN an FX matrix entry with known pairwise DoD % changes
         WHEN computing currency strength
         THEN the RMS excludes the diagonal and matches sqrt(mean of squares)
         """
         matrix = [
-            FxMatrixRow(
+            FxMatrixEntry(
                 currency="USD",
                 EUR=1.0,
                 USD=0.0,
@@ -78,7 +78,7 @@ class TestFxHeatmapContext(TestCase):
         THEN the RMS stays large instead of averaging to zero
         """
         matrix = [
-            FxMatrixRow(
+            FxMatrixEntry(
                 currency="USD",
                 EUR=3.0,
                 USD=0.0,
@@ -100,12 +100,12 @@ class TestFxHeatmapContext(TestCase):
     @patch("market_analysis.services.llm_market_recap.get_fx_prices_matrix")
     def test_build_fx_heatmap_context(self, mock_get_fx_prices_matrix):
         """
-        GIVEN FX matrix rows for a reporting date
+        GIVEN FX matrix entries for a reporting date
         WHEN building FX heatmap context
         THEN matrix, previous business day, and currency strength are returned
         """
         matrix = [
-            FxMatrixRow(
+            FxMatrixEntry(
                 currency="EUR",
                 EUR=0.0,
                 USD=-0.5,
@@ -115,7 +115,7 @@ class TestFxHeatmapContext(TestCase):
                 AUD=0.0,
                 CNY=0.0,
             ),
-            FxMatrixRow(
+            FxMatrixEntry(
                 currency="USD",
                 EUR=0.5,
                 USD=0.0,
@@ -200,18 +200,18 @@ class TestProbabilityMatrixShiftContext(TestCase):
 
         result = build_probability_matrix_shift_context(date(2025, 12, 16))
         assert result == [
-            ProbabilityMatrixShiftContextRow(
+            ProbabilityMatrixShiftContextEntry(
                 central_bank=CentralBankChoices.FRB,
                 as_of="2025-12-16",
                 previous_date="2025-12-15",
                 meeting_dates=["2026-01-28"],
                 current_probabilities=[
-                    _ProbabilityStepRow(expected_rate_step=0, probabilities=[0.6]),
-                    _ProbabilityStepRow(expected_rate_step=-25, probabilities=[0.4]),
+                    _ProbabilityStepEntry(expected_rate_step=0, probabilities=[0.6]),
+                    _ProbabilityStepEntry(expected_rate_step=-25, probabilities=[0.4]),
                 ],
                 probability_changes=[
-                    _ProbabilityStepRow(expected_rate_step=0, probabilities=[0.1]),
-                    _ProbabilityStepRow(expected_rate_step=-25, probabilities=[-0.1]),
+                    _ProbabilityStepEntry(expected_rate_step=0, probabilities=[0.1]),
+                    _ProbabilityStepEntry(expected_rate_step=-25, probabilities=[-0.1]),
                 ],
             )
         ]
@@ -239,7 +239,7 @@ class TestEconomicContext(TestCase):
         """
         GIVEN a quarterly GDP indicator scheduled on the reporting date
         WHEN building economic context
-        THEN values_by_mode includes Abs / QoQ / QoQy / YoY with is_default on the seeded main mode
+        THEN values_by_mode has Abs / QoQ / QoQy / YoY with is_default on the main mode
         """
         as_of = date(2025, 12, 16)
         publication_datetime = datetime(2025, 12, 16, 13, 30, 0, tzinfo=timezone.utc)
@@ -277,7 +277,7 @@ class TestEconomicContext(TestCase):
 
         result = build_economic_context(as_of)
         assert result == [
-            EconomicContextRow(
+            EconomicContextEntry(
                 name="US GDP",
                 location=EconomicDataLocationChoices.US,
                 category=EconomicDataCategoryChoices.GROWTH,
@@ -351,7 +351,7 @@ class TestCentralBankContext(TestCase):
         self, mock_get_central_bank_data_item
     ):
         """
-        GIVEN an ECB meeting and key-rate prints on the reporting date
+        GIVEN an ECB meeting and key rates on the reporting date
         WHEN building central-bank context
         THEN ECB is_decision_day with decision_rates current/previous/change
         """
@@ -361,7 +361,6 @@ class TestCentralBankContext(TestCase):
         ]
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
         )
         CentralBankDataModel.objects.create(
@@ -383,21 +382,21 @@ class TestCentralBankContext(TestCase):
 
         result = build_central_bank_context(as_of)
         assert result == [
-            CentralBankContextRow(
+            CentralBankContextEntry(
                 central_bank=CentralBankChoices.FRB,
                 reference_date="2025-12-15",
                 is_decision_day=False,
                 decision_rates=[],
                 figures=[
-                    _CentralBankFigureRow(label="Effective Rate", value="2.00 %"),
+                    _CentralBankFigure(label="Effective Rate", value="2.00 %"),
                 ],
             ),
-            CentralBankContextRow(
+            CentralBankContextEntry(
                 central_bank=CentralBankChoices.ECB,
                 reference_date="2025-12-15",
                 is_decision_day=True,
                 decision_rates=[
-                    _CentralBankDecisionRateRow(
+                    _CentralBankDecisionRate(
                         name="ECB Deposit Facility Rate",
                         current_value=1.75,
                         previous_value=2.0,
@@ -408,16 +407,16 @@ class TestCentralBankContext(TestCase):
                     )
                 ],
                 figures=[
-                    _CentralBankFigureRow(label="Effective Rate", value="2.00 %"),
+                    _CentralBankFigure(label="Effective Rate", value="2.00 %"),
                 ],
             ),
-            CentralBankContextRow(
+            CentralBankContextEntry(
                 central_bank=CentralBankChoices.BOJ,
                 reference_date="2025-12-15",
                 is_decision_day=False,
                 decision_rates=[],
                 figures=[
-                    _CentralBankFigureRow(label="Effective Rate", value="2.00 %"),
+                    _CentralBankFigure(label="Effective Rate", value="2.00 %"),
                 ],
             ),
         ]

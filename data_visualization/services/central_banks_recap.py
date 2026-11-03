@@ -32,32 +32,32 @@ class _CentralBankDataItem(TypedDict):
     value: str
 
 
-class _InflationRateObservation(TypedDict):
-    """Latest YoY inflation rate and the observation period it refers to."""
+class _InflationRateValue(TypedDict):
+    """Latest YoY inflation rate and the period it refers to."""
 
     yoy_pct: float
     period: date
 
 
 def _format_inflation_rate_display(
-    observation: _InflationRateObservation | None,
+    inflation_rate: _InflationRateValue | None,
 ) -> str:
-    """Format YoY inflation as ``0.9 % (Sep 26)``, or ``-`` when unavailable."""
-    if observation is None:
+    """Format YoY inflation as '0.9 % (Sep 26)', or '-' when unavailable."""
+    if inflation_rate is None:
         return "-"
-    period = observation["period"]
+    period = inflation_rate["period"]
     return (
-        f"{observation['yoy_pct']:.1f} % "
+        f"{inflation_rate['yoy_pct']:.1f} % "
         f"({period.strftime('%b')} {period.strftime('%y')})"
     )
 
 
 def _get_latest_yoy_inflation_rate(
     location: EconomicDataLocationChoices,
-) -> _InflationRateObservation | None:
+) -> _InflationRateValue | None:
     """Compute latest monthly YoY % from stored inflation index levels.
 
-    Needs the latest observation and the same calendar month one year earlier.
+    Needs the latest value and the same calendar month one year earlier.
     """
     indicator = EconomicIndicatorInformationModel.objects.filter(
         location=location,
@@ -82,30 +82,30 @@ def _get_latest_yoy_inflation_rate(
         return None
 
     prior_period = date(latest.period.year - 1, latest.period.month, 1)
-    prior_row = EconomicDataModel.objects.filter(
+    prior_economic_data = EconomicDataModel.objects.filter(
         indicator=indicator,
         period=prior_period,
         data_value__isnull=False,
     ).first()
-    if prior_row is None or prior_row.data_value is None:
+    if prior_economic_data is None or prior_economic_data.data_value is None:
         return None
 
     yoy_pct = calculate_value_change(
         latest.data_value,
-        prior_row.data_value,
+        prior_economic_data.data_value,
         ValueChangeType.PERCENT,
     )
     if yoy_pct is None:
         return None
-    return _InflationRateObservation(yoy_pct=yoy_pct, period=latest.period)
+    return _InflationRateValue(yoy_pct=yoy_pct, period=latest.period)
 
 
 def get_central_bank_data_item(
     central_bank: CentralBankChoices, reference_date: date
 ) -> list[_CentralBankDataItem]:
-    """Build rate / next-meeting summary rows for one central bank.
+    """Build rate / next-meeting summary items for one central bank.
 
-    ``Next Meeting`` always uses the Market Watch as-of date.
+    'Next Meeting' always uses the Market Watch as-of date.
     """
     effective_rate = central_banks_inference.get_central_bank_effective_rate(
         central_bank, reference_date

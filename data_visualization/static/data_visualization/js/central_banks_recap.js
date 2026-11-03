@@ -46,7 +46,6 @@ function calculateProbabilityDiffs() {
   const diffTables = document.querySelectorAll("table.probability-matrix-table[data-type=\"diff\"]");
 
   diffTables.forEach(table => {
-    const bank = table.getAttribute("data-bank");
     const rows = table.querySelectorAll("tbody tr");
 
     rows.forEach(row => {

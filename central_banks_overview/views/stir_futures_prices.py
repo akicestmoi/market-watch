@@ -43,7 +43,7 @@ from core.views import BaseAPIView
 
 
 class _StirFuturesPriceIngestionValidatedData(TypedDict):
-    """Validated data for ``StirFuturesPriceIngestionSerializer``."""
+    """Validated data for 'StirFuturesPriceIngestionSerializer'."""
 
     date: date
 
@@ -98,7 +98,7 @@ class StirFuturesPriceIngestionView(BaseAPIView):
 
 
 class _EstrPriceIngestionViaPdfValidatedData(TypedDict):
-    """Validated data for ``EstrPriceIngestionViaPdfSerializer``."""
+    """Validated data for 'EstrPriceIngestionViaPdfSerializer'."""
 
     pdf_file: UploadedFile
     date: date
@@ -152,14 +152,14 @@ class EstrPriceIngestionViaPdfView(BaseAPIView):
 
 
 class _ListStirFuturesPricesValidatedData(TypedDict):
-    """Validated data for ``ListStirFuturesPricesSerializer``."""
+    """Validated data for 'ListStirFuturesPricesSerializer'."""
 
     date: date
     central_banks: NotRequired[list[CentralBankChoices] | None]
 
 
 class _DeleteStirFuturesPricesValidatedData(TypedDict, total=False):
-    """Validated data for ``DeleteStirFuturesPricesSerializer``."""
+    """Validated data for 'DeleteStirFuturesPricesSerializer'."""
 
     central_banks: list[CentralBankChoices] | None
     ids: list[int] | None
@@ -242,7 +242,7 @@ class BulkUpdateStirFuturesPricesView(BaseAPIView):
 
 
 class _CsvBulkUpdateStirFuturesPricesValidatedData(TypedDict):
-    """Validated data for ``CsvBulkUpdateStirFuturesPricesSerializer``."""
+    """Validated data for 'CsvBulkUpdateStirFuturesPricesSerializer'."""
 
     csv_file: UploadedFile
 

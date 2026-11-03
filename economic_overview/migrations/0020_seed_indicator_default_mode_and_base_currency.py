@@ -1,4 +1,4 @@
-"""Seed ``default_mode``, ``base_currency``, and Government Spending rename from JSON."""
+"""Seed 'default_mode', 'base_currency', and Government Spending rename from JSON."""
 
 import json
 from pathlib import Path
@@ -7,7 +7,7 @@ from django.db import migrations
 
 
 def _load_indicator_seed_rows() -> list[dict]:
-    """Load indicator seed rows from ``economic_data.json``."""
+    """Load indicator seed rows from 'economic_data.json'."""
     json_path = (
         Path(__file__).resolve().parent.parent / "data_sources" / "economic_data.json"
     )

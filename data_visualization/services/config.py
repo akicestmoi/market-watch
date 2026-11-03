@@ -15,7 +15,7 @@ ECONOMIC_RECAP_LOCATIONS: list[EconomicDataLocationChoices] = [
     EconomicDataLocationChoices.FR,
     EconomicDataLocationChoices.JP,
 ]
-# Absolute observations kept per indicator for client Abs/QoQ/YoY (monthly YoY
+# Absolute values kept per indicator for client Abs/QoQ/YoY (monthly YoY
 # needs 12 lookback + a few points for Previous).
 TIME_SERIES_HISTORY_WINDOW = 16
 
@@ -67,6 +67,7 @@ class MarketRecapLocationEnum(str, Enum):
 
     def get_locations(self) -> list[LocationChoices]:
         """Return market locations that belong to this geographic group."""
+        # Prefer 'match' here over a static dict mapper (exception to convention).
         match self:
             case MarketRecapLocationEnum.NA:
                 return [LocationChoices.US]

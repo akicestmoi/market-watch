@@ -40,7 +40,7 @@ def noop_reverse_dedupe(_apps, _schema_editor) -> None:
 
 
 class Migration(migrations.Migration):
-    """Dedupe leftover schedule rows, then make ``indicator`` OneToOne."""
+    """Dedupe leftover schedule rows, then make 'indicator' OneToOne."""
 
     dependencies = [
         ("economic_overview", "0021_remap_indicator_default_mode_wire_values"),

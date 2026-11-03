@@ -110,12 +110,12 @@ def extract_estr_prices_from_pdf(
 
     stir_futures_prices = []
     for table in tables:
-        for row in table:
-            if len(row) >= 6 and row[0] == "ER3":
-                maturity = row[1]
+        for table_cells in table:
+            if len(table_cells) >= 6 and table_cells[0] == "ER3":
+                maturity = table_cells[1]
                 parsed_maturity = _parse_maturity_from_estr_pdf(maturity)
-                closing_price = row[5]
-                volume = int(row[8].replace(",", ""))
+                closing_price = table_cells[5]
+                volume = int(table_cells[8].replace(",", ""))
                 first_accrual_date, last_accrual_date = calculate_estr_reference_dates(
                     parsed_maturity
                 )

@@ -559,24 +559,21 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         """
         GIVEN multiple central banks with past-only meeting dates
         WHEN the scheduled function is called
-        THEN cleanup is skipped (next-meeting lookup is upcoming-only)
+        THEN key rates are ingested for each bank and old STIR prices are deleted
         """
         # Create meeting records: All central banks have past meetings
         CentralBankMeetingModel.objects.bulk_create(
             [
                 CentralBankMeetingModel(
                     central_bank=CentralBankChoices.FRB,
-                    order=1,
                     date=self.past_meeting_date,
                 ),
                 CentralBankMeetingModel(
                     central_bank=CentralBankChoices.ECB,
-                    order=1,
                     date=self.past_meeting_date,
                 ),
                 CentralBankMeetingModel(
                     central_bank=CentralBankChoices.BOJ,
-                    order=1,
                     date=self.past_meeting_date,
                 ),
             ]
@@ -625,21 +622,65 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_extract_ecb.return_value = []
         mock_extract_boj.return_value = []
 
-        # Verify initial state
         assert StirFuturesModel.objects.count() == 4
         assert CentralBankMeetingModel.objects.count() == 3
 
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
         )
-        # Next-meeting lookup only returns upcoming dates; past-only rows are skipped.
         assert result == {
             "status": "success",
-            "message": "No central bank meetings to update",
+            "message": (
+                "Past-meeting cleanup completed for "
+                "['FRB - 2025-12-08', 'BOJ - 2025-12-08', 'ECB - 2025-12-08']"
+            ),
         }
-        assert StirFuturesModel.objects.count() == 4
-        assert CentralBankMeetingModel.objects.count() == 3
-        assert mock_ingest_data.call_count == 0
+        assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
+            {
+                "central_bank": CentralBankChoices.FRB.value,
+                "comment": "",
+                "date": date(2025, 12, 10),
+                "first_accrual_date": None,
+                "full_name": "",
+                "last_accrual_date": None,
+                "maturity": "26.04",
+                "price": 96.6,
+                "short_name": StirFuturesNameChoices.FF1M.value,
+                "source": StirFuturesSourceChoices.YAHOO.value,
+            },
+        ]
+        assert mock_ingest_data.call_count == 3
+        mock_ingest_data.assert_any_call(
+            central_bank=CentralBankChoices.FRB,
+            date_to_ingest=self.expected_date_to_ingest,
+        )
+        mock_ingest_data.assert_any_call(
+            central_bank=CentralBankChoices.ECB,
+            date_to_ingest=self.expected_date_to_ingest,
+        )
+        mock_ingest_data.assert_any_call(
+            central_bank=CentralBankChoices.BOJ,
+            date_to_ingest=self.expected_date_to_ingest,
+        )
+        assert parse_query_for_testing(
+            CentralBankMeetingModel.objects.all().order_by("central_bank", "date")
+        ) == [
+            {
+                "central_bank": CentralBankChoices.BOJ.value,
+                "status": "RATES_INGESTED",
+                "date": "2025-12-10 13:00:00+0000",
+            },
+            {
+                "central_bank": CentralBankChoices.ECB.value,
+                "status": "RATES_INGESTED",
+                "date": "2025-12-10 13:00:00+0000",
+            },
+            {
+                "central_bank": CentralBankChoices.FRB.value,
+                "status": "RATES_INGESTED",
+                "date": "2025-12-10 13:00:00+0000",
+            },
+        ]
 
     @freeze_time("2025-12-15")
     @patch(
@@ -666,19 +707,17 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_data,
     ):
         """
-        GIVEN a mix of past and future meetings
+        GIVEN one past FRB meeting and one future ECB meeting
         WHEN the scheduled function is called
-        THEN cleanup is skipped for both (past invisible; future not yet due)
+        THEN only FRB is cleaned up and stamped; ECB is skipped
         """
         # Create meeting records
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=self.past_meeting_date,
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=self.future_meeting_date,
         )
 
@@ -701,23 +740,19 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             source=StirFuturesSourceChoices.PDF,
         )
 
-        # Mock scraping functions
         mock_get_webstat_rates.return_value = ScrapingResult(
             price=None, comment="No data"
         )
         mock_scrap_global_rates.return_value = ScrapingResult(
             price=None, comment="No data"
         )
-        # Mock data ingestion to succeed so we can test the main flow
         mock_ingest_data.return_value = []
-        # Mock extraction functions - FRB has past meeting, ECB has future meeting
         # Note: ECB extraction adds default time (13:15 UTC), so we need to match that
         ecb_future_meeting = datetime(2026, 1, 15, 13, 15, tzinfo=timezone.utc)
         mockextract_fomc_meeting_dates.return_value = [self.past_meeting_date]
         mockextract_ecb_meeting_dates.return_value = [ecb_future_meeting]
         mockextract_boj_meeting_dates.return_value = []
 
-        # Verify initial state
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
             {
                 "central_bank": CentralBankChoices.FRB.value,
@@ -747,38 +782,24 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == [
             {
                 "central_bank": CentralBankChoices.FRB.value,
+                "status": "UPCOMING",
                 "date": "2025-12-10 13:00:00+0000",
-                "order": 1,
             },
             {
                 "central_bank": CentralBankChoices.ECB.value,
+                "status": "UPCOMING",
                 "date": "2026-01-15 13:00:00+0000",
-                "order": 1,
             },
         ]
 
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
         )
-        # Past FRB is invisible to upcoming-only next-meeting lookup; future ECB
-        # is skipped by meeting_date >= now. Nothing is cleaned up.
         assert result == {
             "status": "success",
-            "message": "No central bank meetings to update",
+            "message": "Past-meeting cleanup completed for ['FRB - 2025-12-08']",
         }
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "comment": "",
-                "date": date(2025, 12, 5),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.03",
-                "price": 96.5,
-                "short_name": StirFuturesNameChoices.FF1M.value,
-                "source": StirFuturesSourceChoices.YAHOO.value,
-            },
             {
                 "central_bank": CentralBankChoices.ECB.value,
                 "comment": "",
@@ -792,16 +813,22 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
                 "source": StirFuturesSourceChoices.PDF.value,
             },
         ]
-        assert parse_query_for_testing(CentralBankMeetingModel.objects.all()) == [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "date": "2025-12-10 13:00:00+0000",
-                "order": 1,
-            },
+        mock_ingest_data.assert_called_once_with(
+            central_bank=CentralBankChoices.FRB,
+            date_to_ingest=self.expected_date_to_ingest,
+        )
+        assert parse_query_for_testing(
+            CentralBankMeetingModel.objects.all().order_by("central_bank", "date")
+        ) == [
             {
                 "central_bank": CentralBankChoices.ECB.value,
+                "status": "UPCOMING",
                 "date": "2026-01-15 13:00:00+0000",
-                "order": 1,
+            },
+            {
+                "central_bank": CentralBankChoices.FRB.value,
+                "status": "RATES_INGESTED",
+                "date": "2025-12-10 13:00:00+0000",
             },
         ]
 
@@ -833,17 +860,14 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         # Create meeting records: All have future meetings
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=self.future_meeting_date,
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=self.future_meeting_date,
         )
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.BOJ,
-            order=1,
             date=self.future_meeting_date,
         )
 
@@ -887,18 +911,18 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         initial_meetings = [
             {
                 "central_bank": CentralBankChoices.FRB.value,
+                "status": "UPCOMING",
                 "date": "2026-01-15 13:00:00+0000",
-                "order": 1,
             },
             {
                 "central_bank": CentralBankChoices.ECB.value,
+                "status": "UPCOMING",
                 "date": "2026-01-15 13:00:00+0000",
-                "order": 1,
             },
             {
                 "central_bank": CentralBankChoices.BOJ.value,
+                "status": "UPCOMING",
                 "date": "2026-01-15 13:00:00+0000",
-                "order": 1,
             },
         ]
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
@@ -912,7 +936,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         )
         assert result == {
             "status": "success",
-            "message": "No central bank meetings to update",
+            "message": "No central banks with past meetings to process",
         }
         assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
         assert (
@@ -990,7 +1014,7 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         )
         assert result == {
             "status": "success",
-            "message": "No central bank meetings to update",
+            "message": "No central banks with past meetings to process",
         }
         assert CentralBankMeetingModel.objects.all().count() == 0
         # Verify price was NOT deleted (no meetings)
@@ -1021,18 +1045,17 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_data,
     ):
         """
-        GIVEN only a past FRB meeting (invisible to upcoming-only next-meeting lookup)
-        WHEN the scheduled function is called even if ingestion would error
-        THEN cleanup is skipped and prices are left unchanged
+        GIVEN a past FRB meeting and key-rate ingestion that raises
+        WHEN the scheduled function is called
+        THEN an error status is returned and STIR cleanup does not run
         """
         # Create meeting record: FRB has past meeting
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=self.past_meeting_date,
         )
 
-        # Create price that would be deleted if cleanup ran
+        # Create price that would be deleted only after successful key-rate ingest.
         StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -1042,46 +1065,33 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             source=StirFuturesSourceChoices.YAHOO,
         )
 
-        # Mock scraping functions
         mock_get_webstat_rates.return_value = ScrapingResult(
             price=None, comment="No data"
         )
         mock_scrap_global_rates.return_value = ScrapingResult(
             price=None, comment="No data"
         )
-        # Mock extraction functions - return empty lists
         mockextract_fomc_meeting_dates.return_value = []
         mockextract_ecb_meeting_dates.return_value = []
         mockextract_boj_meeting_dates.return_value = []
-        # Mock ingestion to raise an error (must not be reached)
         mock_ingest_data.side_effect = Exception("Ingestion error")
 
-        initial_prices = [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "comment": "",
-                "date": date(2025, 12, 5),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.03",
-                "price": 96.5,
-                "short_name": StirFuturesNameChoices.FF1M.value,
-                "source": StirFuturesSourceChoices.YAHOO.value,
-            },
-        ]
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
+        assert StirFuturesModel.objects.count() == 1
 
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
         )
 
         assert result == {
-            "status": "success",
-            "message": "No central bank meetings to update",
+            "status": "error",
+            "message": "Error: Ingestion error",
         }
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
-        mock_ingest_data.assert_not_called()
+        # Key-rate ingest runs before STIR cleanup, so the price remains on error.
+        assert StirFuturesModel.objects.count() == 1
+        mock_ingest_data.assert_called_once_with(
+            central_bank=CentralBankChoices.FRB,
+            date_to_ingest=self.expected_date_to_ingest,
+        )
 
     @freeze_time("2025-12-15")
     @patch(
@@ -1112,18 +1122,17 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
         mock_ingest_meetings,
     ):
         """
-        GIVEN only a past FRB meeting (invisible to upcoming-only next-meeting lookup)
-        WHEN the scheduled function is called even if meetings ingestion would error
-        THEN cleanup is skipped and prices are left unchanged
+        GIVEN a past FRB meeting and meetings ingestion that raises
+        WHEN the scheduled function is called
+        THEN an error status is returned after key rates were stamped
         """
         # Create meeting record: FRB has past meeting
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=self.past_meeting_date,
         )
 
-        # Create price that would be deleted if cleanup ran
+        # Create price that would be deleted only after meetings ingest succeeds.
         StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.FRB,
             short_name=StirFuturesNameChoices.FF1M,
@@ -1133,44 +1142,32 @@ class TestScheduledUpdateCbInfoAndStirFuturesPricesCleanupAfterMeetings(TestCase
             source=StirFuturesSourceChoices.YAHOO,
         )
 
-        # Mock scraping functions
         mock_get_webstat_rates.return_value = ScrapingResult(
             price=None, comment="No data"
         )
         mock_scrap_global_rates.return_value = ScrapingResult(
             price=None, comment="No data"
         )
-        # Mock extraction functions - return empty lists
         mockextract_fomc_meeting_dates.return_value = []
         mockextract_ecb_meeting_dates.return_value = []
         mockextract_boj_meeting_dates.return_value = []
         mock_ingest_data.return_value = []
-        # Mock meetings ingestion to raise an error (must not be reached)
         mock_ingest_meetings.side_effect = Exception("Meetings ingestion error")
 
-        initial_prices = [
-            {
-                "central_bank": CentralBankChoices.FRB.value,
-                "comment": "",
-                "date": date(2025, 12, 5),
-                "first_accrual_date": None,
-                "full_name": "",
-                "last_accrual_date": None,
-                "maturity": "26.03",
-                "price": 96.5,
-                "short_name": StirFuturesNameChoices.FF1M.value,
-                "source": StirFuturesSourceChoices.YAHOO.value,
-            },
-        ]
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
+        assert StirFuturesModel.objects.count() == 1
 
         result = (
             tasks.scheduled_update_cb_info_and_stir_futures_prices_cleanup_after_meetings()
         )
 
         assert result == {
-            "status": "success",
-            "message": "No central bank meetings to update",
+            "status": "error",
+            "message": "Error: Meetings ingestion error",
         }
-        assert parse_query_for_testing(StirFuturesModel.objects.all()) == initial_prices
-        mock_ingest_meetings.assert_not_called()
+        # Meetings ingest runs before STIR cleanup, so the price remains on error.
+        assert StirFuturesModel.objects.count() == 1
+        mock_ingest_data.assert_called_once_with(
+            central_bank=CentralBankChoices.FRB,
+            date_to_ingest=self.expected_date_to_ingest,
+        )
+        mock_ingest_meetings.assert_called_once_with(CentralBankChoices.FRB)

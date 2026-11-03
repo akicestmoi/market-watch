@@ -41,7 +41,7 @@ from market_overview.services.market_data import calculate_price_change
 
 
 class _DisplayAsset(TypedDict):
-    """Display asset dictionnary."""
+    """Asset display fields for one market-recap table cell."""
 
     country: LocationChoices | Literal["-"]
     asset: str
@@ -54,14 +54,14 @@ class _DisplayAsset(TypedDict):
 
 
 class _DisplayAssetbyLocation(TypedDict):
-    """Display asset classes dictionnary."""
+    """Market-recap assets grouped under one display location."""
 
     location: str  # MarketRecapLocationEnum value (e.g. "North America")
     assets: list[_DisplayAsset]
 
 
 class _DisplayData(TypedDict):
-    """Display data dictionnary."""
+    """Market-recap section for one asset class across locations."""
 
     asset_class: str  # human-readable AssetClassChoices label
     locations: list[_DisplayAssetbyLocation]
@@ -71,17 +71,19 @@ def _build_assets(group: pd.DataFrame) -> list[_DisplayAsset]:
     """Helper to create _DisplayAsset list from a DataFrame group."""
     return [
         _DisplayAsset(
-            country=row["location"] if pd.notna(row["location"]) else "-",
-            asset=row["short_name"],
-            name=row["full_name"],
-            maturity=row["maturity"],
-            price=row["price"],
-            previous_price=row["price_previous"],
-            price_change=row["price_change"],
-            price_change_pct=row["price_change_pct"],
+            country=(
+                asset_series["location"] if pd.notna(asset_series["location"]) else "-"
+            ),
+            asset=asset_series["short_name"],
+            name=asset_series["full_name"],
+            maturity=asset_series["maturity"],
+            price=asset_series["price"],
+            previous_price=asset_series["price_previous"],
+            price_change=asset_series["price_change"],
+            price_change_pct=asset_series["price_change_pct"],
         )
-        for _, row in group.iterrows()
-        if row["short_name"] not in FX_PAIRS_FILTER
+        for _, asset_series in group.iterrows()
+        if asset_series["short_name"] not in FX_PAIRS_FILTER
     ]
 
 
@@ -150,8 +152,8 @@ def format_data_for_market_recap_display(
     return data_to_display
 
 
-class FxMatrixRow(TypedDict):
-    """One row of the FX % change matrix for the UI."""
+class FxMatrixEntry(TypedDict):
+    """One base-currency line of the FX % change matrix for the UI."""
 
     currency: str
     EUR: float
@@ -179,8 +181,8 @@ def _lookup_fx_pair_price(fx_prices: list[_FxPairPrice], pair: str) -> float | N
 
 
 def _load_fx_pair_prices(price_date: date) -> list[_FxPairPrice]:
-    """Load FX spot prices for a date as pair/price rows."""
-    rows: list[_FxPairPrice] = []
+    """Load FX spot prices for a date as pair/price pairs."""
+    fx_pair_prices: list[_FxPairPrice] = []
     for short_name, price in (
         MarketPriceModel.objects.filter(
             asset__asset_type=AssetTypeChoices.FX_SPOT_RATE,
@@ -191,22 +193,22 @@ def _load_fx_pair_prices(price_date: date) -> list[_FxPairPrice]:
     ):
         if price is None:
             continue
-        rows.append(_FxPairPrice(pair=str(short_name), price=float(price)))
-    return rows
+        fx_pair_prices.append(_FxPairPrice(pair=str(short_name), price=float(price)))
+    return fx_pair_prices
 
 
 def _build_fx_price_dict(
     fx_prices: list[_FxPairPrice], currencies: list[str]
 ) -> dict[str, list[float]]:
-    """Build base→quote FX levels keyed by currency for ``pd.DataFrame``.
+    """Build base→quote FX levels keyed by currency for 'pd.DataFrame'.
 
-    Returns a ``dict`` (not a TypedDict): keys are the caller’s currency codes
-    (typically ``FX_MATRIX_ORDER``) and are not a closed set at this boundary;
-    values are quote-level rows in that same order. Pandas takes this mapping
-    as column data before transpose in ``get_fx_prices_matrix``.
+    Returns a 'dict' (not a TypedDict): keys are the caller’s currency codes
+    (typically 'FX_MATRIX_ORDER') and are not a closed set at this boundary;
+    values are quote-level prices in that same order. Pandas takes this mapping
+    as column data before transpose in 'get_fx_prices_matrix'.
     """
     # Usage of dict: keys are FX matrix currency codes; values are quote-level
-    # price rows in the same order as ``currencies``.
+    # prices in the same order as 'currencies'.
     fx_dict: dict[str, list[float]] = {}
     for base_currency in currencies:
         prices: list[float] = []
@@ -235,7 +237,7 @@ def _build_fx_price_dict(
 def get_fx_prices_matrix(
     price_date: date,
     previous_price_date: date,
-) -> list[FxMatrixRow]:
+) -> list[FxMatrixEntry]:
     """Get FX prices matrix showing percentage change between two dates."""
     fx_dict_current = _build_fx_price_dict(
         _load_fx_pair_prices(price_date), FX_MATRIX_ORDER
@@ -257,21 +259,21 @@ def get_fx_prices_matrix(
     fx_matrix = fx_matrix.fillna(0.0)
     fx_matrix["currency"] = FX_MATRIX_ORDER
 
-    rows: list[FxMatrixRow] = []
-    for _, row in fx_matrix.iterrows():
-        rows.append(
-            FxMatrixRow(
-                currency=str(row["currency"]),
-                EUR=float(row["EUR"]),
-                USD=float(row["USD"]),
-                GBP=float(row["GBP"]),
-                JPY=float(row["JPY"]),
-                CHF=float(row["CHF"]),
-                AUD=float(row["AUD"]),
-                CNY=float(row["CNY"]),
+    fx_matrix_entries: list[FxMatrixEntry] = []
+    for _, currency_series in fx_matrix.iterrows():
+        fx_matrix_entries.append(
+            FxMatrixEntry(
+                currency=str(currency_series["currency"]),
+                EUR=float(currency_series["EUR"]),
+                USD=float(currency_series["USD"]),
+                GBP=float(currency_series["GBP"]),
+                JPY=float(currency_series["JPY"]),
+                CHF=float(currency_series["CHF"]),
+                AUD=float(currency_series["AUD"]),
+                CNY=float(currency_series["CNY"]),
             )
         )
-    return rows
+    return fx_matrix_entries
 
 
 class _DayEventChangeClass(str, Enum):
@@ -347,7 +349,7 @@ def _format_day_event_change(
 
 
 def _get_day_holiday_events(event_date: date) -> list[_DayEvent]:
-    """Return holiday events that fall on ``event_date``."""
+    """Return holiday events that fall on 'event_date'."""
     day_events: list[_DayEvent] = []
     for location in HOLIDAY_COUNTRIES:
         for holiday in holidays.get_holidays(
@@ -374,10 +376,10 @@ def _get_day_holiday_events(event_date: date) -> list[_DayEvent]:
 def _does_publication_schedule_match_event_date(
     publication_schedule: PublicationScheduleModel, event_date: date
 ) -> bool:
-    """True when current or previous publication falls on ``event_date`` (display TZ).
+    """True when current or previous publication falls on 'event_date' (display TZ).
 
-    After ingest, a just-released print often moves from ``current`` to
-    ``previous`` while ``current`` advances to the next slot — both must count.
+    After ingest, a just-released value often moves from 'current' to
+    'previous' while 'current' advances to the next slot — both must count.
     """
     for publication_date in (
         publication_schedule.current_publication_date,
@@ -391,7 +393,7 @@ def _does_publication_schedule_match_event_date(
 
 
 def _get_day_publication_events(event_date: date) -> list[_DayEvent]:
-    """Return economic releases scheduled for ``event_date`` (display TZ)."""
+    """Return economic releases scheduled for 'event_date' (display TZ)."""
     day_start = datetime.combine(
         event_date - timedelta(days=1), datetime.min.time()
     ).replace(tzinfo=timezone.utc)
@@ -480,10 +482,10 @@ def _get_day_publication_events(event_date: date) -> list[_DayEvent]:
 
 
 def _get_day_central_bank_events(event_date: date) -> list[_DayEvent]:
-    """Return key interest rates for monetary-policy decisions on ``event_date``.
+    """Return key interest rates for monetary-policy decisions on 'event_date'.
 
     On a meeting day, emit one card per key rate (current / previous / change)
-    instead of a generic ``Rates Decision`` label.
+    instead of a generic 'Rates Decision' label.
     """
     day_events: list[_DayEvent] = []
     for decision_day_key_rate in get_decision_day_key_rates(event_date):

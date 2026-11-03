@@ -49,7 +49,7 @@ from market_overview.services.price_ingestion import BatchPriceIngestionItem
 
 
 class _MarketPriceIngestionValidatedData(TypedDict):
-    """Validated data for ``MarketPriceIngestionSerializer``."""
+    """Validated data for 'MarketPriceIngestionSerializer'."""
 
     date: date
 
@@ -108,7 +108,12 @@ class BatchIngestMarketPricesView(BaseAPIView):
         description="Ingest market prices for specific assets over target periods. This endpoint scrapes historical data for multiple assets.",
         request_serializer=BatchPriceIngestionSerializer,
         response=CreatedOpenApiResponse(BatchPriceIngestionResponseSerializer),
-        error_responses=[BadRequestOpenApiResponse("List cannot be empty.")],
+        error_responses=[
+            BadRequestOpenApiResponse(
+                "List cannot be empty. | "
+                "end_date must be greater than or equal to start_date."
+            )
+        ],
     )
     def post(self, validated_data: list[BatchPriceIngestionItem]) -> Response:
         """Ingest market prices for specific assets over target periods."""
@@ -130,14 +135,14 @@ class BatchIngestMarketPricesView(BaseAPIView):
 
 
 class _GetMarketPriceValidatedData(TypedDict):
-    """Validated data for ``GetMarketPriceSerializer``."""
+    """Validated data for 'GetMarketPriceSerializer'."""
 
     date: date
     short_name: str
 
 
 class _DeleteMarketPricesValidatedData(TypedDict, total=False):
-    """Validated data for ``DeleteMarketPricesSerializer``."""
+    """Validated data for 'DeleteMarketPricesSerializer'."""
 
     ids: list[int] | None
 
@@ -195,7 +200,7 @@ class GetMarketPriceView(BaseAPIView):
 
 
 class _ListMarketPricesValidatedData(TypedDict):
-    """Validated data for ``ListMarketPricesSerializer``."""
+    """Validated data for 'ListMarketPricesSerializer'."""
 
     date: date
 
@@ -215,15 +220,15 @@ class ListMarketPricesView(BaseAPIView):
         """List all market prices for a specific date."""
         price_date: date = validated_data["date"]
 
-        market_price_rows = market_data.get_all_asset_prices_for_date(price_date)
+        market_prices = market_data.get_all_asset_prices_for_date(price_date)
         return Response(
-            data=MarketPriceResponseSerializer(market_price_rows, many=True).data,
+            data=MarketPriceResponseSerializer(market_prices, many=True).data,
             status=status.HTTP_200_OK,
         )
 
 
 class _GetAssetsWithoutPricesValidatedData(TypedDict, total=False):
-    """Validated data for ``GetAssetsWithoutPricesSerializer``."""
+    """Validated data for 'GetAssetsWithoutPricesSerializer'."""
 
     start_date: date
     end_date: date
@@ -289,7 +294,7 @@ class BulkUpdateAssetsPricesView(BaseAPIView):
 
 
 class _CsvBulkUpdateAssetsPricesValidatedData(TypedDict):
-    """Validated data for ``CsvBulkUpdateAssetsPricesSerializer``."""
+    """Validated data for 'CsvBulkUpdateAssetsPricesSerializer'."""
 
     csv_file: UploadedFile
 

@@ -29,7 +29,6 @@ def _resolve_mlit_rppi_xlsx_url() -> str | None:
     response = requests.get(
         MLIT_RPPI_PAGE_URL,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         return None
@@ -55,8 +54,8 @@ def _parse_mlit_rppi_workbook(workbook_bytes: bytes) -> list[ScrapingResult]:
         return []
     worksheet = workbook[MLIT_RPPI_SHEET]
     economic_data: list[ScrapingResult] = []
-    for row in worksheet.iter_rows(min_row=10, max_col=2, values_only=True):
-        period_cell, value_cell = row[0], row[1]
+    for worksheet_cells in worksheet.iter_rows(min_row=10, max_col=2, values_only=True):
+        period_cell, value_cell = worksheet_cells[0], worksheet_cells[1]
         if period_cell is None or value_cell is None:
             continue
         if isinstance(period_cell, datetime):
@@ -70,7 +69,9 @@ def _parse_mlit_rppi_workbook(workbook_bytes: bytes) -> list[ScrapingResult]:
         economic_data.append(
             ScrapingResult(period=period, data_value=float(value_cell), comment="")
         )
-    economic_data.sort(key=lambda row: row["period"] or date.min, reverse=True)
+    economic_data.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min, reverse=True
+    )
     return economic_data
 
 
@@ -82,7 +83,7 @@ def get_data_from_mlit(
 ) -> list[ScrapingResult]:
     """Get Japan Residential Property Price Index from MLIT Excel releases.
 
-    ``ticker`` must be ``residential_property_sa`` (nationwide SA residential).
+    'ticker' must be 'residential_property_sa' (nationwide SA residential).
 
     Source: https://www.mlit.go.jp/totikensangyo/totikensangyo_tk5_000085.html
     """
@@ -116,7 +117,6 @@ def get_data_from_mlit(
     response = requests.get(
         xlsx_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping MLIT RPPI: {response.text}")

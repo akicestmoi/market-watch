@@ -19,11 +19,11 @@ CachedPayloadT = TypeVar("CachedPayloadT")
 
 @lru_cache(maxsize=2)
 def get_redis_client(*, decode_responses: bool = False) -> redis.Redis:
-    """Return a shared Redis client for ``CELERY_BROKER_URL``.
+    """Return a shared Redis client for 'CELERY_BROKER_URL'.
 
-    One client is memoized per ``decode_responses`` value. Use
-    ``decode_responses=True`` for JSON/string caches; leave False for binary
-    lock tokens (``core.locks``).
+    One client is memoized per 'decode_responses' value. Use
+    'decode_responses=True' for JSON/string caches; leave False for binary
+    lock tokens ('core.locks').
     """
     redis_client = redis.from_url(
         settings.CELERY_BROKER_URL,
@@ -40,9 +40,9 @@ def get_cached_json(
     *,
     log_label: str = "Redis JSON cache",
 ) -> CachedPayloadT | None:
-    """Fetch a Redis JSON string and validate it with ``adapter``.
+    """Fetch a Redis JSON string and validate it with 'adapter'.
 
-    Returns ``None`` on miss, Redis errors, or invalid payloads.
+    Returns 'None' on miss, Redis errors, or invalid payloads.
     """
     try:
         client = get_redis_client(decode_responses=True)
@@ -69,7 +69,7 @@ def set_cached_json(
     *,
     log_label: str = "Redis JSON cache",
 ) -> None:
-    """Store ``payload`` as JSON under ``key`` with ``ttl_seconds``."""
+    """Store 'payload' as JSON under 'key' with 'ttl_seconds'."""
     try:
         client = get_redis_client(decode_responses=True)
         client.setex(

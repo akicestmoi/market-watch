@@ -6,7 +6,7 @@ from datetime import date
 from django.test import Client, TestCase
 from freezegun import freeze_time
 
-from data_visualization.services.market_recap import FX_MATRIX_ORDER
+from data_visualization.services.config import FX_MATRIX_ORDER
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

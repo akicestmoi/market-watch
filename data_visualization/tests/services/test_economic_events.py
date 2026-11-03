@@ -612,7 +612,7 @@ class TestUpcomingEvents(TestCase):
 
     def test_get_upcoming_events_from_publication_schedules_includes_previous(self):
         """
-        GIVEN a schedule whose just-released print is only on previous_publication_date
+        GIVEN a schedule whose just-released value is only on previous_publication_date
         WHEN listing events from the focus-week Monday
         THEN that previous slot appears on its display day
         """

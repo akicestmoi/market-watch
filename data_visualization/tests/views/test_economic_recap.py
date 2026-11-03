@@ -21,7 +21,7 @@ _EXPECTED_LOCATIONS = ["US", "FR", "JP"]
 _EXPECTED_ECONOMIC_DATA = [
     {
         "category": EconomicDataCategoryChoices.GROWTH,
-        "rows": [
+        "entries": [
             {
                 "category": EconomicDataCategoryChoices.GROWTH,
                 "location": EconomicDataLocationChoices.US,
@@ -187,7 +187,7 @@ _EXPECTED_ECONOMIC_DATA = [
     },
     {
         "category": EconomicDataCategoryChoices.CONFIDENCE,
-        "rows": [
+        "entries": [
             {
                 "category": EconomicDataCategoryChoices.CONFIDENCE,
                 "location": EconomicDataLocationChoices.US,

@@ -32,7 +32,7 @@ from core.views import BaseAPIView
 
 
 class _CentralBankDataIngestionItemValidatedData(TypedDict):
-    """One item from ``CentralBankDataIngestionSerializer`` (ChoiceField → str)."""
+    """One item from 'CentralBankDataIngestionSerializer' (ChoiceField → str)."""
 
     central_bank: str
     date: date
@@ -92,7 +92,7 @@ class CentralBankDataIngestionView(BaseAPIView):
 
 
 class _ListCentralBankDataValidatedData(TypedDict, total=False):
-    """Validated data for ``ListCentralBankDataSerializer``."""
+    """Validated data for 'ListCentralBankDataSerializer'."""
 
     central_banks: list[CentralBankChoices] | None
     date: date | None
@@ -100,7 +100,7 @@ class _ListCentralBankDataValidatedData(TypedDict, total=False):
 
 
 class _DeleteCentralBankDataValidatedData(TypedDict, total=False):
-    """Validated data for ``DeleteCentralBankDataSerializer``."""
+    """Validated data for 'DeleteCentralBankDataSerializer'."""
 
     central_banks: list[CentralBankChoices] | None
     ids: list[int] | None

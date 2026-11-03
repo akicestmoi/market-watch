@@ -1,6 +1,7 @@
 """Celery tasks for market price ingestion, holidays, and log cleanup."""
 
 from datetime import date, timedelta
+from typing import Required, TypedDict
 
 from celery import shared_task
 
@@ -13,8 +14,18 @@ from core.services import get_market_watch_as_of_date, get_previous_business_day
 from market_overview.services.config import HOLIDAY_COUNTRIES
 
 
+class _CeleryTaskResult(TypedDict, total=False):
+    """Standard Celery task status payload returned to the broker UI."""
+
+    status: Required[str]
+    message: Required[str]
+    date: str
+    asset_not_updated: list[str]
+    asset_not_updated_holiday: list[str]
+
+
 @shared_task
-def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
+def scheduled_market_data_ingestion(two_bdays_ago: bool = False) -> _CeleryTaskResult:
     """
     Celery task to ingest market data.
     This task will be scheduled to run 3 times a day.
@@ -32,41 +43,40 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False):
             "Skipping market data ingestion for %s: already in progress.",
             price_date.isoformat(),
         )
-        return {
-            "status": "skipped",
-            "message": (
+        return _CeleryTaskResult(
+            status="skipped",
+            message=(
                 f"Market data ingestion already in progress for {price_date.isoformat()}"
             ),
-            "date": price_date.isoformat(),
-        }
+            date=price_date.isoformat(),
+        )
 
     try:
         logger.info(f"Ingesting market data for {price_date}")
         prices_to_ingest = price_ingestion.get_market_data(price_date)
         ingestion_result = price_ingestion.ingest_market_data(prices_to_ingest)
-        result = {
-            "status": "success",
-            "message": f"Market data ingested successfully for {price_date}",
-            "date": price_date.isoformat(),
-            "asset_not_updated": ingestion_result["asset_not_updated"],
-            "asset_not_updated_holiday": ingestion_result["asset_not_updated_holiday"],
-        }
         market_analysis_tasks.schedule_market_analysis_after_ingestion(price_date)
-        return result
+        return _CeleryTaskResult(
+            status="success",
+            message=f"Market data ingested successfully for {price_date}",
+            date=price_date.isoformat(),
+            asset_not_updated=ingestion_result["asset_not_updated"],
+            asset_not_updated_holiday=ingestion_result["asset_not_updated_holiday"],
+        )
 
     except Exception as e:
         logger.error(f"Error in market data ingestion task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-            "date": price_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=price_date.isoformat(),
+        )
     finally:
         release_redis_lock(lock, lock_key)
 
 
 @shared_task
-def scheduled_price_update_logs_cleanup():
+def scheduled_price_update_logs_cleanup() -> _CeleryTaskResult:
     """
     Celery task to clean up price update logs.
     This task will be scheduled to run daily.
@@ -80,22 +90,22 @@ def scheduled_price_update_logs_cleanup():
     try:
         logger.info(f"Cleaning up price update logs for {logs_date}")
         market_data.delete_price_update_logs_before_date(logs_date)
-        return {
-            "status": "success",
-            "message": f"Price update logs deleted successfully for {logs_date}",
-            "date": logs_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="success",
+            message=f"Price update logs deleted successfully for {logs_date}",
+            date=logs_date.isoformat(),
+        )
     except Exception as e:
         logger.error(f"Error in price update logs cleanup task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-            "date": logs_date.isoformat(),
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=logs_date.isoformat(),
+        )
 
 
 @shared_task
-def scheduled_holidays_ingestion():
+def scheduled_holidays_ingestion() -> _CeleryTaskResult:
     """
     Celery task to ingest holidays.
     This task will be scheduled to run monthly.
@@ -106,13 +116,13 @@ def scheduled_holidays_ingestion():
         for country in HOLIDAY_COUNTRIES:
             holidays.ingest_one_year_holidays(today, country)
         holidays.delete_holidays_before_date(before_date)
-        return {
-            "status": "success",
-            "message": "Holidays successfully ingested.",
-        }
+        return _CeleryTaskResult(
+            status="success",
+            message="Holidays successfully ingested.",
+        )
     except Exception as e:
         logger.error(f"Error in holidays ingestion task: {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Error: {str(e)}",
-        }
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+        )

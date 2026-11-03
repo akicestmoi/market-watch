@@ -27,7 +27,7 @@ class TestProbabilityMatrixCache(TestCase):
     """Tests for probability-matrix Redis helpers."""
 
     def setUp(self):
-        """Create a STIR futures row used in fingerprint tests."""
+        """Create a STIR futures price used in fingerprint tests."""
         self.future_price = StirFuturesModel.objects.create(
             central_bank=CentralBankChoices.ECB,
             short_name=StirFuturesNameChoices.ESTR3M,

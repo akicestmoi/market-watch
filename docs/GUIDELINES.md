@@ -8,11 +8,11 @@
 |---|---|
 | **Storage** (`DateTimeField`, scraped embargoes, meeting instants) | UTC-aware datetimes (`USE_TZ = True`) |
 | **Comparisons / “now”** | Aware UTC (`django.utils.timezone.now()` or `datetime.now(timezone.utc)`) |
-| **Source wall clocks** (Fed/US releases in New York time, ECB CET/CEST, BoJ JST, …) | Interpret in the source zone via `convert_local_wall_time_to_utc` / `parse_datetime(..., naive_timezone=…)` / `get_source_timezone(location_code)`, then store UTC |
+| **Source local times** (Fed/US releases in New York time, ECB CET/CEST, BoJ JST, …) | Interpret in the source zone via `convert_local_wall_time_to_utc` / `parse_datetime(..., naive_timezone=…)` / `get_source_timezone(location_code)`, then store UTC |
 | **Parsing** | Prefer aware input; **naive strings default to UTC** unless `naive_timezone` (or a location map) is passed |
 | **User-facing clocks** (UI labels, upcoming-event times, date chips) | Convert with `core.services.convert_to_display_timezone` → **Europe/Paris** (`TIME_ZONE`) |
 | **Calendar “today”** (filters, week focus for the ops UI) | `core.services.get_local_today()` / `timezone.localdate()` (Paris date, not container `date.today()`) |
-| **Celery Beat** | Wall-clock schedules in **Europe/Paris** (`CELERY_TIMEZONE = TIME_ZONE`) |
+| **Celery Beat** | Local-time schedules in **Europe/Paris** (`CELERY_TIMEZONE = TIME_ZONE`) |
 
 Do **not** strip `tzinfo` before saving. Naive values with `USE_TZ` are reinterpreted as Paris local time and shift the instant.
 
@@ -22,7 +22,7 @@ Do **not** hardcode a fixed UTC hour for a local announcement (e.g. “FOMC = 13
 
 | Helper | Returns | Use for |
 |---|---|---|
-| `parse_datetime` | UTC-aware `datetime` | Ingest / parse (optional `naive_timezone` for source wall clocks) |
+| `parse_datetime` | UTC-aware `datetime` | Ingest / parse (optional `naive_timezone` for source local times) |
 | `get_source_timezone` | `ZoneInfo` for a location code | Look up US → `America/New_York`, EU → `Europe/Berlin`, … |
 | `convert_local_wall_time_to_utc` | UTC-aware `datetime` | Calendar scrapers with known local hour/minute |
 | `convert_to_display_timezone` | Paris `datetime` (same instant) | Clocks / `strftime` labels |

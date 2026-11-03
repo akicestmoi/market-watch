@@ -161,6 +161,8 @@ class ProbabilityMatrixBaseService(ABC):
         if not self.probability_matrix:
             return
 
+        # Every probability entry shares the same meeting-path length.
+        # Index 0 supplies that length.
         current_length = len(self.probability_matrix[0]["probabilities"])
         existing_steps = {mp["expected_rate_step"] for mp in self.probability_matrix}
         previous_min = min(existing_steps)
@@ -218,6 +220,8 @@ class ProbabilityMatrixBaseService(ABC):
         """Get the index of the last probability entry."""
         if not self.probability_matrix:
             return -1
+        # Every probability entry shares the same meeting-path length.
+        # Index 0 supplies that length.
         return len(self.probability_matrix[0]["probabilities"]) - 1
 
     def _get_probability_value(
@@ -392,9 +396,10 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         )  # +1 because diff is one element shorter
         weekend_ends = np.where(diff_mask == -1)[0] + 1
 
-        # Handle edge cases: period starts/ends in weekend
+        # Index 0 is the first accrual day; treat a weekend start as a weekend block open.
         if weekend_mask[0]:
             weekend_starts = np.insert(weekend_starts, 0, 0)
+        # Index -1 is the last accrual day; treat a weekend end as a weekend block close.
         if weekend_mask[-1]:
             weekend_ends = np.append(weekend_ends, num_days)
 
@@ -541,11 +546,11 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         # 6. Adjacent pairs (for n >= 3)
         if n_meetings >= 3:
             for step in [-STEP_SIZE, STEP_SIZE]:
-                # First two meetings
+                # Apply the step to the first two meetings only.
                 combo = [step, step] + [0] * (n_meetings - 2)
                 if tuple(combo) not in combinations:
                     combinations.append(tuple(combo))
-                # Last two meetings
+                # Apply the step to the last two meetings only.
                 combo = [0] * (n_meetings - 2) + [step, step]
                 if tuple(combo) not in combinations:
                     combinations.append(tuple(combo))
@@ -724,6 +729,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         )
 
         # Create a lookup dict: step -> list of probabilities ordered by meeting_i
+        # Usage of dict: keys are runtime expected-rate steps from the matrix.
         prob_lookup: dict[int, list[float]] = {}
         default_probabilities = [0.0] * len(meeting_dates)
         for prob_by_step in total_probabilities_by_step:
@@ -798,6 +804,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         )
 
         # Create lookup: step -> list of probabilities ordered by meeting_i
+        # Usage of dict: keys are runtime expected-rate steps from the matrix.
         new_prob_lookup: dict[int, list[float]] = {}
         default_probabilities = [0.0] * len(meeting_dates)
         for prob_by_step in new_total_probabilities:
@@ -890,6 +897,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
             apply_convolution: Whether to apply convolution (for consistency).
         """
         if len(meeting_dates) == 1:
+            # Single-meeting path: index 0 is the only meeting date in the period.
             if meeting_dates[0] is None:
                 raise ValueError("First meeting date is required")
             self._calculate_initial_single_meeting_probabilities(
@@ -927,6 +935,7 @@ class ThreeMonthFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
     ):
         """Process subsequent meeting probabilities."""
         if len(meeting_dates) == 1:
+            # Single-meeting path: index 0 is the only meeting date in the period.
             if meeting_dates[0] is None:
                 raise ValueError("First meeting date is required")
             self._calculate_single_meeting_probabilities(
@@ -1087,7 +1096,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
                     f"Meeting date {meeting_date} is not covered by any future contract."
                 )
 
-        # Check that last meeting has a future after it
+        # Chronological sort; index -1 is the last meeting needing a following future.
         last_meeting = sorted_meeting_dates[-1]
         has_future_after = False
         for future_price in self.future_prices:
@@ -1149,16 +1158,18 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
             implied_rate = meeting_by_future["futures_implied_rate"]
             meeting_dates = meeting_by_future["meeting_dates"]
             assert len(meeting_dates) <= 1, "Only one meeting date is supported"
+            # At most one meeting in this futures period; index 0 when present.
             meeting_date = meeting_dates[0] if meeting_dates else None
             has_meeting = meeting_date is not None
 
             if not has_meeting:
-                # No meeting: propagate the implied rate
+                # No meeting: propagate the implied rate.
                 previous_rate = implied_rate
                 if (
                     self.meeting_rate_info
                     and self.meeting_rate_info[-1]["end_rate"] is None
                 ):
+                    # Index -1 is the prior meeting still waiting for its end_rate.
                     self.meeting_rate_info[-1]["end_rate"] = implied_rate
             else:
                 # Has meeting: start rate is previous rate (or initial if first)
@@ -1224,10 +1235,12 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         self,
     ) -> dict[int, int]:
         """Build mapping from contract index to meeting index."""
+        # Usage of dict: keys are runtime futures-contract indexes with a meeting.
         contract_to_meeting_idx: dict[int, int] = {}
         meeting_idx = 0
         for idx, meeting_by_future in enumerate(self.meetings_by_futures):
             meeting_dates = meeting_by_future["meeting_dates"]
+            # At most one meeting per futures period; index 0 when present.
             meeting_date = meeting_dates[0] if meeting_dates else None
             if meeting_date is not None:
                 contract_to_meeting_idx[idx] = meeting_idx
@@ -1306,6 +1319,7 @@ class FedFundsFuturesProbabilityMatrixService(ProbabilityMatrixBaseService):
         self._infer_period_rates_from_period_without_meetings()
 
         # Build lookup: meeting_date -> meeting_by_future
+        # Usage of dict: keys are runtime meeting dates from meetings_by_futures.
         meeting_lookup: dict[date, _MeetingsByFutures] = {}
         for mbf in self.meetings_by_futures:
             for meeting_date in mbf.get("meeting_dates", []):
@@ -1481,6 +1495,7 @@ def calculate_probability_changes(
         )
 
     # Build previous probabilities indexed by rate_step and meeting_date
+    # Usage of dict: outer keys are rate steps; inner keys are meeting dates.
     previous_by_step_and_date: dict[int, dict[date, float]] = {}
     for entry in previous_prob_matrix:
         rate_step = entry["expected_rate_step"]
@@ -1580,6 +1595,7 @@ def get_central_bank_probability_matrices(
 
     # Create lookup dictionaries for efficient access
     # Note: meeting_dates from central_banks_meetings are list[datetime]
+    # Usage of dict: keys are central banks requested for this inference run.
     meeting_dates_lookup: dict[CentralBankChoices, list[datetime]] = {
         meeting_data["central_bank"]: meeting_data["meeting_dates"]
         for meeting_data in all_meeting_dates
@@ -1588,6 +1604,7 @@ def get_central_bank_probability_matrices(
     if meeting_dates_override:
         for cb, dates in meeting_dates_override.items():
             meeting_dates_lookup[cb] = dates
+    # Usage of dict: keys are central banks requested for this inference run.
     future_prices_lookup = {
         cb: [fp for fp in all_future_prices if fp.central_bank == cb]
         for cb in central_banks_to_process

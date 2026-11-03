@@ -236,7 +236,7 @@ const ENDPOINTS = {
       },
       {
         name: "Ingest Latest Economic Data",
-        description: "Ingest the latest observation for every seeded economic indicator.",
+        description: "Ingest the latest value for every seeded economic indicator.",
         method: "POST",
         path: "/economics/indicator/ingest",
         body: [
@@ -246,7 +246,7 @@ const ENDPOINTS = {
       },
       {
         name: "Ingest Historical Economic Data",
-        description: "Ingest all observations in a date window. Leave indicators empty to run on all indicators.",
+        description: "Ingest all values in a date window. Leave indicators empty to run on all indicators.",
         method: "POST",
         path: "/economics/indicator/ingest-historical",
         body: [
@@ -450,6 +450,40 @@ const ENDPOINTS = {
     ],
     "Cache & Chat": [
       {
+        name: "Extract Article",
+        description:
+          "Scrape catalog news wraps for a reporting date. Source and region are optional: omit both for every source/region; source only for all regions of that source; region only for every source that lists it.",
+        method: "GET",
+        path: "/analysis/article",
+        body: null,
+        query: [
+          { name: "reporting_date", type: "date", required: true },
+          {
+            name: "source",
+            type: "select",
+            options: [
+              "SWISSINFO_MARKET_WRAP",
+              "THE_EDGE_GLOBAL_MARKETS",
+              "CNBC_STOCK_MARKET_DAILY_RECAP",
+              "NEWSQUAWK_US_MARKET_WRAP",
+              "TBS_US_MARKETS",
+              "BOURSIER_CLOTURE_PARIS",
+              "ZONEBOURSE",
+              "BOURSORAMA",
+              "TOKYO_CLOSING_BELL",
+              "TBS_JAPAN_MARKETS",
+            ],
+            required: false,
+          },
+          {
+            name: "region",
+            type: "select",
+            options: ["GLOBAL", "US", "EU", "FR", "JP"],
+            required: false,
+          },
+        ],
+      },
+      {
         name: "Article Analysis Cache",
         description: "Inspect same-day Redis-cached article digests (24h TTL).",
         method: "GET",
@@ -485,9 +519,9 @@ document.addEventListener("keydown", function(event) {
     const formModal = document.getElementById("form-modal-overlay");
     const resultModal = document.getElementById("result-modal-overlay");
     const deleteConfirmationModal = document.getElementById("delete-confirmation-modal-overlay");
-    const loadingModal = document.getElementById("loading-modal-overlay");
 
-    // Close modals in order of priority (most specific first)
+    // Close modals in order of priority (most specific first).
+    // Loading modal is intentionally not closable with Escape.
     if (deleteConfirmationModal && deleteConfirmationModal.classList.contains("active")) {
       closeDeleteConfirmationModal();
     } else if (formModal && formModal.classList.contains("active")) {
@@ -495,7 +529,6 @@ document.addEventListener("keydown", function(event) {
     } else if (resultModal && resultModal.classList.contains("active")) {
       closeResultModal();
     }
-    // Note: Loading modal is intentionally not closable with Escape
   }
 });
 
@@ -612,7 +645,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const quickActionsContainer = document.getElementById("quick-actions-endpoints");
   Object.entries(ENDPOINTS.quickActions).forEach(([subcategory, endpoints]) => {
     const sortedEndpoints = sortEndpointsByMethod(endpoints);
-    const subcategorySection = createSubcategorySection(subcategory, sortedEndpoints, globalIndex, "quickActions");
+    const subcategorySection = createSubcategorySection(subcategory);
     quickActionsContainer.appendChild(subcategorySection.container);
     sortedEndpoints.forEach((endpoint) => {
       const card = createEndpointCard(endpoint, globalIndex, "quickActions");
@@ -626,7 +659,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const marketContainer = document.getElementById("market-data-endpoints");
   Object.entries(ENDPOINTS.marketData).forEach(([subcategory, endpoints]) => {
     const sortedEndpoints = sortEndpointsByMethod(endpoints);
-    const subcategorySection = createSubcategorySection(subcategory, sortedEndpoints, globalIndex, "marketData");
+    const subcategorySection = createSubcategorySection(subcategory);
     marketContainer.appendChild(subcategorySection.container);
     sortedEndpoints.forEach((endpoint) => {
       const card = createEndpointCard(endpoint, globalIndex, "marketData");
@@ -640,7 +673,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const economicContainer = document.getElementById("economic-data-endpoints");
   Object.entries(ENDPOINTS.economicData).forEach(([subcategory, endpoints]) => {
     const sortedEndpoints = sortEndpointsByMethod(endpoints);
-    const subcategorySection = createSubcategorySection(subcategory, sortedEndpoints, globalIndex, "economicData");
+    const subcategorySection = createSubcategorySection(subcategory);
     economicContainer.appendChild(subcategorySection.container);
     sortedEndpoints.forEach((endpoint) => {
       const card = createEndpointCard(endpoint, globalIndex, "economicData");
@@ -654,7 +687,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const centralBankContainer = document.getElementById("central-bank-data-endpoints");
   Object.entries(ENDPOINTS.centralBankData).forEach(([subcategory, endpoints]) => {
     const sortedEndpoints = sortEndpointsByMethod(endpoints);
-    const subcategorySection = createSubcategorySection(subcategory, sortedEndpoints, globalIndex, "centralBankData");
+    const subcategorySection = createSubcategorySection(subcategory);
     centralBankContainer.appendChild(subcategorySection.container);
     sortedEndpoints.forEach((endpoint) => {
       const card = createEndpointCard(endpoint, globalIndex, "centralBankData");
@@ -669,12 +702,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (researchContainer && ENDPOINTS.marketAnalysis) {
     Object.entries(ENDPOINTS.marketAnalysis).forEach(([subcategory, endpoints]) => {
       const sortedEndpoints = sortEndpointsByMethod(endpoints);
-      const subcategorySection = createSubcategorySection(
-        subcategory,
-        sortedEndpoints,
-        globalIndex,
-        "marketAnalysis"
-      );
+      const subcategorySection = createSubcategorySection(subcategory);
       researchContainer.appendChild(subcategorySection.container);
       sortedEndpoints.forEach((endpoint) => {
         const card = createEndpointCard(endpoint, globalIndex, "marketAnalysis");
@@ -687,7 +715,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
-function createSubcategorySection(subcategory, endpoints, startIndex, category) {
+function createSubcategorySection(subcategory) {
   const container = document.createElement("div");
   container.className = "subcategory-section";
 
@@ -819,6 +847,8 @@ function switchBodyMode(index, mode) {
   if (jsonContent) jsonContent.style.display = mode === "json" ? "block" : "none";
 }
 
+window.switchBodyMode = switchBodyMode;
+
 function createFormField(param, prefix, isBody, endpoint = null) {
   const fieldId = `${prefix}-${param.name}`;
   const required = param.required ? "required" : "";
@@ -868,7 +898,7 @@ function createFormField(param, prefix, isBody, endpoint = null) {
     }
 
     // Generate dynamic JSON form based on structure
-    const elementTitle = getElementTitle(endpoint, param.name);
+    const elementTitle = getElementTitle(endpoint);
     const jsonFormHtml = generateJsonFormField(fieldId, param.name, jsonStructure, prefix, required, requiredText, formattedName, elementTitle);
     return jsonFormHtml;
   } else if (param.type === "file") {
@@ -893,7 +923,7 @@ function createFormField(param, prefix, isBody, endpoint = null) {
     `;
 }
 
-function getElementTitle(endpoint, paramName) {
+function getElementTitle(endpoint) {
   if (!endpoint) return "Item";
 
   const endpointName = endpoint.name.toLowerCase();
@@ -926,7 +956,6 @@ function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, requir
   if (Array.isArray(jsonStructure)) {
     // Handle array: show each element with sub-fields and "Add new element" button
     const containerId = `${fieldId}-container`;
-    const arrayIndex = 0; // Start with first element
 
     let html = `
             <div class="json-form-container" id="${containerId}" data-field-name="${fieldName}" data-structure-type="array">
@@ -1235,7 +1264,7 @@ async function confirmRequest() {
                 if (jsonContainer) {
                   const structureType = jsonContainer.getAttribute("data-structure-type");
                   if (structureType === "array") {
-                    bodyObj[param.name] = collectArrayValues(jsonContainer, param.name);
+                    bodyObj[param.name] = collectArrayValues(jsonContainer);
                     hasBodyData = true;
                   } else if (structureType === "object") {
                     bodyObj[param.name] = collectObjectValues(jsonContainer, param.name);
@@ -1287,7 +1316,7 @@ async function confirmRequest() {
 
           if (hasBodyData) {
             // Check if we have file uploads
-            const hasFiles = Array.from(formData.entries()).some(([key, value]) => value instanceof File);
+            const hasFiles = Array.from(formData.entries()).some(([, value]) => value instanceof File);
             if (hasFiles) {
               // If we have files, merge bodyObj into formData
               Object.keys(bodyObj).forEach(key => {
@@ -1310,7 +1339,7 @@ async function confirmRequest() {
   }
 
   // Helper functions to collect JSON values from form
-  function collectArrayValues(container, fieldName) {
+  function collectArrayValues(container) {
     const items = container.querySelectorAll(".json-array-item");
     const array = [];
 
@@ -1450,6 +1479,8 @@ async function confirmRequest() {
   }
 }
 
+window.confirmRequest = confirmRequest;
+
 async function executeDeleteRequest() {
   if (!pendingDeleteRequest) return;
 
@@ -1485,6 +1516,8 @@ async function executeDeleteRequest() {
     pendingDeleteRequest = null;
   }
 }
+
+window.executeDeleteRequest = executeDeleteRequest;
 
 function showDeleteConfirmationModal(endpoint, queryData) {
   const modal = document.getElementById("delete-confirmation-modal-overlay");

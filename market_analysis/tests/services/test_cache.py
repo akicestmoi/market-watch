@@ -8,6 +8,7 @@ from freezegun import freeze_time
 
 from market_analysis.llm.config import PROMPT_VERSION
 from market_analysis.llm.schemas import EventType, Sentiment
+from market_analysis.models import ArticleRegionChoices
 from market_analysis.services import cache
 from market_analysis.services.cache import (
     ARTICLE_CACHE_TTL_SECONDS,
@@ -31,6 +32,8 @@ def _sample_analyzed() -> AnalyzedArticle:
         key_facts=["f1"],
         uncertainties=[],
         source_url="https://example.com/a",
+        source_name="Example",
+        regions=[ArticleRegionChoices.GLOBAL],
     )
 
 

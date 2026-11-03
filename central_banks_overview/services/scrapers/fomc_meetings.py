@@ -45,11 +45,13 @@ def extract_fomc_meeting_dates() -> list[datetime]:
             continue
         year = int(year_match.group(1))
 
-        for row in panel.find_all("div", class_=re.compile(r"fomc-meeting")):
-            if not isinstance(row, Tag):
+        for meeting_block in panel.find_all("div", class_=re.compile(r"fomc-meeting")):
+            if not isinstance(meeting_block, Tag):
                 continue
-            month_el = row.find("div", class_=re.compile("fomc-meeting__month"))
-            date_el = row.find("div", class_=re.compile("fomc-meeting__date"))
+            month_el = meeting_block.find(
+                "div", class_=re.compile("fomc-meeting__month")
+            )
+            date_el = meeting_block.find("div", class_=re.compile("fomc-meeting__date"))
             if not isinstance(month_el, Tag) or not isinstance(date_el, Tag):
                 continue
 
@@ -75,8 +77,7 @@ def extract_fomc_meeting_dates() -> list[datetime]:
             if not months:
                 continue
 
-            # This handles regular meetings, cross-month (like Jan/Feb 31-1) meetings
-            # and single-month meetings
+            # Index 0 is start month; index -1 is end (same for a single month).
             start_month = MONTH_NUMBER_BY_ABBREVIATION.get(months[0])
             end_month = MONTH_NUMBER_BY_ABBREVIATION.get(months[-1])
             if not start_month or not end_month:

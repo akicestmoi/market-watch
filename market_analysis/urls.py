@@ -3,6 +3,7 @@
 from django.urls import path
 
 from market_analysis.views.analysis_cache import GetArticleAnalysisCacheView
+from market_analysis.views.article_extraction import ExtractArticleView
 from market_analysis.views.llm_chat import AnalysisChatView
 from market_analysis.views.market_analysis import (
     GenerateDailyRecapView,
@@ -14,4 +15,5 @@ urlpatterns = [
     path("recap/generate", GenerateDailyRecapView.as_view()),
     path("chat", AnalysisChatView.as_view()),
     path("article-cache", GetArticleAnalysisCacheView.as_view()),
+    path("article", ExtractArticleView.as_view()),
 ]

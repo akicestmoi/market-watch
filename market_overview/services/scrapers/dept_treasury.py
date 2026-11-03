@@ -13,8 +13,23 @@ from market_overview.services.scrapers.common import (
     ScrapingResult,
     YieldCurveScrapResult,
     YieldTermRate,
-    get_yield_curve_rate,
+    get_yield_from_curve_by_ticker,
 )
+
+# Usage of dict: keys are UST tickers; values are Treasury BC_* term labels.
+_UST_TICKER_TO_TERM: dict[str, str] = {
+    "UST1M": "1MONTH",
+    "UST2M": "2MONTH",
+    "UST3M": "3MONTH",
+    "UST6M": "6MONTH",
+    "UST1Y": "1YEAR",
+    "UST2Y": "2YEAR",
+    "UST3Y": "3YEAR",
+    "UST5Y": "5YEAR",
+    "UST7Y": "7YEAR",
+    "UST10Y": "10YEAR",
+    "UST20Y": "20YEAR",
+}
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
@@ -70,26 +85,8 @@ def get_treasury_yield_from_dep_treasury(
     target_date: date, ticker: str
 ) -> ScrapingResult:
     """Infer UST yield from Treasury department yield curve."""
-    mapping = {
-        "UST1M": "1MONTH",
-        "UST2M": "2MONTH",
-        "UST3M": "3MONTH",
-        "UST6M": "6MONTH",
-        "UST1Y": "1YEAR",
-        "UST2Y": "2YEAR",
-        "UST3Y": "3YEAR",
-        "UST5Y": "5YEAR",
-        "UST7Y": "7YEAR",
-        "UST10Y": "10YEAR",
-        "UST20Y": "20YEAR",
-    }
-    if ticker not in mapping.keys():
-        return ScrapingResult(price=None, comment="Ticker not found in mapping.")
-    curve = _get_treasury_yield_curve_from_dep_treasury(target_date)
-    if curve["error"]:
-        return ScrapingResult(price=None, comment=curve["error"])
-    if not curve["rates"]:
-        return ScrapingResult(price=None, comment="Yield curve not found.")
-    return ScrapingResult(
-        price=get_yield_curve_rate(curve, mapping[ticker]), comment=""
+    return get_yield_from_curve_by_ticker(
+        ticker,
+        _UST_TICKER_TO_TERM,
+        _get_treasury_yield_curve_from_dep_treasury(target_date),
     )

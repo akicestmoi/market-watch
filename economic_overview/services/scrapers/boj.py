@@ -30,7 +30,6 @@ def _resolve_boj_tankan_zip_url() -> str | None:
     response = requests.get(
         BOJ_TANKAN_INDEX_URL,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         return None
@@ -40,6 +39,7 @@ def _resolve_boj_tankan_zip_url() -> str | None:
     )
     if not matches:
         return None
+    # Listing order puts the latest tkaYYMM.zip first on the gaiyo index page.
     return urljoin(BOJ_SITE_ORIGIN, matches[0])
 
 
@@ -88,10 +88,12 @@ def _parse_boj_tankan_zip(
         ]
         if not xlsx_names:
             return []
+        # The Tankan summary ZIP carries one workbook (GA_E1.xlsx).
         with zip_archive.open(xlsx_names[0]) as xlsx_file:
             workbook = openpyxl.load_workbook(
                 io.BytesIO(xlsx_file.read()), data_only=True
             )
+    # The summary workbook's first sheet holds the Business Conditions DI table.
     worksheet = workbook[workbook.sheetnames[0]]
     title = worksheet["A1"].value
     period = _parse_boj_tankan_survey_period(
@@ -101,12 +103,12 @@ def _parse_boj_tankan_zip(
         return []
 
     # TABLE1: Large / Medium / Small blocks; current-survey Actual per size.
-    for row in worksheet.iter_rows(
+    for worksheet_cells in worksheet.iter_rows(
         min_row=12, max_row=55, max_col=column_index + 1, values_only=True
     ):
-        if row[0] != series.sector_label:
+        if worksheet_cells[0] != series.sector_label:
             continue
-        actual_value = row[column_index]
+        actual_value = worksheet_cells[column_index]
         if isinstance(actual_value, bool) or not isinstance(actual_value, (int, float)):
             return []
         return [
@@ -159,7 +161,6 @@ def get_data_from_boj(
     response = requests.get(
         zip_url,
         timeout=60,
-        headers={"User-Agent": "market-watch/1.0"},
     )
     if response.status_code >= 400:
         logger.warning(f"Error scraping BoJ Tankan: {response.text}")

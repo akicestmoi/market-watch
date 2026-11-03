@@ -50,9 +50,9 @@ def _update_publication_schedule(
 ) -> PublicationScheduleModel | None:
     """Update publication schedule.
 
-    When ``current`` has passed, move it to ``previous`` and advance ``current`` /
-    ``next`` from the source scrape so market-recap day events still match the
-    release calendar day via ``previous_publication_date``.
+    When 'current' has passed, move it to 'previous' and advance 'current' /
+    'next' from the source scrape so market-recap day events still match the
+    release calendar day via 'previous_publication_date'.
     """
     logger.info(f"Updating publication schedule for indicator: {indicator.name}")
     publication_schedule, _created = PublicationScheduleModel.objects.get_or_create(
@@ -82,7 +82,9 @@ def _update_publication_schedule(
     publication_schedule.previous_publication_date = (
         publication_schedule.current_publication_date
     )
+    # Upcoming dates are earliest-first; index 0 becomes the new current.
     publication_schedule.current_publication_date = next_publication_dates[0]
+    # Index 1 is the following slot (next), when the source returned more than one date.
     publication_schedule.next_publication_date = (
         next_publication_dates[1] if len(next_publication_dates) > 1 else None
     )

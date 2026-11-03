@@ -63,7 +63,7 @@ def get_economic_data_ingestion_lock_key() -> str:
 
 
 class _EconomicData(TypedDict):
-    """Economic data dictionnary."""
+    """Scraped economic indicator value ready for upsert."""
 
     indicator: EconomicIndicatorInformationModel
     period: date | None
@@ -92,6 +92,7 @@ def _get_economic_data(
             )
         ]
     )
+    # Scrapers return newest-first or a single filtered value; index 0 is what we upsert.
     scraping_result = (
         economic_data[0]
         if economic_data

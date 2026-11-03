@@ -13,8 +13,32 @@ from market_overview.services.scrapers.common import (
     ScrapingResult,
     YieldCurveScrapResult,
     YieldTermRate,
-    get_yield_curve_rate,
+    get_yield_from_curve_by_ticker,
 )
+
+# Usage of dict: keys are JGB/TDB tickers; values are BB table maturity labels.
+_JGB_TICKER_TO_TERM: dict[str, str] = {
+    "TDB3M": "TDB(3M)",
+    "TDB6M": "TDB(6M)",
+    "TDB1Y": "TDB(1Y)",
+    "JGB2Y": "2Y",
+    "JGB5Y": "5Y",
+    "JGB10Y": "10Y",
+    "JGB20Y": "20Y",
+}
+
+# BB table maturity columns in header order (after the Date column).
+_BB_YIELD_CURVE_MATURITIES: list[str] = [
+    "40Y",
+    "30Y",
+    "20Y",
+    "10Y",
+    "5Y",
+    "2Y",
+    "TDB(1Y)",
+    "TDB(6M)",
+    "TDB(3M)",
+]
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
@@ -34,36 +58,24 @@ def _scrap_jgb_yield_curve_from_bb(target_date: date) -> YieldCurveScrapResult:
         if not isinstance(tr, Tag):
             continue
         cols = [td.get_text(strip=True) for td in tr.find_all("td")]
-        # Must have a date (YYYY/MM/DD)
+        # Column 0 is the Date cell; require YYYY/MM/DD before treating the row as data.
         if cols and len(cols[0].split("/")) == 3:
             rows.append(cols)
 
-    # Define maturities (according to header order)
-    maturities = [
-        "40Y",
-        "30Y",
-        "20Y",
-        "10Y",
-        "5Y",
-        "2Y",
-        "TDB(1Y)",
-        "TDB(6M)",
-        "TDB(3M)",
-    ]
-
-    df = pd.DataFrame(rows, columns=["Date"] + maturities)
+    df = pd.DataFrame(rows, columns=["Date"] + _BB_YIELD_CURVE_MATURITIES)
     df["Date"] = pd.to_datetime(df["Date"], format="%Y/%m/%d")
 
-    for col in maturities:
-        df[col] = pd.to_numeric(df[col].replace("", None), errors="coerce")
+    for maturity in _BB_YIELD_CURVE_MATURITIES:
+        df[maturity] = pd.to_numeric(df[maturity].replace("", None), errors="coerce")
 
     df_cleaned = df.sort_values("Date").ffill()
     target_yield_curves_df = df_cleaned[df_cleaned["Date"].dt.date == target_date]
     if target_yield_curves_df.empty or target_yield_curves_df.shape[0] > 1:
         return YieldCurveScrapResult(rates=[], error="Yield curve not found.")
+    # Exactly one matching calendar day remains; index 0 is that day's curve row.
     row = target_yield_curves_df.iloc[0]
     rates: list[YieldTermRate] = []
-    for maturity in maturities:
+    for maturity in _BB_YIELD_CURVE_MATURITIES:
         value = row[maturity]
         if pd.isna(value):
             continue
@@ -73,22 +85,8 @@ def _scrap_jgb_yield_curve_from_bb(target_date: date) -> YieldCurveScrapResult:
 
 def get_jgb_yield_from_bb(target_date: date, ticker: str) -> ScrapingResult:
     """Infer JGB yield from BB yield curve."""
-    mapping = {
-        "TDB3M": "TDB(3M)",
-        "TDB6M": "TDB(6M)",
-        "TDB1Y": "TDB(1Y)",
-        "JGB2Y": "2Y",
-        "JGB5Y": "5Y",
-        "JGB10Y": "10Y",
-        "JGB20Y": "20Y",
-    }
-    if ticker not in mapping.keys():
-        return ScrapingResult(price=None, comment="Ticker not found in mapping.")
-    curve = _scrap_jgb_yield_curve_from_bb(target_date)
-    if curve["error"]:
-        return ScrapingResult(price=None, comment=curve["error"])
-    if not curve["rates"]:
-        return ScrapingResult(price=None, comment="Yield curve not found.")
-    return ScrapingResult(
-        price=get_yield_curve_rate(curve, mapping[ticker]), comment=""
+    return get_yield_from_curve_by_ticker(
+        ticker,
+        _JGB_TICKER_TO_TERM,
+        _scrap_jgb_yield_curve_from_bb(target_date),
     )

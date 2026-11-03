@@ -422,14 +422,14 @@ class TestBulkUpdateStirFuturesViews(TestCase):
             comment="",
         )
 
-    def _create_csv_file(self, rows):
-        """Helper to create CSV file from rows."""
+    def _create_csv_file(self, records):
+        """Helper to create a CSV file from price records."""
         output = StringIO()
         writer = csv.DictWriter(
             output, fieldnames=["date", "short_name", "maturity", "price", "logs"]
         )
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(records)
         output.seek(0)
         csv_content = output.getvalue()
         return SimpleUploadedFile(
@@ -645,7 +645,7 @@ class TestBulkUpdateStirFuturesViews(TestCase):
 
     def test_bulk_update_from_csv_multiple_rows(self):
         """
-        GIVEN CSV file with multiple rows
+        GIVEN a CSV file with multiple price records
         WHEN bulk updating STIR futures prices from CSV
         THEN all prices are updated
         """

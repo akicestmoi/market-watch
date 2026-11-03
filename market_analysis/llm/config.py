@@ -1,6 +1,6 @@
 """LLM constants and loaders for skills / system instructions.
 
-Model id and API key live in ``core.settings`` (``LLM_MODEL_NAME``, ``OPENAI_API_KEY``).
+Model id and API key live in 'core.settings' ('LLM_MODEL_NAME', 'OPENAI_API_KEY').
 """
 
 import os
@@ -34,7 +34,7 @@ def _read_required_markdown(directory: str, name: str) -> str:
 
 
 def load_instruction(name: str) -> str:
-    """Load a system-instruction markdown file from ``instructions/``."""
+    """Load a system-instruction markdown file from 'instructions/'."""
     return _read_required_markdown(INSTRUCTIONS_DIR, name)
 
 

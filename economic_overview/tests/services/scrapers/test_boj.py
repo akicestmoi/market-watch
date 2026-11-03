@@ -54,7 +54,7 @@ class TestBojTankanDataIngestion(TestCase):
         """
         GIVEN the BoJ Tankan index page and summary ZIP
         WHEN getting the medium nonmanufacturing business-conditions DI
-        THEN the latest survey observation is returned
+        THEN the latest survey value is returned
         """
         index_html = '<a href="/en/statistics/tk/gaiyo/2026/tka2609.zip">[ZIP 97KB]</a>'
         mock_get.side_effect = [

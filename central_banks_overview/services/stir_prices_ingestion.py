@@ -22,6 +22,7 @@ from central_banks_overview.services.scrapers.tfx_mutan_futures import (
 )
 from core.services import logger
 
+# Usage of tuple: fixed CSV header column order for bulk STIR price uploads.
 EXPECTED_CSV_COLUMNS: tuple[
     Literal["date"],
     Literal["short_name"],
@@ -29,7 +30,8 @@ EXPECTED_CSV_COLUMNS: tuple[
     Literal["price"],
     Literal["logs"],
 ] = ("date", "short_name", "maturity", "price", "logs")
-# Pandas DtypeArg needs dict[Hashable, ...]; invariance blocks TypedDict/Literal keys.
+# Usage of dict: Pandas DtypeArg needs dict[Hashable, ...]; invariance blocks
+# TypedDict/Literal keys. Values are column dtypes for read_csv.
 STIR_FUTURES_CSV_DTYPES: dict[Hashable, type[str]] = {
     column: str for column in EXPECTED_CSV_COLUMNS
 }
@@ -111,7 +113,7 @@ def delete_stir_futures_prices(ids: list[int]) -> int:
 
 
 class BulkUpdateFuturesPricesItem(TypedDict):
-    """Bulk update futures prices dictionnary."""
+    """One STIR futures price update for a bulk update request."""
 
     date: date
     short_name: str
@@ -165,20 +167,20 @@ def bulk_update_futures_prices_from_csv(
 
     updates = [
         BulkUpdateFuturesPricesItem(
-            date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
-            short_name=row["short_name"],
-            maturity=row["maturity"],
-            price=float(row["price"]),
+            date=datetime.strptime(csv_record["date"], "%Y-%m-%d").date(),
+            short_name=csv_record["short_name"],
+            maturity=csv_record["maturity"],
+            price=float(csv_record["price"]),
             logs=(
-                row["logs"]
-                if row["logs"]
+                csv_record["logs"]
+                if csv_record["logs"]
                 else (
-                    f"Bulk update from CSV file of {row['short_name']} "
-                    f"to price: {row['price']}."
+                    f"Bulk update from CSV file of {csv_record['short_name']} "
+                    f"to price: {csv_record['price']}."
                 )
             ),
         )
-        for row in df.to_dict(orient="records")
+        for csv_record in df.to_dict(orient="records")
     ]
     return bulk_update_futures_prices(updates)
 

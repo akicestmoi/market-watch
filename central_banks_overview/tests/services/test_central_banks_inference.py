@@ -452,7 +452,6 @@ class TestCentralBankInferenceServices(TestCase):
         # Create meeting date
         meeting = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=datetime(2026, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
         )
 
@@ -528,7 +527,6 @@ class TestCentralBankInferenceServices(TestCase):
         # Create meeting date
         meeting = CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.FRB,
-            order=1,
             date=datetime(2026, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
         )
 

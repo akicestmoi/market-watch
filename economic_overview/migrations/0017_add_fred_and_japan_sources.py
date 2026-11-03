@@ -4,7 +4,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    """Widen indicator ``source`` choices for US FRED and Japan agencies."""
+    """Widen indicator 'source' choices for US FRED and Japan agencies."""
 
     dependencies = [
         ("economic_overview", "0016_add_eurostat_source"),

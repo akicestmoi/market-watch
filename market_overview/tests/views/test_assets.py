@@ -49,7 +49,11 @@ class TestAssetsViews(TestCase):
                 "short_name": "NEW_TEST",
                 "full_name": "Test Asset",
                 "asset_class": "STOCKS",
-                "asset_type": "EQUITY",
+                "location": None,
+                "maturity": None,
+                "asset_type": "EQUITY_INDEX",
+                "ticker": "^TEST",
+                "source": "YAHOO",
             }
         ]
 
@@ -76,7 +80,11 @@ class TestAssetsViews(TestCase):
                 "short_name": "TEST",
                 "full_name": "Updated Asset",
                 "asset_class": "STOCKS",
-                "asset_type": "EQUITY",
+                "location": None,
+                "maturity": None,
+                "asset_type": "EQUITY_INDEX",
+                "ticker": "^TEST",
+                "source": "YAHOO",
             }
         ]
         mock_file = MagicMock()
@@ -124,14 +132,22 @@ class TestAssetsViews(TestCase):
                 "short_name": "TEST",
                 "full_name": "Updated Asset",
                 "asset_class": "STOCKS",
-                "asset_type": "EQUITY",
+                "location": None,
+                "maturity": None,
+                "asset_type": "EQUITY_INDEX",
+                "ticker": "^TEST",
+                "source": "YAHOO",
             },
             {
                 "id": 2,
                 "short_name": "TEST",
                 "full_name": "Duplicated Asset",
                 "asset_class": "STOCKS",
-                "asset_type": "EQUITY",
+                "location": None,
+                "maturity": None,
+                "asset_type": "EQUITY_INDEX",
+                "ticker": "^TEST2",
+                "source": "YAHOO",
             },
         ]
         mock_file = MagicMock()
@@ -167,11 +183,11 @@ class TestAssetsViews(TestCase):
         response = self.client.post(f"{self.base_url}{self.GENERATE_BASE_ASSETS_URL}")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {
-            "error": "Validation",
-            "message": "short_name is required",
-            "status_code": 400,
-        }
+        response_payload = response.json()
+        assert response_payload["error"] == "Validation"
+        assert response_payload["status_code"] == 400
+        assert "Invalid market_data.json" in response_payload["message"]
+        assert "short_name" in response_payload["message"]
 
     def test_get_asset_names_success(self):
         """

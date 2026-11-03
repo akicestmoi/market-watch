@@ -43,7 +43,7 @@ class CentralBankMeetingDatesIngestionView(BaseAPIView):
 
 
 class _GetCentralBankMeetingDatesValidatedData(TypedDict, total=False):
-    """Validated data for ``GetCentralBankMeetingDatesSerializer``."""
+    """Validated data for 'GetCentralBankMeetingDatesSerializer'."""
 
     central_banks: list[CentralBankChoices] | None
 

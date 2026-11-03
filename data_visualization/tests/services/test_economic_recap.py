@@ -8,7 +8,7 @@ from freezegun import freeze_time
 
 from data_visualization.services.economic_recap import (
     _format_amount_unit_label,
-    _format_recap_row_unit_parenthesis,
+    _format_recap_line_unit_parenthesis,
     _format_spaced_number,
     _scale_amount_for_display,
     _ScaledAmount,
@@ -72,7 +72,7 @@ class TestEconomicRecapServices(TestCase):
         cached_payload = [
             {
                 "category": EconomicDataCategoryChoices.CONFIDENCE,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.CONFIDENCE,
                         "location": EconomicDataLocationChoices.FR,
@@ -109,7 +109,7 @@ class TestEconomicRecapServices(TestCase):
         assert result == [
             {
                 "category": EconomicDataCategoryChoices.CONFIDENCE,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.CONFIDENCE,
                         "location": EconomicDataLocationChoices.FR,
@@ -145,7 +145,7 @@ class TestEconomicRecapServices(TestCase):
         """
         GIVEN the same indicator type seeded for FR and US
         WHEN getting economic recap data for both locations
-        THEN one row name is used with exactly one cell per location
+        THEN one line name is used with exactly one cell per location
         """
         indicator_us = EconomicIndicatorInformationModel.objects.create(
             id=2,
@@ -186,7 +186,7 @@ class TestEconomicRecapServices(TestCase):
         assert result == [
             {
                 "category": EconomicDataCategoryChoices.GROWTH,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.GROWTH,
                         "location": EconomicDataLocationChoices.FR,
@@ -235,7 +235,7 @@ class TestEconomicRecapServices(TestCase):
             },
             {
                 "category": EconomicDataCategoryChoices.CONFIDENCE,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.CONFIDENCE,
                         "location": EconomicDataLocationChoices.FR,
@@ -287,7 +287,7 @@ class TestEconomicRecapServices(TestCase):
         """
         GIVEN a US-only indicator type
         WHEN getting economic recap data for FR and US
-        THEN the FR cell is an empty placeholder on the same row name
+        THEN the FR cell is an empty placeholder on the same line name
         """
         indicator_us = EconomicIndicatorInformationModel.objects.create(
             id=2,
@@ -312,7 +312,7 @@ class TestEconomicRecapServices(TestCase):
         assert result == [
             {
                 "category": EconomicDataCategoryChoices.LABOUR,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.LABOUR,
                         "location": EconomicDataLocationChoices.FR,
@@ -355,7 +355,7 @@ class TestEconomicRecapServices(TestCase):
             },
             {
                 "category": EconomicDataCategoryChoices.CONFIDENCE,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.CONFIDENCE,
                         "location": EconomicDataLocationChoices.FR,
@@ -407,7 +407,7 @@ class TestEconomicRecapServices(TestCase):
         """
         GIVEN two JP indicators sharing the same type
         WHEN getting economic recap data
-        THEN each series keeps its own row keyed by indicator name
+        THEN each series keeps its own line keyed by indicator name
         """
         large = EconomicIndicatorInformationModel.objects.create(
             id=2,
@@ -442,7 +442,7 @@ class TestEconomicRecapServices(TestCase):
         assert result == [
             {
                 "category": EconomicDataCategoryChoices.CONFIDENCE,
-                "rows": [
+                "entries": [
                     {
                         "category": EconomicDataCategoryChoices.CONFIDENCE,
                         "location": EconomicDataLocationChoices.JP,
@@ -495,7 +495,7 @@ class TestEconomicRecapServices(TestCase):
         """
         GIVEN only FR indicators exist
         WHEN getting economic recap data for JP
-        THEN no placeholder rows are invented for missing locations' indicators
+        THEN no placeholder lines are invented for missing locations' indicators
         """
         result = get_economic_recap_data([EconomicDataLocationChoices.JP])
         assert result == []
@@ -604,7 +604,7 @@ class TestFormatIndicatorValue(SimpleTestCase):
 
 
 class TestFormatRecapRowUnitParenthetical(TestCase):
-    """Cross-location unit / base-year parentheticals for recap row titles."""
+    """Cross-location unit / base-year parentheticals for recap line titles."""
 
     def setUp(self):
         """Create two amount indicators that disagree on unit."""
@@ -642,7 +642,7 @@ class TestFormatRecapRowUnitParenthetical(TestCase):
         THEN the label is (in %)
         """
         assert (
-            _format_recap_row_unit_parenthesis(
+            _format_recap_line_unit_parenthesis(
                 [self.us_gdp, self.jp_gdp],
                 mode=IndicatorDisplayModeChoices.QUARTER,
             )
@@ -656,7 +656,7 @@ class TestFormatRecapRowUnitParenthetical(TestCase):
         THEN both compact labels are joined with /
         """
         assert (
-            _format_recap_row_unit_parenthesis(
+            _format_recap_line_unit_parenthesis(
                 [self.us_gdp, self.jp_gdp],
                 mode=IndicatorDisplayModeChoices.RAW,
             )

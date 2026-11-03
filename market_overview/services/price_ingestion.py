@@ -46,7 +46,7 @@ def get_market_price_ingestion_lock_key(price_date: date) -> str:
 
 
 class _MarketData(TypedDict):
-    """Market data dictionnary."""
+    """Scraped or holiday price payload for one asset on one date."""
 
     asset: AssetModel
     price: float | None
@@ -105,7 +105,7 @@ def get_market_data(target_date: date) -> list[_MarketData]:
 
 
 class _IngestionNotUpdatedResult(TypedDict):
-    """Ingestion not updated result dictionnary."""
+    """Assets skipped during price ingestion, split by holiday vs missing price."""
 
     asset_not_updated: list[str]
     asset_not_updated_holiday: list[str]
@@ -144,7 +144,7 @@ def ingest_market_data(
 
 
 class BatchPriceIngestionItem(TypedDict):
-    """Batch price ingestion item dictionnary."""
+    """Date range request to ingest prices for one asset."""
 
     short_name: str
     start_date: date
@@ -152,7 +152,7 @@ class BatchPriceIngestionItem(TypedDict):
 
 
 class _BatchPriceIngestionResult(TypedDict):
-    """Batch price ingestion result dictionnary."""
+    """Per-asset outcome of a batch price ingestion run."""
 
     short_name: str
     status: Literal["success", "error"]

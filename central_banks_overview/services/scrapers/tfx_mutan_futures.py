@@ -168,13 +168,13 @@ def get_mutan_futures_prices(target_date: date) -> list[StirFutures]:
             central_bank=CentralBankChoices.BOJ,
             short_name=StirFuturesNameChoices.MUTAN3M,
             full_name=str(StirFuturesNameChoices.MUTAN3M.label),
-            maturity=row.get("限月", "Maturity not found"),
-            first_accrual_date=row.get("first_accrual_date"),
-            last_accrual_date=row.get("last_accrual_date"),
+            maturity=price_series.get("限月", "Maturity not found"),
+            first_accrual_date=price_series.get("first_accrual_date"),
+            last_accrual_date=price_series.get("last_accrual_date"),
             date=target_date,
-            price=row.get("公式終値"),
+            price=price_series.get("公式終値"),
             source=StirFuturesSourceChoices.TFX,
             comment="",
         )
-        for _, row in combined_prices.iterrows()
+        for _, price_series in combined_prices.iterrows()
     ]

@@ -32,7 +32,7 @@ class CentralBankChoices(models.TextChoices):
 
     @classmethod
     def get_labels(cls) -> list[str]:
-        """Display labels in ``ordered()`` order."""
+        """Display labels in 'ordered()' order."""
         return get_choice_labels(cls)
 
     def get_location(self) -> LocationChoices:
@@ -48,24 +48,77 @@ class CentralBankChoices(models.TextChoices):
                 raise ValueError(f"No location configured for {self}")
 
 
+class CentralBankMeetingStatusChoices(models.TextChoices):
+    """Lifecycle of a stored policy meeting for calendar vs key-rate ingest."""
+
+    UPCOMING = "UPCOMING", _("Upcoming")
+    OCCURRED = "OCCURRED", _("Occurred")
+    RATES_INGESTED = "RATES_INGESTED", _("Rates ingested")
+
+
 class CentralBankMeetingModel(BaseModel):
     """Central Bank Meeting Model."""
 
-    central_bank = models.CharField(max_length=255, choices=CentralBankChoices.choices)
-    order = models.IntegerField()
-    date = models.DateTimeField()
+    central_bank = models.CharField(
+        max_length=255,
+        choices=CentralBankChoices.choices,
+        help_text="Central bank that holds this policy meeting.",
+    )
+    date = models.DateTimeField(
+        help_text=(
+            "Scheduled announcement time in UTC (local announcement time converted on ingest)."
+        ),
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=CentralBankMeetingStatusChoices.choices,
+        default=CentralBankMeetingStatusChoices.UPCOMING,
+        help_text=(
+            "UPCOMING: scheduled time not yet reached. "
+            "OCCURRED: announcement time past, key rates not ingested yet. "
+            "RATES_INGESTED: decision-day key rates ingested for the display date."
+        ),
+    )
 
 
 class CentralBankDataModel(BaseModel):
     """Central Bank Data Model."""
 
-    cb_data_id = models.IntegerField(default=None, null=True, blank=True)
-    central_bank = models.CharField(max_length=255, choices=CentralBankChoices.choices)
-    short_name = models.CharField(max_length=255, default="")
-    full_name = models.CharField(max_length=255)
-    date = models.DateField()
-    value = models.FloatField(null=True, blank=True, default=None)
-    comment = models.TextField(null=True, blank=True, default="")
+    cb_data_id = models.IntegerField(
+        default=None,
+        null=True,
+        blank=True,
+        help_text="Stable series id from central_banks_data.json.",
+    )
+    central_bank = models.CharField(
+        max_length=255,
+        choices=CentralBankChoices.choices,
+        help_text="Central bank to which this data set belongs.",
+    )
+    short_name = models.CharField(
+        max_length=255,
+        default="",
+        help_text="Short series code (e.g. BOJ_MUTAN, ECB_Deposit).",
+    )
+    full_name = models.CharField(
+        max_length=255,
+        help_text="Human-readable series name for UI / recap cards.",
+    )
+    date = models.DateField(
+        help_text="Key-rate date (display calendar day, not a datetime).",
+    )
+    value = models.FloatField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Key-rate level; null when the scrape found none.",
+    )
+    comment = models.TextField(
+        null=True,
+        blank=True,
+        default="",
+        help_text="Optional scrape / ingest note.",
+    )
 
 
 class StirFuturesNameChoices(models.TextChoices):
@@ -87,18 +140,57 @@ class StirFuturesSourceChoices(models.TextChoices):
 class StirFuturesModel(BaseModel):
     """Stir Futures Model."""
 
-    central_bank = models.CharField(max_length=255, choices=CentralBankChoices.choices)
-    short_name = models.CharField(
-        max_length=255, choices=StirFuturesNameChoices.choices
+    central_bank = models.CharField(
+        max_length=255,
+        choices=CentralBankChoices.choices,
+        help_text="Central bank to which this contract belongs.",
     )
-    full_name = models.CharField(max_length=255)
-    maturity = models.TextField(blank=True, null=True)
-    first_accrual_date = models.DateField(null=True, blank=True, default=None)
-    last_accrual_date = models.DateField(null=True, blank=True, default=None)
-    date = models.DateField()
-    price = models.FloatField(null=True, blank=True, default=None)
-    source = models.CharField(max_length=255, choices=StirFuturesSourceChoices.choices)
-    comment = models.TextField(null=True, blank=True, default="")
+    short_name = models.CharField(
+        max_length=255,
+        choices=StirFuturesNameChoices.choices,
+        help_text="Contract family short code (FF1M / ESTR3M / MUTAN3M).",
+    )
+    full_name = models.CharField(
+        max_length=255,
+        help_text="Human-readable futures contract name.",
+    )
+    maturity = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Contract maturity label (e.g. 26.03).",
+    )
+    first_accrual_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="First accrual date when the source provides one.",
+    )
+    last_accrual_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Last accrual date when the source provides one.",
+    )
+    date = models.DateField(
+        help_text="Price date.",
+    )
+    price = models.FloatField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Settled / last price; null when missing.",
+    )
+    source = models.CharField(
+        max_length=255,
+        choices=StirFuturesSourceChoices.choices,
+        help_text="Upstream price source.",
+    )
+    comment = models.TextField(
+        null=True,
+        blank=True,
+        default="",
+        help_text="Optional scrape / ingest note.",
+    )
 
 
 class StirFuturesPriceUpdateLogModel(BaseLogModel):
@@ -109,4 +201,5 @@ class StirFuturesPriceUpdateLogModel(BaseLogModel):
         "StirFuturesModel",
         on_delete=models.CASCADE,
         related_name="stir_futures_price_update_logs",
+        help_text="STIR futures this price-update log belongs to.",
     )

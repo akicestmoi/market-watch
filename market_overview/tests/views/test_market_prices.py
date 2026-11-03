@@ -363,7 +363,7 @@ class TestMarketPricesIngestionViews(TestCase):
         )
 
         def mock_get_data_side_effect(short_name, start_date, end_date):
-            """Return mock market data rows keyed by asset short_name."""
+            """Return mock market prices keyed by asset short_name."""
             if short_name == "TEST":
                 return [
                     _MarketData(

@@ -718,14 +718,13 @@ class TestCentralBankDataServices(TestCase):
 
     def test_get_decision_day_key_rates_with_previous_change(self):
         """
-        GIVEN a CB meeting and key-rate prints on that calendar date
+        GIVEN a CB meeting and key rates on that calendar date
         WHEN getting decision-day key rates
         THEN current, previous, and absolute change are returned per series
         """
         event_date = date(2025, 12, 15)
         CentralBankMeetingModel.objects.create(
             central_bank=CentralBankChoices.ECB,
-            order=1,
             date=datetime(2025, 12, 15, 12, 15, 0, tzinfo=timezone.utc),
         )
         CentralBankDataModel.objects.create(
@@ -761,7 +760,7 @@ class TestCentralBankDataServices(TestCase):
 
     def test_get_decision_day_key_rates_empty_without_meeting(self):
         """
-        GIVEN key-rate rows but no CB meeting on that date
+        GIVEN key rates but no CB meeting on that date
         WHEN getting decision-day key rates
         THEN an empty list is returned
         """

@@ -46,7 +46,7 @@ class RecapUniquenessTests(TestCase):
         """
         GIVEN a DailyRecap already exists for a reporting date
         WHEN update_or_create is called for the same date with new fields
-        THEN the existing row is updated and only one row remains
+        THEN the existing DailyRecap is updated and only one remains
         """
         DailyRecapModel.objects.create(
             **_recap_kwargs(title="old", main_summary="old body")

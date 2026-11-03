@@ -15,7 +15,7 @@ class MonthListField(CommaSeparatedIntegerField):
     """CSV of calendar months (1–12) with a month-specific error message."""
 
     def to_internal_value(self, data) -> list[int] | None:
-        """Validate month tokens; map integer errors to ``Invalid month.``."""
+        """Validate month tokens; map integer errors to 'Invalid month.'."""
         try:
             return super().to_internal_value(data)
         except serializers.ValidationError as exc:

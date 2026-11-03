@@ -305,9 +305,9 @@ class TestUpsertWithLogs(TestCase):
         self, mock_get, mock_create
     ):
         """
-        GIVEN a concurrent create already inserted the row
+        GIVEN a concurrent create already inserted the market price
         WHEN upsert_with_logs hits IntegrityError on create
-        THEN it should return the existing row without updating it
+        THEN it should return the existing market price without updating it
         """
         lookup_kwargs = {
             "asset": self.asset,
@@ -689,7 +689,7 @@ class TestParseDatetime(TestCase):
         """
         GIVEN a naive datetime and America/New_York as the source zone
         WHEN parse_datetime is called
-        THEN the wall clock is localized then stored as UTC
+        THEN the local announcement time is localized then stored as UTC
         """
         parsed = parse_datetime(
             "2025-01-29T14:00:00",
@@ -708,7 +708,7 @@ class TestParseDatetime(TestCase):
 
 
 class TestSourceTimezone(TestCase):
-    """Test cases for source wall-clock → UTC helpers."""
+    """Test cases for source local-time → UTC helpers."""
 
     def test_get_source_timezone_us_is_new_york(self):
         """
@@ -720,7 +720,7 @@ class TestSourceTimezone(TestCase):
 
     def test_convert_local_wall_time_to_utc_fomc_winter(self):
         """
-        GIVEN a 14:00 America/New_York wall clock in January
+        GIVEN a 14:00 America/New_York local announcement time in January
         WHEN converting to UTC
         THEN 19:00 UTC (EST) is returned
         """
@@ -735,7 +735,7 @@ class TestSourceTimezone(TestCase):
 
     def test_convert_local_wall_time_to_utc_fomc_summer(self):
         """
-        GIVEN a 14:00 America/New_York wall clock in June
+        GIVEN a 14:00 America/New_York local announcement time in June
         WHEN converting to UTC
         THEN 18:00 UTC (EDT) is returned
         """

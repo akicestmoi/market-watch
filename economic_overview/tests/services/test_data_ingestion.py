@@ -464,9 +464,9 @@ class TestDataIngestionServices(TestCase):
     )
     def test_ingest_historical_economic_data_success(self, mock_source_scrap_map):
         """
-        GIVEN a scraper returning multiple observations
+        GIVEN a scraper returning multiple values
         WHEN ingesting historical economic data for a date window
-        THEN only in-window observations are stored
+        THEN only in-window values are stored
         """
         mock_scraper = Mock()
         mock_scraper.return_value = [
@@ -513,11 +513,9 @@ class TestDataIngestionServices(TestCase):
         "economic_overview.services.data_ingestion.SOURCE_SCRAP_MAP",
         new_callable=dict,
     )
-    def test_ingest_historical_economic_data_no_observations(
-        self, mock_source_scrap_map
-    ):
+    def test_ingest_historical_economic_data_no_values(self, mock_source_scrap_map):
         """
-        GIVEN a historical scraper that returns no usable observations
+        GIVEN a historical scraper that returns no usable values
         WHEN ingesting historical economic data
         THEN the indicator is listed as not updated
         """

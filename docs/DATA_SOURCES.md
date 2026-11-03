@@ -112,3 +112,10 @@ This document lists all external data sources used in the Market Watch project, 
 - **Publication URL**: Not implemented (schedule scrape still pending)
 - **Data Type**: Tankan Business Conditions DI (current-survey actual) for Large / Medium / Small × Manufacturing / Nonmanufacturing (`BOJ_TANKAN_SERIES_BY_TICKER`). Point-in-time release — historical ingestion only stores the latest survey observation
 - **Series documentation**: [`INDICATORS.md`](INDICATORS.md)
+
+## Market-wrap news scrapers
+
+Daily close/wrap article extraction for market recaps (Swissinfo, The Edge, CNBC, Newsquawk, TBS, Tokyo Closing Bell, Boursier, Boursorama, Zonebourse).
+
+- **Catalog**: `market_analysis/data_sources/news_sources.json`
+- **Parsing strategy (per source)**: [`MARKET_WRAP_SCRAPERS.md`](MARKET_WRAP_SCRAPERS.md)

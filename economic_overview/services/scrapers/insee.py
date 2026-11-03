@@ -10,7 +10,6 @@ from typing import NamedTuple, TypedDict
 import pandas as pd
 import requests
 from cachetools.func import ttl_cache
-from django.utils import timezone
 from pydantic import TypeAdapter, ValidationError
 
 from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
@@ -21,7 +20,10 @@ from economic_overview.services.config import (
     INSEE_PUBLICATION_SCHEDULE_URL,
     INSEE_SERIES_CSV_URL_TEMPLATE,
 )
-from economic_overview.services.scrapers.common import ScrapingResult
+from economic_overview.services.scrapers.common import (
+    ScrapingResult,
+    filter_upcoming_publication_dates,
+)
 
 
 class _InseeValuesLoadResult(NamedTuple):
@@ -88,6 +90,7 @@ def _load_insee_values_dataframe(
                 return _InseeValuesLoadResult(
                     None, f"No '{expected_values_csv_name}' CSV found in archive."
                 )
+            # The BDM ZIP has one values CSV matching the frequency basename.
             with zip_archive.open(matching_values_csv_files[0]) as values_csv_file:
                 dataframe = pd.read_csv(values_csv_file, encoding="utf-8", sep=";")
     except Exception as exc:
@@ -99,6 +102,7 @@ def _load_insee_values_dataframe(
     ):
         return _InseeValuesLoadResult(None, "Data is not in the expected format.")
 
+    # Index 0 is the first (only) row labeled "Période" in the "Libellé" column.
     header_row = dataframe.index[dataframe["Libellé"] == "Période"][0]
     if len(dataframe) <= header_row + 1:
         return _InseeValuesLoadResult(None, "No data found.")
@@ -109,7 +113,8 @@ def _load_insee_values_dataframe(
 def _parse_economic_data_from_insee_dataframe(
     dataframe: pd.DataFrame, frequency: EconomicPublicationFrequencyChoices
 ) -> list[ScrapingResult]:
-    """Parse all economic data rows from an INSEE values dataframe."""
+    """Parse all economic data values from an INSEE values dataframe."""
+    # Index 0 is the first (only) row labeled "Période" in the "Libellé" column.
     header_row = dataframe.index[dataframe["Libellé"] == "Période"][0]
     economic_data: list[ScrapingResult] = []
     for row_index in range(header_row + 1, len(dataframe)):
@@ -136,7 +141,7 @@ def get_data_from_insee(
     target_period: str | None = None,
     frequency: EconomicPublicationFrequencyChoices = EconomicPublicationFrequencyChoices.MONTHLY,
 ) -> list[ScrapingResult]:
-    """Get INSEE economic data (all rows, or a single matching period label).
+    """Get INSEE economic data (all periods, or a single matching period label).
 
     Note: The data given by INSEE is a zip file containing:
     - caractéristiques.csv
@@ -173,6 +178,7 @@ def get_data_from_insee(
                 period=None, data_value=None, comment="Target period not found."
             )
         ]
+    # Index 0 is the first (only) dataframe row whose "Libellé" equals the target period.
     target_row = target_row_index[0]
     period = _parse_insee_period(
         str(load_result.dataframe.iloc[target_row, 0]), frequency
@@ -225,7 +231,7 @@ class _InseeAgendaResponse(TypedDict, total=False):
 
 
 class _InseePublicationScheduleRow(TypedDict):
-    """One normalized INSEE publication schedule row before DataFrame load."""
+    """One normalized INSEE publication schedule entry before DataFrame load."""
 
     name: str
     publication_date: str | None
@@ -287,12 +293,7 @@ def get_publication_dates_from_insee(name: str) -> list[datetime]:
     publication_dates = publication_schedule[publication_schedule["name"] == name][
         "publication_date"
     ]
-    now = timezone.now()
-    upcoming_publication_dates = [
-        pd_timestamp.to_pydatetime()
-        for pd_timestamp in publication_dates.tolist()
-        if pd_timestamp.to_pydatetime() >= now
+    publication_datetimes = [
+        pd_timestamp.to_pydatetime() for pd_timestamp in publication_dates.tolist()
     ]
-    # At most two: schedule update maps [0]/[1] onto current/next after rolling
-    # the just-released slot into previous; past dates must not be re-fed.
-    return upcoming_publication_dates[:2]
+    return filter_upcoming_publication_dates(publication_datetimes)

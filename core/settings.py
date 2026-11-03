@@ -129,7 +129,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-# Display / Celery wall clock. Datetimes are stored UTC-aware (USE_TZ).
+# Display / Celery local time (Europe/Paris). Datetimes are stored UTC-aware (USE_TZ).
 # See docs/GUIDELINES.md.
 TIME_ZONE = "Europe/Paris"
 
@@ -167,7 +167,7 @@ CELERY_TIMEZONE = TIME_ZONE
 # ============================================================================
 # Celery Beat Schedule (Periodic Tasks)
 # ============================================================================
-# Beat crontab times are Europe/Paris wall clock (TIME_ZONE). Stored datetimes stay UTC.
+# Beat crontab times are Europe/Paris local time (TIME_ZONE). Stored datetimes stay UTC.
 # ============================================================================
 
 CELERY_BEAT_SCHEDULE = {
