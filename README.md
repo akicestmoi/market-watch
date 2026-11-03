@@ -449,7 +449,7 @@ PydanticAI does **not** learn from feedback by itself.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/analysis/recap` | Fetch latest recap, or filter by `reporting_date` / `id` |
+| `GET` | `/analysis/recap` | Fetch latest recap, or filter by `reporting_date` |
 | `POST` | `/analysis/recap/generate` | Run pipeline in-process (`reporting_date` required, optional `force`) |
 | `POST` | `/analysis/chat` | Q&A; optional prior `messages` for continuity |
 | `GET` | `/analysis/article-cache` | Inspect Redis digests for a `reporting_date` (optional `source_url`) |

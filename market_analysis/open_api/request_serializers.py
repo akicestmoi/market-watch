@@ -13,10 +13,9 @@ class ReportingDateSerializer(serializers.Serializer):
 
 
 class GetRecapSerializer(serializers.Serializer):
-    """Optional filters to fetch a daily recap by date or id."""
+    """Optional reporting date to fetch a daily recap (latest when omitted)."""
 
     reporting_date = serializers.DateField(required=False)
-    id = serializers.IntegerField(required=False, min_value=1)
 
 
 class ChatMessageSerializer(serializers.Serializer):

@@ -24,8 +24,9 @@ from data_visualization.services.market_charts import (
 from economic_overview.models import (
     EconomicDataCategoryChoices,
     EconomicDataLocationChoices,
+    EconomicIndicatorInformationModel,
 )
-from market_overview.models import AssetClassChoices, LocationChoices
+from market_overview.models import AssetClassChoices, AssetModel, LocationChoices
 
 
 def market_recap_view(request):
@@ -380,7 +381,21 @@ def central_banks_recap_view(request):
 def management_view(request):
     """Management View."""
     database_info = database_management.get_database_information()
+    management_catalog = {
+        "assetShortNames": list(
+            AssetModel.objects.order_by("short_name").values_list(
+                "short_name", flat=True
+            )
+        ),
+        "indicatorNames": list(
+            EconomicIndicatorInformationModel.objects.order_by("name").values_list(
+                "name", flat=True
+            )
+        ),
+        "centralBanks": [choice.value for choice in CentralBankChoices.ordered()],
+    }
     context = {
         "database_info": json.dumps(database_info, default=str),
+        "management_catalog": json.dumps(management_catalog),
     }
     return render(request, "data_visualization/management.html", context)

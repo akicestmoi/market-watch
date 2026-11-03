@@ -1,11 +1,11 @@
 // Helper function to format snake_case to "Capped First Letter + space"
 function formatParameterName(name) {
+  const uppercaseWords = new Set(["csv", "pdf", "url", "fx"]);
   return name
     .split("_")
     .map(word => {
-      // Convert csv to CSV (case-insensitive)
-      if (word.toLowerCase() === "csv") {
-        return "CSV";
+      if (uppercaseWords.has(word.toLowerCase())) {
+        return word.toUpperCase();
       }
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
@@ -25,13 +25,249 @@ function sortEndpointsByMethod(endpoints) {
   });
 }
 
+const MANAGEMENT_CATALOG = window.managementCatalogJSON || {
+  assetShortNames: [],
+  indicatorNames: [],
+  centralBanks: ["FRB", "ECB", "BOJ"],
+};
+
+const STIR_FUTURES_SHORT_NAMES = ["FF1M", "ESTR3M", "MUTAN3M"];
+const ASSET_CLASS_OPTIONS = ["STOCKS", "RATES", "FX", "CRYPTO", "COMMODITIES", "OTHERS"];
+const ASSET_TYPE_OPTIONS = [
+  "EQUITY_INDEX",
+  "INTERBANK_RATE",
+  "GOVERNMENT_BOND_RATE",
+  "FX_SPOT_RATE",
+  "CRYPTO_SPOT_RATE",
+  "COMMODITIY_FUTURE_SPOT_PRICE",
+  "VOLATILITY_INDEX",
+];
+const LOCATION_OPTIONS = ["US", "EU", "DE", "FR", "JP"];
+const PRICE_SOURCE_OPTIONS = [
+  "GOV_TREASURY_DEPT",
+  "NYFED",
+  "WEBSTAT",
+  "BUNDESBANK",
+  "BOJ",
+  "BB",
+  "GLOBAL_RATES",
+  "YAHOO",
+];
+function resolveParamOptions(param) {
+  if (Array.isArray(param.options) && param.options.length > 0) {
+    return param.options;
+  }
+  switch (param.optionsFrom) {
+  case "assetShortNames":
+    return MANAGEMENT_CATALOG.assetShortNames || [];
+  case "indicatorNames":
+    return MANAGEMENT_CATALOG.indicatorNames || [];
+  case "centralBanks":
+    return MANAGEMENT_CATALOG.centralBanks || ["FRB", "ECB", "BOJ"];
+  case "stirFuturesShortNames":
+    return STIR_FUTURES_SHORT_NAMES;
+  default:
+    return [];
+  }
+}
+
+function resolveNestedFieldOptions(fieldName) {
+  switch (fieldName) {
+  case "short_name":
+    return MANAGEMENT_CATALOG.assetShortNames || [];
+  case "central_bank":
+    return MANAGEMENT_CATALOG.centralBanks || ["FRB", "ECB", "BOJ"];
+  case "indicator_name":
+    return MANAGEMENT_CATALOG.indicatorNames || [];
+  default:
+    return null;
+  }
+}
+
+function buildSelectOptionsHtml(options, includeEmpty = true) {
+  const emptyOption = includeEmpty ? "<option value=\"\">-- Select --</option>" : "";
+  return emptyOption + options.map(opt => `<option value="${opt}">${opt}</option>`).join("");
+}
+
+function getSelectedMultiValues(inputEl) {
+  if (!inputEl) {
+    return [];
+  }
+  const rawValue = (inputEl.value || "").trim();
+  if (!rawValue) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(rawValue);
+    if (Array.isArray(parsed)) {
+      return parsed.map(String).filter(value => value !== "");
+    }
+  } catch (_error) {
+    // Fall through to CSV parsing for older values.
+  }
+  return rawValue
+    .split(",")
+    .map(value => value.trim())
+    .filter(value => value !== "");
+}
+
+function buildChipMultiselectHtml(fieldId, paramName, options, serialize, required) {
+  const optionsHtml = options.map(option => `
+            <label class="chip-multiselect-option">
+                <input type="checkbox" value="${option}">
+                <span>${option}</span>
+            </label>
+        `).join("");
+
+  return `
+        <div class="chip-multiselect" data-field-id="${fieldId}">
+            <input type="hidden" id="${fieldId}" name="${paramName}" value="[]" data-serialize="${serialize}" ${required}>
+            <button type="button" class="chip-multiselect-control" aria-haspopup="listbox" aria-expanded="false">
+                <div class="chip-multiselect-chips">
+                    <span class="chip-multiselect-placeholder">Select values…</span>
+                </div>
+                <span class="chip-multiselect-caret" aria-hidden="true"></span>
+            </button>
+            <div class="chip-multiselect-dropdown" hidden>
+                <div class="chip-multiselect-options">
+                    ${optionsHtml || "<p class=\"chip-multiselect-empty\">No options available.</p>"}
+                </div>
+                <div class="chip-multiselect-actions">
+                    <button type="button" class="btn-cancel chip-multiselect-cancel">Cancel</button>
+                    <button type="button" class="btn-submit chip-multiselect-apply">Apply</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderChipMultiselectChips(root, selectedValues) {
+  const chipsContainer = root.querySelector(".chip-multiselect-chips");
+  if (!chipsContainer) {
+    return;
+  }
+  if (selectedValues.length === 0) {
+    chipsContainer.innerHTML = "<span class=\"chip-multiselect-placeholder\">Select values…</span>";
+    return;
+  }
+  chipsContainer.innerHTML = selectedValues.map(value => `
+        <span class="chip-multiselect-chip" data-value="${value}">
+            <button type="button" class="chip-multiselect-chip-remove" aria-label="Remove ${value}">×</button>
+            <span class="chip-multiselect-chip-label">${value}</span>
+        </span>
+    `).join("");
+}
+
+function syncChipMultiselectCheckboxes(root, selectedValues) {
+  const selectedSet = new Set(selectedValues);
+  root.querySelectorAll(".chip-multiselect-option input[type=\"checkbox\"]").forEach(checkbox => {
+    checkbox.checked = selectedSet.has(checkbox.value);
+  });
+}
+
+function closeChipMultiselect(root) {
+  const dropdown = root.querySelector(".chip-multiselect-dropdown");
+  const control = root.querySelector(".chip-multiselect-control");
+  if (dropdown) {
+    dropdown.hidden = true;
+  }
+  if (control) {
+    control.setAttribute("aria-expanded", "false");
+  }
+}
+
+function openChipMultiselect(root) {
+  const dropdown = root.querySelector(".chip-multiselect-dropdown");
+  const control = root.querySelector(".chip-multiselect-control");
+  const hiddenInput = root.querySelector("input[type=\"hidden\"]");
+  if (!dropdown || !control || !hiddenInput) {
+    return;
+  }
+  syncChipMultiselectCheckboxes(root, getSelectedMultiValues(hiddenInput));
+  dropdown.hidden = false;
+  control.setAttribute("aria-expanded", "true");
+}
+
+function initChipMultiselects(container) {
+  container.querySelectorAll(".chip-multiselect").forEach(root => {
+    const hiddenInput = root.querySelector("input[type=\"hidden\"]");
+    const control = root.querySelector(".chip-multiselect-control");
+    const applyButton = root.querySelector(".chip-multiselect-apply");
+    const cancelButton = root.querySelector(".chip-multiselect-cancel");
+    if (!hiddenInput || !control) {
+      return;
+    }
+
+    renderChipMultiselectChips(root, getSelectedMultiValues(hiddenInput));
+
+    control.addEventListener("click", (event) => {
+      event.preventDefault();
+      const isOpen = control.getAttribute("aria-expanded") === "true";
+      document.querySelectorAll(".chip-multiselect").forEach(otherRoot => {
+        if (otherRoot !== root) {
+          closeChipMultiselect(otherRoot);
+        }
+      });
+      if (isOpen) {
+        closeChipMultiselect(root);
+      } else {
+        openChipMultiselect(root);
+      }
+    });
+
+    root.addEventListener("click", (event) => {
+      const removeButton = event.target.closest(".chip-multiselect-chip-remove");
+      if (!removeButton) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const chip = removeButton.closest(".chip-multiselect-chip");
+      const valueToRemove = chip ? chip.getAttribute("data-value") : null;
+      const nextValues = getSelectedMultiValues(hiddenInput).filter(
+        value => value !== valueToRemove
+      );
+      hiddenInput.value = JSON.stringify(nextValues);
+      renderChipMultiselectChips(root, nextValues);
+      syncChipMultiselectCheckboxes(root, nextValues);
+    });
+
+    if (applyButton) {
+      applyButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        const nextValues = Array.from(
+          root.querySelectorAll(".chip-multiselect-option input[type=\"checkbox\"]:checked")
+        ).map(checkbox => checkbox.value);
+        hiddenInput.value = JSON.stringify(nextValues);
+        renderChipMultiselectChips(root, nextValues);
+        closeChipMultiselect(root);
+      });
+    }
+
+    if (cancelButton) {
+      cancelButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        syncChipMultiselectCheckboxes(root, getSelectedMultiValues(hiddenInput));
+        closeChipMultiselect(root);
+      });
+    }
+  });
+}
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".chip-multiselect")) {
+    return;
+  }
+  document.querySelectorAll(".chip-multiselect").forEach(closeChipMultiselect);
+});
+
 // Management API Endpoint Configuration
 const ENDPOINTS = {
   quickActions: {
     "Common Operations": [
       {
         name: "Ingest Market Prices",
-        description: "Ingest market prices gathered from various sources for a specific date. This endpoint scrapes data from multiple sources and stores it in the database.",
+        description: "Ingest market prices gathered from various sources for a specific date.",
         method: "POST",
         path: "/markets/prices/ingest",
         body: [
@@ -41,7 +277,8 @@ const ENDPOINTS = {
       },
       {
         name: "Get Assets Without Prices",
-        description: "Get assets without prices.",
+        description: "List assets that are missing a price in the selected window.",
+        help: "Dates can be left empty for the default lookback, or either bound can be set to narrow the window. Include Holidays can be ticked to keep holiday rows.",
         method: "GET",
         path: "/markets/prices/get-assets-without-prices",
         body: null,
@@ -53,7 +290,7 @@ const ENDPOINTS = {
       },
       {
         name: "Ingest STIR Futures Prices",
-        description: "Ingest STIR futures prices.",
+        description: "Ingest STIR futures prices for a date.",
         method: "POST",
         path: "/central-banks/stir-futures/ingest",
         body: [
@@ -63,7 +300,7 @@ const ENDPOINTS = {
       },
       {
         name: "Ingest ESTR Price via PDF",
-        description: "Ingest ESTR price via PDF.",
+        description: "Ingest an ESTR futures print from an uploaded PDF.",
         method: "POST",
         path: "/central-banks/stir-futures/ingest-estr-pdf",
         body: [
@@ -74,7 +311,7 @@ const ENDPOINTS = {
       },
       {
         name: "Mark As Holiday",
-        description: "Mark market prices as holiday for the given assets and dates. Sets the comment to 'Bank holiday' and price to null.",
+        description: "Mark market prices as holiday for the given assets and dates. Sets comment to Bank holiday and price to null.",
         method: "POST",
         path: "/markets/prices/mark-as-holiday",
         bodyAsList: true,
@@ -89,7 +326,7 @@ const ENDPOINTS = {
     Asset: [
       {
         name: "Generate Base Assets Data",
-        description: "Generate base assets data from JSON file.",
+        description: "Generate base assets data from the catalog JSON.",
         method: "POST",
         path: "/markets/asset/generate-base-assets-data",
         body: null,
@@ -97,32 +334,33 @@ const ENDPOINTS = {
       },
       {
         name: "Get Asset Names",
-        description: "Get all asset names in the database.",
+        description: "List asset short names stored in the database.",
+        help: "Filters can be left empty to list all assets, or any dropdowns can be filled to narrow the list.",
         method: "GET",
         path: "/markets/asset/get-asset-names",
         body: null,
         query: [
-          { name: "asset_class", type: "select", options: ["EQUITY", "FIXED_INCOME", "CURRENCY", "COMMODITY"], required: false },
-          { name: "asset_type", type: "select", options: ["STOCK", "BOND", "CURRENCY_PAIR", "METAL", "ENERGY"], required: false },
-          { name: "location", type: "select", options: ["US", "EU", "JP", "UK", "CH", "CN"], required: false },
-          { name: "source", type: "select", options: ["GLOBAL_RATES", "YAHOO_FINANCE", "FRED"], required: false },
+          { name: "asset_class", type: "select", options: ASSET_CLASS_OPTIONS, required: false },
+          { name: "asset_type", type: "select", options: ASSET_TYPE_OPTIONS, required: false },
+          { name: "location", type: "select", options: LOCATION_OPTIONS, required: false },
+          { name: "source", type: "select", options: PRICE_SOURCE_OPTIONS, required: false },
         ],
       },
       {
         name: "Get Asset Details",
-        description: "Get an asset.",
+        description: "Fetch one asset by short name.",
         method: "GET",
         path: "/markets/asset",
         body: null,
         query: [
-          { name: "short_name", type: "text", required: true },
+          { name: "short_name", type: "select", optionsFrom: "assetShortNames", required: true },
         ],
       },
     ],
     Prices: [
       {
         name: "Batch Ingest Market Prices",
-        description: "Ingest market prices for specific assets over target periods. This endpoint scrapes historical data for multiple assets.",
+        description: "Ingest historical prices for specific assets over target periods.",
         method: "POST",
         path: "/markets/prices/batch-ingest",
         bodyAsList: true,
@@ -133,18 +371,18 @@ const ENDPOINTS = {
       },
       {
         name: "Get Market Price",
-        description: "Get market price for a specific asset and date.",
+        description: "Get the market price for one asset on one date.",
         method: "GET",
         path: "/markets/prices",
         body: null,
         query: [
           { name: "date", type: "date", required: true },
-          { name: "short_name", type: "text", required: true },
+          { name: "short_name", type: "select", optionsFrom: "assetShortNames", required: true },
         ],
       },
       {
         name: "List All Market Prices",
-        description: "List all market prices for a specific date.",
+        description: "List every stored market price for a date.",
         method: "GET",
         path: "/markets/prices/list-all",
         body: null,
@@ -154,7 +392,7 @@ const ENDPOINTS = {
       },
       {
         name: "Bulk Update Assets Prices",
-        description: "Bulk update assets prices.",
+        description: "Manually patch prices for one or more assets. Logs is optional free text on each row.",
         method: "PATCH",
         path: "/markets/prices/bulk-update",
         bodyAsList: true,
@@ -165,7 +403,7 @@ const ENDPOINTS = {
       },
       {
         name: "Bulk Update Assets Prices from CSV",
-        description: "Bulk update assets prices from a CSV file.",
+        description: "Bulk update asset prices from an uploaded CSV file.",
         method: "PATCH",
         path: "/markets/prices/bulk-update-from-csv",
         body: [
@@ -175,25 +413,24 @@ const ENDPOINTS = {
       },
       {
         name: "Get Price Update Logs",
-        description: "Get price update logs.",
+        description: "Inspect price update logs.",
+        help: "Filters can be left empty for all logs, or Price Date and/or Short Name can be set to narrow the search.",
         method: "GET",
         path: "/markets/prices/get-price-update-logs",
         body: null,
         query: [
           { name: "price_date", type: "date", required: false },
-          { name: "short_name", type: "text", required: false },
+          { name: "short_name", type: "select", optionsFrom: "assetShortNames", required: false },
         ],
       },
       {
         name: "Delete Market Prices",
-        description: "Delete market prices based on optional filters.",
+        description: "Delete market prices by IDs.",
+        help: "A comma-separated Ids list can be used for the prices to delete.",
         method: "DELETE",
         path: "/markets/prices",
         body: null,
         query: [
-          { name: "start_date", type: "date", required: false },
-          { name: "end_date", type: "date", required: false },
-          { name: "short_names", type: "text", required: false, placeholder: "Comma-separated list" },
           { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
         ],
       },
@@ -201,7 +438,8 @@ const ENDPOINTS = {
     Holiday: [
       {
         name: "Ingest Holidays",
-        description: "Ingest holidays.",
+        description: "Ingest holidays from configured sources.",
+        help: "Filters can be left empty for the default ingest, or Date and/or Location can be set to restrict the scrape.",
         method: "POST",
         path: "/markets/holidays/ingest",
         body: [
@@ -212,14 +450,20 @@ const ENDPOINTS = {
       },
       {
         name: "Get Holidays",
-        description: "Get holidays.",
+        description: "List stored holidays.",
+        help: "Filters can be left empty to list all holidays, or Location, Year, and/or Months (comma-separated 1-12) can be set to narrow the list.",
         method: "GET",
         path: "/markets/holidays",
         body: null,
         query: [
           { name: "location", type: "select", options: ["US", "FR", "JP"], required: false },
           { name: "year", type: "number", required: false },
-          { name: "months", type: "text", required: false, placeholder: "Comma-separated months (1-12)" },
+          {
+            name: "months",
+            type: "text",
+            required: false,
+            placeholder: "Comma-separated months (1-12)",
+          },
         ],
       },
     ],
@@ -228,7 +472,7 @@ const ENDPOINTS = {
     Data: [
       {
         name: "Generate Base Economic Indicator Information",
-        description: "Generate base economic indicator information from JSON file.",
+        description: "Generate base economic indicator information from the catalog JSON.",
         method: "POST",
         path: "/economics/indicator/generate-base-information",
         body: null,
@@ -237,6 +481,7 @@ const ENDPOINTS = {
       {
         name: "Ingest Latest Economic Data",
         description: "Ingest the latest value for every seeded economic indicator.",
+        help: "Update Schedule can be left unchecked to skip schedule refresh, or ticked to also roll publication schedules after ingest.",
         method: "POST",
         path: "/economics/indicator/ingest",
         body: [
@@ -246,19 +491,26 @@ const ENDPOINTS = {
       },
       {
         name: "Ingest Historical Economic Data",
-        description: "Ingest all values in a date window. Leave indicators empty to run on all indicators.",
+        description: "Ingest every available value whose period falls in the date window.",
+        help: "Indicators can be left empty to ingest all indicators, or one or more names can be selected to restrict the run.",
         method: "POST",
         path: "/economics/indicator/ingest-historical",
         body: [
           { name: "start_date", type: "date", required: true },
           { name: "end_date", type: "date", required: true },
-          { name: "indicators", type: "json", required: false, example: "[\"France HICP\", \"France Retail Sales\"]" },
+          {
+            name: "indicators",
+            type: "multiselect",
+            optionsFrom: "indicatorNames",
+            serialize: "json",
+            required: false,
+          },
         ],
         query: null,
       },
       {
         name: "Ingest Specific Economic Data",
-        description: "Ingest specific economic data for a specific indicator and period.",
+        description: "Ingest specific periods for chosen indicators. Each row needs an indicator_name plus a periods list (e.g. 2024-01).",
         method: "POST",
         path: "/economics/indicator/ingest-specific",
         bodyAsList: true,
@@ -269,37 +521,48 @@ const ENDPOINTS = {
       },
       {
         name: "Get Economic Data",
-        description: "Get economic data detailed for a specific indicator and period.",
+        description: "Fetch stored economic data points.",
+        help: "Indicator Names can be left empty to get all indicators. A Period (e.g. 2024-01) can optionally be added to filter further.",
         method: "GET",
         path: "/economics/indicator",
         body: null,
         query: [
-          { name: "indicator_names", type: "text", required: false, placeholder: "Comma-separated list" },
+          {
+            name: "indicator_names",
+            type: "multiselect",
+            optionsFrom: "indicatorNames",
+            serialize: "repeat",
+            required: false,
+          },
           { name: "period", type: "text", required: false },
         ],
       },
       {
         name: "Delete Economic Data",
-        description: "Delete economic data based on optional filters. At least one filter must be provided.",
+        description: "Delete economic data by IDs.",
         method: "DELETE",
         path: "/economics/indicator",
         body: null,
         query: [
-          { name: "start_date", type: "date", required: false },
-          { name: "end_date", type: "date", required: false },
-          { name: "indicator_names", type: "text", required: false, placeholder: "Comma-separated list" },
-          { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
+          { name: "ids", type: "text", required: true, placeholder: "Comma-separated IDs" },
         ],
       },
     ],
     Schedule: [
       {
         name: "Update Publication Schedule",
-        description: "Update publication schedules. Leave indicator_names empty to update all.",
+        description: "Refresh publication schedules from source calendars.",
+        help: "Indicator Names can be left empty to update every indicator, or one or more names can be selected to refresh only those schedules.",
         method: "POST",
         path: "/economics/schedule/update",
         body: [
-          { name: "indicator_names", type: "text", required: false, placeholder: "Omit or [] = all; or comma-separated / JSON array" },
+          {
+            name: "indicator_names",
+            type: "multiselect",
+            optionsFrom: "indicatorNames",
+            serialize: "json",
+            required: false,
+          },
         ],
         query: null,
       },
@@ -309,19 +572,26 @@ const ENDPOINTS = {
     Data: [
       {
         name: "List Central Bank Data",
-        description: "List central bank data.",
+        description: "List key-rate prints for one or more central banks.",
+        help: "Central Banks can be left empty to list all central banks. A Date can optionally be set. Last Value can be ticked to keep only the latest print per series.",
         method: "GET",
         path: "/central-banks/data",
         body: null,
         query: [
-          { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+          {
+            name: "central_banks",
+            type: "multiselect",
+            optionsFrom: "centralBanks",
+            serialize: "csv",
+            required: false,
+          },
           { name: "date", type: "date", required: false },
           { name: "last_value", type: "checkbox", required: false },
         ],
       },
       {
         name: "Ingest Central Bank Data",
-        description: "Ingest central bank data.",
+        description: "Ingest key rates for chosen central banks and dates.",
         method: "POST",
         path: "/central-banks/data/ingest",
         bodyAsList: true,
@@ -332,14 +602,21 @@ const ENDPOINTS = {
       },
       {
         name: "Delete Central Bank Data",
-        description: "Delete central bank data based on optional filters. At least one filter must be provided.",
+        description: "Delete central bank data using optional filters.",
+        help: "At least one filter is required: date range, Central Banks, and/or Ids.",
         method: "DELETE",
         path: "/central-banks/data",
         body: null,
         query: [
           { name: "start_date", type: "date", required: false },
           { name: "end_date", type: "date", required: false },
-          { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+          {
+            name: "central_banks",
+            type: "multiselect",
+            optionsFrom: "centralBanks",
+            serialize: "csv",
+            required: false,
+          },
           { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
         ],
       },
@@ -347,29 +624,42 @@ const ENDPOINTS = {
     "STIR Futures Prices": [
       {
         name: "List STIR Futures Prices",
-        description: "List Stir Futures Prices for a given date.",
+        description: "List STIR futures prices.",
+        help: "Central Banks can be left empty to list all central banks. A Date can optionally be set.",
         method: "GET",
         path: "/central-banks/stir-futures",
         body: null,
         query: [
-          { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+          {
+            name: "central_banks",
+            type: "multiselect",
+            optionsFrom: "centralBanks",
+            serialize: "csv",
+            required: false,
+          },
           { name: "date", type: "date", required: false },
         ],
       },
       {
         name: "Bulk Update STIR Futures Prices",
-        description: "Bulk update stir futures prices.",
+        description: "Manually patch STIR futures prices. Logs is optional on each row.",
         method: "PATCH",
         path: "/central-banks/stir-futures/bulk-update",
         bodyAsList: true,
         body: [
-          { name: "data", type: "json", required: true, example: "[{\"date\": \"2024-01-01\", \"short_name\": \"ESTR\", \"maturity\": \"2024-03\", \"price\": 95.5, \"logs\": \"Manual update\"}]" },
+          {
+            name: "data",
+            type: "json",
+            required: true,
+            example: "[{\"date\": \"2024-01-01\", \"short_name\": \"ESTR3M\", \"maturity\": \"2024-03\", \"price\": 95.5, \"logs\": \"Manual update\"}]",
+            nestedSelectOptions: { short_name: "stirFuturesShortNames" },
+          },
         ],
         query: null,
       },
       {
         name: "Bulk Update STIR Futures Prices from CSV",
-        description: "Bulk update stir futures prices from a CSV file.",
+        description: "Bulk update STIR futures prices from an uploaded CSV.",
         method: "PATCH",
         path: "/central-banks/stir-futures/bulk-update-from-csv",
         body: [
@@ -379,25 +669,39 @@ const ENDPOINTS = {
       },
       {
         name: "Get Central Bank Probability Matrix",
-        description: "Get central bank probability matrix.",
+        description: "Build the rate-path probability matrix for a date.",
+        help: "Central Banks can be left empty to get all central banks, or specific ones can be selected.",
         method: "GET",
         path: "/central-banks/probability-matrix",
         body: null,
         query: [
-          { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+          {
+            name: "central_banks",
+            type: "multiselect",
+            optionsFrom: "centralBanks",
+            serialize: "csv",
+            required: false,
+          },
           { name: "date", type: "date", required: true },
         ],
       },
       {
         name: "Delete STIR Futures Prices",
-        description: "Delete STIR futures prices based on optional filters.",
+        description: "Delete STIR futures prices using optional filters.",
+        help: "At least one filter is required: date range, Central Banks, and/or Ids.",
         method: "DELETE",
         path: "/central-banks/stir-futures",
         body: null,
         query: [
           { name: "start_date", type: "date", required: false },
           { name: "end_date", type: "date", required: false },
-          { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+          {
+            name: "central_banks",
+            type: "multiselect",
+            optionsFrom: "centralBanks",
+            serialize: "csv",
+            required: false,
+          },
           { name: "ids", type: "text", required: false, placeholder: "Comma-separated IDs" },
         ],
       },
@@ -405,17 +709,24 @@ const ENDPOINTS = {
     "Meeting Dates": [
       {
         name: "Get Central Bank Meeting Dates",
-        description: "Get central bank meeting dates.",
+        description: "List upcoming / retained meeting dates.",
+        help: "Central Banks can be left empty to get all central banks, or specific ones can be selected.",
         method: "GET",
         path: "/central-banks/meeting-dates",
         body: null,
         query: [
-          { name: "central_banks", type: "text", required: false, placeholder: "Comma-separated: FRB,ECB,BOJ" },
+          {
+            name: "central_banks",
+            type: "multiselect",
+            optionsFrom: "centralBanks",
+            serialize: "csv",
+            required: false,
+          },
         ],
       },
       {
         name: "Ingest Central Bank Meeting Dates",
-        description: "Ingest central bank meeting dates.",
+        description: "Ingest meeting dates for all central banks.",
         method: "POST",
         path: "/central-banks/meeting-dates/ingest",
         body: null,
@@ -427,18 +738,19 @@ const ENDPOINTS = {
     Recap: [
       {
         name: "Get Daily Recap",
-        description: "Fetch the AI-generated financial news recap for a date (or latest).",
+        description: "Fetch the AI-generated financial news recap.",
+        help: "Reporting Date can be left empty to load the latest saved recap, or a date can be set to fetch that reporting day.",
         method: "GET",
         path: "/analysis/recap",
         body: null,
         query: [
           { name: "reporting_date", type: "date", required: false },
-          { name: "id", type: "text", required: false },
         ],
       },
       {
         name: "Generate Daily Recap",
         description: "Run the pipeline in-process: collect → analyze → persist recap (not queued).",
+        help: "Force can be left unchecked to skip when a recap already exists, or ticked to regenerate anyway.",
         method: "POST",
         path: "/analysis/recap/generate",
         body: [
@@ -451,8 +763,8 @@ const ENDPOINTS = {
     "Cache & Chat": [
       {
         name: "Extract Article",
-        description:
-          "Scrape catalog news wraps for a reporting date. Source and region are optional: omit both for every source/region; source only for all regions of that source; region only for every source that lists it.",
+        description: "Scrape catalog news wraps for a reporting date.",
+        help: "Source and Region can be left empty to scrape everything. Source can be set to limit to that source (all its regions), Region to limit to that region across sources, or both together.",
         method: "GET",
         path: "/analysis/article",
         body: null,
@@ -486,6 +798,7 @@ const ENDPOINTS = {
       {
         name: "Article Analysis Cache",
         description: "Inspect same-day Redis-cached article digests (24h TTL).",
+        help: "Filters can be left empty for the default listing. Reporting Date can be set to scope by day, and/or Source URL to inspect one cached article.",
         method: "GET",
         path: "/analysis/article-cache",
         body: null,
@@ -496,7 +809,7 @@ const ENDPOINTS = {
       },
       {
         name: "Market Analysis Chat",
-        description: "Q&A with the market-analysis agent (send prior turns in messages for continuity).",
+        description: "Q&A with the market-analysis agent. Prior turns are not collected in this form — send a standalone question.",
         method: "POST",
         path: "/analysis/chat",
         body: [
@@ -756,9 +1069,23 @@ function openFormModal(index) {
   const modal = document.getElementById("form-modal-overlay");
   const modalTitle = document.getElementById("form-modal-title");
   const modalBody = document.getElementById("form-modal-body");
+  const subtitleBlock = document.getElementById("form-modal-subtitle-block");
+  const modalDescription = document.getElementById("form-modal-description");
+  const modalHelp = document.getElementById("form-modal-help");
 
   modalTitle.textContent = endpoint.name;
+  const helpText = endpoint.help || "";
+  if (subtitleBlock && modalDescription && modalHelp) {
+    const hasDescription = Boolean(endpoint.description);
+    const hasHelp = Boolean(helpText);
+    modalDescription.textContent = endpoint.description || "";
+    modalDescription.hidden = !hasDescription;
+    modalHelp.textContent = helpText;
+    modalHelp.hidden = !hasHelp;
+    subtitleBlock.hidden = !hasDescription && !hasHelp;
+  }
   modalBody.innerHTML = createFormFields(endpoint, index);
+  initChipMultiselects(modalBody);
 
   // Attach event listeners to "Add" buttons after modal is populated
   modalBody.querySelectorAll(".btn-add-element").forEach(btn => {
@@ -768,7 +1095,15 @@ function openFormModal(index) {
       const elementStructureJson = this.getAttribute("data-element-structure");
       const prefix = this.getAttribute("data-prefix");
       const elementTitle = this.getAttribute("data-element-title") || "Item";
-      addArrayElement(fieldId, fieldName, elementStructureJson, prefix, elementTitle);
+      const nestedSelectOptionsJson = this.getAttribute("data-nested-select-options");
+      addArrayElement(
+        fieldId,
+        fieldName,
+        elementStructureJson,
+        prefix,
+        elementTitle,
+        nestedSelectOptionsJson
+      );
     });
   });
 
@@ -782,17 +1117,19 @@ function closeFormModal() {
 }
 
 function createFormFields(endpoint, index) {
+  const hasQuery = Boolean(endpoint.query && endpoint.query.length > 0);
+  const hasBody = Boolean(endpoint.body && endpoint.body.length > 0);
   let html = "";
 
   // Query parameters
-  if (endpoint.query && endpoint.query.length > 0) {
+  if (hasQuery) {
     endpoint.query.forEach((param) => {
       html += createFormField(param, `query-${index}`, false, endpoint);
     });
   }
 
   // Body parameters - add tabs for POST/PATCH/PUT with JSON body
-  if (endpoint.body && endpoint.body.length > 0) {
+  if (hasBody) {
     const hasJsonBody = endpoint.body.some(p => p.type === "json");
     const isPostLike = ["POST", "PATCH", "PUT"].includes(endpoint.method);
 
@@ -830,7 +1167,11 @@ function createFormFields(endpoint, index) {
     }
   }
 
-  return html || "<p>No parameters required for this endpoint.</p>";
+  if (!hasQuery && !hasBody) {
+    html += "<p class=\"endpoint-no-params\">No parameters required for this endpoint.</p>";
+  }
+
+  return html;
 }
 
 function switchBodyMode(index, mode) {
@@ -853,15 +1194,22 @@ function createFormField(param, prefix, isBody, endpoint = null) {
   const fieldId = `${prefix}-${param.name}`;
   const required = param.required ? "required" : "";
   const formattedName = formatParameterName(param.name);
-  const requiredText = param.required ? "(required)" : "";
+  const requiredText = param.required ? "(required)" : "(optional)";
   let inputHtml = "";
 
   if (param.type === "select") {
+    const options = resolveParamOptions(param);
     inputHtml = `
             <select id="${fieldId}" name="${param.name}" ${required} style="width: 100%; box-sizing: border-box;">
-                <option value="">-- Select --</option>
-                ${param.options.map(opt => `<option value="${opt}">${opt}</option>`).join("")}
+                ${buildSelectOptionsHtml(options, true)}
             </select>
+        `;
+  } else if (param.type === "multiselect") {
+    const options = resolveParamOptions(param);
+    const serialize = param.serialize || (isBody ? "json" : "csv");
+    inputHtml = `
+            ${buildChipMultiselectHtml(fieldId, param.name, options, serialize, required)}
+            <span class="field-hint">${param.help || "Values can be ticked in the list, then confirmed with Apply."}</span>
         `;
   } else if (param.type === "checkbox") {
     inputHtml = `
@@ -899,7 +1247,17 @@ function createFormField(param, prefix, isBody, endpoint = null) {
 
     // Generate dynamic JSON form based on structure
     const elementTitle = getElementTitle(endpoint);
-    const jsonFormHtml = generateJsonFormField(fieldId, param.name, jsonStructure, prefix, required, requiredText, formattedName, elementTitle);
+    const jsonFormHtml = generateJsonFormField(
+      fieldId,
+      param.name,
+      jsonStructure,
+      prefix,
+      required,
+      requiredText,
+      formattedName,
+      elementTitle,
+      param.nestedSelectOptions || null
+    );
     return jsonFormHtml;
   } else if (param.type === "file") {
     inputHtml = `
@@ -952,10 +1310,21 @@ function getElementTitle(endpoint) {
   return "Item";
 }
 
-function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, required, requiredText, formattedName, elementTitle = "Item") {
+function generateJsonFormField(
+  fieldId,
+  fieldName,
+  jsonStructure,
+  prefix,
+  required,
+  requiredText,
+  formattedName,
+  elementTitle = "Item",
+  nestedSelectOptions = null
+) {
   if (Array.isArray(jsonStructure)) {
     // Handle array: show each element with sub-fields and "Add new element" button
     const containerId = `${fieldId}-container`;
+    const nestedSelectOptionsJson = JSON.stringify(nestedSelectOptions || {});
 
     let html = `
             <div class="json-form-container" id="${containerId}" data-field-name="${fieldName}" data-structure-type="array">
@@ -965,10 +1334,26 @@ function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, requir
 
     // Add first element if array has items
     if (jsonStructure.length > 0) {
-      html += generateArrayElement(fieldId, fieldName, jsonStructure[0], 0, prefix, elementTitle);
+      html += generateArrayElement(
+        fieldId,
+        fieldName,
+        jsonStructure[0],
+        0,
+        prefix,
+        elementTitle,
+        nestedSelectOptions
+      );
     } else {
       // Empty array - add one empty element
-      html += generateArrayElement(fieldId, fieldName, {}, 0, prefix, elementTitle);
+      html += generateArrayElement(
+        fieldId,
+        fieldName,
+        {},
+        0,
+        prefix,
+        elementTitle,
+        nestedSelectOptions
+      );
     }
 
     // Store element structure in data attribute to avoid JSON escaping issues
@@ -981,6 +1366,7 @@ function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, requir
                         data-element-structure='${elementStructureJson.replace(/'/g, "&apos;")}'
                         data-prefix="${prefix}"
                         data-element-title="${elementTitle}"
+                        data-nested-select-options='${nestedSelectOptionsJson.replace(/'/g, "&apos;")}'
                         style="margin-top: 0.5rem;">
                     Add
                 </button>
@@ -990,7 +1376,16 @@ function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, requir
     return html;
   } else if (jsonStructure && typeof jsonStructure === "object") {
     // Handle object: show all keys as form fields
-    return generateObjectFields(fieldId, fieldName, jsonStructure, prefix, required, requiredText, formattedName);
+    return generateObjectFields(
+      fieldId,
+      fieldName,
+      jsonStructure,
+      prefix,
+      required,
+      requiredText,
+      formattedName,
+      nestedSelectOptions
+    );
   } else {
     // Fallback: simple text input
     return `
@@ -1002,7 +1397,15 @@ function generateJsonFormField(fieldId, fieldName, jsonStructure, prefix, requir
   }
 }
 
-function generateArrayElement(fieldId, fieldName, elementStructure, index, prefix, elementTitle = "Item") {
+function generateArrayElement(
+  fieldId,
+  fieldName,
+  elementStructure,
+  index,
+  prefix,
+  elementTitle = "Item",
+  nestedSelectOptions = null
+) {
   const elementId = `${fieldId}-item-${index}`;
   let html = `
         <div class="json-array-item" id="${elementId}" data-index="${index}" data-field-name="${fieldName}" style="border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 1rem; margin-bottom: 0.5rem; background-color: #f8fafc;">
@@ -1019,7 +1422,14 @@ function generateArrayElement(fieldId, fieldName, elementStructure, index, prefi
   if (elementStructure && typeof elementStructure === "object") {
     Object.keys(elementStructure).forEach(key => {
       const value = elementStructure[key];
-      html += generateFieldForValue(`${elementId}-${key}`, key, value, prefix, fieldName);
+      html += generateFieldForValue(
+        `${elementId}-${key}`,
+        key,
+        value,
+        prefix,
+        fieldName,
+        nestedSelectOptions
+      );
     });
   }
 
@@ -1031,7 +1441,16 @@ function generateArrayElement(fieldId, fieldName, elementStructure, index, prefi
   return html;
 }
 
-function generateObjectFields(fieldId, fieldName, objStructure, prefix, required, requiredText, formattedName) {
+function generateObjectFields(
+  fieldId,
+  fieldName,
+  objStructure,
+  prefix,
+  required,
+  requiredText,
+  formattedName,
+  nestedSelectOptions = null
+) {
   let html = `
         <div class="json-form-container" id="${fieldId}-container" data-field-name="${fieldName}" data-structure-type="object">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">${formattedName} ${requiredText}</label>
@@ -1040,7 +1459,14 @@ function generateObjectFields(fieldId, fieldName, objStructure, prefix, required
 
   Object.keys(objStructure).forEach(key => {
     const value = objStructure[key];
-    html += generateFieldForValue(`${fieldId}-${key}`, key, value, prefix, fieldName);
+    html += generateFieldForValue(
+      `${fieldId}-${key}`,
+      key,
+      value,
+      prefix,
+      fieldName,
+      nestedSelectOptions
+    );
   });
 
   html += `
@@ -1051,7 +1477,14 @@ function generateObjectFields(fieldId, fieldName, objStructure, prefix, required
   return html;
 }
 
-function generateFieldForValue(fieldId, fieldName, value, prefix, baseFieldName = "") {
+function generateFieldForValue(
+  fieldId,
+  fieldName,
+  value,
+  prefix,
+  baseFieldName = "",
+  nestedSelectOptions = null
+) {
   const formattedName = formatParameterName(fieldName);
   let inputHtml = "";
 
@@ -1069,7 +1502,14 @@ function generateFieldForValue(fieldId, fieldName, value, prefix, baseFieldName 
         `;
 
     Object.keys(value).forEach(nestedKey => {
-      nestedHtml += generateFieldForValue(`${fieldId}-${nestedKey}`, nestedKey, value[nestedKey], prefix, baseFieldName);
+      nestedHtml += generateFieldForValue(
+        `${fieldId}-${nestedKey}`,
+        nestedKey,
+        value[nestedKey],
+        prefix,
+        baseFieldName,
+        nestedSelectOptions
+      );
     });
 
     nestedHtml += "</div>";
@@ -1080,18 +1520,31 @@ function generateFieldForValue(fieldId, fieldName, value, prefix, baseFieldName 
             </div>
         `;
   } else {
-    // Simple value - determine input type
-    // Check if field name contains 'date' to use date picker
-    const isDateField = fieldName.toLowerCase().includes("date");
-    const inputType = typeof value === "number" ? "number" :
-      isDateField ? "date" :
-        (value && String(value).match(/^\d{4}-\d{2}-\d{2}/)) ? "date" : "text";
+    const overrideOptionsFrom = nestedSelectOptions && nestedSelectOptions[fieldName];
+    const closedOptions = overrideOptionsFrom
+      ? resolveParamOptions({ optionsFrom: overrideOptionsFrom })
+      : resolveNestedFieldOptions(fieldName);
 
-    // Use value only as placeholder hint, not as default value
-    const placeholderHint = value || "";
-    inputHtml = `
+    if (closedOptions && closedOptions.length > 0) {
+      inputHtml = `
+            <select id="${fieldId}" name="${fieldName}" data-field-path="${fieldName}" style="width: 100%; box-sizing: border-box;">
+                ${buildSelectOptionsHtml(closedOptions, true)}
+            </select>
+        `;
+    } else {
+      // Simple value - determine input type
+      // Check if field name contains 'date' to use date picker
+      const isDateField = fieldName.toLowerCase().includes("date");
+      const inputType = typeof value === "number" ? "number" :
+        isDateField ? "date" :
+          (value && String(value).match(/^\d{4}-\d{2}-\d{2}/)) ? "date" : "text";
+
+      // Use value only as placeholder hint, not as default value
+      const placeholderHint = value || "";
+      inputHtml = `
             <input type="${inputType}" id="${fieldId}" name="${fieldName}" data-field-path="${fieldName}" value="" placeholder="${placeholderHint}" style="width: 100%; box-sizing: border-box;">
         `;
+    }
   }
 
   return `
@@ -1103,7 +1556,14 @@ function generateFieldForValue(fieldId, fieldName, value, prefix, baseFieldName 
 }
 
 // Global function to add array element
-function addArrayElement(fieldId, fieldName, elementStructureJson, prefix, elementTitle = "Item") {
+function addArrayElement(
+  fieldId,
+  fieldName,
+  elementStructureJson,
+  prefix,
+  elementTitle = "Item",
+  nestedSelectOptionsJson = null
+) {
   const itemsContainer = document.getElementById(`${fieldId}-items`);
   if (!itemsContainer) {
     console.error("Items container not found:", `${fieldId}-items`);
@@ -1121,11 +1581,32 @@ function addArrayElement(fieldId, fieldName, elementStructureJson, prefix, eleme
     elementStructure = {};
   }
 
+  let nestedSelectOptions = null;
+  if (nestedSelectOptionsJson) {
+    try {
+      const unescapedOptions = nestedSelectOptionsJson
+        .replace(/&apos;/g, "'")
+        .replace(/&#39;/g, "'");
+      nestedSelectOptions = JSON.parse(unescapedOptions);
+    } catch (e) {
+      console.error("Error parsing nested select options:", e, nestedSelectOptionsJson);
+      nestedSelectOptions = null;
+    }
+  }
+
   const existingItems = itemsContainer.querySelectorAll(".json-array-item");
   const newIndex = existingItems.length;
 
   const newElement = document.createElement("div");
-  newElement.innerHTML = generateArrayElement(fieldId, fieldName, elementStructure, newIndex, prefix, elementTitle);
+  newElement.innerHTML = generateArrayElement(
+    fieldId,
+    fieldName,
+    elementStructure,
+    newIndex,
+    prefix,
+    elementTitle,
+    nestedSelectOptions
+  );
   const elementNode = newElement.firstElementChild;
   if (elementNode) {
     itemsContainer.appendChild(elementNode);
@@ -1173,6 +1654,20 @@ async function confirmRequest() {
           if (input.checked) {
             queryParams.append(param.name, "true");
             queryData[param.name] = "true";
+          }
+        } else if (param.type === "multiselect") {
+          const selectedValues = getSelectedMultiValues(input);
+          if (selectedValues.length === 0) {
+            return;
+          }
+          const serialize = param.serialize || input.getAttribute("data-serialize") || "csv";
+          if (serialize === "repeat") {
+            selectedValues.forEach(value => queryParams.append(param.name, value));
+            queryData[param.name] = selectedValues;
+          } else {
+            const csvValue = selectedValues.join(",");
+            queryParams.append(param.name, csvValue);
+            queryData[param.name] = csvValue;
           }
         } else if (input.value) {
           queryParams.append(param.name, input.value);
@@ -1251,6 +1746,21 @@ async function confirmRequest() {
           // Standard form collection for non-list endpoints
           endpoint.body.forEach((param) => {
             const input = document.getElementById(`body-${index}-${param.name}`);
+            if (param.type === "multiselect") {
+              if (!input) {
+                return;
+              }
+              const selectedValues = getSelectedMultiValues(input);
+              // Optional empty multi-select still sends [] when serialize is json.
+              if (param.serialize === "json" || !param.required) {
+                bodyObj[param.name] = selectedValues;
+                hasBodyData = true;
+              } else if (selectedValues.length > 0) {
+                bodyObj[param.name] = selectedValues;
+                hasBodyData = true;
+              }
+              return;
+            }
             if (input) {
               if (param.type === "file") {
                 if (input.files && input.files[0]) {

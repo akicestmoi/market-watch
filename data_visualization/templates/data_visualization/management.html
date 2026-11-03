@@ -69,7 +69,13 @@
     <div class="modal-overlay" id="form-modal-overlay">
         <div class="modal" id="form-modal">
             <div class="modal-header">
-                <h3 class="modal-title" id="form-modal-title"></h3>
+                <div class="modal-header-text">
+                    <h3 class="modal-title" id="form-modal-title"></h3>
+                    <div class="modal-subtitle-block" id="form-modal-subtitle-block">
+                        <p class="modal-subtitle" id="form-modal-description"></p>
+                        <p class="modal-help" id="form-modal-help"></p>
+                    </div>
+                </div>
                 <button class="modal-close" onclick="closeFormModal()">&times;</button>
             </div>
             <div class="modal-body" id="form-modal-body">
@@ -128,6 +134,7 @@
 
     <script>
         window.databaseInfoJSON = {{ database_info|safe }};
+        window.managementCatalogJSON = {{ management_catalog|safe }};
     </script>
     <script src="{% static 'data_visualization/js/management.js' %}"></script>
 </body>

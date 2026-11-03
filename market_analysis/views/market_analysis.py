@@ -29,7 +29,6 @@ class _GetRecapValidatedData(TypedDict, total=False):
     """Validated data for 'GetRecapSerializer'."""
 
     reporting_date: date
-    id: int
 
 
 class GetDailyRecapView(BaseAPIView):
@@ -42,20 +41,16 @@ class GetDailyRecapView(BaseAPIView):
         request_serializer=GetRecapSerializer,
         response=OkOpenApiResponse(RecapResponseSerializer),
         error_responses=[
-            BadRequestOpenApiResponse("Invalid reporting_date or id."),
+            BadRequestOpenApiResponse("Invalid reporting_date."),
             NotFoundOpenApiResponse("Recap not found"),
         ],
     )
     def get(self, validated_data: _GetRecapValidatedData) -> Response:
-        """Return a daily recap by id, reporting date, or the latest recap."""
-        recap_id: int | None = validated_data.get("id")
+        """Return a daily recap by reporting date, or the latest recap."""
         reporting_date: date | None = validated_data.get("reporting_date")
-        if recap_id:
-            recap = DailyRecapModel.objects.get(id=recap_id)
-        else:
-            recap = llm_market_recap.get_latest_recap(reporting_date=reporting_date)
-            if not recap:
-                raise NotFound(detail="Recap not found")
+        recap = llm_market_recap.get_latest_recap(reporting_date=reporting_date)
+        if not recap:
+            raise NotFound(detail="Recap not found")
         return Response(RecapResponseSerializer(recap).data)
 
 

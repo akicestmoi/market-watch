@@ -229,13 +229,187 @@ body {
 
 .form-group input[type="checkbox"] {
     width: auto;
-    margin-right: 0.5rem;
+    margin: 0;
+    flex-shrink: 0;
+    align-self: center;
 }
 
 .form-group .checkbox-label {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
     font-weight: normal;
+}
+
+.form-group .checkbox-label label {
+    display: inline;
+    margin-bottom: 0;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.form-group .field-hint {
+    display: block;
+    margin-top: 0.25rem;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.endpoint-no-params {
+    margin: 0.25rem 0 0;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.chip-multiselect {
+    position: relative;
+    width: 100%;
+}
+
+.chip-multiselect-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #bae6fd;
+    border-radius: 0.5rem;
+    background: white;
+    cursor: pointer;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.chip-multiselect-control:hover,
+.chip-multiselect-control[aria-expanded="true"] {
+    border-color: #3b82f6;
+    background: #f8fafc;
+}
+
+.chip-multiselect-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.chip-multiselect-placeholder {
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+.chip-multiselect-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    padding: 0.15rem 0.45rem 0.15rem 0.2rem;
+    border-radius: 999px;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+    color: #0c4a6e;
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.chip-multiselect-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: #0284c7;
+    color: white;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.chip-multiselect-chip-remove:hover {
+    background: #0369a1;
+}
+
+.chip-multiselect-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip-multiselect-caret {
+    width: 0.65rem;
+    height: 0.65rem;
+    flex-shrink: 0;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    transform: rotate(45deg);
+    margin-top: -0.2rem;
+}
+
+.chip-multiselect-dropdown {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    right: 0;
+    max-height: min(28rem, 55vh);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #bae6fd;
+    border-radius: 0.5rem;
+    background: white;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+.chip-multiselect-dropdown[hidden] {
+    display: none;
+}
+
+.chip-multiselect-options {
+    overflow-y: auto;
+    max-height: min(24rem, 48vh);
+    padding: 0.35rem;
+}
+
+.chip-multiselect-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.35rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #1e293b;
+}
+
+.chip-multiselect-option:hover {
+    background: #f0f9ff;
+}
+
+.chip-multiselect-option input {
+    width: auto;
+    margin: 0;
+}
+
+.chip-multiselect-empty {
+    margin: 0.5rem;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.chip-multiselect-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
 }
 
 .form-actions {
@@ -312,8 +486,14 @@ body {
     background: linear-gradient(180deg, #e0f2fe 0%, #fff 100%);
     border-bottom: 1px solid #bae6fd;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.modal-header-text {
+    min-width: 0;
+    flex: 1;
 }
 
 .modal-title {
@@ -321,6 +501,32 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: #1e293b;
+}
+
+.modal-subtitle-block {
+    margin: 0.35rem 0 0;
+}
+
+.modal-subtitle-block[hidden] {
+    display: none;
+}
+
+.modal-subtitle,
+.modal-help {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #64748b;
+}
+
+.modal-help {
+    margin-top: 0.45rem;
+}
+
+.modal-subtitle[hidden],
+.modal-help[hidden] {
+    display: none;
 }
 
 .modal-close {
