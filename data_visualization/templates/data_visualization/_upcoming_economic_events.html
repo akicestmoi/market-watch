@@ -43,7 +43,10 @@
                                 <div class="upcoming-event-row">
                                     <span class="upcoming-event-time">{{ event.time_str }}</span>
                                     <span class="upcoming-event-location" data-location="{{ event.location }}"></span>
-                                    <span class="upcoming-event-name">{{ event.name }}</span>
+                                    <span class="upcoming-event-name">
+                                        {{ event.name }}{% if event.period %}
+                                        <span class="upcoming-event-period">({{ event.period }})</span>{% endif %}
+                                    </span>
                                 </div>
                                 {% endif %}
                                 {% endfor %}

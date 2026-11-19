@@ -22,7 +22,7 @@ from central_banks_overview.services.config import (
     FF_FUTURES_SUFFIX,
 )
 from central_banks_overview.services.scrapers.common import StirFutures
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.scrapers.yahoo import get_yahoo_finance_closing_prices
 
 

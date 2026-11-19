@@ -52,6 +52,12 @@ class CentralBankMeetingDatesResponseSerializer(serializers.Serializer):
     meeting_dates = serializers.ListField(child=serializers.DateTimeField())
 
 
+class CentralBankMeetingDatesIngestionResponseSerializer(serializers.Serializer):
+    """Central Bank Meeting Dates Ingestion Response Serializer."""
+
+    message = serializers.CharField()
+
+
 class StirFuturesPriceIngestionResponseSerializer(serializers.Serializer):
     """Stir Futures Price Response Serializer."""
 

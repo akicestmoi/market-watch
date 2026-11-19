@@ -171,8 +171,10 @@ def _get_start_date(reference_date: date, chart_duration: ChartDuration) -> date
     return reference_date
 
 
-def _to_historical_prices(frame: pd.DataFrame) -> list[HistoricalPrice]:
-    """Build 'HistoricalPrice' values from a DataFrame with price_date/price."""
+def _convert_dataframe_to_historical_prices(
+    frame: pd.DataFrame,
+) -> list[HistoricalPrice]:
+    """Convert a DataFrame with price_date/price into 'HistoricalPrice' values."""
     prices: list[HistoricalPrice] = []
     for price_record in frame[["price_date", "price"]].to_dict(orient="records"):
         prices.append(
@@ -184,26 +186,45 @@ def _to_historical_prices(frame: pd.DataFrame) -> list[HistoricalPrice]:
     return prices
 
 
-def get_market_charts_data(
-    reference_date: date, previous_curve_date: date, front_data: MarketChartsFrontData
-) -> _MarketChartsData:
-    """Load price series and yield curves for the market charts page."""
-    main_rate_historical_yield = market_data.get_historical_prices(
-        front_data["main_rate"],
-        start_date=_get_start_date(
-            reference_date, front_data["spread_rates_chart_duration"]
-        ),
+def _get_historical_prices_for_asset_chart(
+    asset_short_name: str,
+    reference_date: date,
+    chart_duration: ChartDuration,
+) -> list[HistoricalPrice]:
+    """Load one asset's price series for a chart window ending on 'reference_date'."""
+    return market_data.get_historical_prices(
+        asset_short_name,
+        start_date=_get_start_date(reference_date, chart_duration),
         end_date=reference_date,
     )
 
+
+def _get_optional_compare_historical_prices(
+    compare_short_name: str,
+    reference_date: date,
+    chart_duration: ChartDuration,
+) -> list[HistoricalPrice]:
+    """Load a comparison asset's prices when 'compare_short_name' is set."""
+    if not compare_short_name:
+        return []
+    return _get_historical_prices_for_asset_chart(
+        compare_short_name, reference_date, chart_duration
+    )
+
+
+def _get_spread_rates_historical_prices(
+    reference_date: date,
+    front_data: MarketChartsFrontData,
+) -> list[HistoricalPrice]:
+    """Return spread or scaled main-rate yields for the spread-rates chart."""
+    chart_duration = front_data["spread_rates_chart_duration"]
+    main_rate_historical_yield = _get_historical_prices_for_asset_chart(
+        front_data["main_rate"], reference_date, chart_duration
+    )
     spread_rate = front_data.get("spread_rate")
     if spread_rate:
-        spread_rate_historical_yield = market_data.get_historical_prices(
-            str(spread_rate),
-            start_date=_get_start_date(
-                reference_date, front_data["spread_rates_chart_duration"]
-            ),
-            end_date=reference_date,
+        spread_rate_historical_yield = _get_historical_prices_for_asset_chart(
+            str(spread_rate), reference_date, chart_duration
         )
         if main_rate_historical_yield and spread_rate_historical_yield:
             main_df = pd.DataFrame(main_rate_historical_yield)
@@ -218,91 +239,64 @@ def get_market_charts_data(
             spread_rate_df["price"] = (
                 spread_rate_df["price_current"] - spread_rate_df["price_prev"]
             ) * 100
-            spread_rates = _to_historical_prices(spread_rate_df)
-        else:
-            if main_rate_historical_yield:
-                spread_rate_df = pd.DataFrame(main_rate_historical_yield)
-                spread_rate_df["price"] = spread_rate_df["price"] * 100
-                spread_rates = _to_historical_prices(spread_rate_df)
-            else:
-                spread_rates = []
-    else:
+            return _convert_dataframe_to_historical_prices(spread_rate_df)
         if main_rate_historical_yield:
             spread_rate_df = pd.DataFrame(main_rate_historical_yield)
             spread_rate_df["price"] = spread_rate_df["price"] * 100
-            spread_rates = _to_historical_prices(spread_rate_df)
-        else:
-            spread_rates = []
+            return _convert_dataframe_to_historical_prices(spread_rate_df)
+        return []
+    if main_rate_historical_yield:
+        spread_rate_df = pd.DataFrame(main_rate_historical_yield)
+        spread_rate_df["price"] = spread_rate_df["price"] * 100
+        return _convert_dataframe_to_historical_prices(spread_rate_df)
+    return []
+
+
+def get_market_charts_data(
+    reference_date: date, previous_curve_date: date, front_data: MarketChartsFrontData
+) -> _MarketChartsData:
+    """Load price series and yield curves for the market charts page."""
+    spread_rates = _get_spread_rates_historical_prices(reference_date, front_data)
     return _MarketChartsData(
-        stock_prices=market_data.get_historical_prices(
+        stock_prices=_get_historical_prices_for_asset_chart(
             front_data["stock_name"],
-            start_date=_get_start_date(
-                reference_date, front_data["stock_chart_duration"]
-            ),
-            end_date=reference_date,
+            reference_date,
+            front_data["stock_chart_duration"],
         ),
-        stock_prices_compare=(
-            market_data.get_historical_prices(
-                front_data["stock_name_compare"],
-                start_date=_get_start_date(
-                    reference_date, front_data["stock_chart_duration"]
-                ),
-                end_date=reference_date,
-            )
-            if front_data["stock_name_compare"]
-            else []
+        stock_prices_compare=_get_optional_compare_historical_prices(
+            front_data["stock_name_compare"],
+            reference_date,
+            front_data["stock_chart_duration"],
         ),
-        fx_prices=market_data.get_historical_prices(
+        fx_prices=_get_historical_prices_for_asset_chart(
             front_data["fx_name"],
-            start_date=_get_start_date(reference_date, front_data["fx_chart_duration"]),
-            end_date=reference_date,
+            reference_date,
+            front_data["fx_chart_duration"],
         ),
-        fx_prices_compare=(
-            market_data.get_historical_prices(
-                front_data["fx_name_compare"],
-                start_date=_get_start_date(
-                    reference_date, front_data["fx_chart_duration"]
-                ),
-                end_date=reference_date,
-            )
-            if front_data["fx_name_compare"]
-            else []
+        fx_prices_compare=_get_optional_compare_historical_prices(
+            front_data["fx_name_compare"],
+            reference_date,
+            front_data["fx_chart_duration"],
         ),
-        crypto_prices=market_data.get_historical_prices(
+        crypto_prices=_get_historical_prices_for_asset_chart(
             front_data["crypto_name"],
-            start_date=_get_start_date(
-                reference_date, front_data["crypto_chart_duration"]
-            ),
-            end_date=reference_date,
+            reference_date,
+            front_data["crypto_chart_duration"],
         ),
-        crypto_prices_compare=(
-            market_data.get_historical_prices(
-                front_data["crypto_name_compare"],
-                start_date=_get_start_date(
-                    reference_date, front_data["crypto_chart_duration"]
-                ),
-                end_date=reference_date,
-            )
-            if front_data["crypto_name_compare"]
-            else []
+        crypto_prices_compare=_get_optional_compare_historical_prices(
+            front_data["crypto_name_compare"],
+            reference_date,
+            front_data["crypto_chart_duration"],
         ),
-        commodity_prices=market_data.get_historical_prices(
+        commodity_prices=_get_historical_prices_for_asset_chart(
             front_data["commodity_name"],
-            start_date=_get_start_date(
-                reference_date, front_data["commodity_chart_duration"]
-            ),
-            end_date=reference_date,
+            reference_date,
+            front_data["commodity_chart_duration"],
         ),
-        commodity_prices_compare=(
-            market_data.get_historical_prices(
-                front_data["commodity_name_compare"],
-                start_date=_get_start_date(
-                    reference_date, front_data["commodity_chart_duration"]
-                ),
-                end_date=reference_date,
-            )
-            if front_data["commodity_name_compare"]
-            else []
+        commodity_prices_compare=_get_optional_compare_historical_prices(
+            front_data["commodity_name_compare"],
+            reference_date,
+            front_data["commodity_chart_duration"],
         ),
         reference_yield_curve=market_data.get_yield_curve(
             reference_date,

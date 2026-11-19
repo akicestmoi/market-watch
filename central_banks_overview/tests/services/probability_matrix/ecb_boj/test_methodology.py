@@ -128,13 +128,13 @@ class TestStep2GenerateAllMeetingScenarios(TestCase):
 
         combinations = service._generate_rate_combinations(2)
         assert combinations == [
-            (-25, -25),
-            (-25, 0),
-            (0, -25),
-            (0, 0),
-            (25, 0),
-            (0, 25),
-            (25, 25),
+            [-25, -25],
+            [-25, 0],
+            [0, -25],
+            [0, 0],
+            [25, 0],
+            [0, 25],
+            [25, 25],
         ]
 
     def test_generate_rate_combinations_n2(self):
@@ -151,13 +151,13 @@ class TestStep2GenerateAllMeetingScenarios(TestCase):
 
         combinations = service._generate_rate_combinations(2)
         assert combinations == [
-            (-25, -25),
-            (-25, 0),
-            (0, -25),
-            (0, 0),
-            (25, 0),
-            (0, 25),
-            (25, 25),
+            [-25, -25],
+            [-25, 0],
+            [0, -25],
+            [0, 0],
+            [25, 0],
+            [0, 25],
+            [25, 25],
         ]
 
     def test_generate_rate_combinations_n3(self):
@@ -174,19 +174,19 @@ class TestStep2GenerateAllMeetingScenarios(TestCase):
 
         combinations = service._generate_rate_combinations(3)
         assert combinations == [
-            (-25, -25, -25),
-            (-25, 0, 0),
-            (0, -25, 0),
-            (0, 0, -25),
-            (0, 0, 0),
-            (25, 0, 0),
-            (0, 25, 0),
-            (0, 0, 25),
-            (25, 25, 25),
-            (-25, -25, 0),
-            (0, -25, -25),
-            (25, 25, 0),
-            (0, 25, 25),
+            [-25, -25, -25],
+            [-25, 0, 0],
+            [0, -25, 0],
+            [0, 0, -25],
+            [0, 0, 0],
+            [25, 0, 0],
+            [0, 25, 0],
+            [0, 0, 25],
+            [25, 25, 25],
+            [-25, -25, 0],
+            [0, -25, -25],
+            [25, 25, 0],
+            [0, 25, 25],
         ]
 
 

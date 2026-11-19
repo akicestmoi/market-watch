@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import parse_datetime
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.scraping import parse_datetime
 from market_analysis.services.config import SWISSINFO_LIST_URL
 from market_analysis.services.scrapers.common import (
     ArticleLink,

@@ -52,7 +52,7 @@ class DailyRecapModel(BaseModel):
         help_text="Short headline for the daily recap.",
     )
     main_summary = models.TextField(
-        help_text="High-level worldwide mainline (not detailed)."
+        help_text="Short worldwide summary (not a detailed country wrap)."
     )
     us_summary = models.TextField(
         blank=True,
@@ -72,7 +72,7 @@ class DailyRecapModel(BaseModel):
     additional_summary = models.TextField(
         blank=True,
         default="",
-        help_text="Commodities, crypto, notable RoW / non-core-zone items.",
+        help_text="Extra items such as commodities, crypto, or other regions.",
     )
     source_urls = models.JSONField(
         default=list,
@@ -87,7 +87,7 @@ class DailyRecapModel(BaseModel):
         max_length=64,
         blank=True,
         default="",
-        help_text="Prompt / instruction version stamp for reproducibility.",
+        help_text="Version of the writing instructions used, so we can reproduce the run.",
     )
 
     class Meta:

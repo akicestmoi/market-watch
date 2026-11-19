@@ -9,7 +9,9 @@
             <div class="day-events-indicator-row">
                 {% for event in location_group.events %}
                 <div class="day-events-indicator-card{% if event.is_holiday %} is-holiday{% endif %}">
-                    <span class="day-events-name">{{ event.name }}</span>
+                    <span class="day-events-name">
+                        {{ event.name }}{% if event.mode %} <span class="day-events-mode">({{ event.mode }})</span>{% endif %}
+                    </span>
                     {% if event.value or event.previous or event.change %}
                     <span class="day-events-metrics">
                         {% if event.value %}

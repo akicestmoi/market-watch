@@ -9,19 +9,266 @@ from django.test import Client, TestCase
 from django.test.utils import ContextList
 from freezegun import freeze_time
 
-from data_visualization.services.economic_charts import (
-    EconomicChartsFrontData,
-    _EconomicChartsData,
-    _EconomicChartsDropdownValues,
+from data_visualization.services.economic_charts.indicator_selection import (
+    EconomicChartsDropdownValues,
 )
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from data_visualization.services.economic_charts.line_charts import EconomicChartsData
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
-    EconomicDataModel,
     EconomicDataSourceChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
 )
+
+_CHART_SLOTS: list[tuple[str, str]] = [
+    ("Macroeconomics", "Growth"),
+    ("Macroeconomics", "Trade"),
+    ("Macroeconomics", "Confidence"),
+    ("Household", "Labour"),
+    ("Household", "Inequality"),
+    ("Household", "Income"),
+    ("Household", "Saving"),
+    ("Household", "Debt"),
+    ("Household", "Sales"),
+    ("Household", "Prices"),
+    ("Household", "Housing"),
+    ("Household", "Confidence"),
+    ("Business", "Income"),
+    ("Business", "Investment"),
+    ("Business", "Cost"),
+    ("Business", "Debt"),
+    ("Business", "Prices"),
+    ("Business", "Production"),
+    ("Business", "Confidence"),
+    ("Government", "Budget"),
+    ("Government", "Financing"),
+    ("Government", "Debt"),
+]
+
+_SELECTION_SUFFIXES: list[str] = [
+    "macroeconomics_growth_indicator",
+    "macroeconomics_trade_indicator",
+    "macroeconomics_confidence_indicator",
+    "household_labour_indicator",
+    "household_inequality_indicator",
+    "household_income_indicator",
+    "household_saving_indicator",
+    "household_debt_indicator",
+    "household_sales_indicator",
+    "household_prices_indicator",
+    "household_housing_indicator",
+    "household_confidence_indicator",
+    "business_income_indicator",
+    "business_investment_indicator",
+    "business_cost_indicator",
+    "business_debt_indicator",
+    "business_prices_indicator",
+    "business_production_indicator",
+    "business_confidence_indicator",
+    "government_budget_indicator",
+    "government_financing_indicator",
+    "government_debt_indicator",
+]
+
+
+def _empty_charts_payload() -> list[EconomicChartsData]:
+    """Build empty chart payloads for every category/subcategory slot."""
+    return [
+        EconomicChartsData(
+            category=category,
+            subcategory=subcategory,
+            category_data=[],
+            value_axis_label="Data Value",
+        )
+        for category, subcategory in _CHART_SLOTS
+    ]
+
+
+def _charts_payload_with_slot(
+    category: str,
+    subcategory: str,
+    category_data: list,
+    value_axis_label: str = "Data Value",
+) -> list[EconomicChartsData]:
+    """Fill one chart slot and leave the others empty."""
+    payload = _empty_charts_payload()
+    for index, (slot_category, slot_subcategory) in enumerate(_CHART_SLOTS):
+        if (slot_category, slot_subcategory) == (category, subcategory):
+            payload[index] = EconomicChartsData(
+                category=category,
+                subcategory=subcategory,
+                category_data=category_data,
+                value_axis_label=value_axis_label,
+            )
+    return payload
+
+
+def _empty_selected_values(
+    *,
+    region: str = "US",
+    period_window: str = "10Y",
+    overrides: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Build default empty selection map for every region/slot, then apply overrides."""
+    selected_values: dict[str, str] = {
+        "region": region,
+        "period_window": period_window,
+        "countries": "US,FR,JP,DE,ES,IT",
+    }
+    for region_code in ("us", "cross", "fr", "jp"):
+        for suffix in _SELECTION_SUFFIXES:
+            selected_values[f"{region_code}_{suffix}"] = ""
+    if overrides:
+        selected_values.update(overrides)
+    return selected_values
+
+
+def _us_dropdown_values() -> EconomicChartsDropdownValues:
+    """Dropdown payload for the US region fixtures in these tests."""
+    return EconomicChartsDropdownValues(
+        categories=["Macroeconomics", "Household", "Business", "Government"],
+        locations=["United States", "France", "Japan", "Cross-Region"],
+        indicators_by_category_subcategory=[
+            {
+                "category": "Macroeconomics",
+                "subcategory": "Growth",
+                "indicators": [
+                    {
+                        "series_label": "GDP Growth",
+                        "name": "GDP Growth",
+                        "default_mode": "Raw",
+                        "measure_type": "FLOW",
+                        "expansion_relation": "",
+                        "supports_vs_gdp": False,
+                        "description": "",
+                        "comparability_warning": "",
+                    },
+                    {
+                        "series_label": "GDP Growth (QoQ)",
+                        "name": "GDP Growth (QoQ)",
+                        "default_mode": "Raw",
+                        "measure_type": "FLOW",
+                        "expansion_relation": "",
+                        "supports_vs_gdp": False,
+                        "description": "",
+                        "comparability_warning": "",
+                    },
+                ],
+            },
+            {"category": "Macroeconomics", "subcategory": "Trade", "indicators": []},
+            {
+                "category": "Macroeconomics",
+                "subcategory": "Confidence",
+                "indicators": [],
+            },
+            {"category": "Household", "subcategory": "Labour", "indicators": []},
+            {"category": "Household", "subcategory": "Inequality", "indicators": []},
+            {"category": "Household", "subcategory": "Income", "indicators": []},
+            {"category": "Household", "subcategory": "Saving", "indicators": []},
+            {"category": "Household", "subcategory": "Debt", "indicators": []},
+            {"category": "Household", "subcategory": "Sales", "indicators": []},
+            {
+                "category": "Household",
+                "subcategory": "Prices",
+                "indicators": [
+                    {
+                        "series_label": "CPI",
+                        "name": "CPI",
+                        "default_mode": "Raw",
+                        "measure_type": "FLOW",
+                        "expansion_relation": "",
+                        "supports_vs_gdp": False,
+                        "description": "",
+                        "comparability_warning": "",
+                    },
+                ],
+            },
+            {"category": "Household", "subcategory": "Housing", "indicators": []},
+            {"category": "Household", "subcategory": "Confidence", "indicators": []},
+            {"category": "Business", "subcategory": "Income", "indicators": []},
+            {"category": "Business", "subcategory": "Investment", "indicators": []},
+            {"category": "Business", "subcategory": "Cost", "indicators": []},
+            {"category": "Business", "subcategory": "Debt", "indicators": []},
+            {"category": "Business", "subcategory": "Prices", "indicators": []},
+            {"category": "Business", "subcategory": "Production", "indicators": []},
+            {"category": "Business", "subcategory": "Confidence", "indicators": []},
+            {"category": "Government", "subcategory": "Budget", "indicators": []},
+            {"category": "Government", "subcategory": "Financing", "indicators": []},
+            {"category": "Government", "subcategory": "Debt", "indicators": []},
+        ],
+    )
+
+
+def _fr_dropdown_values() -> EconomicChartsDropdownValues:
+    """Dropdown payload for the France region fixtures in these tests."""
+    return EconomicChartsDropdownValues(
+        categories=["Macroeconomics", "Household", "Business", "Government"],
+        locations=["United States", "France", "Japan", "Cross-Region"],
+        indicators_by_category_subcategory=[
+            {
+                "category": "Macroeconomics",
+                "subcategory": "Growth",
+                "indicators": [
+                    {
+                        "series_label": "GDP Growth",
+                        "name": "GDP Growth",
+                        "default_mode": "Raw",
+                        "measure_type": "FLOW",
+                        "expansion_relation": "",
+                        "supports_vs_gdp": False,
+                        "description": "",
+                        "comparability_warning": "",
+                    },
+                ],
+            },
+            {"category": "Macroeconomics", "subcategory": "Trade", "indicators": []},
+            {
+                "category": "Macroeconomics",
+                "subcategory": "Confidence",
+                "indicators": [],
+            },
+            {"category": "Household", "subcategory": "Labour", "indicators": []},
+            {"category": "Household", "subcategory": "Inequality", "indicators": []},
+            {"category": "Household", "subcategory": "Income", "indicators": []},
+            {"category": "Household", "subcategory": "Saving", "indicators": []},
+            {"category": "Household", "subcategory": "Debt", "indicators": []},
+            {"category": "Household", "subcategory": "Sales", "indicators": []},
+            {"category": "Household", "subcategory": "Prices", "indicators": []},
+            {"category": "Household", "subcategory": "Housing", "indicators": []},
+            {"category": "Household", "subcategory": "Confidence", "indicators": []},
+            {"category": "Business", "subcategory": "Income", "indicators": []},
+            {"category": "Business", "subcategory": "Investment", "indicators": []},
+            {"category": "Business", "subcategory": "Cost", "indicators": []},
+            {"category": "Business", "subcategory": "Debt", "indicators": []},
+            {"category": "Business", "subcategory": "Prices", "indicators": []},
+            {"category": "Business", "subcategory": "Production", "indicators": []},
+            {"category": "Business", "subcategory": "Confidence", "indicators": []},
+            {"category": "Government", "subcategory": "Budget", "indicators": []},
+            {"category": "Government", "subcategory": "Financing", "indicators": []},
+            {"category": "Government", "subcategory": "Debt", "indicators": []},
+        ],
+    )
+
+
+def _cross_dropdown_values() -> EconomicChartsDropdownValues:
+    """Cross-Region dropdown: like-to-like only; fixtures lack full coverage."""
+    return EconomicChartsDropdownValues(
+        categories=["Macroeconomics", "Household", "Business", "Government"],
+        locations=["United States", "France", "Japan", "Cross-Region"],
+        indicators_by_category_subcategory=[
+            {
+                "category": category,
+                "subcategory": subcategory,
+                "indicators": [],
+            }
+            for category, subcategory in _CHART_SLOTS
+        ],
+    )
 
 
 class EconomicChartsResponseContext(TypedDict):
@@ -29,10 +276,13 @@ class EconomicChartsResponseContext(TypedDict):
 
     region: str
     period_window: str
-    dropdown_values: _EconomicChartsDropdownValues
-    economic_data: list[_EconomicChartsData]
+    dropdown_values: EconomicChartsDropdownValues
+    economic_data: list[EconomicChartsData]
+    composition_panels: list
+    industry_profitability_panels: list
+    trade_ranking_panels: list
     categories: list[str]
-    selected_values: EconomicChartsFrontData
+    selected_values: dict[str, str]
 
 
 class TestResponse(Protocol):
@@ -56,15 +306,25 @@ def _context_as_str(context: Mapping[str, object], key: str, default: str) -> st
 
 def _get_response_context(response: TestResponse) -> EconomicChartsResponseContext:
     """Helper to extract and parse response context."""
+    # Usage of dict: Django template context values before JSON parsing.
     context: Mapping[str, object] = dict(response.context or {})
-    dropdown_values: _EconomicChartsDropdownValues = json.loads(
+    dropdown_values: EconomicChartsDropdownValues = json.loads(
         _context_as_str(context, "dropdown_values", "{}")
     )
-    economic_data: list[_EconomicChartsData] = json.loads(
+    economic_data: list[EconomicChartsData] = json.loads(
         _context_as_str(context, "economic_data", "[]")
     )
+    composition_panels: list = json.loads(
+        _context_as_str(context, "composition_panels", "[]")
+    )
+    industry_profitability_panels: list = json.loads(
+        _context_as_str(context, "industry_profitability_panels", "[]")
+    )
+    trade_ranking_panels: list = json.loads(
+        _context_as_str(context, "trade_ranking_panels", "[]")
+    )
     categories: list[str] = json.loads(_context_as_str(context, "categories", "[]"))
-    selected_values: EconomicChartsFrontData = json.loads(
+    selected_values: dict[str, str] = json.loads(
         _context_as_str(context, "selected_values", "{}")
     )
     return EconomicChartsResponseContext(
@@ -72,6 +332,9 @@ def _get_response_context(response: TestResponse) -> EconomicChartsResponseConte
         period_window=_context_as_str(context, "period_window", ""),
         dropdown_values=dropdown_values,
         economic_data=economic_data,
+        composition_panels=composition_panels,
+        industry_profitability_panels=industry_profitability_panels,
+        trade_ranking_panels=trade_ranking_panels,
         categories=categories,
         selected_values=selected_values,
     )
@@ -86,13 +349,13 @@ class TestEconomicChartsView(TestCase):
         self.client = Client()
         self.base_url = "/economic-charts/"
 
-        # Create US indicators
         self.indicator_us_growth = EconomicIndicatorInformationModel.objects.create(
             id=1,
             location=EconomicDataLocationChoices.US,
-            category=EconomicDataCategoryChoices.GROWTH,
-            type="GDP Growth",
-            name="US GDP Growth",
+            category=EconomicDataCategoryChoices.MACROECONOMICS,
+            subcategory=EconomicDataSubcategoryChoices.GROWTH,
+            series_label="GDP Growth",
+            full_name="US GDP Growth",
             technical_name="us_gdp_growth",
             frequency=EconomicPublicationFrequencyChoices.ANNUAL,
             source=EconomicDataSourceChoices.INSEE,
@@ -102,9 +365,10 @@ class TestEconomicChartsView(TestCase):
             EconomicIndicatorInformationModel.objects.create(
                 id=2,
                 location=EconomicDataLocationChoices.US,
-                category=EconomicDataCategoryChoices.GROWTH,
-                type="GDP Growth (QoQ)",
-                name="US GDP Growth (QoQ)",
+                category=EconomicDataCategoryChoices.MACROECONOMICS,
+                subcategory=EconomicDataSubcategoryChoices.GROWTH,
+                series_label="GDP Growth (QoQ)",
+                full_name="US GDP Growth (QoQ)",
                 technical_name="us_gdp_growth_qoq",
                 frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
                 source=EconomicDataSourceChoices.INSEE,
@@ -114,29 +378,28 @@ class TestEconomicChartsView(TestCase):
         self.indicator_us_inflation = EconomicIndicatorInformationModel.objects.create(
             id=3,
             location=EconomicDataLocationChoices.US,
-            category=EconomicDataCategoryChoices.INFLATION,
-            type="CPI",
-            name="US CPI",
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.PRICES,
+            series_label="CPI",
+            full_name="US CPI",
             technical_name="us_cpi",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
             ticker="001565532",
         )
-
-        # Create FR indicator
         self.indicator_fr = EconomicIndicatorInformationModel.objects.create(
             id=4,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.GROWTH,
-            type="GDP Growth",
-            name="FR GDP Growth",
+            category=EconomicDataCategoryChoices.MACROECONOMICS,
+            subcategory=EconomicDataSubcategoryChoices.GROWTH,
+            series_label="GDP Growth",
+            full_name="FR GDP Growth",
             technical_name="fr_gdp_growth",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
             source=EconomicDataSourceChoices.INSEE,
             ticker="001565533",
         )
 
-        # Create economic data
         self.period1 = date(2024, 1, 1)
         EconomicDataModel.objects.create(
             indicator=self.indicator_us_growth,
@@ -153,6 +416,11 @@ class TestEconomicChartsView(TestCase):
             period=date(2024, 1, 15),
             data_value=2.0,
         )
+        EconomicDataModel.objects.create(
+            indicator=self.indicator_fr,
+            period=date(2024, 4, 1),
+            data_value=1.2,
+        )
 
     def test_economic_charts_view_no_parameters(self):
         """
@@ -162,158 +430,16 @@ class TestEconomicChartsView(TestCase):
         """
         response = self.client.get(self.base_url)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "United States",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "GDP Growth",
-                                "name": "GDP Growth",
-                                "default_mode": "Raw",
-                            },
-                            {
-                                "type": "GDP Growth (QoQ)",
-                                "name": "GDP Growth (QoQ)",
-                                "default_mode": "Raw",
-                            },
-                        ],
-                    },
-                    {
-                        "category": "Inflation",
-                        "indicators": [
-                            {"type": "CPI", "name": "CPI", "default_mode": "Raw"}
-                        ],
-                    },
-                    {
-                        "category": "Government",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Production",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Sales",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Labour",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Housing",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Confidence",
-                        "indicators": [],
-                    },
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
-                "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "United States",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP|Raw",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw",
-                "eu_government_indicator": "DE|Government Debt (% of GDP)|Raw,ES|Government Debt (% of GDP)|Raw,IT|Government Debt (% of GDP)|Raw,FR|Government Debt (% of GDP)|Raw",
-                "eu_production_indicator": "DE|Industrial Production|Raw,ES|Industrial Production|Raw,IT|Industrial Production|Raw,FR|Industrial Production|Raw",
-                "eu_sales_indicator": "DE|Retail Sales|Raw,ES|Retail Sales|Raw,IT|Retail Sales|Raw,FR|Retail Sales|Raw",
-                "eu_labour_indicator": "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw",
-                "eu_housing_indicator": "DE|Home Prices|Raw,ES|Home Prices|Raw,IT|Home Prices|Raw,FR|Home Prices|Raw",
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+            "period_window": "10Y",
+            "dropdown_values": _us_dropdown_values(),
+            "economic_data": _empty_charts_payload(),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(),
         }
 
     def test_economic_charts_view_with_selected_indicator(self):
@@ -323,1141 +449,245 @@ class TestEconomicChartsView(TestCase):
         THEN selected indicator is in selected values and data is filtered
         """
         params = {
-            "region": str(EconomicDataLocationChoices.US.label),
-            "us_growth_indicator": "GDP Growth",
+            "region": EconomicDataLocationChoices.US.value,
+            "us_macroeconomics_growth_indicator": "GDP Growth",
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "United States",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "GDP Growth",
-                                "name": "GDP Growth",
-                                "default_mode": "Raw",
-                            },
-                            {
-                                "type": "GDP Growth (QoQ)",
-                                "name": "GDP Growth (QoQ)",
-                                "default_mode": "Raw",
-                            },
-                        ],
-                    },
-                    {
-                        "category": "Inflation",
-                        "indicators": [
-                            {"type": "CPI", "name": "CPI", "default_mode": "Raw"}
-                        ],
-                    },
-                    {
-                        "category": "Government",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Production",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Sales",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Labour",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Housing",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Confidence",
-                        "indicators": [],
-                    },
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [
-                        {
-                            "period": "2024",
-                            "data_value": 2.5,
-                            "indicator_name": "GDP Growth",
-                        }
-                    ],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
+            "period_window": "10Y",
+            "dropdown_values": _us_dropdown_values(),
+            "economic_data": _charts_payload_with_slot(
+                "Macroeconomics",
                 "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "United States",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP Growth",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw",
-                "eu_government_indicator": "DE|Government Debt (% of GDP)|Raw,ES|Government Debt (% of GDP)|Raw,IT|Government Debt (% of GDP)|Raw,FR|Government Debt (% of GDP)|Raw",
-                "eu_production_indicator": "DE|Industrial Production|Raw,ES|Industrial Production|Raw,IT|Industrial Production|Raw,FR|Industrial Production|Raw",
-                "eu_sales_indicator": "DE|Retail Sales|Raw,ES|Retail Sales|Raw,IT|Retail Sales|Raw,FR|Retail Sales|Raw",
-                "eu_labour_indicator": "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw",
-                "eu_housing_indicator": "DE|Home Prices|Raw,ES|Home Prices|Raw,IT|Home Prices|Raw,FR|Home Prices|Raw",
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+                [
+                    {
+                        "period": "2024",
+                        "data_value": 2.5,
+                        "indicator_name": "GDP Growth",
+                        "unit_label": "",
+                    }
+                ],
+            ),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(
+                overrides={"us_macroeconomics_growth_indicator": "GDP Growth"}
+            ),
         }
 
     def test_economic_charts_view_with_multiple_selected_indicators(self):
         """
-        GIVEN multiple selected indicators (comma-separated)
+        GIVEN multiple selected growth indicators
         WHEN accessing economic charts view
-        THEN all selected indicators are preserved
+        THEN both series appear in the growth chart payload
         """
         params = {
-            "region": str(EconomicDataLocationChoices.US.label),
-            "us_growth_indicator": "GDP Growth,GDP Growth (QoQ)",
+            "region": EconomicDataLocationChoices.US.value,
+            "us_macroeconomics_growth_indicator": "GDP Growth,GDP Growth (QoQ)",
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "United States",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "GDP Growth",
-                                "name": "GDP Growth",
-                                "default_mode": "Raw",
-                            },
-                            {
-                                "type": "GDP Growth (QoQ)",
-                                "name": "GDP Growth (QoQ)",
-                                "default_mode": "Raw",
-                            },
-                        ],
-                    },
-                    {
-                        "category": "Inflation",
-                        "indicators": [
-                            {"type": "CPI", "name": "CPI", "default_mode": "Raw"}
-                        ],
-                    },
-                    {
-                        "category": "Government",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Production",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Sales",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Labour",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Housing",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Confidence",
-                        "indicators": [],
-                    },
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [
-                        {
-                            "period": "2024Q1",
-                            "data_value": 0.5,
-                            "indicator_name": "GDP Growth (QoQ)",
-                        },
-                        {
-                            "period": "2024",
-                            "data_value": 2.5,
-                            "indicator_name": "GDP Growth",
-                        },
-                    ],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
+            "period_window": "10Y",
+            "dropdown_values": _us_dropdown_values(),
+            "economic_data": _charts_payload_with_slot(
+                "Macroeconomics",
                 "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "United States",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP Growth,GDP Growth (QoQ)",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw",
-                "eu_government_indicator": "DE|Government Debt (% of GDP)|Raw,ES|Government Debt (% of GDP)|Raw,IT|Government Debt (% of GDP)|Raw,FR|Government Debt (% of GDP)|Raw",
-                "eu_production_indicator": "DE|Industrial Production|Raw,ES|Industrial Production|Raw,IT|Industrial Production|Raw,FR|Industrial Production|Raw",
-                "eu_sales_indicator": "DE|Retail Sales|Raw,ES|Retail Sales|Raw,IT|Retail Sales|Raw,FR|Retail Sales|Raw",
-                "eu_labour_indicator": "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw",
-                "eu_housing_indicator": "DE|Home Prices|Raw,ES|Home Prices|Raw,IT|Home Prices|Raw,FR|Home Prices|Raw",
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+                [
+                    {
+                        "period": "2024Q1",
+                        "data_value": 0.5,
+                        "indicator_name": "GDP Growth (QoQ)",
+                        "unit_label": "",
+                    },
+                    {
+                        "period": "2024",
+                        "data_value": 2.5,
+                        "indicator_name": "GDP Growth",
+                        "unit_label": "",
+                    },
+                ],
+            ),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(
+                overrides={
+                    "us_macroeconomics_growth_indicator": "GDP Growth,GDP Growth (QoQ)"
+                }
+            ),
         }
 
     def test_economic_charts_view_fr_region_with_fr_data(self):
         """
-        GIVEN FR region with FR data created
+        GIVEN France region and a selected FR growth indicator
         WHEN accessing economic charts view
-        THEN FR indicators data is returned
+        THEN France dropdown/data are returned
         """
-        # Create data for FR indicator
-        EconomicDataModel.objects.create(
-            indicator=self.indicator_fr,
-            period=self.period1,
-            data_value=1.5,
-        )
-
         params = {
-            "region": str(EconomicDataLocationChoices.FR.label),
-            "fr_growth_indicator": "GDP Growth",
+            "region": EconomicDataLocationChoices.FR.value,
+            "fr_macroeconomics_growth_indicator": "GDP Growth",
         }
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "France",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "GDP Growth",
-                                "name": "GDP Growth",
-                                "default_mode": "Raw",
-                            }
-                        ],
-                    },
-                    {
-                        "category": "Inflation",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Government",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Production",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Sales",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Labour",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Housing",
-                        "indicators": [],
-                    },
-                    {
-                        "category": "Confidence",
-                        "indicators": [],
-                    },
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [
-                        {
-                            "period": "2024Q1",
-                            "data_value": 1.5,
-                            "indicator_name": "GDP Growth",
-                        }
-                    ],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
+            "period_window": "10Y",
+            "dropdown_values": _fr_dropdown_values(),
+            "economic_data": _charts_payload_with_slot(
+                "Macroeconomics",
                 "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "France",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP|Raw",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw",
-                "eu_government_indicator": "DE|Government Debt (% of GDP)|Raw,ES|Government Debt (% of GDP)|Raw,IT|Government Debt (% of GDP)|Raw,FR|Government Debt (% of GDP)|Raw",
-                "eu_production_indicator": "DE|Industrial Production|Raw,ES|Industrial Production|Raw,IT|Industrial Production|Raw,FR|Industrial Production|Raw",
-                "eu_sales_indicator": "DE|Retail Sales|Raw,ES|Retail Sales|Raw,IT|Retail Sales|Raw,FR|Retail Sales|Raw",
-                "eu_labour_indicator": "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw",
-                "eu_housing_indicator": "DE|Home Prices|Raw,ES|Home Prices|Raw,IT|Home Prices|Raw,FR|Home Prices|Raw",
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP Growth",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+                [
+                    {
+                        "period": "2024Q2",
+                        "data_value": 1.2,
+                        "indicator_name": "GDP Growth",
+                        "unit_label": "",
+                    }
+                ],
+            ),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(
+                region="FR",
+                overrides={"fr_macroeconomics_growth_indicator": "GDP Growth"},
+            ),
         }
 
     def test_economic_charts_view_fr_defaults_and_period_window(self):
         """
-        GIVEN France region with no indicator query params
-        WHEN accessing economic charts view
-        THEN FR Type|MODE defaults and period_window 5Y are applied
+        GIVEN France region and a custom period window
+        WHEN accessing economic charts view with no indicator selection
+        THEN empty chart slots are returned for the requested window
         """
-        response = self.client.get(
-            self.base_url, {"region": str(EconomicDataLocationChoices.FR.label)}
-        )
+        params = {
+            "region": EconomicDataLocationChoices.FR.value,
+            "period_window": "1Y",
+        }
+        response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "France",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "GDP Growth",
-                                "name": "GDP Growth",
-                                "default_mode": "Raw",
-                            }
-                        ],
-                    },
-                    {"category": "Inflation", "indicators": []},
-                    {"category": "Government", "indicators": []},
-                    {"category": "Production", "indicators": []},
-                    {"category": "Sales", "indicators": []},
-                    {"category": "Labour", "indicators": []},
-                    {"category": "Housing", "indicators": []},
-                    {"category": "Confidence", "indicators": []},
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
-                "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "France",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP|Raw",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": (
-                    "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,"
-                    "IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw"
-                ),
-                "eu_government_indicator": (
-                    "DE|Government Debt (% of GDP)|Raw,"
-                    "ES|Government Debt (% of GDP)|Raw,"
-                    "IT|Government Debt (% of GDP)|Raw,"
-                    "FR|Government Debt (% of GDP)|Raw"
-                ),
-                "eu_production_indicator": (
-                    "DE|Industrial Production|Raw,ES|Industrial Production|Raw,"
-                    "IT|Industrial Production|Raw,FR|Industrial Production|Raw"
-                ),
-                "eu_sales_indicator": (
-                    "DE|Retail Sales|Raw,ES|Retail Sales|Raw,"
-                    "IT|Retail Sales|Raw,FR|Retail Sales|Raw"
-                ),
-                "eu_labour_indicator": (
-                    "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,"
-                    "IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw"
-                ),
-                "eu_housing_indicator": (
-                    "DE|Home Prices|Raw,ES|Home Prices|Raw,"
-                    "IT|Home Prices|Raw,FR|Home Prices|Raw"
-                ),
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+            "period_window": "1Y",
+            "dropdown_values": _fr_dropdown_values(),
+            "economic_data": _empty_charts_payload(),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(region="FR", period_window="1Y"),
         }
 
     def test_economic_charts_view_us_defaults(self):
         """
-        GIVEN United States region with no indicator query params
+        GIVEN United States region with no indicator overrides
         WHEN accessing economic charts view
-        THEN US Type|MODE defaults match the shared category stack
+        THEN US dropdown/empty charts are returned
         """
-        response = self.client.get(
-            self.base_url, {"region": str(EconomicDataLocationChoices.US.label)}
-        )
+        params = {"region": EconomicDataLocationChoices.US.value}
+        response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "United States",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "GDP Growth",
-                                "name": "GDP Growth",
-                                "default_mode": "Raw",
-                            },
-                            {
-                                "type": "GDP Growth (QoQ)",
-                                "name": "GDP Growth (QoQ)",
-                                "default_mode": "Raw",
-                            },
-                        ],
-                    },
-                    {
-                        "category": "Inflation",
-                        "indicators": [
-                            {"type": "CPI", "name": "CPI", "default_mode": "Raw"}
-                        ],
-                    },
-                    {"category": "Government", "indicators": []},
-                    {"category": "Production", "indicators": []},
-                    {"category": "Sales", "indicators": []},
-                    {"category": "Labour", "indicators": []},
-                    {"category": "Housing", "indicators": []},
-                    {"category": "Confidence", "indicators": []},
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
-                "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "United States",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP|Raw",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": (
-                    "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,"
-                    "IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw"
-                ),
-                "eu_government_indicator": (
-                    "DE|Government Debt (% of GDP)|Raw,"
-                    "ES|Government Debt (% of GDP)|Raw,"
-                    "IT|Government Debt (% of GDP)|Raw,"
-                    "FR|Government Debt (% of GDP)|Raw"
-                ),
-                "eu_production_indicator": (
-                    "DE|Industrial Production|Raw,ES|Industrial Production|Raw,"
-                    "IT|Industrial Production|Raw,FR|Industrial Production|Raw"
-                ),
-                "eu_sales_indicator": (
-                    "DE|Retail Sales|Raw,ES|Retail Sales|Raw,"
-                    "IT|Retail Sales|Raw,FR|Retail Sales|Raw"
-                ),
-                "eu_labour_indicator": (
-                    "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,"
-                    "IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw"
-                ),
-                "eu_housing_indicator": (
-                    "DE|Home Prices|Raw,ES|Home Prices|Raw,"
-                    "IT|Home Prices|Raw,FR|Home Prices|Raw"
-                ),
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+            "period_window": "10Y",
+            "dropdown_values": _us_dropdown_values(),
+            "economic_data": _empty_charts_payload(),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(),
         }
 
     def test_economic_charts_view_jp_defaults(self):
         """
-        GIVEN Japan region with no indicator query params
+        GIVEN Japan region with no Japan-specific indicators seeded
         WHEN accessing economic charts view
-        THEN JP Type|MODE defaults match the shared category stack
+        THEN empty dropdown slots and chart payloads are returned
         """
-        response = self.client.get(
-            self.base_url, {"region": str(EconomicDataLocationChoices.JP.label)}
-        )
+        params = {"region": EconomicDataLocationChoices.JP.value}
+        response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
+        assert _get_response_context(response) == {
             "region": "Japan",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
+            "period_window": "10Y",
+            "dropdown_values": EconomicChartsDropdownValues(
+                categories=["Macroeconomics", "Household", "Business", "Government"],
+                locations=["United States", "France", "Japan", "Cross-Region"],
+                indicators_by_category_subcategory=[
+                    {
+                        "category": category,
+                        "subcategory": subcategory,
+                        "indicators": [],
+                    }
+                    for category, subcategory in _CHART_SLOTS
                 ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
-                    {"category": "Growth", "indicators": []},
-                    {"category": "Inflation", "indicators": []},
-                    {"category": "Government", "indicators": []},
-                    {"category": "Production", "indicators": []},
-                    {"category": "Sales", "indicators": []},
-                    {"category": "Labour", "indicators": []},
-                    {"category": "Housing", "indicators": []},
-                    {"category": "Confidence", "indicators": []},
-                ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
-                "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "Japan",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP|Raw",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": (
-                    "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,"
-                    "IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw"
-                ),
-                "eu_government_indicator": (
-                    "DE|Government Debt (% of GDP)|Raw,"
-                    "ES|Government Debt (% of GDP)|Raw,"
-                    "IT|Government Debt (% of GDP)|Raw,"
-                    "FR|Government Debt (% of GDP)|Raw"
-                ),
-                "eu_production_indicator": (
-                    "DE|Industrial Production|Raw,ES|Industrial Production|Raw,"
-                    "IT|Industrial Production|Raw,FR|Industrial Production|Raw"
-                ),
-                "eu_sales_indicator": (
-                    "DE|Retail Sales|Raw,ES|Retail Sales|Raw,"
-                    "IT|Retail Sales|Raw,FR|Retail Sales|Raw"
-                ),
-                "eu_labour_indicator": (
-                    "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,"
-                    "IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw"
-                ),
-                "eu_housing_indicator": (
-                    "DE|Home Prices|Raw,ES|Home Prices|Raw,"
-                    "IT|Home Prices|Raw,FR|Home Prices|Raw"
-                ),
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+            ),
+            "economic_data": _empty_charts_payload(),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(region="JP"),
         }
 
-    def test_economic_charts_view_eu_defaults(self):
+    def test_economic_charts_view_japan_display_label_region_param(self):
         """
-        GIVEN Europe region with no indicator query params
+        GIVEN region query param set to the Japan display label
         WHEN accessing economic charts view
-        THEN EU defaults are DE/ES/IT/FR Location|Type|MODE curves (no confidence)
+        THEN Japan charts load and selected_values keep the JP wire code
         """
-        response = self.client.get(
-            self.base_url, {"region": str(EconomicDataLocationChoices.EU.label)}
-        )
+        params = {"region": "Japan"}
+        response = self.client.get(self.base_url, params)
         assert response.status_code == 200
-        response_context = _get_response_context(response)
-        assert response_context == {
-            "region": "Europe",
-            "period_window": "5Y",
-            "dropdown_values": {
-                "categories": [
-                    "Growth",
-                    "Inflation",
-                    "Government",
-                    "Production",
-                    "Sales",
-                    "Labour",
-                    "Housing",
-                    "Confidence",
-                ],
-                "locations": ["United States", "Europe", "France", "Japan"],
-                "indicators_by_category": [
+        assert _get_response_context(response) == {
+            "region": "Japan",
+            "period_window": "10Y",
+            "dropdown_values": EconomicChartsDropdownValues(
+                categories=["Macroeconomics", "Household", "Business", "Government"],
+                locations=["United States", "France", "Japan", "Cross-Region"],
+                indicators_by_category_subcategory=[
                     {
-                        "category": "Growth",
-                        "indicators": [
-                            {
-                                "type": "FR|GDP Growth",
-                                "name": "France — GDP Growth",
-                                "default_mode": "Raw",
-                            }
-                        ],
-                    },
-                    {"category": "Inflation", "indicators": []},
-                    {"category": "Government", "indicators": []},
-                    {"category": "Production", "indicators": []},
-                    {"category": "Sales", "indicators": []},
-                    {"category": "Labour", "indicators": []},
-                    {"category": "Housing", "indicators": []},
-                    {"category": "Confidence", "indicators": []},
+                        "category": category,
+                        "subcategory": subcategory,
+                        "indicators": [],
+                    }
+                    for category, subcategory in _CHART_SLOTS
                 ],
-            },
-            "economic_data": [
-                {
-                    "category": "Growth",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Inflation",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Government",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Production",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Sales",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Labour",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Housing",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-                {
-                    "category": "Confidence",
-                    "category_data": [],
-                    "value_axis_label": "Data Value",
-                },
-            ],
-            "categories": [
-                "Growth",
-                "Inflation",
-                "Government",
-                "Production",
-                "Sales",
-                "Labour",
-                "Housing",
-                "Confidence",
-            ],
-            "selected_values": {
-                "region": "Europe",
-                "period_window": "5Y",
-                "us_growth_indicator": "GDP|Raw",
-                "us_inflation_indicator": "Consumer Price Index|Raw",
-                "us_government_indicator": "Government Debt (% of GDP)|Raw",
-                "us_production_indicator": "Industrial Production|Raw",
-                "us_sales_indicator": "Retail Sales|Raw",
-                "us_labour_indicator": "Unemployment Rate|Raw",
-                "us_housing_indicator": "Home Prices|Raw",
-                "us_confidence_indicator": "Consumer Confidence|Raw",
-                "eu_growth_indicator": "DE|GDP|Raw,ES|GDP|Raw,IT|GDP|Raw,FR|GDP|Raw",
-                "eu_inflation_indicator": (
-                    "DE|Consumer Price Index|Raw,ES|Consumer Price Index|Raw,"
-                    "IT|Consumer Price Index|Raw,FR|Consumer Price Index|Raw"
-                ),
-                "eu_government_indicator": (
-                    "DE|Government Debt (% of GDP)|Raw,"
-                    "ES|Government Debt (% of GDP)|Raw,"
-                    "IT|Government Debt (% of GDP)|Raw,"
-                    "FR|Government Debt (% of GDP)|Raw"
-                ),
-                "eu_production_indicator": (
-                    "DE|Industrial Production|Raw,ES|Industrial Production|Raw,"
-                    "IT|Industrial Production|Raw,FR|Industrial Production|Raw"
-                ),
-                "eu_sales_indicator": (
-                    "DE|Retail Sales|Raw,ES|Retail Sales|Raw,"
-                    "IT|Retail Sales|Raw,FR|Retail Sales|Raw"
-                ),
-                "eu_labour_indicator": (
-                    "DE|Unemployment Rate|Raw,ES|Unemployment Rate|Raw,"
-                    "IT|Unemployment Rate|Raw,FR|Unemployment Rate|Raw"
-                ),
-                "eu_housing_indicator": (
-                    "DE|Home Prices|Raw,ES|Home Prices|Raw,"
-                    "IT|Home Prices|Raw,FR|Home Prices|Raw"
-                ),
-                "eu_confidence_indicator": "",
-                "fr_growth_indicator": "GDP|Raw",
-                "fr_inflation_indicator": "Consumer Price Index|Raw",
-                "fr_government_indicator": "Government Debt (% of GDP)|Raw",
-                "fr_production_indicator": "Industrial Production|Raw",
-                "fr_sales_indicator": "Retail Sales|Raw",
-                "fr_labour_indicator": "Unemployment Rate|Raw",
-                "fr_housing_indicator": "Home Prices|Raw",
-                "fr_confidence_indicator": "Aggregate Business Confidence|Raw",
-                "jp_growth_indicator": "GDP|Raw",
-                "jp_inflation_indicator": "Consumer Price Index|Raw",
-                "jp_government_indicator": "Government Debt (% of GDP)|Raw",
-                "jp_production_indicator": "Industrial Production|Raw",
-                "jp_sales_indicator": "Retail Sales|Raw",
-                "jp_labour_indicator": "Unemployment Rate|Raw",
-                "jp_housing_indicator": "Home Prices|Raw",
-                "jp_confidence_indicator": "Manufacturing Business Confidence|Raw",
-            },
+            ),
+            "economic_data": _empty_charts_payload(),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(region="JP"),
+        }
+
+    def test_economic_charts_view_cross_defaults(self):
+        """
+        GIVEN Cross-Region region
+        WHEN accessing economic charts view
+        THEN EU country curves appear in the growth dropdown
+        """
+        params = {"region": "Cross-Region"}
+        response = self.client.get(self.base_url, params)
+        assert response.status_code == 200
+        assert _get_response_context(response) == {
+            "region": "Cross-Region",
+            "period_window": "10Y",
+            "dropdown_values": _cross_dropdown_values(),
+            "economic_data": _empty_charts_payload(),
+            "composition_panels": [],
+            "industry_profitability_panels": [],
+            "trade_ranking_panels": [],
+            "categories": ["Macroeconomics", "Household", "Business", "Government"],
+            "selected_values": _empty_selected_values(region="Cross-Region"),
         }

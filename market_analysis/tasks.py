@@ -1,19 +1,21 @@
 """Celery entry points that queue or run the daily market-analysis pipeline."""
 
+import logging
 from datetime import date
 
 from celery import shared_task
 
-from core.services import logger
 from market_analysis.services import market_analysis
 from market_analysis.services.market_analysis import MarketAnalysisResult
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
 def scheduled_analysis_pipeline(
     reporting_date: str, force: bool = False
 ) -> MarketAnalysisResult:
-    """Collect news into memory, analyze, and persist daily recap with market data.
+    """Collect news into memory, analyze, and save daily recap with market data.
 
     Articles are not stored. Skips when a recap already exists (unless force).
     Queued after successful price ingestion.

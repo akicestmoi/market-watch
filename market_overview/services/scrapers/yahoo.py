@@ -5,7 +5,7 @@ from datetime import date
 import yfinance as yf
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.scrapers.common import ScrapingResult
 
 

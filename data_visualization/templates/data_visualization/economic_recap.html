@@ -15,66 +15,183 @@
     {% include "data_visualization/_navbar.html" %}
 
     <div class="economic-table-card">
-        <h2>Economic Data</h2>
+        <div class="economic-recap-header">
+            <h2>Economic Data</h2>
+            <div class="economic-recap-header-controls">
+                <div class="recap-control-card" aria-label="Economic recap as-of period" title="Which period Current covers">
+                    <div class="recap-control-card-header">
+                        <span class="recap-control-card-title">As of</span>
+                    </div>
+                    <div class="recap-control-card-body as-of-toolbar">
+                        <label class="as-of-field">
+                            <span class="as-of-field-label">Year</span>
+                            <select id="as-of-year" class="as-of-select" aria-label="As-of year">
+                                <option value="">—</option>
+                                {% for year in as_of_years %}
+                                <option value="{{ year }}"{% if as_of_year == year %} selected{% endif %}{% if year not in as_of_available_years %} disabled{% endif %}>{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="as-of-field">
+                            <span class="as-of-field-label">Quarter</span>
+                            <select id="as-of-quarter" class="as-of-select" aria-label="As-of quarter"
+                                    {% if not as_of_year %}disabled{% endif %}>
+                                <option value="">—</option>
+                                {% for quarter in "1234" %}
+                                <option value="{{ quarter }}"{% if as_of_quarter == quarter|add:0 %} selected{% endif %}{% if not as_of_year or quarter|add:0 not in as_of_available_quarters %} disabled{% endif %}>Q{{ quarter }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="as-of-field">
+                            <span class="as-of-field-label">Month</span>
+                            <select id="as-of-month" class="as-of-select" aria-label="As-of month"
+                                    {% if not as_of_year %}disabled{% endif %}>
+                                <option value="">—</option>
+                                {% for month_choice in as_of_month_choices %}
+                                <option value="{{ month_choice.value }}"{% if as_of_month_display == month_choice.value %} selected{% endif %}{% if as_of_year and month_choice.value not in as_of_available_months %} disabled{% endif %}>{{ month_choice.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <button type="button"
+                                id="as-of-latest"
+                                class="as-of-latest-btn{% if not as_of_year %} active{% endif %}">Latest</button>
+                    </div>
+                </div>
+                <div class="recap-control-card" aria-label="Economic recap comparison" title="Where Previous comes from">
+                    <div class="recap-control-card-header">
+                        <span class="recap-control-card-title">Comparison</span>
+                    </div>
+                    <div class="recap-control-card-body">
+                        <label class="as-of-field">
+                            <span class="as-of-field-label">Horizon</span>
+                            <select id="recap-comparison" class="as-of-select" aria-label="Comparison horizon">
+                                <option value="Latest"{% if comparison == "Latest" or not comparison %} selected{% endif %}>Latest</option>
+                                <option value="Year"{% if comparison == "Year" %} selected{% endif %}>Year</option>
+                                <option value="Quarter"{% if comparison == "Quarter" %} selected{% endif %}>Quarter</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="recap-control-card" aria-label="Economic recap region" title="Which economy">
+                    <div class="recap-control-card-header">
+                        <span class="recap-control-card-title">Region</span>
+                    </div>
+                    <div class="recap-control-card-body region-section">
+                        <div class="region-buttons" role="group" aria-label="Economic recap region">
+                            {% for region in regions %}
+                            <a href="?region={{ region }}{% if as_of_query %}&amp;{{ as_of_query }}{% endif %}"
+                              class="region-btn{% if region == selected_region %} active{% endif %}"
+                              data-region="{{ region }}"
+                              {% if region == selected_region %}aria-current="page"{% endif %}>{{ region }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="economic-table-scroll">
             <table>
                 <colgroup>
                     <col class="col-category">
+                    <col class="col-subcategory">
                     <col class="col-name">
                     <col class="col-mode">
-                    {% for loc in locations %}
                     <col class="col-metric">
                     <col class="col-metric">
                     <col class="col-metric">
                     <col class="col-metric-period">
-                    {% endfor %}
+                    <col class="col-source">
                 </colgroup>
                 <thead>
                     <tr class="thead-primary">
-                        <th rowspan="2" class="col-category">Category</th>
-                        <th rowspan="2" colspan="2" class="col-name-header">Name</th>
-                        {% for loc in locations %}
-                        <th colspan="4" class="loc-group-header{% if not forloop.first %} location-separator{% endif %}">{{ loc }}</th>
-                        {% endfor %}
-                    </tr>
-                    <tr class="thead-secondary">
-                        {% for loc in locations %}
-                        <th class="col-current{% if not forloop.first %} location-separator{% endif %}">Current</th>
+                        <th class="col-category">Category</th>
+                        <th class="col-subcategory">Subcategory</th>
+                        <th colspan="2" class="col-name-header">Name</th>
+                        <th class="col-current">Current</th>
                         <th class="col-previous">Previous</th>
                         <th class="col-change">Change</th>
                         <th class="col-period">Period</th>
-                        {% endfor %}
+                        <th class="col-source-header">Source</th>
+                    </tr>
+                    {# Full-width sticky rule — one cell so column borders cannot cut it. #}
+                    <tr class="thead-rule-row" aria-hidden="true">
+                        <th colspan="9" class="thead-rule-cell"></th>
                     </tr>
                 </thead>
 
                 <tbody>
                     {% for category_group in economic_data %}
-                    {% regroup category_group.entries by name as name_groups %}
+                    {% for subcategory_group in category_group.subcategories %}
+                    {% regroup subcategory_group.entries by name as name_groups %}
 
                     {% for name_group in name_groups %}
                     {% with first_record=name_group.list.0 %}
-                    <tr class="indicator-row{% if forloop.last %} category-last-row{% endif %}"
+                    <tr class="indicator-row{% if first_record.parent_series_label %} indicator-child-row is-collapsed{% endif %}{% if forloop.last and forloop.parentloop.last %} category-last-row{% elif forloop.last %} subcategory-last-row{% endif %}"
                         data-indicator-name="{{ name_group.grouper }}"
                         data-category="{{ category_group.category }}"
-                        data-default-mode="{{ first_record.default_mode|default:'Raw' }}">
+                        data-subcategory="{{ subcategory_group.subcategory }}"
+                        data-default-mode="{% if name_group.grouper == 'Output Gap' or name_group.grouper == 'Estimated Annual GDP Growth' or name_group.grouper == 'Unemployment Rate' or name_group.grouper == 'INSEE Quarterly Unemployment Rate' %}Raw{% else %}{{ first_record.default_mode|default:'Raw' }}{% endif %}"
+                        data-parent-series-label="{{ first_record.parent_series_label|default:'' }}"
+                        data-expansion-relation="{{ first_record.expansion_relation|default:'' }}"
+                        data-measure-type="{{ first_record.measure_type|default:'' }}"
+                        {% if first_record.parent_series_label %}data-expand-depth="1" style="--expand-depth: 1;"{% endif %}>
+                        {% if forloop.parentloop.first and forloop.first %}
+                        <td rowspan="{{ category_group.indicator_row_count }}" class="category-cell">{{ category_group.category.value }}</td>
+                        {% endif %}
                         {% if forloop.first %}
-                        <td rowspan="{{ name_groups|length }}" class="category-cell">{{ category_group.category }}</td>
+                        <td rowspan="{{ subcategory_group.indicator_row_count }}" class="subcategory-cell">{{ subcategory_group.subcategory.label }}</td>
                         {% endif %}
 
-                        <td class="name-cell" data-base-name="{{ name_group.grouper }}">{{ name_group.grouper }}</td>
+                        <td class="name-cell" data-base-name="{{ name_group.grouper }}">
+                            <button type="button" class="expand-toggle" data-expand-parent="{{ name_group.grouper }}" aria-expanded="false" hidden>+</button>
+                            <span class="name-text">{{ name_group.grouper }}</span>
+                        </td>
                         <td class="mode-cell">
+                            {% if name_group.grouper == 'Output Gap' or name_group.grouper == 'Estimated Annual GDP Growth' or name_group.grouper == 'Unemployment Rate' or name_group.grouper == 'INSEE Quarterly Unemployment Rate' or name_group.grouper == 'Annual Government Expenditures' or name_group.grouper == 'General Public Services' or name_group.grouper == 'Defence' or name_group.grouper == 'Public Order and Safety' or name_group.grouper == 'Economic Affairs' or name_group.grouper == 'Environmental Protection' or name_group.grouper == 'Housing and Community Amenities' or name_group.grouper == 'Health' or name_group.grouper == 'Recreation, Culture and Religion' or name_group.grouper == 'Education' or name_group.grouper == 'Social Protection' or name_group.grouper == 'General Public Service' or name_group.grouper == 'National Defense' or name_group.grouper == 'Housing and Community Services' or name_group.grouper == 'Recreation and Culture' or name_group.grouper == 'Income Security' %}
+                            {# Fixed-mode series — no mode control (Raw / vsGDP / Rel YoY). #}
+                            {% elif first_record.expansion_relation == 'COMPONENT' %}
                             <select class="recap-mode-select" aria-label="Display for {{ name_group.grouper }}">
-                                <option value="Raw">Abs</option>
-                                <option value="Quarter">QoQ</option>
-                                <option value="Annualized Quarter">QoQy</option>
-                                <option value="Annual">YoY</option>
+                                {% if first_record.supports_vs_gdp %}<option value="vsGDP">vsGDP</option>{% endif %}
+                                {% if first_record.measure_type == 'FLOW' or first_record.measure_type == 'DERIVED' %}
+                                <option value="YTDvsGDP">YTDvsGDP</option>
+                                <option value="YTDRaw">YTDRaw</option>
+                                <option value="YTDYoY">YTDYoY</option>
+                                <option value="YTDRelQoQ">YTDRelQoQ</option>
+                                <option value="YTDRelYoY">YTDRelYoY</option>
+                                <option value="YTDContrQoQ">YTDContrQoQ</option>
+                                <option value="YTDContrYoY">YTDContrYoY</option>
+                                {% endif %}
+                                <option value="Raw">Raw</option>
+                                {% if first_record.frequency == 'MONTHLY' %}<option value="MoM">MoM</option>{% endif %}
+                                <option value="QoQ">QoQ</option>
+                                <option value="QoQy">QoQy</option>
+                                <option value="YoY">YoY</option>
+                                <option value="Rel QoQ">Rel QoQ</option>
+                                <option value="Rel YoY">Rel YoY</option>
+                                <option value="Contr QoQ">Contr QoQ</option>
+                                <option value="Contr YoY">Contr YoY</option>
                             </select>
+                            {% else %}
+                            <select class="recap-mode-select" aria-label="Display for {{ name_group.grouper }}">
+                                {% if first_record.supports_vs_gdp %}<option value="vsGDP">vsGDP</option>{% endif %}
+                                {% if first_record.measure_type == 'FLOW' or first_record.measure_type == 'DERIVED' %}
+                                <option value="YTDvsGDP">YTDvsGDP</option>
+                                <option value="YTDRaw">YTDRaw</option>
+                                <option value="YTDYoY">YTDYoY</option>
+                                {% endif %}
+                                <option value="Raw">Raw</option>
+                                {% if first_record.frequency == 'MONTHLY' %}<option value="MoM">MoM</option>{% endif %}
+                                <option value="QoQ">QoQ</option>
+                                <option value="QoQy">QoQy</option>
+                                <option value="YoY">YoY</option>
+                            </select>
+                            {% endif %}
                         </td>
 
                         {% for location in locations %}
                         {% for record in name_group.list %}
                         {% if record.location == location %}
-                        <td class="loc-curr{% if location != locations.0 %} location-separator{% endif %}"
+                        <td class="loc-curr"
                             data-location="{{ location }}">
                             <span class="{% if record.current is None %}empty-data{% endif %}">
                                 {{ record.current|default:"—" }}
@@ -99,18 +216,32 @@
                         {% endif %}
                         {% endfor %}
                         {% endfor %}
+                        <td class="source-cell"></td>
                     </tr>
                     {% endwith %}
                     {% endfor %}
                     {% endfor %}
+                    {% endfor %}
                 </tbody>
             </table>
+            <p class="recap-mode-legend">
+                <em>Raw: raw values for the period.
+                MoM / QoQ / YoY: percent change vs one month / one quarter / one year earlier; QoQy annualises the QoQ change.
+                vsGDP: raw outstanding ÷ matching-price-basis GDP × 100 (nominal÷nominal or real÷real).
+                Rel QoQ / Rel YoY: child ÷ parent × 100; Previous value is that share one quarter / one year earlier.
+                Contr QoQ / Contr YoY: (child<sub>t</sub> − child<sub>t−lag</sub>) ÷ |parent<sub>t−lag</sub>| × 100 (pp of the parent's previous level).
+                YTDRel / YTDContr: same Rel / Contr math on calendar year-to-date sums of child and parent.</em>
+            </p>
         </div>
     </div>
 
+    <div id="indicator-info-bubble" class="indicator-info-bubble" hidden aria-hidden="true"></div>
+
     <script>
         window.economicRecapDataJSON = {{ economic_data_json|safe }};
+        window.economicRecapNominalGdpJSON = {{ nominal_gdp_json|safe }};
         window.economicRecapLocationsJSON = {{ locations_json|safe }};
+        window.economicRecapAsOfJSON = {{ as_of_json|safe }};
     </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>
     {% if error_messages %}

@@ -1,0 +1,16 @@
+{
+  "STATUS": 200,
+  "MESSAGE": "Successfully completed",
+  "RESULTSET": [
+    {
+      "SERIES_CODE": "PRCG20_2200000000",
+      "NAME_OF_TIME_SERIES": "[Producer Price Index] All commodities",
+      "UNIT": "CY2020 average=100",
+      "FREQUENCY": "MONTHLY",
+      "VALUES": {
+        "SURVEY_DATES": [202507, 202508, 202509, 202510, 202511, 202512],
+        "VALUES": [126.7, 126.5, 127.1, 127.7, 128.1, 128.2]
+      }
+    }
+  ]
+}

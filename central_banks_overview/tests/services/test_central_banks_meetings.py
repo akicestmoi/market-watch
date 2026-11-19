@@ -14,7 +14,7 @@ from central_banks_overview.models import (
     CentralBankMeetingStatusChoices,
 )
 from central_banks_overview.services.central_banks_meetings import (
-    _CentralBankMeetingDates,
+    CentralBankMeetingDates,
     get_central_bank_meeting_dates,
     get_central_bank_next_meeting_date,
     has_past_meeting,
@@ -74,11 +74,11 @@ class TestCentralBankMeetingsServices(TestCase):
         """
         result = get_central_bank_meeting_dates()
         assert result == [
-            _CentralBankMeetingDates(
+            CentralBankMeetingDates(
                 central_bank=CentralBankChoices.ECB,
                 meeting_dates=[self.test_date_3],
             ),
-            _CentralBankMeetingDates(
+            CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[self.test_date_1, self.test_date_2],
             ),
@@ -93,7 +93,7 @@ class TestCentralBankMeetingsServices(TestCase):
         """
         result = get_central_bank_meeting_dates([CentralBankChoices.FRB])
         assert result == [
-            _CentralBankMeetingDates(
+            CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[self.test_date_1, self.test_date_2],
             ),
@@ -290,7 +290,7 @@ class TestCentralBankMeetingsServices(TestCase):
 
         result = get_central_bank_meeting_dates([CentralBankChoices.FRB])
         assert result == [
-            _CentralBankMeetingDates(
+            CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[date_1, date_2, date_3],
             ),
@@ -326,7 +326,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         extract_ecb_meeting_dates.cache_clear()
         extract_boj_meeting_dates.cache_clear()
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2024-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_frb_success(self, mock_get):
         """
@@ -433,7 +433,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2024-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_ecb_success(self, mock_get):
         """
@@ -510,7 +510,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2024-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_boj_success(self, mock_get):
         """
@@ -617,7 +617,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2024-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_multiple_central_banks(self, mock_get):
         """
@@ -850,7 +850,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2024-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_updates_existing(self, mock_get):
         """
@@ -965,7 +965,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
             },
         ]
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2024-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_empty_result(self, mock_get):
         """
@@ -986,7 +986,7 @@ class TestCentralBankMeetingsIngestionServices(TestCase):
         result = parse_query_for_testing(CentralBankMeetingModel.objects.all())
         assert result == []
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     @freeze_time("2025-01-01 12:00:00")
     def test_ingest_central_bank_meeting_dates_filters_past_dates(self, mock_get):
         """

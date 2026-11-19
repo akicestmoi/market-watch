@@ -1,5 +1,6 @@
 """Shared TypedDicts and helpers for news article scrapers."""
 
+import logging
 from collections.abc import Callable
 from datetime import date
 from typing import TypedDict
@@ -8,13 +9,15 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from curl_cffi import requests as curl_requests
 
-from core.services import logger, parse_datetime
+from core.services.scraping import parse_datetime
 from market_analysis.models import ArticleRegionChoices, NewsSourceChoices
 from market_analysis.services.config import (
     HTTP_REQUEST_TIMEOUT_SECONDS,
     MARKET_CLOSE_TITLE_CUES_BY_SOURCE_REGION,
     MARKET_WRAP_TITLE_EXCLUDE_CUES,
 )
+
+logger = logging.getLogger(__name__)
 
 _STRIP_TAGS = ("script", "style", "noscript", "svg", "iframe")
 _STRIP_SELECTORS = (
@@ -167,7 +170,7 @@ def extract_main_text(html: str) -> str:
     return "\n".join(lines).strip()
 
 
-def pick_article_matching_published_date(
+def get_article_matching_published_date(
     candidates: list[ArticleLink],
     reporting_date: date,
 ) -> ScrapingResult | None:

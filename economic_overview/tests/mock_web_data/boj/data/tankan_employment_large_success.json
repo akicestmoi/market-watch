@@ -1,0 +1,17 @@
+{
+  "STATUS": 200,
+  "MESSAGEID": "M181000I",
+  "MESSAGE": "Successfully completed",
+  "RESULTSET": [
+    {
+      "SERIES_CODE": "TK99F0000608GCQ01000",
+      "NAME_OF_TIME_SERIES": "D.I./Employment Conditions/Large Enterprises/All industries/Actual result",
+      "UNIT": "% points",
+      "FREQUENCY": "QUARTERLY",
+      "VALUES": {
+        "SURVEY_DATES": [202603, 202602, 202601],
+        "VALUES": [-29, -28, -27]
+      }
+    }
+  ]
+}

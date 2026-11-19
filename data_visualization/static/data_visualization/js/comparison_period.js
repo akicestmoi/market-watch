@@ -58,7 +58,7 @@
     return new Date(year, month, Math.min(day, lastDayOfTargetMonth));
   }
 
-  function resolveTargetDate() {
+  function getTargetDate() {
     if (global.defaultReferenceDate) {
       return parseISODate(global.defaultReferenceDate);
     }
@@ -70,7 +70,7 @@
    * @returns {{ referenceDate: string, previousDate: string } | null}
    */
   function computeComparisonDates(period) {
-    const target = resolveTargetDate();
+    const target = getTargetDate();
     let previous;
 
     switch (period) {

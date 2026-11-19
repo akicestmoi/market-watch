@@ -1,6 +1,7 @@
 """Ingest and query central bank policy-rate / balance-sheet style series."""
 
 import json
+import logging
 from collections.abc import Callable
 from datetime import date
 from typing import TypedDict
@@ -14,16 +15,17 @@ from central_banks_overview.models import (
     CentralBankMeetingModel,
 )
 from central_banks_overview.services.config import CENTRAL_BANKS_DATA_JSON
-from core.services import (
+from core.services.calendar import convert_to_display_timezone
+from core.services.time_series_calculation import (
     ValueChangeType,
     calculate_value_change,
-    convert_to_display_timezone,
-    logger,
 )
 from market_overview.models import PriceSourceChoices
 from market_overview.services.scrapers.common import ScrapingResult
 from market_overview.services.scrapers.global_rates import scrap_from_global_rates
 from market_overview.services.scrapers.webstat import get_webstat_rates
+
+logger = logging.getLogger(__name__)
 
 CENTRAL_BANK_DATA_MAP: dict[
     PriceSourceChoices, Callable[[date, str], ScrapingResult]
@@ -33,7 +35,7 @@ CENTRAL_BANK_DATA_MAP: dict[
 }
 
 
-def get_cb_data_ingestion_lock_key(
+def get_lock_key_for_cb_data_ingestion(
     central_bank: CentralBankChoices, price_date: date
 ) -> str:
     """Return Redis lock key for central-bank data ingestion."""
@@ -224,7 +226,7 @@ def delete_central_bank_data(ids: list[int]) -> int:
     return deleted_count
 
 
-def get_previous_central_bank_rate(
+def _get_previous_central_bank_rate(
     short_name: str, event_date: date
 ) -> CentralBankDataModel | None:
     """Return the latest key rate strictly before a given date."""
@@ -284,7 +286,7 @@ def get_decision_day_key_rates(event_date: date) -> list[_DecisionDayKeyRate]:
             ).order_by("cb_data_id", "short_name")
         )
         for key_rate in key_rates:
-            previous_key_rate = get_previous_central_bank_rate(
+            previous_key_rate = _get_previous_central_bank_rate(
                 key_rate.short_name, event_date
             )
             previous_value = previous_key_rate.value if previous_key_rate else None

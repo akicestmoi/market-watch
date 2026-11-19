@@ -7,15 +7,18 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
-    EconomicDataModel,
     EconomicDataSourceChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
-    PublicationScheduleModel,
 )
+from economic_overview.models.publication import PublicationScheduleModel
 
 
 class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
@@ -30,9 +33,10 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         self.indicator = EconomicIndicatorInformationModel.objects.create(
             id=1,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="Test Indicator",
+            full_name="Test Indicator Name",
             technical_name="test_indicator",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
@@ -41,9 +45,10 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         self.indicator_next = EconomicIndicatorInformationModel.objects.create(
             id=2,
             location=EconomicDataLocationChoices.JP,
-            category=EconomicDataCategoryChoices.GROWTH,
-            type="Second test indicator",
-            name="Second test indicator name",
+            category=EconomicDataCategoryChoices.MACROECONOMICS,
+            subcategory=EconomicDataSubcategoryChoices.GROWTH,
+            series_label="Second test indicator",
+            full_name="Second test indicator name",
             technical_name="second_test_indicator_name",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
             source=EconomicDataSourceChoices.JP_CABINET_OFFICE,
@@ -85,9 +90,10 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": 2,
                 "location": "FR",
-                "category": "CONFIDENCE",
-                "type": "New Test Indicator",
-                "name": "New Test Indicator Name",
+                "category": "BUSINESS",
+                "subcategory": "CONFIDENCE",
+                "series_label": "New Test Indicator",
+                "full_name": "New Test Indicator Name",
                 "technical_name": "new_test_indicator",
                 "frequency": "MONTHLY",
                 "source": "INSEE",
@@ -95,6 +101,12 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
                 "base_unit": "",
                 "base_currency": "",
                 "default_mode": "Raw",
+                "description": "Survey-based confidence index.",
+                "source_url": "https://www.insee.fr/en/statistiques/serie/001565530",
+                "measure_type": "FLOW",
+                "parent_series_label": "",
+                "expansion_relation": "",
+                "is_hidden": False,
             }
         ]
 
@@ -107,10 +119,13 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         assert EconomicIndicatorInformationModel.objects.filter(
             id=2,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="New Test Indicator",
-            name="New Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="New Test Indicator",
+            full_name="New Test Indicator Name",
             technical_name="new_test_indicator",
+            description="Survey-based confidence index.",
+            source_url="https://www.insee.fr/en/statistiques/serie/001565530",
         ).exists()
         assert PublicationScheduleModel.objects.filter(
             indicator=EconomicIndicatorInformationModel.objects.get(id=2),
@@ -134,14 +149,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[0].pk,
                 "indicator": {
-                    "name": "Test Indicator Name",
+                    "full_name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "type": "Test Indicator",
+                    "category": EconomicDataCategoryChoices.BUSINESS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.CONFIDENCE.value,
+                    "series_label": "Test Indicator",
                     "technical_name": "test_indicator",
                     "frequency": EconomicPublicationFrequencyChoices.MONTHLY.value,
                     "source": EconomicDataSourceChoices.INSEE.value,
                     "ticker": "001565530",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.period.isoformat(),
                 "data_value": 100.0,
@@ -150,14 +173,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[1].pk,
                 "indicator": {
-                    "name": "Second test indicator name",
+                    "full_name": "Second test indicator name",
                     "location": EconomicDataLocationChoices.JP.value,
-                    "category": EconomicDataCategoryChoices.GROWTH.value,
-                    "type": "Second test indicator",
+                    "category": EconomicDataCategoryChoices.MACROECONOMICS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.GROWTH.value,
+                    "series_label": "Second test indicator",
                     "technical_name": "second_test_indicator_name",
                     "frequency": EconomicPublicationFrequencyChoices.QUARTERLY.value,
                     "source": EconomicDataSourceChoices.JP_CABINET_OFFICE.value,
                     "ticker": "001565531",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.period.isoformat(),
                 "data_value": 50.0,
@@ -166,14 +197,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[2].pk,
                 "indicator": {
-                    "name": "Test Indicator Name",
+                    "full_name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "type": "Test Indicator",
+                    "category": EconomicDataCategoryChoices.BUSINESS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.CONFIDENCE.value,
+                    "series_label": "Test Indicator",
                     "technical_name": "test_indicator",
                     "frequency": EconomicPublicationFrequencyChoices.MONTHLY.value,
                     "source": EconomicDataSourceChoices.INSEE.value,
                     "ticker": "001565530",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.next_period.isoformat(),
                 "data_value": 101.0,
@@ -188,7 +227,7 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         THEN the correct data is returned
         """
         params = {
-            "indicator_names": self.indicator.name,
+            "indicator_names": self.indicator.full_name,
         }
         response = self.client.get(self.base_url, params)
 
@@ -202,14 +241,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[0].pk,
                 "indicator": {
-                    "name": "Test Indicator Name",
+                    "full_name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "type": "Test Indicator",
+                    "category": EconomicDataCategoryChoices.BUSINESS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.CONFIDENCE.value,
+                    "series_label": "Test Indicator",
                     "technical_name": "test_indicator",
                     "frequency": EconomicPublicationFrequencyChoices.MONTHLY.value,
                     "source": EconomicDataSourceChoices.INSEE.value,
                     "ticker": "001565530",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.period.isoformat(),
                 "data_value": 100.0,
@@ -218,14 +265,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[1].pk,
                 "indicator": {
-                    "name": "Test Indicator Name",
+                    "full_name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "type": "Test Indicator",
+                    "category": EconomicDataCategoryChoices.BUSINESS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.CONFIDENCE.value,
+                    "series_label": "Test Indicator",
                     "technical_name": "test_indicator",
                     "frequency": EconomicPublicationFrequencyChoices.MONTHLY.value,
                     "source": EconomicDataSourceChoices.INSEE.value,
                     "ticker": "001565530",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.next_period.isoformat(),
                 "data_value": 101.0,
@@ -252,14 +307,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[0].pk,
                 "indicator": {
-                    "name": "Test Indicator Name",
+                    "full_name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "type": "Test Indicator",
+                    "category": EconomicDataCategoryChoices.BUSINESS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.CONFIDENCE.value,
+                    "series_label": "Test Indicator",
                     "technical_name": "test_indicator",
                     "frequency": EconomicPublicationFrequencyChoices.MONTHLY.value,
                     "source": EconomicDataSourceChoices.INSEE.value,
                     "ticker": "001565530",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.period.isoformat(),
                 "data_value": 100.0,
@@ -268,14 +331,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data[1].pk,
                 "indicator": {
-                    "name": "Second test indicator name",
+                    "full_name": "Second test indicator name",
                     "location": EconomicDataLocationChoices.JP.value,
-                    "category": EconomicDataCategoryChoices.GROWTH.value,
-                    "type": "Second test indicator",
+                    "category": EconomicDataCategoryChoices.MACROECONOMICS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.GROWTH.value,
+                    "series_label": "Second test indicator",
                     "technical_name": "second_test_indicator_name",
                     "frequency": EconomicPublicationFrequencyChoices.QUARTERLY.value,
                     "source": EconomicDataSourceChoices.JP_CABINET_OFFICE.value,
                     "ticker": "001565531",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.period.isoformat(),
                 "data_value": 50.0,
@@ -290,7 +361,7 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
         THEN the correct filtered data is returned
         """
         params = {
-            "indicator_names": self.indicator.name,
+            "indicator_names": self.indicator.full_name,
             "period": self.period.isoformat(),
         }
         response = self.client.get(self.base_url, params)
@@ -303,14 +374,22 @@ class TestGenerateBaseEconomicIndicatorInformationView(TestCase):
             {
                 "id": economic_data.pk,
                 "indicator": {
-                    "name": "Test Indicator Name",
+                    "full_name": "Test Indicator Name",
                     "location": EconomicDataLocationChoices.FR.value,
-                    "category": EconomicDataCategoryChoices.CONFIDENCE.value,
-                    "type": "Test Indicator",
+                    "category": EconomicDataCategoryChoices.BUSINESS.value,
+                    "subcategory": EconomicDataSubcategoryChoices.CONFIDENCE.value,
+                    "series_label": "Test Indicator",
                     "technical_name": "test_indicator",
                     "frequency": EconomicPublicationFrequencyChoices.MONTHLY.value,
                     "source": EconomicDataSourceChoices.INSEE.value,
                     "ticker": "001565530",
+                    "description": "",
+                    "source_url": "",
+                    "measure_type": "FLOW",
+                    "parent_series_label": "",
+                    "expansion_relation": "",
+                    "is_hidden": False,
+                    "publication_schedule_mode": "CALENDAR",
                 },
                 "period": self.period.isoformat(),
                 "data_value": 100.0,
@@ -397,17 +476,18 @@ class TestIngestLatestEconomicDataView(TestCase):
         self.indicator = EconomicIndicatorInformationModel.objects.create(
             id=1,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="Test Indicator",
+            full_name="Test Indicator Name",
             technical_name="test_indicator",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
             ticker="001565530",
         )
 
-    @patch("economic_overview.services.publication.update_publication_schedules")
-    @patch("economic_overview.services.data_ingestion.ingest_latest_economic_data")
+    @patch("economic_overview.services.publication_update.update_publication_schedules")
+    @patch("economic_overview.services.economic_data.ingest_latest_economic_data")
     @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_latest_economic_data_success(
         self, mock_get_indicators, mock_ingest, mock_update_schedules
@@ -429,13 +509,13 @@ class TestIngestLatestEconomicDataView(TestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
             "message": "Latest economic data successfully ingested",
-            "updated_indicators": [self.indicator.name],
+            "updated_indicators": [self.indicator.full_name],
             "indicator_not_updated": [],
             "schedule_not_updated": [],
         }
         mock_get_indicators.assert_called_once_with()
 
-    @patch("economic_overview.services.data_ingestion.ingest_latest_economic_data")
+    @patch("economic_overview.services.economic_data.ingest_latest_economic_data")
     @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_latest_economic_data_without_update_schedule(
         self, mock_get_indicators, mock_ingest
@@ -456,12 +536,12 @@ class TestIngestLatestEconomicDataView(TestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
             "message": "Latest economic data successfully ingested",
-            "updated_indicators": [self.indicator.name],
+            "updated_indicators": [self.indicator.full_name],
             "indicator_not_updated": [],
             "schedule_not_updated": [],
         }
 
-    @patch("economic_overview.services.data_ingestion.ingest_historical_economic_data")
+    @patch("economic_overview.services.economic_data.ingest_historical_economic_data")
     @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_historical_economic_data_success(
         self, mock_get_indicators, mock_ingest
@@ -481,7 +561,7 @@ class TestIngestLatestEconomicDataView(TestCase):
             {
                 "start_date": start_date.isoformat(),
                 "end_date": end_date.isoformat(),
-                "indicators": [self.indicator.name],
+                "indicators": [self.indicator.full_name],
             },
             format="json",
         )
@@ -489,17 +569,17 @@ class TestIngestLatestEconomicDataView(TestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
             "message": "Historical economic data successfully ingested",
-            "updated_indicators": [self.indicator.name],
+            "updated_indicators": [self.indicator.full_name],
             "indicator_not_updated": [],
         }
         mock_get_indicators.assert_called_once_with(
-            indicator_names=[self.indicator.name]
+            indicator_names=[self.indicator.full_name]
         )
         mock_ingest.assert_called_once_with(
             [self.indicator], start_date=start_date, end_date=end_date
         )
 
-    @patch("economic_overview.services.data_ingestion.ingest_historical_economic_data")
+    @patch("economic_overview.services.economic_data.ingest_historical_economic_data")
     @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_historical_economic_data_all_indicators(
         self, mock_get_indicators, mock_ingest
@@ -543,7 +623,7 @@ class TestIngestLatestEconomicDataView(TestCase):
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "NonExistent" in response.json()["message"]
 
-    @patch("economic_overview.services.data_ingestion.ingest_specific_economic_data")
+    @patch("economic_overview.services.economic_data.ingest_specific_economic_data")
     @patch("economic_overview.services.economic_data.get_economic_indicators_by_names")
     def test_ingest_specific_economic_data_success(
         self, mock_get_indicators, mock_ingest
@@ -560,7 +640,7 @@ class TestIngestLatestEconomicDataView(TestCase):
             f"{self.base_url}{self.INGEST_SPECIFIC_ECONOMIC_DATA_URL}",
             [
                 {
-                    "indicator_name": self.indicator.name,
+                    "indicator_name": self.indicator.full_name,
                     "periods": ["2024-01"],
                 }
             ],

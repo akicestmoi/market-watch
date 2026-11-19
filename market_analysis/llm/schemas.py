@@ -66,7 +66,7 @@ class ArticleAnalysisOutput(BaseModel):
 
 
 class DailyRecapOutput(BaseModel):
-    """LLM shape for the daily T-1 analysis persisted on DailyRecapModel."""
+    """LLM shape for the daily T-1 analysis saved on DailyRecapModel."""
 
     title: str = Field(
         ...,
@@ -176,6 +176,6 @@ class ChatAnswerOutput(BaseModel):
         default=False,
         description=(
             "Informational only for the model. The API sets this from whether "
-            "_update_daily_recap actually persisted changes."
+            "_update_daily_recap actually saved changes."
         ),
     )

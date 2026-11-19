@@ -9,16 +9,19 @@ from freezegun import freeze_time
 
 import economic_overview.tasks as tasks
 from core.testing import MockResponse, parse_query_for_testing, read_file_content
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
-    EconomicDataModel,
     EconomicDataSourceChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicDataUpdateLogModel,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
-    PublicationScheduleModel,
 )
+from economic_overview.models.publication import PublicationScheduleModel
 from economic_overview.services.scrapers.insee import (
     _get_insee_publication_schedule,
     get_data_from_insee,
@@ -34,9 +37,10 @@ class TestScheduledEconomicDataAndScheduleUpdate(TestCase):
         self.indicator = EconomicIndicatorInformationModel.objects.create(
             id=1,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="Test Indicator",
+            full_name="Test Indicator Name",
             technical_name="test_indicator",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
@@ -317,9 +321,10 @@ class TestScheduledEconomicDataUpdateLogsCleanup(TestCase):
         indicator = EconomicIndicatorInformationModel.objects.create(
             id=2,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="Test Indicator",
+            full_name="Test Indicator Name",
             technical_name="test_indicator",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
@@ -381,9 +386,10 @@ class TestScheduledEconomicDataUpdateLogsCleanup(TestCase):
         indicator = EconomicIndicatorInformationModel.objects.create(
             id=2,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="Test Indicator",
+            full_name="Test Indicator Name",
             technical_name="test_indicator",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
@@ -452,3 +458,66 @@ class TestScheduledEconomicDataUpdateLogsCleanup(TestCase):
             "message": "Error: Database error",
             "status": "error",
         }
+
+
+class TestScheduledIndustryProfitabilityIngest(TestCase):
+    """Tests for scheduled_industry_profitability_ingest."""
+
+    @freeze_time("2025-11-03")
+    @patch("economic_overview.tasks.release_redis_lock")
+    @patch("economic_overview.tasks.try_acquire_redis_lock")
+    @patch(
+        "economic_overview.tasks.industry_profitability.ingest_industry_profitability"
+    )
+    def test_scheduled_industry_profitability_ingest_success(
+        self,
+        mock_ingest,
+        mock_acquire_lock,
+        mock_release_lock,
+    ):
+        """
+        GIVEN the Redis lock is free and ingest returns a success report
+        WHEN scheduled_industry_profitability_ingest runs
+        THEN the ingest report is returned and the lock is released
+        """
+        mock_acquire_lock.return_value = object()
+        mock_ingest.return_value = {
+            "as_of": "2025-11-03",
+            "status": "success",
+            "message": "Industry profitability ingest: 1 location(s) updated, 0 failed.",
+            "results": [],
+        }
+        result = tasks.scheduled_industry_profitability_ingest()
+        assert result == {
+            "as_of": "2025-11-03",
+            "status": "success",
+            "message": "Industry profitability ingest: 1 location(s) updated, 0 failed.",
+            "results": [],
+        }
+        mock_ingest.assert_called_once_with()
+        mock_release_lock.assert_called_once()
+
+    @freeze_time("2025-11-03")
+    @patch("economic_overview.tasks.try_acquire_redis_lock")
+    @patch(
+        "economic_overview.tasks.industry_profitability.ingest_industry_profitability"
+    )
+    def test_scheduled_industry_profitability_ingest_lock_held(
+        self,
+        mock_ingest,
+        mock_acquire_lock,
+    ):
+        """
+        GIVEN the Redis lock is already held
+        WHEN scheduled_industry_profitability_ingest runs
+        THEN ingest is skipped with a locked report
+        """
+        mock_acquire_lock.return_value = None
+        result = tasks.scheduled_industry_profitability_ingest()
+        assert result == {
+            "as_of": "2025-11-03",
+            "status": "skipped",
+            "message": "Industry profitability ingest already in progress.",
+            "results": [],
+        }
+        mock_ingest.assert_not_called()

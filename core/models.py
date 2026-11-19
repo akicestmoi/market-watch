@@ -49,7 +49,7 @@ def get_choice_labels(choices: type[ChoiceT]) -> list[str]:
 
 
 class BaseModel(models.Model):
-    """Base Model to be inherited accross entire application."""
+    """Abstract base with created and modified timestamps for persisted records."""
 
     date_added = models.DateTimeField(
         auto_now_add=True,
@@ -73,8 +73,10 @@ class BaseModel(models.Model):
         remove_auto_fields: bool = True,
         remove_cache_fields: bool = True,
         remove_specific_fields: list[str] = [],
-    ) -> dict:  # Polymorphic model serializer until per-model TypedDicts exist.
-        """Convert Model to Dictionary."""
+    ) -> (
+        dict
+    ):  # Usage of dict: field keys vary by Django model until per-model TypedDicts exist.
+        """Return this instance as a plain dict of field names to values."""
         auto_fields = ["id", "date_added", "last_modified"]
         cache_fields = ["_prefetched_objects_cache", "_state"]
         fields_to_remove = []
@@ -104,7 +106,7 @@ class BaseModel(models.Model):
 
 
 class BaseLogModel(BaseModel):
-    """Base Log Model to keep log of changes."""
+    """Abstract base for human-readable change logs tied to a parent record."""
 
     logs = models.TextField(
         help_text="Human-readable change / ingest log for the related domain record.",

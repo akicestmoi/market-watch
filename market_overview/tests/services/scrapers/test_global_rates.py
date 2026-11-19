@@ -34,7 +34,7 @@ class TestGlobalRatesScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         scrap_from_global_rates.cache_clear()
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_global_rates_euribor_success(self, mock_get):
         """
         GIVEN a successful Global Rates HTML response with EURIBOR data
@@ -52,7 +52,7 @@ class TestGlobalRatesScraping(TestCase):
         result = scrap_from_global_rates(target_date, ticker)
         assert result == ScrapingResult(price=1.926, comment="")
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_global_rates_euribor_not_found(self, mock_get):
         """
         GIVEN a Global Rates HTML response without data for the target date
@@ -71,7 +71,7 @@ class TestGlobalRatesScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Euribor rate not found.")
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_global_rates_euribor_invalid_date(self, mock_get):
         """
         GIVEN a Global Rates HTML response with invalid date format
@@ -90,7 +90,7 @@ class TestGlobalRatesScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Euribor rate not found.")
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_global_rates_euribor_invalid_rate(self, mock_get):
         """
         GIVEN a Global Rates HTML response with invalid rate format
@@ -111,7 +111,7 @@ class TestGlobalRatesScraping(TestCase):
             price=None, comment="Could not parse Euribor rate: invalid-rate"
         )
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_global_rates_central_bank_success(self, mock_get):
         """
         GIVEN a successful Global Rates HTML response with central bank data
@@ -129,7 +129,7 @@ class TestGlobalRatesScraping(TestCase):
 
         assert result == ScrapingResult(price=0.5, comment="")
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_global_rates_central_bank_empty_rate(self, mock_get):
         """
         GIVEN a Global Rates HTML response with an empty rate cell

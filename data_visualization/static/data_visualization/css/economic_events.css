@@ -225,6 +225,13 @@ body {
     word-break: break-word;
 }
 
+.upcoming-event-period {
+    margin-left: 0.35rem;
+    color: #64748b;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
 .upcoming-event-row.is-holiday .upcoming-event-name {
     color: #9a3412;
     font-weight: 600;

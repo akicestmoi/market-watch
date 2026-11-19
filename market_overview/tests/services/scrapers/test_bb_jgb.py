@@ -24,7 +24,7 @@ class TestBBScraping(TestCase):
         """Clear cache after each test to prevent state leakage between tests."""
         _scrap_jgb_yield_curve_from_bb.cache_clear()
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_bb_success(self, mock_get):
         """
         GIVEN a successful BB HTML response with JGB yield data
@@ -42,7 +42,7 @@ class TestBBScraping(TestCase):
 
         assert result == ScrapingResult(price=1.8, comment="")
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_bb_not_found(self, mock_get):
         """
         GIVEN a BB HTML response without data for the target date
@@ -60,7 +60,7 @@ class TestBBScraping(TestCase):
 
         assert result == ScrapingResult(price=None, comment="Yield curve not found.")
 
-    @patch("core.services.requests.get")
+    @patch("core.services.scraping.requests.get")
     def test_bb_invalid_ticker(self, mock_get):
         """
         GIVEN a BB HTML response with a valid date but an invalid ticker

@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import pytest
 from django.test import TestCase
 
-from core.services import convert_query_to_dictionary_list
+from core.services.orm import convert_query_to_dictionary_list
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

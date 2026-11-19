@@ -1,6 +1,7 @@
 """API views for economic data ingestion and retrieval."""
 
 import json
+import logging
 from datetime import date
 from typing import NotRequired, TypedDict
 
@@ -11,10 +12,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-import economic_overview.services.data_ingestion as data_ingestion
 import economic_overview.services.economic_data as economic_data
-import economic_overview.services.publication as publication
-from core.locks import acquire_redis_lock
+import economic_overview.services.publication_update as publication_update
 from core.open_api.schema import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -24,17 +23,21 @@ from core.open_api.schema import (
     OkOpenApiResponse,
     open_api,
 )
-from core.services import logger
+from core.services.locks import acquire_redis_lock
 from core.views import BaseAPIView
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
     EconomicDataSourceChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
     IndicatorDisplayModeChoices,
-    PublicationScheduleModel,
+    PublicationScheduleModeChoices,
 )
+from economic_overview.models.publication import PublicationScheduleModel
 from economic_overview.open_api.request_serializers import (
     DeleteEconomicDataSerializer,
     HistoricalEconomicDataIngestionSerializer,
@@ -49,6 +52,8 @@ from economic_overview.open_api.response_serializers import (
     LatestEconomicDataIngestionResponseSerializer,
     SpecificEconomicDataIngestionResponseSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 ECONOMIC_DATA_JSON = "economic_overview/data_sources/economic_data.json"
 
@@ -78,8 +83,9 @@ class _EconomicIndicatorJsonRecord(TypedDict):
     id: int
     location: EconomicDataLocationChoices
     category: EconomicDataCategoryChoices
-    type: str
-    name: str
+    subcategory: EconomicDataSubcategoryChoices
+    series_label: str
+    full_name: str
     technical_name: str
     frequency: EconomicPublicationFrequencyChoices
     source: EconomicDataSourceChoices
@@ -87,6 +93,13 @@ class _EconomicIndicatorJsonRecord(TypedDict):
     base_unit: str
     base_currency: str
     default_mode: IndicatorDisplayModeChoices
+    description: str
+    source_url: str
+    measure_type: str
+    parent_series_label: str
+    expansion_relation: str
+    is_hidden: bool
+    publication_schedule_mode: NotRequired[str]
     base_year: NotRequired[int]
 
 
@@ -95,8 +108,9 @@ class _EconomicIndicatorDefaults(TypedDict):
 
     location: EconomicDataLocationChoices
     category: EconomicDataCategoryChoices
-    type: str
-    name: str
+    subcategory: EconomicDataSubcategoryChoices
+    series_label: str
+    full_name: str
     technical_name: str
     frequency: EconomicPublicationFrequencyChoices
     source: EconomicDataSourceChoices
@@ -104,6 +118,13 @@ class _EconomicIndicatorDefaults(TypedDict):
     base_unit: str
     base_currency: str
     default_mode: IndicatorDisplayModeChoices
+    description: str
+    source_url: str
+    measure_type: str
+    parent_series_label: str
+    expansion_relation: str
+    is_hidden: bool
+    publication_schedule_mode: str
     base_year: NotRequired[int]
 
 
@@ -117,6 +138,7 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
         tags=[ApiTags.ECONOMIC_INDICATOR_INFORMATION],
         summary="Generate Base Economic Data",
         description="Generate base economic indicator information from JSON file.",
+        response=OkOpenApiResponse(),
         error_responses=[
             BadRequestOpenApiResponse("Invalid economic_data.json"),
         ],
@@ -135,13 +157,14 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
         for indicator_json_entry in indicator_json_entries:
             logger.info(
                 "Generating economic indicator information: %s",
-                indicator_json_entry["name"],
+                indicator_json_entry["full_name"],
             )
             indicator_defaults = _EconomicIndicatorDefaults(
                 location=indicator_json_entry["location"],
                 category=indicator_json_entry["category"],
-                type=indicator_json_entry["type"],
-                name=indicator_json_entry["name"],
+                subcategory=indicator_json_entry["subcategory"],
+                series_label=indicator_json_entry["series_label"],
+                full_name=indicator_json_entry["full_name"],
                 technical_name=indicator_json_entry["technical_name"],
                 frequency=indicator_json_entry["frequency"],
                 source=indicator_json_entry["source"],
@@ -149,6 +172,16 @@ class GenerateBaseEconomicIndicatorInformationView(BaseAPIView):
                 base_unit=indicator_json_entry["base_unit"],
                 base_currency=indicator_json_entry["base_currency"],
                 default_mode=indicator_json_entry["default_mode"],
+                description=indicator_json_entry["description"],
+                source_url=indicator_json_entry["source_url"],
+                measure_type=indicator_json_entry["measure_type"],
+                parent_series_label=indicator_json_entry["parent_series_label"],
+                expansion_relation=indicator_json_entry["expansion_relation"],
+                is_hidden=indicator_json_entry["is_hidden"],
+                publication_schedule_mode=indicator_json_entry.get(
+                    "publication_schedule_mode",
+                    PublicationScheduleModeChoices.CALENDAR,
+                ),
             )
             if "base_year" in indicator_json_entry:
                 indicator_defaults["base_year"] = indicator_json_entry["base_year"]
@@ -199,22 +232,24 @@ class IngestLatestEconomicDataView(EconomicOverviewBaseView):
         indicators = economic_data.get_economic_indicators_by_names()
 
         with acquire_redis_lock(
-            data_ingestion.get_economic_data_ingestion_lock_key(),
+            economic_data.get_lock_key_for_economic_data_ingestion(),
             locked_detail="Economic data ingestion is already in progress.",
         ):
-            indicator_not_updated = data_ingestion.ingest_latest_economic_data(
+            indicator_not_updated = economic_data.ingest_latest_economic_data(
                 indicators
             )
             schedule_not_updated = []
             if update_schedule:
-                schedule_not_updated = publication.update_publication_schedules(
+                schedule_not_updated = publication_update.update_publication_schedules(
                     indicators
                 )
         return Response(
             data=LatestEconomicDataIngestionResponseSerializer(
                 {
                     "message": "Latest economic data successfully ingested",
-                    "updated_indicators": [indicator.name for indicator in indicators],
+                    "updated_indicators": [
+                        indicator.full_name for indicator in indicators
+                    ],
                     "indicator_not_updated": indicator_not_updated,
                     "schedule_not_updated": schedule_not_updated,
                 }
@@ -268,17 +303,19 @@ class IngestHistoricalEconomicDataView(EconomicOverviewBaseView):
             indicator_names=indicator_names
         )
         with acquire_redis_lock(
-            data_ingestion.get_economic_data_ingestion_lock_key(),
+            economic_data.get_lock_key_for_economic_data_ingestion(),
             locked_detail="Economic data ingestion is already in progress.",
         ):
-            indicator_not_updated = data_ingestion.ingest_historical_economic_data(
+            indicator_not_updated = economic_data.ingest_historical_economic_data(
                 indicators, start_date=start_date, end_date=end_date
             )
         return Response(
             data=HistoricalEconomicDataIngestionResponseSerializer(
                 {
                     "message": "Historical economic data successfully ingested",
-                    "updated_indicators": [indicator.name for indicator in indicators],
+                    "updated_indicators": [
+                        indicator.full_name for indicator in indicators
+                    ],
                     "indicator_not_updated": indicator_not_updated,
                 }
             ).data,
@@ -324,10 +361,10 @@ class IngestSpecificEconomicDataView(EconomicOverviewBaseView):
             indicator_names=indicator_names
         )
         with acquire_redis_lock(
-            data_ingestion.get_economic_data_ingestion_lock_key(),
+            economic_data.get_lock_key_for_economic_data_ingestion(),
             locked_detail="Economic data ingestion is already in progress.",
         ):
-            indicator_not_updated = data_ingestion.ingest_specific_economic_data(
+            indicator_not_updated = economic_data.ingest_specific_economic_data(
                 indicators, periods=periods
             )
         return Response(

@@ -4,10 +4,8 @@ from django.test import SimpleTestCase
 
 from central_banks_overview.models import CentralBankChoices
 from core.models import get_choice_from_label, get_choice_labels
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
-    EconomicDataLocationChoices,
-)
+from economic_overview.models.common import EconomicDataLocationChoices
+from economic_overview.models.economic_indicators import EconomicDataCategoryChoices
 from market_overview.models import AssetClassChoices, LocationChoices
 
 
@@ -32,8 +30,8 @@ class TestChoiceLabelHelpers(SimpleTestCase):
         assert AssetClassChoices.from_label("Stocks") == AssetClassChoices.STOCKS
         assert AssetClassChoices.from_label("Interest Rates") == AssetClassChoices.RATES
         assert (
-            EconomicDataCategoryChoices.from_label("Growth")
-            == EconomicDataCategoryChoices.GROWTH
+            EconomicDataCategoryChoices.from_label("Household")
+            == EconomicDataCategoryChoices.HOUSEHOLD
         )
         assert (
             CentralBankChoices.from_label("Federal Reserve (FRB)")

@@ -1,0 +1,114 @@
+{
+  "BEAAPI": {
+    "Request": {
+      "RequestParam": [
+        {
+          "ParameterName": "TABLENAME",
+          "ParameterValue": "T31600"
+        }
+      ]
+    },
+    "Results": {
+      "Statistic": "NIPA Table",
+      "UTCProductionTime": "2026-11-10T18:18:23.923",
+      "Data": [
+        {
+          "TableName": "T31600",
+          "SeriesCode": "W022RC",
+          "LineNumber": "1",
+          "LineDescription": "Government",
+          "TimePeriod": "2023",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "9,402,978",
+          "NoteRef": "T31600,T31600.1"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "W022RC",
+          "LineNumber": "1",
+          "LineDescription": "Government",
+          "TimePeriod": "2024",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "10,168,689",
+          "NoteRef": "T31600,T31600.1"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "G16002",
+          "LineNumber": "2",
+          "LineDescription": "General public service",
+          "TimePeriod": "2023",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "1,738,731",
+          "NoteRef": "T31600"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "G16002",
+          "LineNumber": "2",
+          "LineDescription": "General public service",
+          "TimePeriod": "2024",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "1,936,366",
+          "NoteRef": "T31600"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "G16003",
+          "LineNumber": "3",
+          "LineDescription": "Executive and legislative",
+          "TimePeriod": "2023",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "197,630",
+          "NoteRef": "T31600"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "G16003",
+          "LineNumber": "3",
+          "LineDescription": "Executive and legislative",
+          "TimePeriod": "2024",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "196,656",
+          "NoteRef": "T31600"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "G16034",
+          "LineNumber": "36",
+          "LineDescription": "Income security",
+          "TimePeriod": "2023",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "2,129,492",
+          "NoteRef": "T31600"
+        },
+        {
+          "TableName": "T31600",
+          "SeriesCode": "G16034",
+          "LineNumber": "36",
+          "LineDescription": "Income security",
+          "TimePeriod": "2024",
+          "METRIC_NAME": "Current Dollars",
+          "CL_UNIT": "Level",
+          "UNIT_MULT": "6",
+          "DataValue": "2,267,452",
+          "NoteRef": "T31600"
+        }
+      ]
+    }
+  }
+}

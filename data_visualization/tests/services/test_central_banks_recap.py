@@ -15,18 +15,21 @@ from central_banks_overview.services.central_banks_inference import (
     CentralBankProbabilityMatrix,
 )
 from data_visualization.services.central_banks_recap import (
-    get_central_bank_data_item,
-    get_central_bank_formatted_probability_matrix,
     get_formatted_probability_matrix_changes,
+    get_formatted_probability_matrix_for_central_bank,
+    list_central_bank_recap_figures,
 )
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
-    EconomicDataModel,
     EconomicDataSourceChoices,
+    IndicatorBaseUnitChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
-    IndicatorBaseUnitChoices,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -102,7 +105,7 @@ class TestCentralBankRecapServices(TestCase):
             date=datetime(2024, 3, 20, 13, 0, 0, tzinfo=timezone.utc),
         )
 
-    def test_get_central_bank_data_item_frb_success(self):
+    def test_list_central_bank_recap_figures_frb_success(self):
         """
         GIVEN central bank data, effective rate, meeting date, and US CPI YoY inputs
         WHEN getting central bank data item
@@ -111,9 +114,10 @@ class TestCentralBankRecapServices(TestCase):
         us_cpi = EconomicIndicatorInformationModel.objects.create(
             id=26,
             location=EconomicDataLocationChoices.US,
-            category=EconomicDataCategoryChoices.INFLATION,
-            type="Consumer Price Index",
-            name="United States CPI",
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.PRICES,
+            series_label="Consumer Price Index",
+            full_name="United States CPI",
             technical_name="Consumer Price Index for All Urban Consumers",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.FRED,
@@ -131,7 +135,7 @@ class TestCentralBankRecapServices(TestCase):
             period=date(2024, 9, 1),
             data_value=100.0,
         )
-        result = get_central_bank_data_item(CentralBankChoices.FRB, self.test_date)
+        result = list_central_bank_recap_figures(CentralBankChoices.FRB, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "5.25 %"},
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
@@ -139,7 +143,7 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "US Inflation Rate", "value": "2.5 % (Sep 25)"},
         ]
 
-    def test_get_central_bank_data_item_ecb_success(self):
+    def test_list_central_bank_recap_figures_ecb_success(self):
         """
         GIVEN central bank data, effective rate, meeting date, and HICP YoY inputs
         WHEN getting central bank data item
@@ -166,22 +170,24 @@ class TestCentralBankRecapServices(TestCase):
         france_hicp = EconomicIndicatorInformationModel.objects.create(
             id=8,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.INFLATION,
-            type="Consumer Price Index",
-            name="France HICP",
-            technical_name="Consumer price index - final results",
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.PRICES,
+            series_label="Consumer Price Index",
+            full_name="France Consumer Price Index",
+            technical_name="Consumer price index - all households",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
-            ticker="011812231",
+            ticker="011814630",
             base_year=2025,
             base_unit=IndicatorBaseUnitChoices.INDEX,
         )
         euro_hicp = EconomicIndicatorInformationModel.objects.create(
             id=24,
             location=EconomicDataLocationChoices.EU,
-            category=EconomicDataCategoryChoices.INFLATION,
-            type="Consumer Price Index",
-            name="Euro Area HICP",
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.PRICES,
+            series_label="Consumer Price Index",
+            full_name="Euro Area HICP",
             technical_name="Inflation (HICP)",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.EUROSTAT,
@@ -210,7 +216,7 @@ class TestCentralBankRecapServices(TestCase):
             data_value=100.0,
         )
 
-        result = get_central_bank_data_item(CentralBankChoices.ECB, self.test_date)
+        result = list_central_bank_recap_figures(CentralBankChoices.ECB, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "4.0 %"},
             {"label": "ECB Deposit Facility Rate", "value": "4.0 %"},
@@ -219,7 +225,7 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "Eurozone Inflation Rate", "value": "2.1 % (Sep 25)"},
         ]
 
-    def test_get_central_bank_data_item_boj_success(self):
+    def test_list_central_bank_recap_figures_boj_success(self):
         """
         GIVEN central bank data, effective rate, meeting date, and Japan CPI YoY inputs
         WHEN getting central bank data item
@@ -246,9 +252,10 @@ class TestCentralBankRecapServices(TestCase):
         japan_cpi = EconomicIndicatorInformationModel.objects.create(
             id=34,
             location=EconomicDataLocationChoices.JP,
-            category=EconomicDataCategoryChoices.INFLATION,
-            type="Consumer Price Index",
-            name="Japan CPI",
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.PRICES,
+            series_label="Consumer Price Index",
+            full_name="Japan CPI",
             technical_name="Consumer Price Index",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.STAT_OF_JP,
@@ -267,7 +274,7 @@ class TestCentralBankRecapServices(TestCase):
             data_value=100.0,
         )
 
-        result = get_central_bank_data_item(CentralBankChoices.BOJ, self.test_date)
+        result = list_central_bank_recap_figures(CentralBankChoices.BOJ, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "0.1 %"},
             {"label": "BOJ Target Uncollateralized Overnight Rate", "value": "0.1 %"},
@@ -278,14 +285,14 @@ class TestCentralBankRecapServices(TestCase):
     @patch(
         "data_visualization.services.central_banks_recap.central_banks_meetings.get_central_bank_next_meeting_date"
     )
-    def test_get_central_bank_data_item_no_next_meeting(self, mock_next_meeting):
+    def test_list_central_bank_recap_figures_no_next_meeting(self, mock_next_meeting):
         """
         GIVEN central bank data without next meeting date
         WHEN getting central bank data item
         THEN N/A is returned for the next meeting
         """
         mock_next_meeting.return_value = None
-        result = get_central_bank_data_item(CentralBankChoices.FRB, self.test_date)
+        result = list_central_bank_recap_figures(CentralBankChoices.FRB, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "5.25 %"},
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
@@ -293,7 +300,7 @@ class TestCentralBankRecapServices(TestCase):
             {"label": "US Inflation Rate", "value": "-"},
         ]
 
-    def test_get_central_bank_data_item_no_value(self):
+    def test_list_central_bank_recap_figures_no_value(self):
         """
         GIVEN central bank data with None value
         WHEN getting central bank data item
@@ -310,7 +317,7 @@ class TestCentralBankRecapServices(TestCase):
             comment="No data",
         )
 
-        result = get_central_bank_data_item(CentralBankChoices.FRB, self.test_date)
+        result = list_central_bank_recap_figures(CentralBankChoices.FRB, self.test_date)
         assert result == [
             {"label": "Effective Rate", "value": "5.25 %"},
             {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
@@ -322,7 +329,7 @@ class TestCentralBankRecapServices(TestCase):
     @patch(
         "data_visualization.services.central_banks_recap.central_banks_inference.get_central_bank_probability_matrices"
     )
-    def test_get_central_bank_formatted_probability_matrix_success(
+    def test_get_formatted_probability_matrix_for_central_bank_success(
         self, mock_get_matrices
     ):
         """
@@ -351,7 +358,7 @@ class TestCentralBankRecapServices(TestCase):
             }
         ]
 
-        result = get_central_bank_formatted_probability_matrix(
+        result = get_formatted_probability_matrix_for_central_bank(
             CentralBankChoices.FRB, self.test_date
         )
         assert result == {
@@ -367,7 +374,7 @@ class TestCentralBankRecapServices(TestCase):
     @patch(
         "data_visualization.services.central_banks_recap.central_banks_inference.get_central_bank_probability_matrices"
     )
-    def test_get_central_bank_formatted_probability_matrix_not_found(
+    def test_get_formatted_probability_matrix_for_central_bank_not_found(
         self, mock_get_matrices
     ):
         """
@@ -376,7 +383,7 @@ class TestCentralBankRecapServices(TestCase):
         THEN None is returned
         """
         mock_get_matrices.return_value = []
-        result = get_central_bank_formatted_probability_matrix(
+        result = get_formatted_probability_matrix_for_central_bank(
             CentralBankChoices.FRB, self.test_date
         )
         assert result is None
@@ -384,7 +391,7 @@ class TestCentralBankRecapServices(TestCase):
     @patch(
         "data_visualization.services.central_banks_recap.central_banks_inference.get_central_bank_probability_matrices"
     )
-    def test_get_central_bank_formatted_probability_matrix_all_empty_probabilities(
+    def test_get_formatted_probability_matrix_for_central_bank_all_empty_probabilities(
         self, mock_get_matrices
     ):
         """
@@ -408,7 +415,7 @@ class TestCentralBankRecapServices(TestCase):
                 ],
             }
         ]
-        result = get_central_bank_formatted_probability_matrix(
+        result = get_formatted_probability_matrix_for_central_bank(
             CentralBankChoices.FRB, self.test_date
         )
         assert result == {
@@ -423,10 +430,10 @@ class TestCentralBankRecapServices(TestCase):
         WHEN getting formatted probability matrix changes
         THEN the changes are calculated and sorted by expected_rate_step
         """
-        previous_matrix: CentralBankProbabilityMatrix = {
-            "central_bank": CentralBankChoices.FRB,
-            "meeting_dates": [date(2024, 3, 20), date(2024, 5, 1)],
-            "probability_matrix": [
+        previous_matrix = CentralBankProbabilityMatrix(
+            central_bank=CentralBankChoices.FRB,
+            meeting_dates=[date(2024, 3, 20), date(2024, 5, 1)],
+            probability_matrix=[
                 {
                     "expected_rate_step": 0,
                     "probabilities": [0.7, 0.75],
@@ -436,11 +443,11 @@ class TestCentralBankRecapServices(TestCase):
                     "probabilities": [0.3, 0.25],
                 },
             ],
-        }
-        current_matrix: CentralBankProbabilityMatrix = {
-            "central_bank": CentralBankChoices.FRB,
-            "meeting_dates": [date(2024, 3, 20), date(2024, 5, 1)],
-            "probability_matrix": [
+        )
+        current_matrix = CentralBankProbabilityMatrix(
+            central_bank=CentralBankChoices.FRB,
+            meeting_dates=[date(2024, 3, 20), date(2024, 5, 1)],
+            probability_matrix=[
                 {
                     "expected_rate_step": 0,
                     "probabilities": [0.75, 0.80],
@@ -450,7 +457,7 @@ class TestCentralBankRecapServices(TestCase):
                     "probabilities": [0.25, 0.20],
                 },
             ],
-        }
+        )
 
         result = get_formatted_probability_matrix_changes(
             current_matrix, previous_matrix

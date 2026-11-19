@@ -1,5 +1,6 @@
 """Fetch and ingest public holidays used for price completeness checks."""
 
+import logging
 from datetime import date, datetime, timedelta
 from typing import TypedDict
 
@@ -7,9 +8,10 @@ import requests
 from django.db.models import QuerySet
 from pydantic import TypeAdapter, ValidationError
 
-from core.services import logger
 from market_overview.models import HolidayModel, LocationChoices
 from market_overview.services.config import HOLIDAY_API_URL
+
+logger = logging.getLogger(__name__)
 
 
 class _HolidayApiItem(TypedDict):

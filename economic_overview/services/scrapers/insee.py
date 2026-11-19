@@ -2,6 +2,7 @@
 
 import io
 import json
+import logging
 import re
 import zipfile
 from datetime import date, datetime
@@ -12,18 +13,32 @@ import requests
 from cachetools.func import ttl_cache
 from pydantic import TypeAdapter, ValidationError
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
-from economic_overview.models import EconomicPublicationFrequencyChoices
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from economic_overview.models.economic_indicators import (
+    EconomicPublicationFrequencyChoices,
+)
 from economic_overview.services.config import (
+    INSEE_CALENDAR_TITLE_BY_TECHNICAL_NAME,
     INSEE_CSV_NAME_BY_FREQUENCY,
+    INSEE_HH_FCE_CHAINED_VOLUME_TICKER,
+    INSEE_HH_FCE_CURRENT_PRICE_TICKER,
     INSEE_PUBLICATION_SCHEDULE_URL,
+    INSEE_RDB_NOMINAL_TICKER,
+    INSEE_REAL_RDB_TICKER,
     INSEE_SERIES_CSV_URL_TEMPLATE,
 )
 from economic_overview.services.scrapers.common import (
     ScrapingResult,
+    deflate_scraping_results_by_period,
+    filter_scraping_results_by_target_period,
     filter_upcoming_publication_dates,
 )
+
+logger = logging.getLogger(__name__)
+
+# __________________________________________________________
+# Values (INSEE BDM series)
+# __________________________________________________________
 
 
 class _InseeValuesLoadResult(NamedTuple):
@@ -135,6 +150,96 @@ def _parse_economic_data_from_insee_dataframe(
     return economic_data
 
 
+def _build_insee_implicit_deflator_series(
+    current_price_series: list[ScrapingResult],
+    chained_volume_series: list[ScrapingResult],
+) -> list[ScrapingResult]:
+    """Build a current-price / chained-volume implicit deflator on shared periods."""
+    # Usage of dict: keys are observation periods; values are chained volumes.
+    chained_volume_by_period: dict[date, float] = {}
+    for scraping_result in chained_volume_series:
+        period = scraping_result["period"]
+        data_value = scraping_result["data_value"]
+        if period is None or data_value is None or data_value == 0:
+            continue
+        chained_volume_by_period[period] = data_value
+
+    deflator_series: list[ScrapingResult] = []
+    for scraping_result in current_price_series:
+        period = scraping_result["period"]
+        current_price_value = scraping_result["data_value"]
+        if period is None or current_price_value is None:
+            continue
+        chained_volume_value = chained_volume_by_period.get(period)
+        if chained_volume_value is None:
+            continue
+        deflator_series.append(
+            ScrapingResult(
+                period=period,
+                data_value=current_price_value / chained_volume_value,
+                comment="",
+            )
+        )
+    deflator_series.sort(
+        key=lambda scraping_result: scraping_result["period"] or date.min,
+        reverse=True,
+    )
+    return deflator_series
+
+
+def _get_insee_real_household_disposable_income_data(
+    target_period: str | None,
+    frequency: EconomicPublicationFrequencyChoices,
+) -> list[ScrapingResult]:
+    """Scrape nominal RDB and deflate it with the household FCE implicit deflator."""
+    nominal_series = get_data_from_insee(
+        INSEE_RDB_NOMINAL_TICKER, target_period, frequency
+    )
+    current_price_series = get_data_from_insee(
+        INSEE_HH_FCE_CURRENT_PRICE_TICKER, target_period, frequency
+    )
+    chained_volume_series = get_data_from_insee(
+        INSEE_HH_FCE_CHAINED_VOLUME_TICKER, target_period, frequency
+    )
+    deflator_series = _build_insee_implicit_deflator_series(
+        current_price_series, chained_volume_series
+    )
+    real_income_series = deflate_scraping_results_by_period(
+        nominal_series, deflator_series
+    )
+    if not real_income_series:
+        return [
+            ScrapingResult(
+                period=None,
+                data_value=None,
+                comment="No INSEE real household disposable-income values found.",
+            )
+        ]
+    return filter_scraping_results_by_target_period(
+        real_income_series, target_period, frequency
+    )
+
+
+def _get_insee_scraping_result_for_target_label(
+    dataframe: pd.DataFrame,
+    target_period: str,
+    frequency: EconomicPublicationFrequencyChoices,
+) -> list[ScrapingResult]:
+    """Return one scraping result for a dataframe row labeled with the target period."""
+    target_row_index = dataframe.index[dataframe["Libellé"] == target_period]
+    if target_row_index.empty:
+        return [
+            ScrapingResult(
+                period=None, data_value=None, comment="Target period not found."
+            )
+        ]
+    # Index 0 is the first (only) dataframe row whose "Libellé" equals the target period.
+    target_row = target_row_index[0]
+    period = _parse_insee_period(str(dataframe.iloc[target_row, 0]), frequency)
+    data_value = float(str(dataframe.iloc[target_row, 1]))
+    return [ScrapingResult(period=period, data_value=data_value, comment="")]
+
+
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def get_data_from_insee(
     ticker: str,
@@ -147,9 +252,18 @@ def get_data_from_insee(
     - caractéristiques.csv
     - valeurs_mensuelles.csv / valeurs_trimestrielles.csv / valeurs_annuelles.csv
 
+    Real household disposable income ('011794746_real') is nominal RDB divided
+    by the household final-consumption expenditure implicit deflator
+    (current-price / chained-volume P3).
+
     Source: https://bdm.insee.fr/
     Docs: https://www.insee.fr/fr/statistiques/serie/{ticker}
     """
+    if ticker == INSEE_REAL_RDB_TICKER:
+        return _get_insee_real_household_disposable_income_data(
+            target_period, frequency
+        )
+
     load_result = _load_insee_values_dataframe(
         ticker=ticker,
         frequency=frequency,
@@ -169,22 +283,14 @@ def get_data_from_insee(
             load_result.dataframe, frequency
         )
 
-    target_row_index = load_result.dataframe.index[
-        load_result.dataframe["Libellé"] == target_period
-    ]
-    if target_row_index.empty:
-        return [
-            ScrapingResult(
-                period=None, data_value=None, comment="Target period not found."
-            )
-        ]
-    # Index 0 is the first (only) dataframe row whose "Libellé" equals the target period.
-    target_row = target_row_index[0]
-    period = _parse_insee_period(
-        str(load_result.dataframe.iloc[target_row, 0]), frequency
+    return _get_insee_scraping_result_for_target_label(
+        load_result.dataframe, target_period, frequency
     )
-    data_value = float(str(load_result.dataframe.iloc[target_row, 1]))
-    return [ScrapingResult(period=period, data_value=data_value, comment="")]
+
+
+# __________________________________________________________
+# Publication dates (INSEE schedule)
+# __________________________________________________________
 
 
 class _InseeAgendaSortField(TypedDict):
@@ -252,7 +358,7 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
         start=0,
         sortFields=[{"field": "dateEmbargo_dt", "order": "asc"}],
         filters=[],
-        rows=100,
+        rows=500,
         facetsQuery=[],
     )
     response = requests.post(INSEE_PUBLICATION_SCHEDULE_URL, json=payload)
@@ -289,10 +395,11 @@ def _get_insee_publication_schedule() -> pd.DataFrame:
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)
 def get_publication_dates_from_insee(name: str) -> list[datetime]:
     """Get upcoming publication dates from INSEE."""
+    calendar_title = INSEE_CALENDAR_TITLE_BY_TECHNICAL_NAME.get(name, name)
     publication_schedule = _get_insee_publication_schedule()
-    publication_dates = publication_schedule[publication_schedule["name"] == name][
-        "publication_date"
-    ]
+    publication_dates = publication_schedule[
+        publication_schedule["name"] == calendar_title
+    ]["publication_date"]
     publication_datetimes = [
         pd_timestamp.to_pydatetime() for pd_timestamp in publication_dates.tolist()
     ]

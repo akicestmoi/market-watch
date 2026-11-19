@@ -110,7 +110,7 @@ function loadAgentChatMessages() {
   }
 }
 
-function persistAgentChatMessages() {
+function saveAgentChatMessages() {
   try {
     sessionStorage.setItem(AGENT_CHAT_STORAGE_KEY, JSON.stringify(agentChatMessages));
   } catch (err) {
@@ -837,7 +837,7 @@ function renderAgentChatMessages(options = {}) {
     pending.textContent = "Agent is thinking…";
     container.appendChild(pending);
   }
-  persistAgentChatMessages();
+  saveAgentChatMessages();
   container.scrollTop = container.scrollHeight;
 }
 

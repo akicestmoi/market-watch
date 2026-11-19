@@ -24,7 +24,7 @@ class YieldCurveScrapResult(TypedDict):
     error: str | None
 
 
-def get_yield_curve_rate(curve: YieldCurveScrapResult, term: str) -> float | None:
+def _get_yield_curve_rate(curve: YieldCurveScrapResult, term: str) -> float | None:
     """Return the rate for 'term' on 'curve', or None if missing."""
     for point in curve["rates"]:
         if point["term"] == term:
@@ -46,4 +46,4 @@ def get_yield_from_curve_by_ticker(
         return ScrapingResult(price=None, comment=curve["error"])
     if not curve["rates"]:
         return ScrapingResult(price=None, comment="Yield curve not found.")
-    return ScrapingResult(price=get_yield_curve_rate(curve, term), comment="")
+    return ScrapingResult(price=_get_yield_curve_rate(curve, term), comment="")

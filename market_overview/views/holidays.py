@@ -1,5 +1,6 @@
 """API views for holiday ingestion and lookup."""
 
+import logging
 from datetime import date
 from typing import TypedDict
 
@@ -14,7 +15,6 @@ from core.open_api.schema import (
     OkOpenApiResponse,
     open_api,
 )
-from core.services import logger
 from core.views import BaseAPIView
 from market_overview.models import LocationChoices
 from market_overview.open_api.request_serializers import (
@@ -22,8 +22,13 @@ from market_overview.open_api.request_serializers import (
     IngestHolidaysSerializer,
     ListHolidaysSerializer,
 )
-from market_overview.open_api.response_serializers import HolidayResponseSerializer
+from market_overview.open_api.response_serializers import (
+    DeleteHolidaysResponseSerializer,
+    HolidayResponseSerializer,
+)
 from market_overview.services.config import HOLIDAY_COUNTRIES
+
+logger = logging.getLogger(__name__)
 
 
 class _IngestHolidaysValidatedData(TypedDict, total=False):
@@ -107,6 +112,7 @@ class HolidaysDetailsView(BaseAPIView):
         summary="Delete Holidays",
         description="Delete holidays before a given year.",
         request_serializer=DeleteHolidaysSerializer,
+        response=OkOpenApiResponse(DeleteHolidaysResponseSerializer),
         error_responses=[BadRequestOpenApiResponse("date is required")],
     )
     def delete(self, validated_data: _DeleteHolidaysValidatedData) -> Response:
@@ -115,6 +121,8 @@ class HolidaysDetailsView(BaseAPIView):
 
         holidays.delete_holidays_before_date(holiday_date)
         return Response(
-            data={"message": "Holidays successfully deleted."},
+            data=DeleteHolidaysResponseSerializer(
+                {"message": "Holidays successfully deleted."}
+            ).data,
             status=status.HTTP_200_OK,
         )

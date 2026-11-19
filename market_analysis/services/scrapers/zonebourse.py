@@ -1,5 +1,6 @@
 """Zonebourse market-close scrapers (US / Europe / France)."""
 
+import logging
 from datetime import date
 from urllib.parse import urljoin
 
@@ -7,8 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 from curl_cffi import requests as curl_requests
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_analysis.models import ArticleRegionChoices, NewsSourceChoices
 from market_analysis.services.config import (
     HTTP_REQUEST_TIMEOUT_SECONDS,
@@ -22,9 +22,11 @@ from market_analysis.services.scrapers.common import (
     ScrapingResult,
     TaggedScrapingResult,
     does_title_look_like_market_wrap,
-    pick_article_matching_published_date,
+    get_article_matching_published_date,
     scrap_tagged_region_closes,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _collect_zonebourse_candidates(
@@ -78,7 +80,7 @@ def _scrap_zonebourse_region_close(
                     continue
                 seen_urls.add(candidate["url"])
                 candidates.append(candidate)
-        scraping_result = pick_article_matching_published_date(
+        scraping_result = get_article_matching_published_date(
             candidates, reporting_date
         )
         if scraping_result is None:

@@ -30,10 +30,14 @@ not in Uncertainties solely for being probabilistic. When the user confirms a fa
 or resolves an article/DB discrepancy, write it assertively (keep confirmed
 explanatory context such as a futures rollover), remove that caveat from
 Uncertainties, and do not keep “the article says…” wording for confirmed facts.
-Keep Uncertainties only for unresolved causality, still-open discrepancies, and
-pipeline gaps; omit the Uncertainties bullet when a zone has none left (never
-write “None material”); preserve relevant pipeline gaps. Call the update tool only
-after explicit user agreement to a proposal, or when the user explicitly orders an
+**“Ok to resolve”** (exact intent, optional region): clear **all** Uncertainties
+for the whole recap, or only for that region when named (e.g. “Ok to resolve JP”
+→ Japan zone only; US / EU / Additional likewise). Rewrite affected summaries
+assertively and omit emptied Uncertainties bullets. Keep Uncertainties only for
+unresolved causality, still-open discrepancies, and pipeline gaps that were
+**not** cleared by that resolve; omit the Uncertainties bullet when a zone has
+none left (never write “None material”). Call the update tool only after
+explicit user agreement to a proposal, or when the user explicitly orders an
 update; then clearly confirm whether the save succeeded. Keep explanations focused.
 If the user teaches new market-regime logic missing from the skill, after a recap
 update is agreed/ordered you may propose a Cursor Agent prompt to edit

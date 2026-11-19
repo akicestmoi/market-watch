@@ -1,15 +1,18 @@
 """Scrape interest rates from GlobalRates."""
 
+import logging
 import re
 from datetime import date, datetime
 
 from bs4 import Tag
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import fetch_html, logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.scraping import fetch_html
 from market_overview.services.config import GLOBAL_RATES_URL
 from market_overview.services.scrapers.common import ScrapingResult
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_euribor_rate_from_table(

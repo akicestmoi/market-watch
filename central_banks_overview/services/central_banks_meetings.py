@@ -1,5 +1,6 @@
 """Manage central bank meeting calendars and related metadata."""
 
+import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import NamedTuple, TypedDict
 
@@ -22,12 +23,13 @@ from central_banks_overview.services.scrapers.ecb_meetings import (
 from central_banks_overview.services.scrapers.fomc_meetings import (
     extract_fomc_meeting_dates,
 )
-from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import (
+from core.services.calendar import (
     convert_to_display_timezone,
     get_market_watch_as_of_date,
-    logger,
 )
+from core.services.locks import release_redis_lock, try_acquire_redis_lock
+
+logger = logging.getLogger(__name__)
 
 CB_MEETINGS_EXTRACT_MAP = {
     CentralBankChoices.FRB: lambda: extract_fomc_meeting_dates(),
@@ -100,6 +102,7 @@ class _UpcomingMeetingsToUpsert(NamedTuple):
 def _list_upcoming_meetings_to_upsert(
     central_bank: CentralBankChoices,
     upcoming_meeting_dates: list[datetime],
+    # Usage of dict: keys are meeting datetimes; values are existing meeting models.
     existing_meetings_by_date: dict[datetime, CentralBankMeetingModel],
 ) -> _UpcomingMeetingsToUpsert:
     """List create/update meetings so upcoming ones exist with status 'UPCOMING'."""
@@ -156,6 +159,7 @@ def ingest_central_bank_meeting_dates(central_bank: CentralBankChoices) -> None:
     meeting_dates_to_keep = _list_meeting_dates_to_keep(
         central_bank, scraped_meeting_dates
     )
+    # Usage of dict: keys are meeting datetimes; values are existing meeting models.
     existing_meetings_by_date = {
         meeting.date: meeting
         for meeting in CentralBankMeetingModel.objects.filter(central_bank=central_bank)
@@ -194,7 +198,7 @@ def ingest_all_central_bank_meeting_dates() -> None:
         ingest_central_bank_meeting_dates(central_bank)
 
 
-class _CentralBankMeetingDates(TypedDict):
+class CentralBankMeetingDates(TypedDict):
     """Meeting calendar dates for one central bank."""
 
     central_bank: CentralBankChoices
@@ -203,7 +207,7 @@ class _CentralBankMeetingDates(TypedDict):
 
 def get_central_bank_meeting_dates(
     central_banks: list[CentralBankChoices] | None = None,
-) -> list[_CentralBankMeetingDates]:
+) -> list[CentralBankMeetingDates]:
     """Return upcoming central bank meeting dates from the Market Watch as-of date.
 
     Cutoff is always 'get_market_watch_as_of_date()' (Paris T-1 business day).
@@ -221,7 +225,7 @@ def get_central_bank_meeting_dates(
         query.values_list("central_bank", flat=True).distinct().order_by("central_bank")
     )
     return [
-        _CentralBankMeetingDates(
+        CentralBankMeetingDates(
             central_bank=central_bank,
             meeting_dates=list(
                 query.filter(central_bank=central_bank)
@@ -320,7 +324,7 @@ def ingest_pending_decision_day_key_rates(central_bank: CentralBankChoices) -> N
         # Ingest key rates on the meeting's display calendar day so market
         # recap economic releases can join them via that event date.
         key_rate_date = convert_to_display_timezone(meeting.date).date()
-        lock_key = central_banks_data.get_cb_data_ingestion_lock_key(
+        lock_key = central_banks_data.get_lock_key_for_cb_data_ingestion(
             central_bank, key_rate_date
         )
         lock = try_acquire_redis_lock(lock_key)

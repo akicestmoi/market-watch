@@ -12,8 +12,8 @@ from central_banks_overview.models import (
     StirFuturesSourceChoices,
 )
 from central_banks_overview.services.cache import (
+    _format_probability_matrix_cache_key,
     build_probability_matrix_cache_fingerprint,
-    build_probability_matrix_cache_key,
     get_cached_probability_matrix,
     set_cached_probability_matrix,
 )
@@ -64,17 +64,17 @@ class TestProbabilityMatrixCache(TestCase):
         assert first_fingerprint == second_fingerprint
         assert first_fingerprint.startswith("ECB|2025-12-15|")
 
-    def test_build_probability_matrix_cache_key_uses_digest(self):
+    def test_format_probability_matrix_cache_key_uses_digest(self):
         """
         GIVEN a fingerprint string
         WHEN building a Redis key
         THEN the key uses the probability-matrix prefix and a digest
         """
-        key = build_probability_matrix_cache_key("ECB|2025-12-15|probe")
+        key = _format_probability_matrix_cache_key("ECB|2025-12-15|probe")
         assert key.startswith("central_banks_overview:probability_matrix:")
         assert len(key.split(":")[-1]) == 32
 
-    @patch("core.cache.get_redis_client")
+    @patch("core.services.cache.get_redis_client")
     def test_set_and_get_cached_probability_matrix(self, mock_get_redis_client):
         """
         GIVEN a Redis client that stores setex values

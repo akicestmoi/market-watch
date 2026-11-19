@@ -6,8 +6,8 @@ import pandas as pd
 from bs4 import Tag
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import fetch_html
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.scraping import fetch_html
 from market_overview.services.config import BB_YIELD_CURVE_URL
 from market_overview.services.scrapers.common import (
     ScrapingResult,

@@ -1,0 +1,26 @@
+{
+  "BEAAPI": {
+    "Results": {
+      "Data": [
+        {
+          "Year": "2025",
+          "Quarter": "IV",
+          "Industry": "31G",
+          "DataValue": "2,450.1"
+        },
+        {
+          "Year": "2025",
+          "Quarter": "III",
+          "Industry": "31G",
+          "DataValue": "2,430.5"
+        },
+        {
+          "Year": "2025",
+          "Quarter": "II",
+          "Industry": "31G",
+          "DataValue": "2,410.0"
+        }
+      ]
+    }
+  }
+}

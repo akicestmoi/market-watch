@@ -1,5 +1,6 @@
 """LLM chat — one shared agent; prior turns come from the request body."""
 
+import logging
 from contextvars import ContextVar
 from datetime import date, timedelta
 from typing import Literal, TypedDict
@@ -7,7 +8,6 @@ from typing import Literal, TypedDict
 from django.conf import settings
 from pydantic_ai import Agent, Tool
 
-from core.services import logger
 from market_analysis.llm.config import (
     MAX_CHAT_HISTORY_MESSAGES,
     PROMPT_VERSION,
@@ -26,13 +26,15 @@ from market_analysis.services.llm_market_recap import (
     ProbabilityMatrixShiftContextEntry,
     build_central_bank_context,
     build_economic_context,
-    build_fx_heatmap_context,
     build_market_context,
     build_probability_matrix_shift_context,
+    get_fx_heatmap_context,
 )
 
+logger = logging.getLogger(__name__)
+
 _chat_agent: Agent[None, ChatAnswerOutput] | None = None
-# Set True only when _update_daily_recap persists successfully in this ask().
+# Set True only when _update_daily_recap saves successfully in this ask().
 _recap_updated_this_turn: ContextVar[bool] = ContextVar(
     "market_analysis_recap_updated_this_turn", default=False
 )
@@ -134,7 +136,7 @@ def _get_central_bank_context(reporting_date: str) -> list[CentralBankContextEnt
 def _get_fx_heatmap_context(reporting_date: str) -> FxHeatmapContext:
     """Return FX heatmap DoD % matrix and RMS currency-move magnitude for an ISO date."""
     day = date.fromisoformat(reporting_date)
-    return build_fx_heatmap_context(day)
+    return get_fx_heatmap_context(day)
 
 
 def _get_probability_matrix_shift_context(
@@ -143,6 +145,60 @@ def _get_probability_matrix_shift_context(
     """Return FRB / ECB / BOJ probability matrices and DoD shifts for an ISO date."""
     day = date.fromisoformat(reporting_date)
     return list(build_probability_matrix_shift_context(day))
+
+
+class _DailyRecapPatchFields(TypedDict, total=False):
+    """Optional DailyRecap fields passed from the chat update tool."""
+
+    title: str | None
+    main_summary: str | None
+    us_summary: str | None
+    eur_summary: str | None
+    jp_summary: str | None
+    additional_summary: str | None
+
+
+def _signal_missing_daily_recap_patch_fields_error(
+    patch_fields: _DailyRecapPatchFields,
+) -> _UpdateDailyRecapResult | None:
+    """Return a client error when the chat tool sent no fields to change."""
+    if any(value for value in patch_fields.values()):
+        return None
+    return _UpdateDailyRecapResult(
+        ok=False,
+        error=(
+            "Provide title and/or at least one summary field "
+            "(main_summary, us_summary, eur_summary, jp_summary, additional_summary)"
+        ),
+    )
+
+
+def _apply_daily_recap_patch_fields(
+    recap: DailyRecapModel,
+    patch_fields: _DailyRecapPatchFields,
+) -> None:
+    """Apply non-empty patch fields onto the stored stored daily recap."""
+    title = patch_fields.get("title")
+    if title:
+        recap.title = title[:300]
+    main_summary = patch_fields.get("main_summary")
+    if main_summary is not None and main_summary != "":
+        recap.main_summary = main_summary
+    us_summary = patch_fields.get("us_summary")
+    if us_summary is not None and us_summary != "":
+        recap.us_summary = us_summary
+    eur_summary = patch_fields.get("eur_summary")
+    if eur_summary is not None and eur_summary != "":
+        recap.eur_summary = eur_summary
+    jp_summary = patch_fields.get("jp_summary")
+    if jp_summary is not None and jp_summary != "":
+        recap.jp_summary = jp_summary
+    additional_summary = patch_fields.get("additional_summary")
+    if additional_summary is not None and additional_summary != "":
+        recap.additional_summary = additional_summary
+    recap.model_name = settings.LLM_MODEL_NAME
+    recap.prompt_version = PROMPT_VERSION
+    recap.save()
 
 
 def _update_daily_recap(
@@ -160,22 +216,19 @@ def _update_daily_recap(
     explicitly orders an update. Never call on ambiguous intent.
     Pass only the fields that should change; leave others empty.
     """
-    fields = {
-        "title": title,
-        "main_summary": main_summary,
-        "us_summary": us_summary,
-        "eur_summary": eur_summary,
-        "jp_summary": jp_summary,
-        "additional_summary": additional_summary,
-    }
-    if not any(value for value in fields.values()):
-        return _UpdateDailyRecapResult(
-            ok=False,
-            error=(
-                "Provide title and/or at least one summary field "
-                "(main_summary, us_summary, eur_summary, jp_summary, additional_summary)"
-            ),
-        )
+    patch_fields = _DailyRecapPatchFields(
+        title=title,
+        main_summary=main_summary,
+        us_summary=us_summary,
+        eur_summary=eur_summary,
+        jp_summary=jp_summary,
+        additional_summary=additional_summary,
+    )
+    missing_patch_fields_error = _signal_missing_daily_recap_patch_fields_error(
+        patch_fields
+    )
+    if missing_patch_fields_error is not None:
+        return missing_patch_fields_error
     day = date.fromisoformat(reporting_date)
     recap = DailyRecapModel.objects.filter(reporting_date=day).first()
     if not recap:
@@ -183,21 +236,7 @@ def _update_daily_recap(
             ok=False,
             error=f"No DailyRecap for {reporting_date}",
         )
-    if title:
-        recap.title = title[:300]
-    if main_summary is not None and main_summary != "":
-        recap.main_summary = main_summary
-    if us_summary is not None and us_summary != "":
-        recap.us_summary = us_summary
-    if eur_summary is not None and eur_summary != "":
-        recap.eur_summary = eur_summary
-    if jp_summary is not None and jp_summary != "":
-        recap.jp_summary = jp_summary
-    if additional_summary is not None and additional_summary != "":
-        recap.additional_summary = additional_summary
-    recap.model_name = settings.LLM_MODEL_NAME
-    recap.prompt_version = PROMPT_VERSION
-    recap.save()
+    _apply_daily_recap_patch_fields(recap, patch_fields)
     _recap_updated_this_turn.set(True)
     logger.info("DailyRecap %s updated via chat", reporting_date)
     return _UpdateDailyRecapResult(
@@ -234,24 +273,19 @@ def _get_chat_agent() -> Agent[None, ChatAnswerOutput]:
     return _chat_agent
 
 
-def ask(
-    question: str,
-    messages: list[ChatMessage] | None = None,
-) -> _ChatAskResult:
-    """Answer one turn using optional prior messages sent by the client.
-
-    Chat is stateless on the server.
-    The DB never stores turns — the client owns history and sends it back each request.
-    """
-    if not is_llm_configured():
-        raise RuntimeError("OPENAI_API_KEY is not configured.")
-
-    history: list[ChatMessage] = [
+def _trim_chat_history_messages(
+    messages: list[ChatMessage] | None,
+) -> list[ChatMessage]:
+    """Keep the last valid user/assistant turns for the chat prompt."""
+    return [
         ChatMessage(role=message["role"], content=message["content"])
         for message in (messages or [])
         if message.get("role") in ("user", "assistant") and message.get("content")
     ][-MAX_CHAT_HISTORY_MESSAGES:]
 
+
+def _build_chat_ask_prompt(question: str, history: list[ChatMessage]) -> str:
+    """Assemble the full chat prompt from skills, history, and the new question."""
     prompt_parts = [
         format_skills_as_prompt_block(),
         "",
@@ -267,34 +301,60 @@ def ask(
         "Only after a recap update is agreed/ordered may you fill "
         "cursor_guidelines_prompt for missing regime logic."
     )
-    prompt = "\n".join(prompt_parts)
+    return "\n".join(prompt_parts)
+
+
+def _format_chat_ask_result(
+    question: str,
+    history: list[ChatMessage],
+    output: ChatAnswerOutput,
+    recap_updated: bool,
+) -> _ChatAskResult:
+    """Map structured LLM output into the chat API response payload."""
+    return _ChatAskResult(
+        answer=output.answer,
+        citations=[EvidenceEntry(**c.model_dump()) for c in output.citations],
+        missing_information=output.missing_information,
+        uncertainties=output.uncertainties,
+        messages=history
+        + [
+            ChatMessage(role="user", content=question.strip()),
+            ChatMessage(role="assistant", content=output.answer),
+        ],
+        proposed_recap_title=output.proposed_recap_title,
+        proposed_main_summary=output.proposed_main_summary,
+        proposed_us_summary=output.proposed_us_summary,
+        proposed_eur_summary=output.proposed_eur_summary,
+        proposed_jp_summary=output.proposed_jp_summary,
+        proposed_additional_summary=output.proposed_additional_summary,
+        proposed_recap_reporting_date=output.proposed_recap_reporting_date,
+        cursor_guidelines_prompt=output.cursor_guidelines_prompt,
+        recap_updated=recap_updated,
+    )
+
+
+def ask(
+    question: str,
+    messages: list[ChatMessage] | None = None,
+) -> _ChatAskResult:
+    """Answer one turn using optional prior messages sent by the client.
+
+    Chat is stateless on the server.
+    The DB never stores turns — the client owns history and sends it back each request.
+    """
+    if not is_llm_configured():
+        raise RuntimeError("OPENAI_API_KEY is not configured.")
+
+    history = _trim_chat_history_messages(messages)
+    prompt = _build_chat_ask_prompt(question, history)
 
     updated_token = _recap_updated_this_turn.set(False)
     try:
         result = _get_chat_agent().run_sync(prompt)
         output: ChatAnswerOutput = result.output
-        # Persist flag comes from the update tool, not the LLM's structured guess.
+        # Save flag comes from the update tool, not the LLM's structured guess.
         recap_updated = _recap_updated_this_turn.get()
-        return _ChatAskResult(
-            answer=output.answer,
-            citations=[EvidenceEntry(**c.model_dump()) for c in output.citations],
-            missing_information=output.missing_information,
-            uncertainties=output.uncertainties,
-            messages=history
-            + [
-                ChatMessage(role="user", content=question.strip()),
-                ChatMessage(role="assistant", content=output.answer),
-            ],
-            proposed_recap_title=output.proposed_recap_title,
-            proposed_main_summary=output.proposed_main_summary,
-            proposed_us_summary=output.proposed_us_summary,
-            proposed_eur_summary=output.proposed_eur_summary,
-            proposed_jp_summary=output.proposed_jp_summary,
-            proposed_additional_summary=output.proposed_additional_summary,
-            proposed_recap_reporting_date=output.proposed_recap_reporting_date,
-            cursor_guidelines_prompt=output.cursor_guidelines_prompt,
-            recap_updated=recap_updated,
-        )
+        return _format_chat_ask_result(question, history, output, recap_updated)
     except Exception as exc:
         logger.error("Chat failed: %s", exc)
         raise

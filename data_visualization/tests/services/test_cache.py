@@ -8,9 +8,9 @@ from pydantic import TypeAdapter
 
 from data_visualization.services.cache import (
     EconomicDisplayCacheType,
-    build_economic_display_cache_key,
+    _format_economic_display_cache_key,
+    get_cache_version_for_economic_display,
     get_cached_economic_display,
-    get_economic_display_cache_version,
     set_cached_economic_display,
 )
 
@@ -28,7 +28,7 @@ _CHART_CACHE_PROBE_ADAPTER = TypeAdapter(list[ChartCacheProbe])
 class TestEconomicDisplayCache(TestCase):
     """Tests for economic display Redis helpers."""
 
-    @patch("core.cache.get_redis_client")
+    @patch("core.services.cache.get_redis_client")
     def test_set_and_get_cached_economic_display(self, mock_get_redis_client):
         """
         GIVEN a Redis client that stores setex values
@@ -52,18 +52,18 @@ class TestEconomicDisplayCache(TestCase):
         payload: list[ChartCacheProbe] = [{"category": "Growth", "label": "GDP"}]
 
         set_cached_economic_display(
-            EconomicDisplayCacheType.CHARTS, "us|5Y|GROWTH:GDP|Annual", payload
+            EconomicDisplayCacheType.CHARTS, "us|5Y|GROWTH:GDP|YoY", payload
         )
         result = get_cached_economic_display(
             EconomicDisplayCacheType.CHARTS,
-            "us|5Y|GROWTH:GDP|Annual",
+            "us|5Y|GROWTH:GDP|YoY",
             _CHART_CACHE_PROBE_ADAPTER,
         )
 
         assert result == payload
         assert stored
 
-    @patch("core.cache.get_redis_client")
+    @patch("core.services.cache.get_redis_client")
     def test_get_cached_economic_display_miss(self, mock_get_redis_client):
         """
         GIVEN Redis has no entry for the key
@@ -85,13 +85,15 @@ class TestEconomicDisplayCache(TestCase):
         )
         assert result is None
 
-    def test_build_economic_display_cache_key_includes_version(self):
+    def test_format_economic_display_cache_key_includes_version(self):
         """
         GIVEN the current economic table version stamp
         WHEN building a cache key
         THEN the key embeds that version and a fingerprint digest
         """
-        version = get_economic_display_cache_version()
-        key = build_economic_display_cache_key(EconomicDisplayCacheType.RECAP, "FR,US")
+        version = get_cache_version_for_economic_display()
+        key = _format_economic_display_cache_key(
+            EconomicDisplayCacheType.RECAP, "FR,US"
+        )
         assert version in key
         assert key.startswith("data_visualization:economic_display:recap:")

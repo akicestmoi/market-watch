@@ -1,5 +1,6 @@
 """Ingest, query, and bulk-update STIR futures prices used for rate-path inference."""
 
+import logging
 from collections.abc import Hashable
 from datetime import date, datetime
 from io import BytesIO
@@ -7,7 +8,7 @@ from typing import Literal, TypedDict
 
 import pandas as pd
 
-import core.services as core_services
+import core.services.orm as core_services
 from central_banks_overview.models import (
     CentralBankChoices,
     StirFuturesModel,
@@ -20,7 +21,8 @@ from central_banks_overview.services.scrapers.fedfunds_futures import (
 from central_banks_overview.services.scrapers.tfx_mutan_futures import (
     get_mutan_futures_prices,
 )
-from core.services import logger
+
+logger = logging.getLogger(__name__)
 
 # Usage of tuple: fixed CSV header column order for bulk STIR price uploads.
 EXPECTED_CSV_COLUMNS: tuple[
@@ -42,7 +44,7 @@ STIR_FUTURES_PRICES_MAP = {
 }
 
 
-def get_stir_price_ingestion_lock_key(price_date: date) -> str:
+def get_lock_key_for_stir_price_ingestion(price_date: date) -> str:
     """Return Redis lock key for STIR price ingestion."""
     return f"lock:stir_price_ingestion:{price_date.isoformat()}"
 

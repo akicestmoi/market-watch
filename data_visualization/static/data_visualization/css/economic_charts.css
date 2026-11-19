@@ -23,16 +23,24 @@ body {
   flex-direction: column;
   align-items: center;
   margin-bottom: 2rem;
-  padding: 2rem 1rem;
+  padding: 1rem 1rem 1.25rem;
   border-bottom: 1px solid #0f0cd3;
+  position: sticky;
+
+  /* Sit just under the sticky navbar (padding + link row). */
+  top: 4.25rem;
+  z-index: 900;
+  background: linear-gradient(to right, #1e40af, #3b82f6, #93c5fd);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
 }
 
 .header-form {
   width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .header-form label {
@@ -79,6 +87,48 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin-left: auto;
+}
+
+.countries-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.countries-section[hidden] {
+  display: none !important;
+}
+
+.countries-label {
+  color: white;
+  font-weight: 500;
+  font-size: 1.2rem;
+}
+
+.countries-multiselect.multiselect-dropdown-wrapper {
+  width: auto;
+  min-width: 13rem;
+}
+
+.countries-multiselect .multiselect-dropdown-button {
+  width: auto;
+  min-width: 13rem;
+  max-width: 18rem;
+  padding-right: 2.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countries-multiselect .multiselect-dropdown-button::after {
+  right: 0.75rem;
+  pointer-events: none;
+}
+
+.countries-multiselect .multiselect-dropdown-content {
+  right: 0;
+  left: auto;
+  min-width: 14rem;
 }
 
 .period-window-label {
@@ -180,16 +230,44 @@ select.chart-select,
 }
 
 /* ==========================================
-   CHART GRID
+   CATEGORY SECTIONS + CHART GRID
    ========================================== */
+
+.chart-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  max-width: 1800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.chart-category-section {
+  text-align: left;
+}
+
+.chart-category-title {
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.55);
+  color: white;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
 
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2rem;
   max-width: 1800px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+.chart-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
 }
 
 /* ==========================================
@@ -209,17 +287,375 @@ select.chart-select,
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  position: relative;
 }
 
 .chart-header {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(30, 64, 175, 0.15);
+  min-height: 1.35rem;
+}
+
+.chart-info-wrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 1.35rem;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chart-comparability-warning {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid #b45309;
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: help;
+  padding: 0;
+}
+
+.chart-comparability-warning-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 21;
+  width: min(22rem, calc(100vw - 1rem));
+  text-align: left;
+  background: #fffbeb;
+  color: #78350f;
+  border: 1px solid #b45309;
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  padding: 0.75rem 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+}
+
+.chart-comparability-warning:hover .chart-comparability-warning-tooltip,
+.chart-comparability-warning:focus-within .chart-comparability-warning-tooltip {
+  display: block;
+}
+
+.chart-info-button {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid #1e40af;
+  background: #fff;
+  color: #1e40af;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.chart-info-button:hover {
+  background: #dbeafe;
+}
+
+.chart-info-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 20;
+  width: min(22rem, calc(100vw - 1rem));
+  max-width: min(22rem, calc(100vw - 1rem));
+  max-height: min(16rem, calc(100vh - 1rem));
+  overflow-y: auto;
+  text-align: left;
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #1e40af;
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  padding: 0.75rem 0.85rem;
+  box-sizing: border-box;
+}
+
+.chart-info-entry + .chart-info-entry {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(30, 64, 175, 0.15);
+}
+
+.chart-info-entry-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  color: #1e40af;
+}
+
+.chart-info-entry-body {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.composition-card {
+  grid-column: 1 / -1;
+  height: auto;
+  min-height: 470px;
+}
+
+.composition-card-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.composition-control-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.composition-charts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 360px;
+  flex: 1 1 auto;
+}
+
+.composition-chart-panel {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(30, 64, 175, 0.12);
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.75rem 0.5rem;
+  box-sizing: border-box;
+}
+
+.composition-chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  margin-bottom: 0.35rem;
+  flex-shrink: 0;
+}
+
+.composition-chart-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.composition-trend-mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.composition-trend-indicator-selection {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(30, 64, 175, 0.12);
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.composition-trend-indicator-selection .multiselect-dropdown-content {
+  z-index: 20;
+}
+
+.composition-line-wrapper,
+.composition-pie-wrapper {
+  min-height: 300px;
+  height: 320px;
+  padding-bottom: 0.35rem;
+  box-sizing: border-box;
+}
+
+.composition-period-controls {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding-bottom: 0.75rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(30, 64, 175, 0.15);
+}
+
+.composition-period-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+@media (width <= 900px) {
+  .composition-charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.industry-profitability-card {
+  grid-column: 1 / -1;
+  height: auto;
+  min-height: 470px;
+}
+
+.industry-profitability-card-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.industry-profitability-card-controls .trade-cross-filter-select {
+  width: 11rem;
+  max-width: 11rem;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.industry-profitability-control-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.industry-profitability-topn-input {
+  width: 4.5rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.industry-profitability-charts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 360px;
+  flex: 1 1 auto;
+}
+
+.industry-profitability-chart-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(30, 64, 175, 0.12);
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.75rem 0.5rem;
+  box-sizing: border-box;
+}
+
+.industry-profitability-chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  margin-bottom: 0.35rem;
+  flex-shrink: 0;
+}
+
+.industry-profitability-chart-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.industry-profitability-chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.industry-profitability-line-wrapper,
+.industry-profitability-bar-wrapper {
+  min-height: 300px;
+  height: 320px;
+  padding-bottom: 0.35rem;
+  box-sizing: border-box;
+}
+
+.industry-profitability-legend-subcard {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(30, 64, 175, 0.14);
+  border-radius: 0.65rem;
+  flex-shrink: 0;
+}
+
+.industry-profitability-legend-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 0.55rem;
+}
+
+.industry-profitability-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+}
+
+.industry-profitability-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+}
+
+.industry-profitability-legend-swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.2rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+}
+
+.industry-profitability-legend-label {
+  font-size: 0.82rem;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+@media (width <= 900px) {
+  .industry-profitability-charts-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart-card h2 {
@@ -236,6 +672,76 @@ select.chart-select,
   align-items: center;
   justify-content: center;
   padding-top: 0.75rem;
+  min-width: 0;
+}
+
+.cross-region-country-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem 1.1rem;
+  width: 100%;
+  max-width: 1800px;
+  margin: 0.65rem auto 0;
+  padding: 0 0.25rem;
+}
+
+.cross-region-country-legend[hidden] {
+  display: none !important;
+}
+
+.cross-region-country-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: white;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.cross-region-country-legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.15rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.cross-region-country-legend-label {
+  white-space: nowrap;
+}
+
+.cross-region-indicator-selection {
+  width: 100%;
+}
+
+.cross-region-indicator-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+.cross-region-select-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.cross-region-type-select {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  font-size: 0.85rem;
+  padding: 0.4rem 2rem 0.4rem 0.6rem;
+}
+
+.cross-region-mode-select {
+  flex: 0 0 6.5rem;
+  min-width: 5.5rem;
+  font-size: 0.85rem;
+  padding: 0.4rem 1.75rem 0.4rem 0.5rem;
 }
 
 /* ==========================================

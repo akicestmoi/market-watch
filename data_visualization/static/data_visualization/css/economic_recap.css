@@ -1,27 +1,215 @@
-/* Page background gradient */
+/* Fill the viewport; only the table card scrolls, not the page. */
+html {
+    height: 100%;
+}
+
 body {
     background: linear-gradient(to right, #1e40af, #3b82f6, #93c5fd);
     color: #1e293b;
-    min-height: 100vh;
-    padding: 1rem 2rem 2rem;
-    padding-top: 0.5rem;
+    height: 100%;
+    max-height: 100vh;
+    padding: 0.5rem 2rem 1rem;
     margin: 0;
     font-family: 'Inter', sans-serif;
-    overflow-x: auto;
+    overflow: hidden;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Card titles */
-.economic-table-card h2 {
+.navbar {
+    flex-shrink: 0;
+}
+
+/* Card header: title + As of / Comparison / Region on one line */
+.economic-recap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
     margin: 0 0 1rem;
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 0.5rem;
+    min-width: 0;
+}
+
+.economic-recap-header-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.economic-table-card h2 {
+    margin: 0;
     font-size: 1.25rem;
     font-weight: bold;
     color: #1e293b;
-    border-bottom: 2px solid #3b82f6;
-    padding-bottom: 0.5rem;
+    flex-shrink: 0;
 }
 
-/* Cards — full width, tight under navbar */
+.recap-control-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.65rem;
+    background-color: #fff;
+    border: 1px solid #93c5fd;
+    border-radius: 0.65rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.recap-control-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+.recap-control-card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.recap-control-card-body {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+}
+
+.region-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.region-buttons {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.region-btn {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: #fff;
+    color: #1e293b;
+    border: 1px solid #0f172a;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    min-width: 2.25rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.region-btn:hover {
+    background-color: #dbeafe;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.region-btn.active {
+    background-color: #2563eb;
+    color: white;
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.region-btn.active:hover {
+    background-color: #1d4ed8;
+}
+
+/* As-of / Comparison controls inside header sub-cards. */
+.as-of-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.as-of-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.as-of-field-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.as-of-select {
+    appearance: none;
+    padding: 0.3rem 1.45rem 0.3rem 0.45rem;
+    border: 1px solid #0f172a;
+    border-radius: 0.5rem;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231e293b' d='M1.1 1.2L6 6.1l4.9-4.9 1.1 1.1L6 8.3 0 2.3z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.4rem center;
+    background-size: 0.7rem 0.45rem;
+    color: #1e293b;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 4.5rem;
+}
+
+.as-of-select:disabled {
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.as-of-latest-btn {
+    display: inline-block;
+    padding: 0.35rem 0.7rem;
+    background-color: #fff;
+    color: #1e293b;
+    border: 1px solid #0f172a;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    min-width: 2.5rem;
+    text-align: center;
+}
+
+.as-of-latest-btn:hover {
+    background-color: #dbeafe;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.as-of-latest-btn.active {
+    background-color: #2563eb;
+    color: white;
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+/* Cards — fills leftover viewport under the navbar */
 .economic-table-card {
     background-color: #e0f2fe;
     border: 1px solid #2b6dd1;
@@ -29,18 +217,31 @@ body {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     padding: 1.25rem;
     margin-top: 0.75rem;
-    height: fit-content;
-    max-height: calc(100vh - 4rem);
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .economic-table-scroll {
     overflow: auto;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+}
+
+.recap-mode-legend {
+    margin: 0.75rem 0 0;
+    padding: 0 0.15rem;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #334155;
+}
+
+.recap-mode-legend em {
+    font-style: italic;
 }
 
 /* Table styling */
@@ -62,13 +263,31 @@ table th, table td {
     white-space: nowrap;
 }
 
+/* Metric / period cells keep full formatted values (no mid-number ellipsis). */
+table td.loc-curr,
+table td.loc-prev,
+table td.loc-chg,
+table td.loc-period {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+/* Horizontal rules come from border-bottom only — avoids double lines when a
+ * separator bottom edge meets the next row's top border (esp. with rowspan). */
+table tbody td {
+    border-top: none;
+}
+
 /* Explicit cols — required so Name colspan=2 does not split 50/50 with Mode.
-   Name is widened at the expense of the value columns. */
-col.col-category { width: 7.5%; }
-col.col-name { width: 28%; }
-col.col-mode { width: 3.75%; }
-col.col-metric { width: 4.35%; }
-col.col-metric-period { width: 3.7%; }
+   Single-region layout: name column takes most leftover width. */
+col.col-category { width: 12%; }
+col.col-subcategory { width: 8%; }
+col.col-name { width: 26%; }
+col.col-mode { width: 5%; }
+col.col-source { width: 11%; }
+col.col-metric { width: 8%; }
+col.col-metric-period { width: 8%; }
 
 table td.name-cell {
     border-right: none !important;
@@ -81,6 +300,25 @@ table td.mode-cell {
     background-color: #f1f5f9;
 }
 
+table td.source-cell {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #1e40af;
+    text-align: left;
+    white-space: normal;
+    word-break: break-word;
+}
+
+table td.source-cell .source-link {
+    color: #1d4ed8;
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+}
+
+table td.source-cell .source-link:hover {
+    color: #1e3a8a;
+}
+
 table tbody tr:hover td {
     background-color: #f8fafc;
 }
@@ -90,38 +328,74 @@ table tbody tr:hover td.mode-cell {
     background-color: #e8eef5;
 }
 
-/*
- * Two distinct sticky header rows.
- * Secondary top is set from JS to the measured primary row height so they abut
- * with no scroll gap, while the shared border keeps the rows visually separate.
- */
-table thead th {
+/* Sticky title block (label row + 2px rule row). The rule is one colspan cell
+ * so vertical column borders cannot interrupt it. */
+table thead {
     position: sticky;
-    z-index: 2;
+    top: 0;
+    z-index: 3;
     background-color: #bfdbfe;
 }
 
-table thead tr.thead-primary th {
-    top: 0;
+table thead th {
+    background-color: #bfdbfe;
     vertical-align: middle;
-    border-bottom: 1px solid #93c5fd;
+    border-bottom: none;
+    padding: 0.7rem 0.55rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    line-height: 1.25;
 }
 
-table thead tr.thead-secondary th {
-    top: var(--econ-thead-primary-height, 2.25rem);
-    z-index: 3;
-    border-top: none;
+table thead tr.thead-rule-row th.thead-rule-cell {
+    height: 2px;
+    max-height: 2px;
+    padding: 0;
+    border: none;
+    background-color: #1d4ed8;
+    font-size: 0;
+    line-height: 0;
 }
 
 .category-cell {
+    font-weight: bold;
+    background-color: #bfdbfe;
+    text-align: center;
+    vertical-align: middle;
+    padding-left: 0.75rem;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: clip;
+}
+
+.subcategory-cell {
     font-weight: bold;
     background-color: #dbeafe;
     text-align: center;
     vertical-align: middle;
     padding-left: 0.75rem;
     white-space: normal;
-    overflow: visible;
-    border-bottom: 2px solid #3b82f6 !important;
+    overflow: hidden;
+    text-overflow: clip;
+}
+
+/*
+ * Table separator gradient (same blue ladder as the card):
+ * ordinary cells #bae6fd → subcategory #93c5fd → category #1d4ed8.
+ */
+.subcategory-last-row > td,
+.subcategory-cell.subcategory-closing-cell {
+    border-bottom: 2px solid #93c5fd !important;
+}
+
+/* Full-width dark blue rule between categories (incl. rowspan label cells). */
+.category-last-row > td,
+.category-cell.category-closing-cell,
+.subcategory-cell.category-closing-cell {
+    border-bottom: 2px solid #1d4ed8 !important;
 }
 
 .name-cell {
@@ -131,6 +405,50 @@ table thead tr.thead-secondary th {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.expand-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin-right: 0.35rem;
+    padding: 0;
+    border: 1px solid #1e40af;
+    border-radius: 0.25rem;
+    background: #dbeafe;
+    color: #1e3a8a;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.expand-toggle[hidden] {
+    display: none;
+}
+
+/* Alinea: one indent step per expansion depth for COMPONENT children. */
+.indicator-child-row td.name-cell {
+    padding-left: calc(0.75rem + (var(--expand-depth, 1) * 1.1rem));
+    font-weight: 400;
+}
+
+.indicator-child-row.is-collapsed {
+    display: none;
+}
+
+/*
+ * Expansion styling stays on the name column only — value cells keep the same
+ * background as ordinary rows so the metric grid stays visually uniform.
+ */
+.indicator-child-row:not(.is-collapsed) td.name-cell {
+    background-color: #eef2f7;
+}
+
+tr.indicator-row.is-expanded > td.name-cell {
+    background-color: #e8edf4;
 }
 
 /* Match market-recap / comparison-period select styling */
@@ -161,14 +479,65 @@ table thead tr.thead-secondary th {
     background-color: #dbeafe;
 }
 
-/* Separators between regions — single 2px blue stroke (vertical) */
-.location-separator {
-    border-left: 2px solid #3b82f6 !important;
+/* Hover info bubble for indicator rows */
+.indicator-info-bubble {
+    position: fixed;
+    z-index: 40;
+    box-sizing: border-box;
+    width: min(26rem, calc(100vw - 1rem));
+    max-width: min(26rem, calc(100vw - 1rem));
+    max-height: min(80vh, 32rem);
+    overflow: auto;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px solid #1e40af;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
+    pointer-events: none;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
-/* Category separator — full table width, same 2px blue as region column lines */
-.category-last-row > td {
-    border-bottom: 2px solid #3b82f6 !important;
+.indicator-info-bubble[hidden] {
+    display: none;
+}
+
+.indicator-info-bubble .bubble-title {
+    margin: 0 0 0.35rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #bfdbfe;
+    white-space: normal;
+}
+
+.indicator-info-bubble .bubble-meta {
+    margin: 0.15rem 0;
+}
+
+.indicator-info-bubble .bubble-meta.bubble-description {
+    white-space: normal;
+}
+
+.indicator-info-bubble .bubble-meta dt {
+    display: inline;
+    font-weight: 600;
+    color: #93c5fd;
+}
+
+.indicator-info-bubble .bubble-meta dd {
+    display: inline;
+    margin: 0 0 0 0.25rem;
+    color: #e2e8f0;
+    overflow-wrap: anywhere;
+}
+
+.indicator-info-bubble .bubble-meta dd::after {
+    content: "";
+    display: block;
 }
 
 /* Empty data styling */

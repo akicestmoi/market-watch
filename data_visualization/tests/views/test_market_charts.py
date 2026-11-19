@@ -81,19 +81,19 @@ class TestMarketChartsView(TestCase):
         assert response.status_code == 200
         default_reference_date = date(2025, 12, 15)
         default_previous_curve_date = date(2025, 12, 12)
-        assert response.context.get("reference_date") == self.reference_date.isoformat()
-        assert (
-            response.context.get("previous_curve_date")
-            == self.previous_curve_date.isoformat()
-        )
-        assert (
-            response.context.get("default_reference_date")
-            == default_reference_date.isoformat()
-        )
-        assert (
-            response.context.get("default_previous_curve_date")
-            == default_previous_curve_date.isoformat()
-        )
+        assert {
+            "reference_date": response.context.get("reference_date"),
+            "previous_curve_date": response.context.get("previous_curve_date"),
+            "default_reference_date": response.context.get("default_reference_date"),
+            "default_previous_curve_date": response.context.get(
+                "default_previous_curve_date"
+            ),
+        } == {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_curve_date": self.previous_curve_date.isoformat(),
+            "default_reference_date": default_reference_date.isoformat(),
+            "default_previous_curve_date": default_previous_curve_date.isoformat(),
+        }
         dropdown_values_str = response.context.get("dropdown_values")
         assert dropdown_values_str is not None
         dropdown_values = json.loads(dropdown_values_str)

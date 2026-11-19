@@ -1,0 +1,57 @@
+{
+  "data": {
+    "dataSets": [
+      {
+        "observations": {
+          "0:0:0:0": [0.15],
+          "0:0:0:1": [-4.22],
+          "0:0:0:2": [-0.73]
+        }
+      }
+    ],
+    "structure": {
+      "dimensions": {
+        "observation": [
+          {
+            "id": "REF_AREA",
+            "values": [
+              {
+                "id": "USA"
+              }
+            ]
+          },
+          {
+            "id": "MEASURE",
+            "values": [
+              {
+                "id": "GAP"
+              }
+            ]
+          },
+          {
+            "id": "FREQ",
+            "values": [
+              {
+                "id": "A"
+              }
+            ]
+          },
+          {
+            "id": "TIME_PERIOD",
+            "values": [
+              {
+                "id": "2019"
+              },
+              {
+                "id": "2020"
+              },
+              {
+                "id": "2021"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

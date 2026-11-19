@@ -5,30 +5,45 @@ from enum import Enum
 from typing import Literal, NamedTuple, TypedDict
 
 import pandas as pd
+from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 
 import market_overview.services.holidays as holidays
 from central_banks_overview.services.central_banks_data import (
     get_decision_day_key_rates,
 )
-from core.services import convert_to_display_timezone
+from core.services.calendar import convert_to_display_timezone
+from core.services.time_series_calculation import TimeSeriesPoint
 from data_visualization.services.config import (
     FX_MATRIX_ORDER,
     FX_PAIRS_FILTER,
+    MARKET_RECAP_LOCATIONS_BY_GROUP,
     MarketRecapLocationEnum,
 )
-from data_visualization.services.economic_recap import format_indicator_value
-from economic_overview.models import (
-    EconomicDataLocationChoices,
-    EconomicDataModel,
-    EconomicPublicationFrequencyChoices,
-    IndicatorBaseUnitChoices,
-    IndicatorDisplayModeChoices,
-    PublicationScheduleModel,
+from data_visualization.services.economic_recap.table_content import (
+    format_indicator_value,
+    get_shared_amount_magnitude,
 )
+from data_visualization.services.time_series import (
+    build_year_to_date_cumulative_time_series,
+    build_ytd_yoy_time_series,
+)
+from economic_overview.models.common import (
+    EconomicDataLocationChoices,
+    IndicatorAmountMagnitudeChoices,
+    IndicatorBaseUnitChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataModel,
+    EconomicIndicatorInformationModel,
+    EconomicPublicationFrequencyChoices,
+    IndicatorDisplayModeChoices,
+)
+from economic_overview.models.publication import PublicationScheduleModel
 from economic_overview.services.economic_data import (
-    change_indicator_values_mode,
-    get_lag_for_mode_change_calculation,
+    TimedEconomicDataValue,
+    change_triplet_values_for_mode,
+    get_number_of_months_to_calculate_mode_change,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -67,7 +82,7 @@ class _DisplayData(TypedDict):
     locations: list[_DisplayAssetbyLocation]
 
 
-def _build_assets(group: pd.DataFrame) -> list[_DisplayAsset]:
+def _list_display_assets_from_group(group: pd.DataFrame) -> list[_DisplayAsset]:
     """Helper to create _DisplayAsset list from a DataFrame group."""
     return [
         _DisplayAsset(
@@ -93,14 +108,18 @@ def _sort_by_location_and_maturity(
     """Helper to sort a location group by location order and maturity."""
     location_order = {
         loc.value: i
-        for i, loc in enumerate(MarketRecapLocationEnum(location_group).get_locations())
+        for i, loc in enumerate(
+            MARKET_RECAP_LOCATIONS_BY_GROUP.get(
+                MarketRecapLocationEnum(location_group), []
+            )
+        )
     }
     return group.assign(
         location_order=group["location"].map(lambda x: location_order.get(x, 999))
     ).sort_values(["location_order", "maturity"], na_position="last")
 
 
-def format_data_for_market_recap_display(
+def format_market_prices_for_recap_display(
     reference_market_prices: list[MarketPriceModel],
     previous_market_prices: list[MarketPriceModel],
 ) -> list[_DisplayData]:
@@ -115,12 +134,14 @@ def format_data_for_market_recap_display(
 
     # Map countries to location groups
     country_to_location = {
-        country: location_group.value
-        for location_group in MarketRecapLocationEnum
-        for country in location_group.get_locations()
+        country.value: location_group.value
+        for location_group, locations in MARKET_RECAP_LOCATIONS_BY_GROUP.items()
+        for country in locations
     }
     df["location_group"] = df["location"].map(
-        lambda x: country_to_location.get(x, MarketRecapLocationEnum.NO_LOCATION.value)
+        lambda location: country_to_location.get(
+            location, MarketRecapLocationEnum.NO_LOCATION.value
+        )
     )
     df = df.sort_values(by="asset_id")
 
@@ -133,7 +154,7 @@ def format_data_for_market_recap_display(
             sorted_group = _sort_by_location_and_maturity(
                 loc_group, str(location_group)
             )
-            assets = _build_assets(sorted_group)
+            assets = _list_display_assets_from_group(sorted_group)
             if assets:
                 locations.append(
                     _DisplayAssetbyLocation(
@@ -197,7 +218,7 @@ def _load_fx_pair_prices(price_date: date) -> list[_FxPairPrice]:
     return fx_pair_prices
 
 
-def _build_fx_price_dict(
+def _get_fx_quote_levels_by_currency(
     fx_prices: list[_FxPairPrice], currencies: list[str]
 ) -> dict[str, list[float]]:
     """Build base→quote FX levels keyed by currency for 'pd.DataFrame'.
@@ -239,16 +260,20 @@ def get_fx_prices_matrix(
     previous_price_date: date,
 ) -> list[FxMatrixEntry]:
     """Get FX prices matrix showing percentage change between two dates."""
-    fx_dict_current = _build_fx_price_dict(
+    fx_quote_levels_current = _get_fx_quote_levels_by_currency(
         _load_fx_pair_prices(price_date), FX_MATRIX_ORDER
     )
-    fx_dict_previous = _build_fx_price_dict(
+    fx_quote_levels_previous = _get_fx_quote_levels_by_currency(
         _load_fx_pair_prices(previous_price_date), FX_MATRIX_ORDER
     )
 
-    # Transpose the dataframes to make the base currency the index and not the columns
-    fx_df_current = pd.DataFrame(fx_dict_current, index=FX_MATRIX_ORDER).transpose()
-    fx_df_previous = pd.DataFrame(fx_dict_previous, index=FX_MATRIX_ORDER).transpose()
+    # Transpose so each base currency is a row (not a column).
+    fx_df_current = pd.DataFrame(
+        fx_quote_levels_current, index=FX_MATRIX_ORDER
+    ).transpose()
+    fx_df_previous = pd.DataFrame(
+        fx_quote_levels_previous, index=FX_MATRIX_ORDER
+    ).transpose()
 
     fx_matrix = (
         (fx_df_current - fx_df_previous)
@@ -290,6 +315,7 @@ class _DayEvent(TypedDict):
 
     name: str
     location: str  # Display label (Choices.label), not the stored code
+    mode: str  # Indicator display mode label; empty for holidays / key rates
     value: str  # Formatted current release value; empty for holidays / unknown
     previous: str  # Formatted prior-period value; empty when unavailable
     change: str  # Signed level change vs previous; empty when unavailable
@@ -317,6 +343,7 @@ def _format_day_event_change(
     base_unit: str = "",
     base_currency: str = "",
     mode: IndicatorDisplayModeChoices | str = IndicatorDisplayModeChoices.RAW,
+    amount_magnitude: IndicatorAmountMagnitudeChoices | None = None,
 ) -> _DayEventFormattedChange:
     """Build signed change text and CSS class for a day-event card cell."""
     if change is None:
@@ -331,6 +358,7 @@ def _format_day_event_change(
         mode=mode,
         include_unit_label=True,
         digits=2,
+        amount_magnitude=amount_magnitude,
     )
     if change > 0:
         return _DayEventFormattedChange(
@@ -363,6 +391,7 @@ def _get_day_holiday_events(event_date: date) -> list[_DayEvent]:
                 _DayEvent(
                     name=holiday.name,
                     location=str(LocationChoices(holiday.location).label),
+                    mode="",
                     value="",
                     previous="",
                     change="",
@@ -392,16 +421,19 @@ def _does_publication_schedule_match_event_date(
     return False
 
 
-def _get_day_publication_events(event_date: date) -> list[_DayEvent]:
-    """Return economic releases scheduled for 'event_date' (display TZ)."""
+def _list_publication_schedules_near_event_date(
+    event_date: date,
+) -> list[PublicationScheduleModel]:
+    """Return schedules whose current or previous slot is near 'event_date'."""
     day_start = datetime.combine(
         event_date - timedelta(days=1), datetime.min.time()
     ).replace(tzinfo=timezone.utc)
     day_end = datetime.combine(
         event_date + timedelta(days=1), datetime.max.time()
     ).replace(tzinfo=timezone.utc)
-    schedules = (
-        PublicationScheduleModel.objects.filter(
+    return list(
+        PublicationScheduleModel.objects.filter(indicator__is_hidden=False)
+        .filter(
             Q(
                 current_publication_date__gte=day_start,
                 current_publication_date__lte=day_end,
@@ -412,71 +444,194 @@ def _get_day_publication_events(event_date: date) -> list[_DayEvent]:
             )
         )
         .select_related("indicator")
-        .order_by("indicator__location", "indicator__type")
+        .order_by("indicator__location", "indicator__series_label")
     )
 
+
+def _get_economic_data_time_series_for_day_event(
+    indicator: EconomicIndicatorInformationModel,
+    *,
+    indicator_default_display_mode: IndicatorDisplayModeChoices,
+    indicator_frequency: EconomicPublicationFrequencyChoices,
+) -> list[TimedEconomicDataValue]:
+    """Load enough history to format current / previous / change for a day-event card."""
+    latest_economic_data = (
+        EconomicDataModel.objects.filter(
+            indicator=indicator,
+            data_value__isnull=False,
+            period__isnull=False,
+        )
+        .order_by("-period", "-last_modified")
+        .first()
+    )
+    if latest_economic_data is None or latest_economic_data.period is None:
+        return []
+    history_start_period = latest_economic_data.period - relativedelta(
+        months=get_number_of_months_to_calculate_mode_change(
+            indicator_frequency, indicator_default_display_mode
+        )
+    )
+    return [
+        TimedEconomicDataValue(
+            period=time_series_point.period,
+            value=float(time_series_point.data_value),
+        )
+        for time_series_point in EconomicDataModel.objects.filter(
+            indicator=indicator,
+            data_value__isnull=False,
+            period__gte=history_start_period,
+        ).order_by("-period", "-last_modified")
+        if time_series_point.period is not None
+        and time_series_point.data_value is not None
+    ]
+
+
+def _list_timed_values_for_day_event_display_mode(
+    economic_data_time_series: list[TimedEconomicDataValue],
+    *,
+    indicator_default_display_mode: IndicatorDisplayModeChoices,
+    indicator_frequency: EconomicPublicationFrequencyChoices,
+) -> list[TimedEconomicDataValue]:
+    """Apply YTD transforms so day-event cards match the indicator default mode."""
+    if indicator_default_display_mode not in {
+        IndicatorDisplayModeChoices.YTD_RAW,
+        IndicatorDisplayModeChoices.YTD_YOY,
+    }:
+        return economic_data_time_series
+    ytd_points = build_year_to_date_cumulative_time_series(
+        [
+            TimeSeriesPoint(period=timed_value.period, value=timed_value.value)
+            for timed_value in economic_data_time_series
+        ],
+        frequency=indicator_frequency,
+    )
+    if indicator_default_display_mode == IndicatorDisplayModeChoices.YTD_YOY:
+        ytd_points = build_ytd_yoy_time_series(ytd_points)
+    return [
+        TimedEconomicDataValue(period=point.period, value=point.value)
+        for point in sorted(ytd_points, key=lambda point: point.period, reverse=True)
+    ]
+
+
+def _get_day_event_triplet_mode(
+    indicator_default_display_mode: IndicatorDisplayModeChoices,
+) -> IndicatorDisplayModeChoices:
+    """Return the triplet mode after any YTD pre-transform on the series."""
+    # YTD helpers already return display-ready levels / YoY percents.
+    if indicator_default_display_mode in {
+        IndicatorDisplayModeChoices.YTD_RAW,
+        IndicatorDisplayModeChoices.YTD_YOY,
+    }:
+        return IndicatorDisplayModeChoices.RAW
+    return indicator_default_display_mode
+
+
+class _DayEventValueTriplet(NamedTuple):
+    """Current / previous / change values for one day-event card."""
+
+    current: float | None
+    previous: float | None
+    change: float | None
+
+
+def _format_indicator_as_day_event(
+    indicator: EconomicIndicatorInformationModel,
+    *,
+    indicator_default_display_mode: IndicatorDisplayModeChoices,
+    indicator_value_triplet: _DayEventValueTriplet,
+) -> _DayEvent:
+    """Build one publication day-event card from a formatted value triplet."""
+    shared_amount_magnitude = (
+        get_shared_amount_magnitude(
+            current=indicator_value_triplet.current,
+            previous=indicator_value_triplet.previous,
+            change=indicator_value_triplet.change,
+            base_unit=indicator.base_unit,
+        )
+        if indicator_default_display_mode
+        in {
+            IndicatorDisplayModeChoices.RAW,
+            IndicatorDisplayModeChoices.YTD_RAW,
+        }
+        else None
+    )
+    formatted_value_change = _format_day_event_change(
+        indicator_value_triplet.change,
+        base_unit=indicator.base_unit,
+        base_currency=indicator.base_currency,
+        mode=indicator_default_display_mode,
+        amount_magnitude=shared_amount_magnitude,
+    )
+    return _DayEvent(
+        name=indicator.series_label,
+        location=str(EconomicDataLocationChoices(indicator.location).label),
+        mode=indicator_default_display_mode.value,
+        value=format_indicator_value(
+            indicator_value_triplet.current,
+            base_unit=indicator.base_unit,
+            base_currency=indicator.base_currency,
+            mode=indicator_default_display_mode,
+            include_unit_label=True,
+            digits=2,
+            amount_magnitude=shared_amount_magnitude,
+        ),
+        previous=format_indicator_value(
+            indicator_value_triplet.previous,
+            base_unit=indicator.base_unit,
+            base_currency=indicator.base_currency,
+            mode=indicator_default_display_mode,
+            include_unit_label=True,
+            digits=2,
+            amount_magnitude=shared_amount_magnitude,
+        ),
+        change=formatted_value_change.change,
+        change_class=formatted_value_change.change_class,
+        is_holiday=False,
+    )
+
+
+def _format_publication_schedule_as_day_event(
+    publication_schedule: PublicationScheduleModel,
+) -> _DayEvent:
+    """Format one publication schedule as a market-recap day-event card."""
+    indicator = publication_schedule.indicator
+    indicator_default_display_mode = IndicatorDisplayModeChoices(indicator.default_mode)
+    indicator_frequency = EconomicPublicationFrequencyChoices(indicator.frequency)
+    economic_data_time_series = _list_timed_values_for_day_event_display_mode(
+        _get_economic_data_time_series_for_day_event(
+            indicator,
+            indicator_default_display_mode=indicator_default_display_mode,
+            indicator_frequency=indicator_frequency,
+        ),
+        indicator_default_display_mode=indicator_default_display_mode,
+        indicator_frequency=indicator_frequency,
+    )
+    indicator_value_triplet = change_triplet_values_for_mode(
+        economic_data_time_series,
+        frequency=indicator_frequency,
+        mode=_get_day_event_triplet_mode(indicator_default_display_mode),
+    )
+    return _format_indicator_as_day_event(
+        indicator,
+        indicator_default_display_mode=indicator_default_display_mode,
+        indicator_value_triplet=_DayEventValueTriplet(
+            current=indicator_value_triplet.current,
+            previous=indicator_value_triplet.previous,
+            change=indicator_value_triplet.change,
+        ),
+    )
+
+
+def _get_day_publication_events(event_date: date) -> list[_DayEvent]:
+    """Return economic releases scheduled for 'event_date' (display TZ)."""
     day_events: list[_DayEvent] = []
-    for publication_schedule in schedules:
+    for publication_schedule in _list_publication_schedules_near_event_date(event_date):
         if not _does_publication_schedule_match_event_date(
             publication_schedule, event_date
         ):
             continue
-
-        indicator = publication_schedule.indicator
-        indicator_default_display_mode = IndicatorDisplayModeChoices(
-            indicator.default_mode
-        )
-        indicator_frequency = EconomicPublicationFrequencyChoices(indicator.frequency)
-        time_series_max_period = (
-            get_lag_for_mode_change_calculation(
-                indicator_frequency, indicator_default_display_mode
-            )
-            + 2
-        )
-        economic_data_time_series = [
-            float(time_series_point.data_value)
-            for time_series_point in EconomicDataModel.objects.filter(
-                indicator=indicator,
-                data_value__isnull=False,
-                period__isnull=False,
-            ).order_by("-period", "-last_modified")[:time_series_max_period]
-            if time_series_point.data_value is not None
-        ]
-        indicator_value_triplet = change_indicator_values_mode(
-            economic_data_time_series,
-            frequency=indicator_frequency,
-            mode=indicator_default_display_mode,
-        )
-        formatted_value_change = _format_day_event_change(
-            indicator_value_triplet.change,
-            base_unit=indicator.base_unit,
-            base_currency=indicator.base_currency,
-            mode=indicator_default_display_mode,
-        )
         day_events.append(
-            _DayEvent(
-                name=indicator.type,
-                location=str(EconomicDataLocationChoices(indicator.location).label),
-                value=format_indicator_value(
-                    indicator_value_triplet.current,
-                    base_unit=indicator.base_unit,
-                    base_currency=indicator.base_currency,
-                    mode=indicator_default_display_mode,
-                    include_unit_label=True,
-                    digits=2,
-                ),
-                previous=format_indicator_value(
-                    indicator_value_triplet.previous,
-                    base_unit=indicator.base_unit,
-                    base_currency=indicator.base_currency,
-                    mode=indicator_default_display_mode,
-                    include_unit_label=True,
-                    digits=2,
-                ),
-                change=formatted_value_change.change,
-                change_class=formatted_value_change.change_class,
-                is_holiday=False,
-            )
+            _format_publication_schedule_as_day_event(publication_schedule)
         )
     return day_events
 
@@ -500,6 +655,7 @@ def _get_day_central_bank_events(event_date: date) -> list[_DayEvent]:
             _DayEvent(
                 name=decision_day_key_rate["full_name"],
                 location=location_label,
+                mode="",
                 value=format_indicator_value(
                     decision_day_key_rate["current_value"],
                     base_unit=IndicatorBaseUnitChoices.PERCENT,

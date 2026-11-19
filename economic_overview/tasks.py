@@ -1,15 +1,27 @@
-"""Celery tasks for economic data updates and publication schedules."""
+"""Celery tasks for economic overview features."""
 
+import logging
 from datetime import date
 from typing import Required, TypedDict
 
 from celery import shared_task
 
-import economic_overview.services.data_ingestion as data_ingestion
 import economic_overview.services.economic_data as economic_data
-import economic_overview.services.publication as publication
-from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import logger
+import economic_overview.services.industry_profitability as industry_profitability
+import economic_overview.services.publication_update as publication_update
+import economic_overview.services.trade_ranking as trade_ranking
+from core.services.locks import release_redis_lock, try_acquire_redis_lock
+from economic_overview.services.industry_profitability import (
+    IndustryProfitabilityIngestReport,
+    IndustryProfitabilityIngestStatus,
+)
+from economic_overview.services.publication_update import MonthlyUpdateReport
+from economic_overview.services.trade_ranking import (
+    TradeRankingIngestReport,
+    TradeRankingIngestStatus,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class _CeleryTaskResult(TypedDict, total=False):
@@ -27,7 +39,7 @@ def scheduled_economic_data_and_schedule_update() -> _CeleryTaskResult:
     This task will be scheduled to run daily.
     """
     today = date.today()
-    lock_key = data_ingestion.get_economic_data_ingestion_lock_key()
+    lock_key = economic_data.get_lock_key_for_economic_data_ingestion()
     lock = try_acquire_redis_lock(lock_key)
     if lock is None:
         logger.warning(
@@ -53,11 +65,11 @@ def scheduled_economic_data_and_schedule_update() -> _CeleryTaskResult:
             )
 
         logger.info(
-            f"Ingesting economic data: {[indicator.name for indicator in economic_indicators_to_update]} for {today}"
+            f"Ingesting economic data: {[indicator.full_name for indicator in economic_indicators_to_update]} for {today}"
         )
-        data_ingestion.ingest_latest_economic_data(economic_indicators_to_update)
+        economic_data.ingest_latest_economic_data(economic_indicators_to_update)
         logger.info("Updating publication schedules.")
-        publication.update_publication_schedules(economic_indicators_to_update)
+        publication_update.update_publication_schedules(economic_indicators_to_update)
         return _CeleryTaskResult(
             status="success",
             message="Economic data ingested successfully.",
@@ -101,3 +113,102 @@ def scheduled_economic_data_update_logs_cleanup() -> _CeleryTaskResult:
             message=f"Error: {str(e)}",
             date=logs_date.isoformat(),
         )
+
+
+@shared_task
+def scheduled_economic_monthly_publication_update() -> MonthlyUpdateReport:
+    """Update indicators that have no official release calendar.
+
+    Runs on calendar day 1. Returns how many indicators updated or failed.
+    """
+    lock_key = "economic_overview:monthly_publication_update"
+    lock = try_acquire_redis_lock(lock_key)
+    if lock is None:
+        logger.warning("Skipping monthly publication update: already in progress.")
+        return MonthlyUpdateReport(
+            as_of=date.today().isoformat(),
+            status="skipped",
+            message="Monthly publication update already in progress.",
+            checked=0,
+            updated=[],
+            failed=[],
+            results=[],
+        )
+
+    try:
+        return publication_update.run_monthly_publication_update()
+    except Exception as exc:
+        logger.error(f"Error in monthly publication update: {exc}")
+        return MonthlyUpdateReport(
+            as_of=date.today().isoformat(),
+            status="error",
+            message=f"Error: {exc}",
+            checked=0,
+            updated=[],
+            failed=[],
+            results=[],
+        )
+    finally:
+        release_redis_lock(lock, lock_key)
+
+
+@shared_task
+def scheduled_industry_profitability_ingest() -> IndustryProfitabilityIngestReport:
+    """Ingest industry profitability data for each configured country.
+
+    Runs on calendar day 1. Returns a per-location success / unchanged / failed report.
+    """
+    lock_key = "economic_overview:industry_profitability_ingest"
+    lock = try_acquire_redis_lock(lock_key)
+    if lock is None:
+        logger.warning("Skipping industry profitability ingest: already in progress.")
+        return IndustryProfitabilityIngestReport(
+            as_of=date.today().isoformat(),
+            status=IndustryProfitabilityIngestStatus.SKIPPED.value,
+            message="Industry profitability ingest already in progress.",
+            results=[],
+        )
+
+    try:
+        return industry_profitability.ingest_industry_profitability()
+    except Exception as exc:
+        logger.error(f"Error in industry profitability ingest: {exc}")
+        return IndustryProfitabilityIngestReport(
+            as_of=date.today().isoformat(),
+            status=IndustryProfitabilityIngestStatus.FAILED.value,
+            message=f"Error: {exc}",
+            results=[],
+        )
+    finally:
+        release_redis_lock(lock, lock_key)
+
+
+@shared_task
+def scheduled_trade_ranking_ingest() -> TradeRankingIngestReport:
+    """Ingest trade rankings for every trade type (US / FR / JP).
+
+    Runs on calendar day 1. Returns a per-location success / unchanged / failed report.
+    """
+    lock_key = "economic_overview:trade_ranking_ingest"
+    lock = try_acquire_redis_lock(lock_key)
+    if lock is None:
+        logger.warning("Skipping trade ranking ingest: already in progress.")
+        return TradeRankingIngestReport(
+            as_of=date.today().isoformat(),
+            status=TradeRankingIngestStatus.SKIPPED.value,
+            message="Trade ranking ingest already in progress.",
+            results=[],
+        )
+
+    try:
+        return trade_ranking.ingest_trade_rankings()
+    except Exception as exc:
+        logger.error(f"Error in trade ranking ingest: {exc}")
+        return TradeRankingIngestReport(
+            as_of=date.today().isoformat(),
+            status=TradeRankingIngestStatus.FAILED.value,
+            message=f"Error: {exc}",
+            results=[],
+        )
+    finally:
+        release_redis_lock(lock, lock_key)

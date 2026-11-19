@@ -143,9 +143,20 @@ USE_TZ = True
 OPENAI_API_KEY = env("OPENAI_API_KEY")
 LLM_MODEL_NAME = "openai:gpt-6-luna"
 
+
+# API Keys
 # FRED (St. Louis Fed) — required for US economic series ingestion.
 # https://fred.stlouisfed.org/docs/api/api_key.html
 FRED_API_KEY = env("FRED_API_KEY")
+# BEA (US Bureau of Economic Analysis) — GDP-by-industry and related tables.
+# https://apps.bea.gov/API/signup/
+BEA_API_KEY = env("BEA_API_KEY")
+# US Census Bureau Data API — ACS detailed tables (e.g. Gini B19083).
+# https://api.census.gov/data/key_signup.html
+CENSUS_API_KEY = env("CENSUS_API_KEY")
+# e-Stat API application ID — MOF corporate survey and other Japan tables.
+# https://www.e-stat.go.jp/api/
+ESTAT_APP_ID = env("ESTAT_APP_ID")
 
 
 # Static files (CSS, JavaScript, Images)
@@ -210,6 +221,24 @@ CELERY_BEAT_SCHEDULE = {
     "scheduled-economic-data-and-schedule-update": {
         "task": "economic_overview.tasks.scheduled_economic_data_and_schedule_update",
         "schedule": crontab(day_of_week="1-5", hour="8", minute="0"),
+    },
+    # Monthly run to update values of indicators without an official release
+    # calendar. Runs on calendar day 1 at 08:15 (including weekends).
+    "scheduled-economic-monthly-publication-update": {
+        "task": "economic_overview.tasks.scheduled_economic_monthly_publication_update",
+        "schedule": crontab(day_of_month="1", hour="8", minute="15"),
+    },
+    # Monthly run to ingest industry profitability data (SBS / AIES / METI).
+    # Runs on calendar day 1 at 08:15 (including weekends).
+    "scheduled-industry-profitability-ingest": {
+        "task": "economic_overview.tasks.scheduled_industry_profitability_ingest",
+        "schedule": crontab(day_of_month="1", hour="8", minute="15"),
+    },
+    # Monthly run to ingest customs trade rankings for every trade type.
+    # Runs on calendar day 1 at 08:20 (including weekends).
+    "scheduled-trade-ranking-ingest": {
+        "task": "economic_overview.tasks.scheduled_trade_ranking_ingest",
+        "schedule": crontab(day_of_month="1", hour="8", minute="20"),
     },
     # Central Bank Meetings and STIR Futures Cleanup - Runs daily on weekdays
     # Updates central bank meeting dates and cleans up old STIR futures prices

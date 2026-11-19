@@ -14,7 +14,7 @@ from core.models import (
 
 
 class AssetClassChoices(models.TextChoices):
-    """Asset Class Choices."""
+    """Broad asset classes used in the market overview catalog."""
 
     STOCKS = "STOCKS", _("Stocks")
     RATES = "RATES", _("Interest Rates")
@@ -35,7 +35,7 @@ class AssetClassChoices(models.TextChoices):
 
 
 class AssetTypeChoices(models.TextChoices):
-    """Asset Type Choices."""
+    """Finer instrument types within an asset class."""
 
     EQUITY_INDEX = "EQUITY_INDEX", _("Equity Index")
     INTERBANK_RATE = "INTERBANK_RATE", _("Interbank Rate")
@@ -49,7 +49,7 @@ class AssetTypeChoices(models.TextChoices):
 
 
 class LocationChoices(models.TextChoices):
-    """Location Choices."""
+    """Market and economy location codes for assets and prices."""
 
     US = "US", _("United States")
     EU = "EU", _("Europe")
@@ -75,7 +75,7 @@ class LocationChoices(models.TextChoices):
 
 
 class PriceSourceChoices(models.TextChoices):
-    """Price Source Choices."""
+    """Where we fetch market prices from for each asset."""
 
     GOV_TREASURY_DEPT = "GOV_TREASURY_DEPT", _("US Treasury Department")
     NYFED = "NYFED", _("New York Federal Reserve")
@@ -94,10 +94,10 @@ class SpecialComment(str, Enum):
 
 
 class AssetModel(BaseModel):
-    """Asset Model."""
+    """One tradable or reference instrument in the market catalog."""
 
     asset_id = models.IntegerField(
-        help_text="Stable numeric id from the asset catalog JSON.",
+        help_text="Fixed numeric id from the asset catalog file.",
     )
     asset_class = models.CharField(
         max_length=50,
@@ -118,12 +118,15 @@ class AssetModel(BaseModel):
     )
     full_name = models.CharField(
         max_length=100,
-        help_text="Human-readable asset name for UI / recap cards.",
+        help_text="Full asset name shown in the UI.",
     )
     maturity = models.FloatField(
         null=True,
         blank=True,
-        help_text="Bond / rate maturity in years when applicable; null otherwise.",
+        help_text=(
+            "Bond or rate maturity in years when the asset has one; "
+            "empty for other instrument types."
+        ),
     )
     asset_type = models.CharField(
         max_length=100,
@@ -135,12 +138,12 @@ class AssetModel(BaseModel):
     )
     ticker = models.CharField(
         max_length=100,
-        help_text="Upstream source ticker / series code used for price ingest.",
+        help_text="Publisher series code used when fetching prices.",
     )
     source = models.CharField(
         max_length=100,
         choices=PriceSourceChoices.choices,
-        help_text="Upstream price source for this asset.",
+        help_text="Where we fetch prices for this asset from.",
     )
 
     def __str__(self):
@@ -148,7 +151,7 @@ class AssetModel(BaseModel):
 
 
 class MarketPriceModel(BaseModel):
-    """Market Price Model."""
+    """One settled or last price for an asset on a calendar day."""
 
     asset = models.ForeignKey(
         AssetModel,
@@ -163,13 +166,13 @@ class MarketPriceModel(BaseModel):
     price = models.FloatField(
         null=True,
         blank=True,
-        help_text="Settled / last price; null when missing.",
+        help_text="Settled or last price. Empty when missing.",
     )
     comment = models.TextField(
         null=True,
         blank=True,
         default="",
-        help_text="Optional scrape / ingest note (e.g. bank holiday).",
+        help_text="Optional note from fetching or saving (for example a bank holiday).",
     )
 
     class Meta:
@@ -188,7 +191,9 @@ class MarketPriceModel(BaseModel):
         remove_auto_fields: bool = True,
         remove_cache_fields: bool = True,
         remove_specific_fields: list[str] = [],
-    ) -> dict:  # Polymorphic model serializer until per-model TypedDicts exist.
+    ) -> (
+        dict
+    ):  # Usage of dict: field keys vary by Django model until per-model TypedDicts exist.
         """Override convert_to_dict to include asset identifiers."""
         data = super().convert_to_dict(
             remove_foreign_key=remove_foreign_key,
@@ -204,7 +209,7 @@ class MarketPriceModel(BaseModel):
 
 
 class PriceUpdateLogModel(BaseLogModel):
-    """Price Update Log Model."""
+    """Change log for one market price update."""
 
     fk_name = "market_price"
     market_price = models.ForeignKey(
@@ -216,7 +221,7 @@ class PriceUpdateLogModel(BaseLogModel):
 
 
 class HolidayModel(BaseModel):
-    """Holiday Model."""
+    """One market holiday on a calendar day for a location."""
 
     date = models.DateField(
         help_text="Calendar day of the market holiday.",

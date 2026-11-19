@@ -1,5 +1,6 @@
 """CNBC Stock Market Daily Recap scraper (US session live wrap)."""
 
+import logging
 import re
 from datetime import date
 from urllib.parse import urljoin
@@ -8,8 +9,7 @@ from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 from curl_cffi import requests as curl_requests
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_analysis.services.config import (
     CNBC_STOCK_MARKET_DAILY_RECAP_LIST_URL,
     HTTP_REQUEST_TIMEOUT_SECONDS,
@@ -19,6 +19,8 @@ from market_analysis.services.scrapers.common import (
     ScrapingResult,
     extract_main_text,
 )
+
+logger = logging.getLogger(__name__)
 
 _URL_DATE_PATTERN = re.compile(r"/(\d{4})/(\d{2})/(\d{2})/")
 _LIVE_UPDATE_PATH_MARKER = "stock-market-today-live-update"

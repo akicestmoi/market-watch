@@ -12,6 +12,7 @@ from central_banks_overview.open_api.request_serializers import (
     GetCentralBankMeetingDatesSerializer,
 )
 from central_banks_overview.open_api.response_serializers import (
+    CentralBankMeetingDatesIngestionResponseSerializer,
     CentralBankMeetingDatesResponseSerializer,
 )
 from core.open_api.schema import (
@@ -31,13 +32,17 @@ class CentralBankMeetingDatesIngestionView(BaseAPIView):
         tags=[ApiTags.CENTRAL_BANKS],
         summary="Ingest Central Bank Meeting Dates",
         description="Ingest Central Bank Meeting Dates for a given date.",
-        response=CreatedOpenApiResponse(),
+        response=CreatedOpenApiResponse(
+            CentralBankMeetingDatesIngestionResponseSerializer
+        ),
     )
     def post(self, _request: Request) -> Response:
         """Get Central Bank Meeting Dates for a given date."""
         central_banks_meetings.ingest_all_central_bank_meeting_dates()
         return Response(
-            data={"message": "Central Bank Meeting Dates successfully ingested"},
+            data=CentralBankMeetingDatesIngestionResponseSerializer(
+                {"message": "Central Bank Meeting Dates successfully ingested"}
+            ).data,
             status=status.HTTP_201_CREATED,
         )
 

@@ -3,12 +3,30 @@
 from rest_framework import serializers
 
 from core.open_api.fields import CommaSeparatedIntegerField
+from economic_overview.models.trade_ranking import TradeTypeChoices
 
 
 class LatestEconomicDataIngestionSerializer(serializers.Serializer):
     """Latest Economic Data Ingestion Serializer."""
 
     update_schedule = serializers.BooleanField(required=False, default=True)
+
+
+class TradeRankingIngestionSerializer(serializers.Serializer):
+    """Trigger trade ranking ingest for one or both trade types."""
+
+    trade_type = serializers.ChoiceField(
+        choices=TradeTypeChoices.choices,
+        required=False,
+        help_text=(
+            "Which trade ranking family to ingest. " "Omit to ingest every trade type."
+        ),
+    )
+    full_history = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Scrape the full kept history window instead of only recent years.",
+    )
 
 
 class HistoricalEconomicDataIngestionSerializer(serializers.Serializer):

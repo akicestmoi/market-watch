@@ -42,7 +42,7 @@ class AnalysisCacheServicesTests(TestCase):
 
     @freeze_time(_FREEZE_TIME)
     @patch("market_analysis.services.cache.get_redis_client")
-    @patch("core.cache.get_redis_client")
+    @patch("core.services.cache.get_redis_client")
     def test_set_get_list_roundtrip(self, mock_core_redis, mock_local_redis):
         """
         GIVEN a mocked Redis client and an analyzed article
@@ -94,7 +94,7 @@ class AnalysisCacheServicesTests(TestCase):
             analysis=article,
         )
         cache.set_cached_analysis(day, article, source_url=article["source_url"])
-        key = cache._build_entry_key(day, article["source_url"])
+        key = cache._format_analysis_cache_entry_key(day, article["source_url"])
         assert key in store
 
         got = cache.get_cached_analysis(day, article["source_url"])

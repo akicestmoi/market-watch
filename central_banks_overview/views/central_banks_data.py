@@ -19,7 +19,6 @@ from central_banks_overview.open_api.response_serializers import (
     DeleteCentralBankDataResponseSerializer,
 )
 from central_banks_overview.services.central_banks_data import CentralBankDataDate
-from core.locks import acquire_redis_locks
 from core.open_api.schema import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -28,6 +27,7 @@ from core.open_api.schema import (
     OkOpenApiResponse,
     open_api,
 )
+from core.services.locks import acquire_redis_locks
 from core.views import BaseAPIView
 
 
@@ -66,7 +66,7 @@ class CentralBankDataIngestionView(BaseAPIView):
             for item in validated_data
         ]
         lock_keys = [
-            central_banks_data.get_cb_data_ingestion_lock_key(
+            central_banks_data.get_lock_key_for_cb_data_ingestion(
                 item["central_bank"], item["date"]
             )
             for item in dates_to_ingest_by_central_bank

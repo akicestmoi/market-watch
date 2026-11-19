@@ -1,5 +1,6 @@
 """API views for market price ingestion and queries."""
 
+import logging
 from datetime import date
 from typing import TypedDict
 
@@ -9,7 +10,6 @@ from rest_framework.response import Response
 
 import market_overview.services.market_data as market_data
 import market_overview.services.price_ingestion as price_ingestion
-from core.locks import acquire_redis_lock
 from core.open_api.schema import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -19,7 +19,7 @@ from core.open_api.schema import (
     OkOpenApiResponse,
     open_api,
 )
-from core.services import logger
+from core.services.locks import acquire_redis_lock
 from core.views import BaseAPIView
 from market_overview.models import MarketPriceModel
 from market_overview.open_api.request_serializers import (
@@ -46,6 +46,8 @@ from market_overview.services.market_data import (
     MarkAsHolidayItem,
 )
 from market_overview.services.price_ingestion import BatchPriceIngestionItem
+
+logger = logging.getLogger(__name__)
 
 
 class _MarketPriceIngestionValidatedData(TypedDict):
@@ -76,7 +78,7 @@ class IngestMarketPricesView(BaseAPIView):
 
         logger.info(f"Ingesting market data for date: {price_date}")
         with acquire_redis_lock(
-            price_ingestion.get_market_price_ingestion_lock_key(price_date),
+            price_ingestion.get_lock_key_for_market_price_ingestion(price_date),
             locked_detail=(
                 "Market price ingestion is already in progress for "
                 f"{price_date.isoformat()}."

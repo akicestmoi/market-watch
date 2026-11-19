@@ -1,5 +1,6 @@
 """Base API view classes shared by domain endpoints."""
 
+import logging
 from typing import NotRequired, TypedDict
 
 from django.http import Http404
@@ -8,7 +9,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.services import logger
+logger = logging.getLogger(__name__)
 
 
 class _FieldValidationError(TypedDict):

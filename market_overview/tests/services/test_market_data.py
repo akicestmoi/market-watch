@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 import pytest
 from django.test import TestCase
 
-import core.services as core_services
+import core.services.orm as core_services
 from core.testing import parse_query_for_testing
 from market_overview.models import (
     AssetClassChoices,

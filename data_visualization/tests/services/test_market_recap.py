@@ -13,19 +13,25 @@ from central_banks_overview.models import (
 from data_visualization.services.config import FX_MATRIX_ORDER
 from data_visualization.services.market_recap import (
     _DayEventChangeClass,
-    format_data_for_market_recap_display,
+    format_market_prices_for_recap_display,
     get_day_events_grouped_by_location,
     get_fx_prices_matrix,
 )
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
-    EconomicDataModel,
     EconomicDataSourceChoices,
+    IndicatorBaseCurrencyChoices,
+    IndicatorBaseUnitChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
-    PublicationScheduleModel,
+    IndicatorDisplayModeChoices,
 )
+from economic_overview.models.publication import PublicationScheduleModel
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,
@@ -117,7 +123,7 @@ class TestMarketRecapServices(TestCase):
             location=None,
         )
 
-    def test_format_data_for_market_recap_display_success(self):
+    def test_format_market_prices_for_recap_display_success(self):
         """
         GIVEN reference and previous market prices
         WHEN formatting data for market recap display
@@ -127,7 +133,9 @@ class TestMarketRecapServices(TestCase):
         reference_prices = [self.reference_price_stocks, self.reference_price_rates]
         previous_prices = [self.previous_price_stocks, self.previous_price_rates]
 
-        result = format_data_for_market_recap_display(reference_prices, previous_prices)
+        result = format_market_prices_for_recap_display(
+            reference_prices, previous_prices
+        )
         assert result == [
             {
                 "asset_class": AssetClassChoices.STOCKS.label,
@@ -171,7 +179,7 @@ class TestMarketRecapServices(TestCase):
             },
         ]
 
-    def test_format_data_for_market_recap_display_multiple_locations(self):
+    def test_format_market_prices_for_recap_display_multiple_locations(self):
         """
         GIVEN reference and previous market prices with multiple locations
         WHEN formatting data for market recap display
@@ -207,7 +215,9 @@ class TestMarketRecapServices(TestCase):
             previous_price_eu,
         ]
 
-        result = format_data_for_market_recap_display(reference_prices, previous_prices)
+        result = format_market_prices_for_recap_display(
+            reference_prices, previous_prices
+        )
         assert result == [
             {
                 "asset_class": AssetClassChoices.STOCKS.label,
@@ -266,7 +276,7 @@ class TestMarketRecapServices(TestCase):
             },
         ]
 
-    def test_format_data_for_market_recap_display_no_previous_price(self):
+    def test_format_market_prices_for_recap_display_no_previous_price(self):
         """
         GIVEN reference prices without corresponding previous prices
         WHEN formatting data for market recap display
@@ -275,7 +285,9 @@ class TestMarketRecapServices(TestCase):
         reference_prices = [self.reference_price_stocks]
         previous_prices = []
 
-        result = format_data_for_market_recap_display(reference_prices, previous_prices)
+        result = format_market_prices_for_recap_display(
+            reference_prices, previous_prices
+        )
 
         assert result == [
             {
@@ -300,7 +312,7 @@ class TestMarketRecapServices(TestCase):
             }
         ]
 
-    def test_format_data_for_market_recap_display_sorted_by_maturity(self):
+    def test_format_market_prices_for_recap_display_sorted_by_maturity(self):
         """
         GIVEN reference and previous market prices with multiple rates
         WHEN formatting data for market recap display
@@ -329,7 +341,9 @@ class TestMarketRecapServices(TestCase):
         reference_prices = [self.reference_price_rates, reference_price_5y]
         previous_prices = [self.previous_price_rates, previous_price_5y]
 
-        result = format_data_for_market_recap_display(reference_prices, previous_prices)
+        result = format_market_prices_for_recap_display(
+            reference_prices, previous_prices
+        )
 
         rates_data = next(
             item
@@ -584,9 +598,10 @@ class TestDayEvents(TestCase):
         self.indicator = EconomicIndicatorInformationModel.objects.create(
             id=1,
             location=EconomicDataLocationChoices.US,
-            category=EconomicDataCategoryChoices.INFLATION,
-            type="CPI",
-            name="Consumer Price Index",
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.PRICES,
+            series_label="CPI",
+            full_name="Consumer Price Index",
             technical_name="cpi",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
@@ -638,6 +653,7 @@ class TestDayEvents(TestCase):
                     {
                         "name": "Bank Holiday",
                         "location": "United States",
+                        "mode": "",
                         "value": "",
                         "previous": "",
                         "change": "",
@@ -647,6 +663,7 @@ class TestDayEvents(TestCase):
                     {
                         "name": "CPI",
                         "location": "United States",
+                        "mode": "Raw",
                         "value": "3.20",
                         "previous": "3.00",
                         "change": "+0.20",
@@ -724,6 +741,7 @@ class TestDayEvents(TestCase):
                     {
                         "name": "ECB Deposit Facility Rate",
                         "location": "Europe",
+                        "mode": "",
                         "value": "2.00 %",
                         "previous": "2.00 %",
                         "change": "(unch)",
@@ -733,6 +751,7 @@ class TestDayEvents(TestCase):
                     {
                         "name": "ECB Main Refinancing Operation Rate",
                         "location": "Europe",
+                        "mode": "",
                         "value": "2.15 %",
                         "previous": "2.15 %",
                         "change": "(unch)",
@@ -742,6 +761,7 @@ class TestDayEvents(TestCase):
                     {
                         "name": "ECB Marginal Lending Facility Rate",
                         "location": "Europe",
+                        "mode": "",
                         "value": "2.15 %",
                         "previous": "2.40 %",
                         "change": "-0.25 %",
@@ -786,10 +806,94 @@ class TestDayEvents(TestCase):
                     {
                         "name": "CPI",
                         "location": "United States",
+                        "mode": "Raw",
                         "value": "3.20",
                         "previous": "3.00",
                         "change": "+0.20",
                         "change_class": _DayEventChangeClass.POSITIVE,
+                        "is_holiday": False,
+                    },
+                ],
+            }
+        ]
+
+    def test_get_day_events_ytd_yoy_shows_growth_not_raw_level(self):
+        """
+        GIVEN a Retail Sales release whose default mode is YTDYoY
+        WHEN getting day events for that publication date
+        THEN the card shows YTD YoY percents and the YTDYoY mode label
+        """
+        retail_sales = EconomicIndicatorInformationModel.objects.create(
+            id=2,
+            location=EconomicDataLocationChoices.US,
+            category=EconomicDataCategoryChoices.HOUSEHOLD,
+            subcategory=EconomicDataSubcategoryChoices.SALES,
+            series_label="Retail Sales",
+            full_name="United States Retail Sales",
+            technical_name="us_retail_sales",
+            frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+            source=EconomicDataSourceChoices.FRED,
+            ticker="RSAFS",
+            base_unit=IndicatorBaseUnitChoices.M,
+            base_currency=IndicatorBaseCurrencyChoices.USD,
+            default_mode=IndicatorDisplayModeChoices.YTD_YOY,
+        )
+        PublicationScheduleModel.objects.create(
+            indicator=retail_sales,
+            current_publication_date=datetime(
+                2025, 12, 15, 13, 30, 0, tzinfo=timezone.utc
+            ),
+        )
+        # Two full calendar years so YTD through Nov can compare YoY.
+        for year, monthly_levels in {
+            2024: [
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+            ],
+            2025: [
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+                110.0,
+            ],
+        }.items():
+            for month_index, level in enumerate(monthly_levels, start=1):
+                EconomicDataModel.objects.create(
+                    indicator=retail_sales,
+                    period=date(year, month_index, 1),
+                    data_value=level,
+                )
+
+        result = get_day_events_grouped_by_location(self.event_date)
+        assert result == [
+            {
+                "location": "United States",
+                "events": [
+                    {
+                        "name": "Retail Sales",
+                        "location": "United States",
+                        "mode": "YTDYoY",
+                        "value": "10.00 %",
+                        "previous": "10.00 %",
+                        "change": "(unch)",
+                        "change_class": _DayEventChangeClass.UNCHANGED,
                         "is_holiday": False,
                     },
                 ],

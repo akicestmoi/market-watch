@@ -23,14 +23,11 @@
                 <label class="region-label">Region:</label>
                 <div class="region-buttons" id="region-buttons">
                     <button type="button" class="region-btn" data-region="US">US</button>
-                    <button type="button" class="region-btn" data-region="EU">EU</button>
                     <button type="button" class="region-btn" data-region="FR">FR</button>
                     <button type="button" class="region-btn" data-region="JP">JP</button>
+                    <button type="button" class="region-btn" data-region="CROSS">Cross-Region</button>
                 </div>
             </div>
-            <form method="get">
-                <input type="hidden" id="region" name="region" value="{{ region }}">
-            </form>
             <div class="period-window-section">
                 <label for="period-window" class="period-window-label">Chart Period:</label>
                 <select id="period-window" class="chart-select" name="period_window" aria-label="Chart period">
@@ -39,7 +36,26 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="countries-section" id="countries-section" hidden>
+                <label class="countries-label">Countries:</label>
+                <div class="multiselect-dropdown-wrapper countries-multiselect" id="countries-multiselect">
+                    <button type="button" class="multiselect-dropdown-button" id="countries-dropdown-button"
+                            aria-label="Select Cross-Region countries">Countries</button>
+                    <div class="multiselect-dropdown-content" id="countries-dropdown-content" style="display: none;">
+                        <div class="multiselect-action-buttons">
+                            <button type="button" class="multiselect-action-btn" id="countries-select-all">Select All</button>
+                            <button type="button" class="multiselect-action-btn" id="countries-unselect-all">Unselect All</button>
+                        </div>
+                        <div class="multiselect-checkbox-list" id="countries-checkbox-list"></div>
+                        <div class="multiselect-validation-buttons">
+                            <button type="button" class="multiselect-apply-btn" id="countries-apply">Apply</button>
+                            <button type="button" class="multiselect-cancel-btn" id="countries-cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        <div class="cross-region-country-legend" id="cross-region-country-legend" hidden></div>
     </div>
 
     <!-- Chart Grid -->
@@ -50,8 +66,13 @@
     <script>
         window.dropdownValuesJSON = {{ dropdown_values | safe }};
         window.economicDataJSON = {{ economic_data | safe }};
+        window.compositionPanelsJSON = {{ composition_panels | safe }};
+        window.industryProfitabilityPanelsJSON = {{ industry_profitability_panels | safe }};
+        window.tradeRankingPanelsJSON = {{ trade_ranking_panels | safe }};
         window.categoriesJSON = {{ categories | safe }};
         window.selectedValuesJSON = {{ selected_values | safe }};
+        window.crossRegionCountriesJSON = {{ cross_region_countries | safe }};
+        window.selectedCountriesJSON = {{ selected_countries | safe }};
         window.currentRegion = "{{ region }}";
     </script>
     <script src="{% static 'data_visualization/js/errors.js' %}"></script>

@@ -139,13 +139,13 @@ class TestDatabaseManagementServices(TestCase):
         assert _format_table_size(1023) == "1023 bytes"
         assert _format_table_size(1024) == "1 kB"
         assert _format_table_size(512 * 1024) == "512 kB"
-        assert _format_table_size(1024 * 1024 - 1) == "1023 kB"
-        assert _format_table_size(1024 * 1024) == "1 MB"
-        assert _format_table_size(512 * 1024 * 1024) == "512 MB"
-        assert _format_table_size(1024 * 1024 * 1024) == "1 GB"
-        assert _format_table_size(5 * 1024 * 1024 * 1024) == "5 GB"
-        assert _format_table_size(1024 * 1024 * 1024 * 1024) == "1 TB"
-        assert _format_table_size(2 * 1024 * 1024 * 1024 * 1024) == "2 TB"
+        assert _format_table_size(1024 * 1024 - 1) == "1024 kB"
+        assert _format_table_size(1024 * 1024) == "1.00 MB"
+        assert _format_table_size(512 * 1024 * 1024) == "512.00 MB"
+        assert _format_table_size(1024 * 1024 * 1024) == "1.00 GB"
+        assert _format_table_size(5 * 1024 * 1024 * 1024) == "5.00 GB"
+        assert _format_table_size(1024 * 1024 * 1024 * 1024) == "1.00 TB"
+        assert _format_table_size(2 * 1024 * 1024 * 1024 * 1024) == "2.00 TB"
 
     @patch("data_visualization.services.database_management.apps")
     @patch("data_visualization.services.database_management.connection")
@@ -210,7 +210,7 @@ class TestDatabaseManagementServices(TestCase):
                 "name": "market_overview_marketpricemodel",  # Largest table first
                 "display_name": "Market Price",
                 "count": 10,
-                "size": "1 MB",
+                "size": "1.00 MB",
                 "size_bytes": 1048576,
             },
             {

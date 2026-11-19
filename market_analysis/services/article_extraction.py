@@ -7,6 +7,7 @@ instructions. A source may yield zero or more region-tagged wraps.
 """
 
 import json
+import logging
 from collections.abc import Callable
 from datetime import date
 from typing import TypedDict
@@ -15,7 +16,6 @@ from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework.exceptions import NotFound, ValidationError
 
-from core.services import logger
 from market_analysis.models import ArticleRegionChoices, NewsSourceChoices
 from market_analysis.services.config import NEWS_SOURCES_JSON
 from market_analysis.services.scrapers.boursier import scrap_boursier_cloture_paris
@@ -39,6 +39,8 @@ from market_analysis.services.scrapers.tokyo_closing_bell import (
     scrap_tokyo_closing_bell,
 )
 from market_analysis.services.scrapers.zonebourse import scrap_zonebourse
+
+logger = logging.getLogger(__name__)
 
 # Single-article scrapers return ScrapingResult; multi-wrap scrapers return a
 # tagged list. Extraction normalizes both using the catalog 'regions' list.
@@ -110,48 +112,59 @@ def _normalize_tagged_scraping_results(
     return [tag_scraping_result(scraping_output, catalog_regions)]
 
 
-def _extract_article(
-    news_source: _NewsSourceEntry,
-    reporting_date: date,
-    region: ArticleRegionChoices | None = None,
-) -> ArticleExtractionResult:
-    """Extract zero or more wraps for one JSON-listed source via its scrap function."""
-    source_id = news_source["source"]
-    source_name = news_source["name"]
-    base_url = news_source["base_url"]
-    catalog_regions = news_source["regions"]
-    if region is not None and region not in catalog_regions:
-        raise ValidationError(
-            {
-                "region": (
-                    f"Region {region.value!r} is not available for source "
-                    f"{source_id.value!r}. "
-                    f"Available: {[item.value for item in catalog_regions]}"
-                )
-            }
-        )
-    scraping_function = SOURCE_SCRAP_MAP.get(source_id)
-    if not scraping_function:
-        return ArticleExtractionResult(
-            source_id=source_id,
-            name=source_name,
-            base_url=base_url,
-            regions=catalog_regions,
-            articles=[],
-            comment=(
-                f"No scraping function for source {source_id.value!r}. "
-                f"Known: {sorted(choice.value for choice in SOURCE_SCRAP_MAP)}"
-            ),
-        )
-
-    if source_id in _MULTI_REGION_SCRAP_SOURCES:
-        scraping_output = scraping_function(reporting_date, region=region)
-    else:
-        scraping_output = scraping_function(reporting_date)
-    tagged_results = _normalize_tagged_scraping_results(
-        scraping_output,
-        catalog_regions,
+def _raise_when_region_not_in_catalog(
+    region: ArticleRegionChoices,
+    catalog_regions: list[ArticleRegionChoices],
+    source_id: NewsSourceChoices,
+) -> None:
+    """Raise when the requested region is not listed for this news source."""
+    if region in catalog_regions:
+        return
+    raise ValidationError(
+        {
+            "region": (
+                f"Region {region.value!r} is not available for source "
+                f"{source_id.value!r}. "
+                f"Available: {[item.value for item in catalog_regions]}"
+            )
+        }
     )
+
+
+def _get_missing_scraper_extraction_result(
+    news_source: _NewsSourceEntry,
+) -> ArticleExtractionResult:
+    """Return an empty extraction outcome when no scraper is registered."""
+    source_id = news_source["source"]
+    return ArticleExtractionResult(
+        source_id=source_id,
+        name=news_source["name"],
+        base_url=news_source["base_url"],
+        regions=news_source["regions"],
+        articles=[],
+        comment=(
+            f"No scraping function for source {source_id.value!r}. "
+            f"Known: {sorted(choice.value for choice in SOURCE_SCRAP_MAP)}"
+        ),
+    )
+
+
+class _TaggedArticlesBuildResult(TypedDict):
+    """Articles and miss comments built from tagged scraper output."""
+
+    articles: list[ArticleData]
+    miss_comments: list[str]
+
+
+def _build_articles_from_tagged_results(
+    tagged_results: list[TaggedScrapingResult],
+    *,
+    source_id: NewsSourceChoices,
+    source_name: str,
+    catalog_regions: list[ArticleRegionChoices],
+    region: ArticleRegionChoices | None,
+) -> _TaggedArticlesBuildResult:
+    """Turn tagged scraper wraps into ArticleData records plus miss comments."""
     articles: list[ArticleData] = []
     miss_comments: list[str] = []
     for tagged_result in tagged_results:
@@ -172,14 +185,52 @@ def _extract_article(
             )
         elif tagged_result.get("comment"):
             miss_comments.append(str(tagged_result["comment"]))
+    return _TaggedArticlesBuildResult(articles=articles, miss_comments=miss_comments)
+
+
+def _extract_article(
+    news_source: _NewsSourceEntry,
+    reporting_date: date,
+    region: ArticleRegionChoices | None = None,
+) -> ArticleExtractionResult:
+    """Extract zero or more wraps for one JSON-listed source via its scrap function."""
+    source_id = news_source["source"]
+    source_name = news_source["name"]
+    base_url = news_source["base_url"]
+    catalog_regions = news_source["regions"]
+    if region is not None:
+        _raise_when_region_not_in_catalog(region, catalog_regions, source_id)
+    scraping_function = SOURCE_SCRAP_MAP.get(source_id)
+    if not scraping_function:
+        return _get_missing_scraper_extraction_result(news_source)
+
+    if source_id in _MULTI_REGION_SCRAP_SOURCES:
+        scraping_output = scraping_function(reporting_date, region=region)
+    else:
+        scraping_output = scraping_function(reporting_date)
+    tagged_results = _normalize_tagged_scraping_results(
+        scraping_output,
+        catalog_regions,
+    )
+    tagged_articles = _build_articles_from_tagged_results(
+        tagged_results,
+        source_id=source_id,
+        source_name=source_name,
+        catalog_regions=catalog_regions,
+        region=region,
+    )
 
     return ArticleExtractionResult(
         source_id=source_id,
         name=source_name,
         base_url=base_url,
         regions=catalog_regions,
-        articles=articles,
-        comment=" | ".join(miss_comments) if miss_comments else None,
+        articles=tagged_articles["articles"],
+        comment=(
+            " | ".join(tagged_articles["miss_comments"])
+            if tagged_articles["miss_comments"]
+            else None
+        ),
     )
 
 
@@ -237,7 +288,7 @@ def _get_news_source_entry(source: NewsSourceChoices) -> _NewsSourceEntry | None
     return None
 
 
-def _select_news_sources_for_extraction(
+def _list_news_sources_for_extraction(
     source: NewsSourceChoices | None,
     region: ArticleRegionChoices | None,
 ) -> list[_NewsSourceEntry]:
@@ -270,7 +321,7 @@ def extract_all_articles(
     Raises 'NotFound' when 'source' is not configured, and 'ValidationError'
     when both filters are set and the region is not in that source's catalog.
     """
-    news_sources = _select_news_sources_for_extraction(source=source, region=region)
+    news_sources = _list_news_sources_for_extraction(source=source, region=region)
     logger.info(
         "Extracting articles for %s (source=%s, region=%s, catalog_sources=%s)",
         reporting_date.isoformat(),
@@ -330,5 +381,6 @@ def extract_articles_for_source(
     )
     if not extracted_articles["sources"]:
         raise NotFound(detail=f"News source {source.value!r} is not configured.")
-    # 'extract_all_articles' used one source, so 'sources' has that single result.
+    # The 'extract_all_articles' call used one source, so 'sources' has that
+    # single result.
     return extracted_articles["sources"][0]

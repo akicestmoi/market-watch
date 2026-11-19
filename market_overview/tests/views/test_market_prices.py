@@ -8,7 +8,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.services import get_market_watch_as_of_date
+from core.services.calendar import get_market_watch_as_of_date
 from market_overview.models import (
     AssetClassChoices,
     AssetModel,

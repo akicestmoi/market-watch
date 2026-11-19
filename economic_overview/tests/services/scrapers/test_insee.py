@@ -8,9 +8,13 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from core.testing import MockResponse, read_file_content
-from economic_overview.models import EconomicPublicationFrequencyChoices
+from economic_overview.models.economic_indicators import (
+    EconomicPublicationFrequencyChoices,
+)
+from economic_overview.services.config import INSEE_REAL_RDB_TICKER
 from economic_overview.services.scrapers.common import ScrapingResult
 from economic_overview.services.scrapers.insee import (
+    _build_insee_implicit_deflator_series,
     _parse_insee_period,
     get_data_from_insee,
 )
@@ -310,6 +314,63 @@ class TestInseeDataScraping(TestCase):
             ScrapingResult(period=date(2024, 1, 1), data_value=101.0, comment=""),
             ScrapingResult(period=date(2023, 12, 1), data_value=100.0, comment=""),
         ]
+
+    def test_build_insee_implicit_deflator_series(self):
+        """
+        GIVEN household P3 current-price and chained-volume series
+        WHEN building the implicit deflator
+        THEN shared periods keep current price divided by chained volume
+        """
+        assert _build_insee_implicit_deflator_series(
+            [
+                ScrapingResult(period=date(2024, 4, 1), data_value=125.0, comment=""),
+                ScrapingResult(period=date(2024, 1, 1), data_value=100.0, comment=""),
+            ],
+            [
+                ScrapingResult(period=date(2024, 4, 1), data_value=100.0, comment=""),
+                ScrapingResult(period=date(2023, 10, 1), data_value=90.0, comment=""),
+            ],
+        ) == [
+            ScrapingResult(period=date(2024, 4, 1), data_value=1.25, comment=""),
+        ]
+
+    @patch("economic_overview.services.scrapers.insee.requests.get")
+    def test_get_data_from_insee_real_rdb_deflates(self, mock_get):
+        """
+        GIVEN nominal RDB and household P3 current-price / chained-volume ZIPs
+        WHEN scraping the real RDB composite ticker
+        THEN period values are RDB divided by the P3 CP/CLV deflator
+        """
+
+        def _quarterly_zip(values_by_period: dict[str, float]) -> bytes:
+            csv_lines = ["Libellé;Valeur", "Période;"]
+            for period_label, data_value in values_by_period.items():
+                csv_lines.append(f"{period_label};{data_value}")
+            return _create_mock_zip_with_csv(
+                "valeurs_trimestrielles.csv", "\n".join(csv_lines) + "\n"
+            )
+
+        def _mock_response_for_url(url: str, *args, **kwargs):
+            if "011794746" in url and "011794746_real" not in url:
+                content = _quarterly_zip({"2024-T1": 200.0, "2024-T2": 250.0})
+            elif "011794863" in url:
+                content = _quarterly_zip({"2024-T1": 100.0, "2024-T2": 125.0})
+            elif "011794864" in url:
+                content = _quarterly_zip({"2024-T1": 100.0, "2024-T2": 100.0})
+            else:
+                raise AssertionError(f"Unexpected INSEE URL: {url}")
+            return MockResponse(status_code=200, content=content, text="")
+
+        mock_get.side_effect = _mock_response_for_url
+        result = get_data_from_insee(
+            INSEE_REAL_RDB_TICKER,
+            frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
+        )
+        assert result == [
+            ScrapingResult(period=date(2024, 4, 1), data_value=200.0, comment=""),
+            ScrapingResult(period=date(2024, 1, 1), data_value=200.0, comment=""),
+        ]
+        assert mock_get.call_count == 3
 
 
 class TestParseInseePeriod(TestCase):

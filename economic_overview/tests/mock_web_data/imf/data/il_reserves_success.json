@@ -1,0 +1,228 @@
+{
+  "meta": {},
+  "data": {
+    "dataSets": [
+      {
+        "structure": 0,
+        "action": "Replace",
+        "series": {
+          "0:0:0:0": {
+            "attributes": [0, null, "true"],
+            "observations": {
+              "0": ["241641649527.8553", null, 0, null],
+              "1": ["243800829074.6694", null, 0, null],
+              "2": ["242836430601.1308", null, 0, null]
+            }
+          }
+        }
+      }
+    ],
+    "structures": [
+      {
+        "dataSets": [0],
+        "links": [
+          {
+            "urn": "urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=IMF.STA:IL(13.0.1)",
+            "title": "Dataflow"
+          },
+          {
+            "urn": "urn:sdmx:org.sdmx.infomodel.datastructure.DataStructure=IMF.STA:DSD_IL(13.0.0)",
+            "title": "DataStructureDefinition"
+          }
+        ],
+        "dimensions": {
+          "series": [
+            {
+              "id": "COUNTRY",
+              "keyPosition": 0,
+              "roles": [],
+              "values": [
+                {
+                  "id": "USA"
+                }
+              ]
+            },
+            {
+              "id": "INDICATOR",
+              "keyPosition": 1,
+              "roles": [],
+              "values": [
+                {
+                  "id": "RXF11_REVS"
+                }
+              ]
+            },
+            {
+              "id": "UNIT",
+              "keyPosition": 2,
+              "roles": [],
+              "values": [
+                {
+                  "id": "USD"
+                }
+              ]
+            },
+            {
+              "id": "FREQUENCY",
+              "keyPosition": 3,
+              "roles": ["FREQ"],
+              "values": [
+                {
+                  "id": "M"
+                }
+              ]
+            }
+          ],
+          "observation": [
+            {
+              "id": "TIME_PERIOD",
+              "keyPosition": 4,
+              "values": [
+                {
+                  "value": "2026-M07"
+                },
+                {
+                  "value": "2026-M08"
+                },
+                {
+                  "value": "2026-M09"
+                }
+              ]
+            }
+          ]
+        },
+        "measures": {
+          "observation": [
+            {
+              "id": "OBS_VALUE",
+              "roles": []
+            }
+          ]
+        },
+        "attributes": {
+          "dimensionGroup": [
+            {
+              "id": "RA_TYPE",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            },
+            {
+              "id": "IL_ACCT",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            },
+            {
+              "id": "SECTOR",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            },
+            {
+              "id": "MFS_COLTN",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            },
+            {
+              "id": "COUNTERPARTY_SECTOR",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            },
+            {
+              "id": "VALUATION",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            },
+            {
+              "id": "TRANSFORMATION",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["INDICATOR"]
+              }
+            }
+          ],
+          "series": [
+            {
+              "id": "SCALE",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["COUNTRY", "INDICATOR", "FREQUENCY", "UNIT"]
+              },
+              "values": [
+                {
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "id": "DECIMALS_DISPLAYED",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["COUNTRY", "INDICATOR", "FREQUENCY", "UNIT"]
+              }
+            },
+            {
+              "id": "IFS_FLAG",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "dimensions": ["COUNTRY", "INDICATOR", "FREQUENCY", "UNIT"]
+              }
+            }
+          ],
+          "observation": [
+            {
+              "id": "PRECISION",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "observation": {}
+              }
+            },
+            {
+              "id": "DERIVATION_TYPE",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "observation": {}
+              },
+              "values": [
+                {
+                  "id": "O"
+                }
+              ]
+            },
+            {
+              "id": "STATUS",
+              "roles": [],
+              "isMandatory": false,
+              "relationship": {
+                "observation": {}
+              }
+            }
+          ]
+        },
+        "annotations": []
+      }
+    ]
+  }
+}

@@ -1,15 +1,17 @@
 """Scrape Bund yields from the Bundesbank database."""
 
+import logging
 import xml.etree.ElementTree as ET
 from datetime import date
 
 import requests
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.config import BUNDESBANK_RATE_URL
 from market_overview.services.scrapers.common import ScrapingResult
+
+logger = logging.getLogger(__name__)
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

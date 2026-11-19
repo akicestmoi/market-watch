@@ -1,5 +1,6 @@
 """Scrape the Mutan rate from the Bank of Japan website."""
 
+import logging
 from datetime import date
 from io import BytesIO
 
@@ -7,10 +8,11 @@ import pandas as pd
 import requests
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.config import BOJ_MUTAN_RATE_URL
 from market_overview.services.scrapers.common import ScrapingResult
+
+logger = logging.getLogger(__name__)
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

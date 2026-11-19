@@ -6,12 +6,14 @@ from unittest.mock import MagicMock
 
 from django.db.models import QuerySet
 
-from core.services import convert_query_to_dictionary_list
+from core.services.orm import convert_query_to_dictionary_list
 
 
 def load_json_mock(
     file_path: str,
-) -> dict | list:  # Polymorphic mock JSON until per-fixture TypedDicts exist.
+) -> (
+    dict | list
+):  # Usage of dict: polymorphic mock JSON until per-fixture TypedDicts exist.
     """Load JSON mock file (object or array root)."""
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -27,7 +29,9 @@ def parse_query_for_testing(
     queryset: QuerySet,
     sort_keys: list[str] = [],
     date_format: str = "%Y-%m-%d %H:%M:%S%z",
-) -> list[dict]:  # Polymorphic: wraps convert_to_dict until per-model TypedDicts exist.
+) -> list[
+    dict
+]:  # Usage of dict: wraps convert_to_dict until per-model TypedDicts exist.
     """Convert queryset to dictionary list, normalize datetime objects, and sort."""
     result = convert_query_to_dictionary_list(queryset)
 

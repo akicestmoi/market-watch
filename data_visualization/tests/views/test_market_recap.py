@@ -59,61 +59,69 @@ class TestMarketRecapView(TestCase):
         response = self.client.get(self.base_url, params)
         assert response.status_code == 200
         assert "upcoming_weeks" not in response.context
-        assert "day_events_by_location" in response.context
-        assert response.context.get("day_events_by_location") == []
-        assert response.context.get("data_to_display") == [
-            {
-                "asset_class": "Stocks",
-                "locations": [
-                    {
-                        "location": "North America",
-                        "assets": [
-                            {
-                                "country": "US",
-                                "asset": "TEST",
-                                "name": "Test Asset",
-                                "maturity": None,
-                                "price": 100.0,
-                                "previous_price": 90.0,
-                                "price_change": 10.0,
-                                "price_change_pct": 11.111111111111116,
-                            }
-                        ],
-                    }
-                ],
-            }
-        ]
-        assert response.context.get("left_asset_classes") == [
-            "Stocks",
-            "Commodities",
-            "Exchange Rates",
-            "Crypto Exchange Rates",
-            "Others",
-        ]
-        assert response.context.get("right_asset_classes") == ["Interest Rates"]
-        assert response.context.get("reference_date") == self.reference_date.isoformat()
-        assert response.context.get("previous_date") == self.previous_date.isoformat()
-        assert (
-            response.context.get("default_reference_date")
-            == self.reference_date.isoformat()
-        )
-        assert (
-            response.context.get("default_previous_date")
-            == self.previous_date.isoformat()
-        )
-        assert response.context.get("fx_matrix") == [
-            {
-                "EUR": 0.0,
-                "USD": 0.0,
-                "GBP": 0.0,
-                "JPY": 0.0,
-                "CHF": 0.0,
-                "AUD": 0.0,
-                "CNY": 0.0,
-                "currency": currency,
-            }
-            for currency in FX_MATRIX_ORDER
-        ]
+        assert {
+            key: response.context.get(key)
+            for key in (
+                "day_events_by_location",
+                "data_to_display",
+                "left_asset_classes",
+                "right_asset_classes",
+                "reference_date",
+                "previous_date",
+                "default_reference_date",
+                "default_previous_date",
+                "fx_matrix",
+            )
+        } == {
+            "day_events_by_location": [],
+            "data_to_display": [
+                {
+                    "asset_class": "Stocks",
+                    "locations": [
+                        {
+                            "location": "North America",
+                            "assets": [
+                                {
+                                    "country": "US",
+                                    "asset": "TEST",
+                                    "name": "Test Asset",
+                                    "maturity": None,
+                                    "price": 100.0,
+                                    "previous_price": 90.0,
+                                    "price_change": 10.0,
+                                    "price_change_pct": 11.111111111111116,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "left_asset_classes": [
+                "Stocks",
+                "Commodities",
+                "Exchange Rates",
+                "Crypto Exchange Rates",
+                "Others",
+            ],
+            "right_asset_classes": ["Interest Rates"],
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+            "default_reference_date": self.reference_date.isoformat(),
+            "default_previous_date": self.previous_date.isoformat(),
+            "fx_matrix": [
+                {
+                    "EUR": 0.0,
+                    "USD": 0.0,
+                    "GBP": 0.0,
+                    "JPY": 0.0,
+                    "CHF": 0.0,
+                    "AUD": 0.0,
+                    "CNY": 0.0,
+                    "currency": currency,
+                }
+                for currency in FX_MATRIX_ORDER
+            ],
+        }
 
     def test_market_recap_view_default_dates(self):
         """

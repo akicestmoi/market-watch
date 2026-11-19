@@ -1,12 +1,14 @@
 ---
-description: Keep the Postman collection in sync when HTTP endpoints change, using the full Postman MCP and upsert-endpoint.
+description: On-demand Postman collection sync via the full Postman MCP and upsert-endpoint. Only when the user explicitly asks — not automatic on every endpoint change.
 globs: "**/urls.py,**/*views*.py,**/open_api/**/*.py,**/serializers.py"
 alwaysApply: false
 ---
 
 # Postman sync
 
-When routes, request/response schemas, query params, or auth on this Django API change, update the Postman collection through the **full** Postman MCP in `.cursor/mcp.json`. Do not hand-edit collections.
+**On-demand only.** Do **not** sync Postman as a side effect of adding or changing endpoints. Run `check-endpoint` / `upsert-endpoint` only when the user explicitly asks to sync, check, or update Postman.
+
+When asked, update the Postman collection through the **full** Postman MCP in `.cursor/mcp.json`. Do not hand-edit collections. Management-tab cards (`data_visualization/static/data_visualization/js/management.js` `ENDPOINTS`) stay a normal part of endpoint work — they are separate from Postman sync.
 
 1. Resolve the target from `.cursor/postman.local.json` (per machine) then [docs/POSTMAN.md](../../docs/POSTMAN.md). Workspace **Perso**, collection **market-watch**; the whole collection is this repo.
 2. Use `check-endpoint` for a read-only drift report.

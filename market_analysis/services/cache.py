@@ -1,6 +1,7 @@
 """Redis cache for same-day article analyses (keyed by URL + prompt version)."""
 
 import json
+import logging
 from datetime import date
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 from urllib.parse import quote
@@ -8,14 +9,15 @@ from urllib.parse import quote
 from django.utils import timezone as dj_timezone
 from pydantic import TypeAdapter
 
-from core.cache import get_cached_json, get_redis_client
-from core.services import logger
+from core.services.cache import get_cached_json, get_redis_client
 from market_analysis.llm.config import PROMPT_VERSION
 from market_analysis.llm.schemas import EventType, Sentiment
 from market_analysis.models import ArticleRegionChoices
 
 if TYPE_CHECKING:
     from market_analysis.services.llm_market_recap import AnalyzedArticle
+
+logger = logging.getLogger(__name__)
 
 ARTICLE_CACHE_TTL_SECONDS = 24 * 60 * 60
 _KEY_PREFIX = "market_analysis:article_analysis"
@@ -58,7 +60,7 @@ class _CachedAnalysisWirePayload(TypedDict, total=False):
 _CACHED_ANALYSIS_WIRE_ADAPTER = TypeAdapter(_CachedAnalysisWirePayload)
 
 
-def _build_entry_key(reporting_date: date, source_url: str) -> str:
+def _format_analysis_cache_entry_key(reporting_date: date, source_url: str) -> str:
     """Build the Redis key for one article analysis entry."""
     return (
         f"{_KEY_PREFIX}:{reporting_date.isoformat()}:"
@@ -66,7 +68,7 @@ def _build_entry_key(reporting_date: date, source_url: str) -> str:
     )
 
 
-def _build_index_key(reporting_date: date) -> str:
+def _format_analysis_cache_index_key(reporting_date: date) -> str:
     """Build the Redis set key listing cached URLs for a reporting date."""
     return f"{_KEY_PREFIX}:index:{reporting_date.isoformat()}:{PROMPT_VERSION}"
 
@@ -129,7 +131,7 @@ def get_cached_analysis(
 ) -> _CachedAnalysisPayload | None:
     """Fetch one cached analysis by reporting date and article URL."""
     wire = get_cached_json(
-        _build_entry_key(reporting_date, source_url),
+        _format_analysis_cache_entry_key(reporting_date, source_url),
         _CACHED_ANALYSIS_WIRE_ADAPTER,
         log_label="Article analysis cache",
     )
@@ -150,8 +152,8 @@ def set_cached_analysis(
     """
     try:
         client = get_redis_client(decode_responses=True)
-        key = _build_entry_key(reporting_date, source_url)
-        index = _build_index_key(reporting_date)
+        key = _format_analysis_cache_entry_key(reporting_date, source_url)
+        index = _format_analysis_cache_index_key(reporting_date)
         payload = _CachedAnalysisPayload(
             source_url=source_url,
             cached_at=dj_timezone.now().isoformat(),
@@ -213,7 +215,7 @@ def list_cached_analyses(
 
     urls: list[str] = []
     try:
-        members = client.smembers(_build_index_key(reporting_date))
+        members = client.smembers(_format_analysis_cache_index_key(reporting_date))
         assert isinstance(
             members, (set, list)
         ), f"Expected Redis set members, got {type(members).__name__}"

@@ -52,14 +52,14 @@ def _format_table_size(size_bytes: int) -> str:
     """Format table size in bytes."""
     if size_bytes < 1024:
         return f"{size_bytes} bytes"
-    elif size_bytes < 1024 * 1024:
-        return f"{int(size_bytes / 1024)} kB"
-    elif size_bytes < 1024 * 1024 * 1024:
-        return f"{int(size_bytes / (1024 * 1024))} MB"
-    elif size_bytes < 1024 * 1024 * 1024 * 1024:
-        return f"{int(size_bytes / (1024 * 1024 * 1024))} GB"
-    else:
-        return f"{int(size_bytes / (1024 * 1024 * 1024 * 1024))} TB"
+    if size_bytes < 1024 * 1024:
+        # Whole kB only — decimals start at MB.
+        return f"{round(size_bytes / 1024)} kB"
+    if size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.2f} MB"
+    if size_bytes < 1024 * 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
+    return f"{size_bytes / (1024 * 1024 * 1024 * 1024):.2f} TB"
 
 
 def _get_table_size(cursor: CursorWrapper, table_name: str) -> int:

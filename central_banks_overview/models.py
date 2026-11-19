@@ -13,7 +13,7 @@ from market_overview.models import LocationChoices
 
 
 class CentralBankChoices(models.TextChoices):
-    """Central Bank Choices."""
+    """Major central banks tracked for meetings and key rates."""
 
     FRB = "FRB", _("Federal Reserve (FRB)")
     BOJ = "BOJ", _("Bank of Japan (BOJ)")
@@ -57,7 +57,7 @@ class CentralBankMeetingStatusChoices(models.TextChoices):
 
 
 class CentralBankMeetingModel(BaseModel):
-    """Central Bank Meeting Model."""
+    """One scheduled policy meeting and its ingest status."""
 
     central_bank = models.CharField(
         max_length=255,
@@ -74,21 +74,21 @@ class CentralBankMeetingModel(BaseModel):
         choices=CentralBankMeetingStatusChoices.choices,
         default=CentralBankMeetingStatusChoices.UPCOMING,
         help_text=(
-            "UPCOMING: scheduled time not yet reached. "
-            "OCCURRED: announcement time past, key rates not ingested yet. "
-            "RATES_INGESTED: decision-day key rates ingested for the display date."
+            "Meeting progress: upcoming (not yet announced), occurred "
+            "(announcement time passed but rates not stored yet), or rates "
+            "ingested (decision-day key rates are stored for the display date)."
         ),
     )
 
 
 class CentralBankDataModel(BaseModel):
-    """Central Bank Data Model."""
+    """One key-rate observation for a central bank on a calendar day."""
 
     cb_data_id = models.IntegerField(
         default=None,
         null=True,
         blank=True,
-        help_text="Stable series id from central_banks_data.json.",
+        help_text="Fixed series id from the central-banks catalog file.",
     )
     central_bank = models.CharField(
         max_length=255,
@@ -102,7 +102,7 @@ class CentralBankDataModel(BaseModel):
     )
     full_name = models.CharField(
         max_length=255,
-        help_text="Human-readable series name for UI / recap cards.",
+        help_text="Full series name shown in the UI.",
     )
     date = models.DateField(
         help_text="Key-rate date (display calendar day, not a datetime).",
@@ -111,18 +111,18 @@ class CentralBankDataModel(BaseModel):
         null=True,
         blank=True,
         default=None,
-        help_text="Key-rate level; null when the scrape found none.",
+        help_text="Key-rate level. Empty when the fetch found none.",
     )
     comment = models.TextField(
         null=True,
         blank=True,
         default="",
-        help_text="Optional scrape / ingest note.",
+        help_text="Optional note from fetching or saving this rate.",
     )
 
 
 class StirFuturesNameChoices(models.TextChoices):
-    """Stir Futures Name Choices."""
+    """Short names for STIR futures families we track."""
 
     FF1M = "FF1M", _("1 Month Fed Funds STIR Futures")
     ESTR3M = "ESTR3M", _("3 Month ESTR Futures")
@@ -130,7 +130,7 @@ class StirFuturesNameChoices(models.TextChoices):
 
 
 class StirFuturesSourceChoices(models.TextChoices):
-    """Stir Futures Source Choices."""
+    """Where we fetch STIR futures prices from."""
 
     YAHOO = "YAHOO", _("Yahoo Finance")
     TFX = "TFX", _("TFX")
@@ -138,7 +138,7 @@ class StirFuturesSourceChoices(models.TextChoices):
 
 
 class StirFuturesModel(BaseModel):
-    """Stir Futures Model."""
+    """One STIR futures price on a calendar day."""
 
     central_bank = models.CharField(
         max_length=255,
@@ -178,23 +178,23 @@ class StirFuturesModel(BaseModel):
         null=True,
         blank=True,
         default=None,
-        help_text="Settled / last price; null when missing.",
+        help_text="Settled or last price. Empty when missing.",
     )
     source = models.CharField(
         max_length=255,
         choices=StirFuturesSourceChoices.choices,
-        help_text="Upstream price source.",
+        help_text="Where we fetch this futures price from.",
     )
     comment = models.TextField(
         null=True,
         blank=True,
         default="",
-        help_text="Optional scrape / ingest note.",
+        help_text="Optional note from fetching or saving this price.",
     )
 
 
 class StirFuturesPriceUpdateLogModel(BaseLogModel):
-    """Stir Futures Price Update Log Model."""
+    """Change log for one STIR futures price update."""
 
     fk_name = "stir_futures"
     stir_futures = models.ForeignKey(

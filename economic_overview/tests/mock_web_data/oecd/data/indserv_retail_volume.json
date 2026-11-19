@@ -1,0 +1,157 @@
+{
+  "data": {
+    "dataSets": [
+      {
+        "observations": {
+          "0:0:0:0:0:0:0:0:0:0": [103.0348],
+          "0:0:0:0:0:0:0:0:0:1": [104.3079],
+          "0:0:0:0:0:0:0:0:0:2": [100.1613]
+        }
+      }
+    ],
+    "structure": {
+      "dimensions": {
+        "observation": [
+          {
+            "id": "REF_AREA",
+            "values": [
+              {
+                "id": "JPN",
+                "order": 19,
+                "name": "Japan",
+                "names": {
+                  "en": "Japan"
+                },
+                "annotations": [8]
+              }
+            ]
+          },
+          {
+            "id": "FREQ",
+            "values": [
+              {
+                "id": "M",
+                "order": 11,
+                "name": "Monthly",
+                "names": {
+                  "en": "Monthly"
+                }
+              }
+            ]
+          },
+          {
+            "id": "MEASURE",
+            "values": [
+              {
+                "id": "TOVM",
+                "order": 20,
+                "name": "Retail trade volume",
+                "names": {
+                  "en": "Retail trade volume"
+                },
+                "annotations": [9]
+              }
+            ]
+          },
+          {
+            "id": "UNIT_MEASURE",
+            "values": [
+              {
+                "id": "IX",
+                "order": 946,
+                "name": "Index",
+                "names": {
+                  "en": "Index"
+                },
+                "annotations": [10]
+              }
+            ]
+          },
+          {
+            "id": "ACTIVITY",
+            "values": [
+              {
+                "id": "G47",
+                "order": 485,
+                "name": "Retail trade, except of motor vehicles and motorcycles",
+                "names": {
+                  "en": "Retail trade, except of motor vehicles and motorcycles"
+                },
+                "parent": "G",
+                "annotations": [11]
+              }
+            ]
+          },
+          {
+            "id": "ADJUSTMENT",
+            "values": [
+              {
+                "id": "Y",
+                "order": 15,
+                "name": "Calendar and seasonally adjusted",
+                "names": {
+                  "en": "Calendar and seasonally adjusted"
+                },
+                "annotations": [12]
+              }
+            ]
+          },
+          {
+            "id": "TRANSFORMATION",
+            "values": [
+              {
+                "id": "_Z",
+                "order": 57,
+                "name": "Not applicable",
+                "names": {
+                  "en": "Not applicable"
+                },
+                "annotations": [13]
+              }
+            ]
+          },
+          {
+            "id": "TIME_HORIZ",
+            "values": [
+              {
+                "id": "_Z",
+                "order": 3,
+                "name": "Not applicable",
+                "names": {
+                  "en": "Not applicable"
+                }
+              }
+            ]
+          },
+          {
+            "id": "METHODOLOGY",
+            "values": [
+              {
+                "id": "N",
+                "order": 1,
+                "name": "National",
+                "names": {
+                  "en": "National"
+                }
+              }
+            ]
+          },
+          {
+            "id": "TIME_PERIOD",
+            "values": [
+              {
+                "id": "2026-04"
+              },
+              {
+                "id": "2026-05"
+              },
+              {
+                "id": "2026-06"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

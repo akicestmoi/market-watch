@@ -125,6 +125,18 @@ class HolidayResponseSerializer(serializers.ModelSerializer):
         ]
 
 
+class DeleteAssetResponseSerializer(serializers.Serializer):
+    """Delete Asset Response Serializer."""
+
+    message = serializers.CharField()
+
+
+class DeleteHolidaysResponseSerializer(serializers.Serializer):
+    """Delete Holidays Response Serializer."""
+
+    message = serializers.CharField()
+
+
 class DeleteMarketPricesResponseSerializer(serializers.Serializer):
     """Delete Market Prices Response Serializer."""
 

@@ -1,13 +1,13 @@
 """Scrape US Treasury yields from the Treasury department."""
 
+import logging
 import xml.etree.ElementTree as ET
 from datetime import date
 
 import requests
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.config import DEPT_TREASURY_RATE_URL
 from market_overview.services.scrapers.common import (
     ScrapingResult,
@@ -15,6 +15,8 @@ from market_overview.services.scrapers.common import (
     YieldTermRate,
     get_yield_from_curve_by_ticker,
 )
+
+logger = logging.getLogger(__name__)
 
 # Usage of dict: keys are UST tickers; values are Treasury BC_* term labels.
 _UST_TICKER_TO_TERM: dict[str, str] = {

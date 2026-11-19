@@ -168,16 +168,14 @@ def test_extract_article_rejects_region_not_in_catalog():
         assert "not available" in str(exc.detail)
 
 
-@patch(
-    "market_analysis.services.article_extraction._get_news_source_entry",
-    return_value=None,
-)
+@patch("market_analysis.services.article_extraction._get_news_source_entry")
 def test_extract_articles_for_source_not_configured(mock_get_entry):
     """
     GIVEN a NewsSourceChoices value absent from the catalog
     WHEN extract_articles_for_source is called
     THEN NotFound is raised
     """
+    mock_get_entry.return_value = None
     try:
         extract_articles_for_source(
             REPORTING_DATE, NewsSourceChoices.SWISSINFO_MARKET_WRAP

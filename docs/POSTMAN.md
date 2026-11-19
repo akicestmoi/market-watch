@@ -25,4 +25,4 @@ The whole collection is this repo (no extra parent folder). Nested folders still
 - **Target** (which workspace/collection to edit) is `.cursor/postman.local.json`.
 - If this PC needs a *different* MCP server (EU URL, API key, extra servers), put it in **`~/.cursor/mcp.json`** so it stays off git. Do not commit secrets. A `mcp` key in `postman.local.json` is advisory only; Cursor does not read that file for MCP.
 
-When HTTP endpoints change, use `check-endpoint` / `upsert-endpoint` (`.cursor/rules/postman-sync.mdc`).
+Postman sync is **on-demand only** — not automatic when endpoints change. When explicitly asked to sync or check the collection, use `check-endpoint` / `upsert-endpoint` (`.cursor/rules/postman-sync.mdc`).

@@ -1,5 +1,6 @@
 """Build central-bank recap payloads for the visualization UI."""
 
+import logging
 from datetime import date, datetime
 from typing import TypedDict
 
@@ -10,22 +11,26 @@ from central_banks_overview.services.central_banks_data import get_central_bank_
 from central_banks_overview.services.central_banks_inference import (
     CentralBankProbabilityMatrix,
 )
-from core.services import (
+from core.services.calendar import convert_to_display_timezone
+from core.services.time_series_calculation import (
     ValueChangeType,
     calculate_value_change,
-    convert_to_display_timezone,
-    logger,
 )
-from economic_overview.models import (
+from economic_overview.models.common import EconomicDataLocationChoices
+from economic_overview.models.economic_indicators import (
     EconomicDataCategoryChoices,
-    EconomicDataLocationChoices,
     EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
+    IndicatorDisplayModeChoices,
 )
+from economic_overview.services.economic_data import get_lookback_period_for_mode_change
+
+logger = logging.getLogger(__name__)
 
 
-class _CentralBankDataItem(TypedDict):
+class CentralBankRecapFigure(TypedDict):
     """Central bank data item."""
 
     label: str
@@ -61,8 +66,9 @@ def _get_latest_yoy_inflation_rate(
     """
     indicator = EconomicIndicatorInformationModel.objects.filter(
         location=location,
-        category=EconomicDataCategoryChoices.INFLATION,
-        type="Consumer Price Index",
+        category=EconomicDataCategoryChoices.HOUSEHOLD,
+        subcategory=EconomicDataSubcategoryChoices.PRICES,
+        series_label="Consumer Price Index",
     ).first()
     if indicator is None:
         return None
@@ -81,7 +87,13 @@ def _get_latest_yoy_inflation_rate(
     if latest is None or latest.period is None or latest.data_value is None:
         return None
 
-    prior_period = date(latest.period.year - 1, latest.period.month, 1)
+    prior_period = get_lookback_period_for_mode_change(
+        latest.period,
+        EconomicPublicationFrequencyChoices.MONTHLY,
+        IndicatorDisplayModeChoices.ANNUAL,
+    )
+    if prior_period is None:
+        return None
     prior_economic_data = EconomicDataModel.objects.filter(
         indicator=indicator,
         period=prior_period,
@@ -100,10 +112,59 @@ def _get_latest_yoy_inflation_rate(
     return _InflationRateValue(yoy_pct=yoy_pct, period=latest.period)
 
 
-def get_central_bank_data_item(
+def _format_central_bank_next_meeting_figure_value(
+    next_meeting_date: datetime | None,
+) -> str:
+    """Format the next meeting date for recap display, or 'N/A' when unknown."""
+    if next_meeting_date is None:
+        return "N/A"
+    return convert_to_display_timezone(next_meeting_date).strftime("%Y-%m-%d")
+
+
+def _list_central_bank_recap_inflation_figures(
+    central_bank: CentralBankChoices,
+) -> list[CentralBankRecapFigure]:
+    """Return location-specific YoY inflation recap figures for one central bank."""
+    inflation_figures: list[CentralBankRecapFigure]
+    match central_bank:
+        case CentralBankChoices.FRB:
+            us_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.US)
+            )
+            inflation_figures = [
+                CentralBankRecapFigure(label="US Inflation Rate", value=us_inflation),
+            ]
+        case CentralBankChoices.BOJ:
+            japan_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.JP)
+            )
+            inflation_figures = [
+                CentralBankRecapFigure(
+                    label="Japan Inflation Rate", value=japan_inflation
+                ),
+            ]
+        case CentralBankChoices.ECB:
+            france_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.FR)
+            )
+            eurozone_inflation = _format_inflation_rate_display(
+                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.EU)
+            )
+            inflation_figures = [
+                CentralBankRecapFigure(
+                    label="France Inflation Rate", value=france_inflation
+                ),
+                CentralBankRecapFigure(
+                    label="Eurozone Inflation Rate", value=eurozone_inflation
+                ),
+            ]
+    return inflation_figures
+
+
+def list_central_bank_recap_figures(
     central_bank: CentralBankChoices, reference_date: date
-) -> list[_CentralBankDataItem]:
-    """Build rate / next-meeting summary items for one central bank.
+) -> list[CentralBankRecapFigure]:
+    """Return rate / next-meeting summary figures for one central bank.
 
     'Next Meeting' always uses the Market Watch as-of date.
     """
@@ -117,65 +178,31 @@ def get_central_bank_data_item(
         effective_rate = central_banks_inference.get_fall_back_rate(
             central_bank, reference_date
         )
-    next_meeting_date = central_banks_meetings.get_central_bank_next_meeting_date(
-        central_bank
+    next_meeting_figure_value = _format_central_bank_next_meeting_figure_value(
+        central_banks_meetings.get_central_bank_next_meeting_date(central_bank)
     )
-    next_meeting_date = (
-        convert_to_display_timezone(next_meeting_date).strftime("%Y-%m-%d")
-        if next_meeting_date
-        else "N/A"
-    )
-    data_items = [
-        _CentralBankDataItem(
-            label=item.full_name, value=f"{item.value} %" if item.value else "N/A"
+    key_rate_figures = [
+        CentralBankRecapFigure(
+            label=key_rate.full_name,
+            value=f"{key_rate.value} %" if key_rate.value else "N/A",
         )
-        for item in get_central_bank_data(central_banks=[central_bank], last_value=True)
+        for key_rate in get_central_bank_data(
+            central_banks=[central_bank], last_value=True
+        )
     ]
 
     base_data = [
-        _CentralBankDataItem(
+        CentralBankRecapFigure(
             label="Effective Rate",
             value=f"{effective_rate} %" if effective_rate else "N/A",
         ),
-        *data_items,
-        _CentralBankDataItem(label="Next Meeting", value=next_meeting_date),
+        *key_rate_figures,
+        CentralBankRecapFigure(label="Next Meeting", value=next_meeting_figure_value),
     ]
-    match central_bank:
-        case CentralBankChoices.FRB:
-            us_inflation = _format_inflation_rate_display(
-                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.US)
-            )
-            additional_data = [
-                _CentralBankDataItem(label="US Inflation Rate", value=us_inflation),
-            ]
-        case CentralBankChoices.BOJ:
-            japan_inflation = _format_inflation_rate_display(
-                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.JP)
-            )
-            additional_data = [
-                _CentralBankDataItem(
-                    label="Japan Inflation Rate", value=japan_inflation
-                ),
-            ]
-        case CentralBankChoices.ECB:
-            france_inflation = _format_inflation_rate_display(
-                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.FR)
-            )
-            eurozone_inflation = _format_inflation_rate_display(
-                _get_latest_yoy_inflation_rate(EconomicDataLocationChoices.EU)
-            )
-            additional_data = [
-                _CentralBankDataItem(
-                    label="France Inflation Rate", value=france_inflation
-                ),
-                _CentralBankDataItem(
-                    label="Eurozone Inflation Rate", value=eurozone_inflation
-                ),
-            ]
-    return base_data + additional_data
+    return base_data + _list_central_bank_recap_inflation_figures(central_bank)
 
 
-def get_central_bank_formatted_probability_matrix(
+def get_formatted_probability_matrix_for_central_bank(
     central_bank: CentralBankChoices,
     reference_date: date,
     meeting_dates_override: list[datetime] = [],
@@ -229,7 +256,7 @@ def _recalculate_previous_probability_matrix(
         )
         for md in meeting_dates_override
     ]
-    return get_central_bank_formatted_probability_matrix(
+    return get_formatted_probability_matrix_for_central_bank(
         central_bank,
         previous_date,
         meeting_dates_override=meeting_dates_as_datetime,

@@ -1,14 +1,20 @@
 """End-to-end market analysis: extract → analyze → save daily recap."""
 
+import logging
 from datetime import date
 from typing import NotRequired, TypedDict
 
-from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import logger
+from core.services.locks import release_redis_lock, try_acquire_redis_lock
 from market_analysis.models import DailyRecapModel
 from market_analysis.services import article_extraction, llm_market_recap
-from market_analysis.services.article_extraction import ArticleExtractionResult
+from market_analysis.services.article_extraction import (
+    ArticleData,
+    ArticleExtractionResult,
+    ExtractedArticles,
+)
 from market_analysis.services.llm_market_recap import ArticleAnalysisFailure
+
+logger = logging.getLogger(__name__)
 
 PIPELINE_LOCK_KEY_PREFIX = "market_analysis:pipeline:"
 
@@ -29,47 +35,49 @@ class MarketAnalysisResult(TypedDict):
     recap_title: NotRequired[str]
 
 
-def run_daily_analysis_pipeline(
+def _skip_daily_analysis_when_recap_exists(
     reporting_date: date,
-    force: bool = False,
-) -> MarketAnalysisResult:
-    """Extract news → analyze in memory → save recap with DB market context.
-
-    Skips when a recap already exists (unless `force` is True).
-    """
-    if (
-        not force
-        and DailyRecapModel.objects.filter(reporting_date=reporting_date).exists()
-    ):
-        logger.info(
-            "Market analysis pipeline skipped for %s: a daily recap already exists",
-            reporting_date.isoformat(),
-        )
-        return MarketAnalysisResult(
-            status="skipped",
-            reason="Daily recap already exists",
-            reporting_date=reporting_date.isoformat(),
-        )
-
+    force: bool,
+) -> MarketAnalysisResult | None:
+    """Return a skipped pipeline outcome when a recap exists and force is false."""
+    if force:
+        return None
+    if not DailyRecapModel.objects.filter(reporting_date=reporting_date).exists():
+        return None
     logger.info(
-        "Market analysis pipeline starting for %s (force=%s)",
+        "Market analysis pipeline skipped for %s: a daily recap already exists",
         reporting_date.isoformat(),
-        force,
+    )
+    return MarketAnalysisResult(
+        status="skipped",
+        reason="Daily recap already exists",
+        reporting_date=reporting_date.isoformat(),
     )
 
+
+def _extract_articles_for_daily_pipeline(
+    reporting_date: date,
+) -> ExtractedArticles:
+    """Run article extraction and log stage boundaries for the daily pipeline."""
     logger.info("Pipeline stage: article extraction starting for %s", reporting_date)
     extracted_articles = article_extraction.extract_all_articles(
         reporting_date=reporting_date
     )
-    articles = extracted_articles["articles"]
     logger.info(
         "Pipeline stage: article extraction finished for %s "
         "(%s article(s) from %s source(s))",
         reporting_date.isoformat(),
-        len(articles),
+        len(extracted_articles["articles"]),
         len(extracted_articles["sources"]),
     )
+    return extracted_articles
 
+
+def _analyze_articles_for_daily_pipeline(
+    reporting_date: date,
+    articles: list[ArticleData],
+) -> llm_market_recap._ArticleBatchAnalysisResult:
+    """Run batch article analysis and log stage boundaries."""
     logger.info(
         "Pipeline stage: article analysis starting for %s (%s article(s))",
         reporting_date.isoformat(),
@@ -88,7 +96,15 @@ def run_daily_analysis_pipeline(
         analyzed.get("cache_hits", 0),
         analyzed.get("cache_misses", 0),
     )
+    return analyzed
 
+
+def _generate_daily_recap_for_pipeline(
+    reporting_date: date,
+    extracted_articles: ExtractedArticles,
+    analyzed,
+) -> DailyRecapModel:
+    """Run daily recap generation and log stage boundaries."""
     logger.info(
         "Pipeline stage: daily recap generation starting for %s",
         reporting_date.isoformat(),
@@ -106,21 +122,70 @@ def run_daily_analysis_pipeline(
         daily_recap.pk,
         daily_recap.title,
     )
+    return daily_recap
+
+
+def _build_pipeline_success_result(
+    reporting_date: date,
+    extracted_articles: ExtractedArticles,
+    analyzed_count: int,
+    analysis_failed: list[ArticleAnalysisFailure],
+    cache_hits: int,
+    cache_misses: int,
+    daily_recap: DailyRecapModel,
+) -> MarketAnalysisResult:
+    """Format the successful daily pipeline outcome for API and task callers."""
+    return MarketAnalysisResult(
+        status="success",
+        reporting_date=reporting_date.isoformat(),
+        sources=extracted_articles["sources"],
+        analyzed=analyzed_count,
+        analysis_failed=analysis_failed,
+        cache_hits=cache_hits,
+        cache_misses=cache_misses,
+        recap_id=daily_recap.pk,
+        recap_title=daily_recap.title,
+    )
+
+
+def run_daily_analysis_pipeline(
+    reporting_date: date,
+    force: bool = False,
+) -> MarketAnalysisResult:
+    """Extract news → analyze in memory → save recap with DB market context.
+
+    Skips when a recap already exists (unless `force` is True).
+    """
+    skipped = _skip_daily_analysis_when_recap_exists(reporting_date, force)
+    if skipped is not None:
+        return skipped
+
+    logger.info(
+        "Market analysis pipeline starting for %s (force=%s)",
+        reporting_date.isoformat(),
+        force,
+    )
+
+    extracted_articles = _extract_articles_for_daily_pipeline(reporting_date)
+    analyzed = _analyze_articles_for_daily_pipeline(
+        reporting_date, extracted_articles["articles"]
+    )
+    daily_recap = _generate_daily_recap_for_pipeline(
+        reporting_date, extracted_articles, analyzed
+    )
 
     logger.info(
         "Market analysis pipeline finished successfully for %s",
         reporting_date.isoformat(),
     )
-    return MarketAnalysisResult(
-        status="success",
-        reporting_date=reporting_date.isoformat(),
-        sources=extracted_articles["sources"],
-        analyzed=analyzed["analyzed_count"],
-        analysis_failed=analyzed["failed"],
-        cache_hits=analyzed.get("cache_hits", 0),
-        cache_misses=analyzed.get("cache_misses", 0),
-        recap_id=daily_recap.pk,
-        recap_title=daily_recap.title,
+    return _build_pipeline_success_result(
+        reporting_date,
+        extracted_articles,
+        analyzed["analyzed_count"],
+        analyzed["failed"],
+        analyzed.get("cache_hits", 0),
+        analyzed.get("cache_misses", 0),
+        daily_recap,
     )
 
 

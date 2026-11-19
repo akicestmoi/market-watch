@@ -190,6 +190,12 @@ body {
     word-break: break-word;
 }
 
+.day-events-mode {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.8em;
+}
+
 .day-events-metrics {
     display: inline-flex;
     align-items: baseline;

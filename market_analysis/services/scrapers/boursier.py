@@ -1,5 +1,6 @@
 """Boursier.com news scraper (Clôture Paris daily wrap)."""
 
+import logging
 import re
 from datetime import date
 from urllib.parse import urljoin
@@ -8,8 +9,7 @@ from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 from curl_cffi import requests as curl_requests
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_analysis.services.config import (
     BOURSIER_DAY_URL_TEMPLATE,
     HTTP_REQUEST_TIMEOUT_SECONDS,
@@ -19,6 +19,8 @@ from market_analysis.services.scrapers.common import (
     ScrapingResult,
     extract_main_text,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_boursier_cloture_link(html: str, base_url: str) -> ArticleLink | None:

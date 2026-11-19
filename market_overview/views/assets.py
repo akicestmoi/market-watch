@@ -32,6 +32,7 @@ from market_overview.open_api.request_serializers import (
 )
 from market_overview.open_api.response_serializers import (
     AssetResponseSerializer,
+    DeleteAssetResponseSerializer,
     GetAssetNamesResponseSerializer,
 )
 
@@ -75,6 +76,7 @@ class GenerateBaseAssetsDataView(BaseAPIView):
         tags=[ApiTags.ASSETS],
         summary="Generate Base Assets Data",
         description="Generate base assets data from JSON file.",
+        response=OkOpenApiResponse(),
         error_responses=[
             BadRequestOpenApiResponse(
                 "short_name is required | Duplicate asset short_name found | "
@@ -194,6 +196,7 @@ class AssetDetailsView(BaseAPIView):
         summary="Delete Asset",
         description="Delete an asset.",
         request_serializer=BaseAssetSerializer,
+        response=OkOpenApiResponse(DeleteAssetResponseSerializer),
         error_responses=[
             BadRequestOpenApiResponse("short_name is required"),
             NotFoundOpenApiResponse("Asset not found"),
@@ -205,6 +208,8 @@ class AssetDetailsView(BaseAPIView):
         asset = AssetModel.objects.get(short_name=short_name)
         asset.delete()
         return Response(
-            data={"message": "Asset deleted successfully."},
+            data=DeleteAssetResponseSerializer(
+                {"message": "Asset deleted successfully."}
+            ).data,
             status=status.HTTP_200_OK,
         )

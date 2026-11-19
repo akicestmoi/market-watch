@@ -10,20 +10,26 @@ from freezegun import freeze_time
 from data_visualization.services.economic_events import (
     _get_upcoming_events,
     _get_upcoming_events_from_publication_schedules,
+    _get_upcoming_events_window_end,
     _get_upcoming_holidays_events,
+    _sort_day_events,
     _UpcomingEvent,
     _UpcomingEventGroup,
     _UpcomingWeekGroup,
     group_upcoming_events_by_week,
 )
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
     EconomicDataSourceChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
-    PublicationScheduleModel,
 )
+from economic_overview.models.publication import PublicationScheduleModel
 from market_overview.models import HolidayModel, LocationChoices
 
 
@@ -43,6 +49,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 16, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            period="",
         )
         next_week_event = _UpcomingEvent(
             name="Next Week",
@@ -50,6 +57,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 22, 14, 0, 0, tzinfo=timezone.utc),
             time_str="14:00",
             is_holiday=False,
+            period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
             _UpcomingEventGroup(
@@ -154,6 +162,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 22, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
             _UpcomingEventGroup(
@@ -253,6 +262,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
             _UpcomingEventGroup(
@@ -352,6 +362,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2026, 1, 5, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
             _UpcomingEventGroup(
@@ -512,6 +523,34 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             ),
         ]
 
+    def test_group_upcoming_events_caps_at_eight_weeks(self):
+        """
+        GIVEN an event more than eight weeks after the focus Monday
+        WHEN grouping by week
+        THEN at most eight weeks are returned and the far event is omitted
+        """
+        today = date(2025, 12, 16)
+        far_event = _UpcomingEvent(
+            name="Too Far",
+            location="France",
+            publication_date=datetime(2026, 2, 16, 10, 0, 0, tzinfo=timezone.utc),
+            time_str="10:00",
+            is_holiday=False,
+            period="",
+        )
+        upcoming: list[_UpcomingEventGroup] = [
+            _UpcomingEventGroup(
+                date="2026-02-16",
+                date_display="Monday 16 February 2026",
+                events=[far_event],
+            ),
+        ]
+        result = group_upcoming_events_by_week(upcoming, today=today)
+        assert len(result) == 2
+        assert result[0]["week_start"] == "2025-12-15"
+        assert result[1]["week_start"] == "2025-12-22"
+        assert all(not day["events"] for week in result for day in week["days"])
+
 
 @freeze_time("2025-12-16")
 class TestUpcomingEvents(TestCase):
@@ -522,9 +561,10 @@ class TestUpcomingEvents(TestCase):
         self.indicator = EconomicIndicatorInformationModel.objects.create(
             id=1,
             location=EconomicDataLocationChoices.FR,
-            category=EconomicDataCategoryChoices.CONFIDENCE,
-            type="Test Indicator",
-            name="Test Indicator Name",
+            category=EconomicDataCategoryChoices.BUSINESS,
+            subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+            series_label="Test Indicator",
+            full_name="Test Indicator Name",
             technical_name="test_indicator",
             frequency=EconomicPublicationFrequencyChoices.MONTHLY,
             source=EconomicDataSourceChoices.INSEE,
@@ -555,6 +595,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": event_date,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "period": "",
                 }
             ]
         }
@@ -573,6 +614,7 @@ class TestUpcomingEvents(TestCase):
                         "publication_date": event_date,
                         "time_str": "10:00",
                         "is_holiday": False,
+                        "period": "",
                     }
                 ],
             }
@@ -585,6 +627,7 @@ class TestUpcomingEvents(TestCase):
         THEN events are returned correctly without flag prefixes
         """
         today = date(2025, 12, 16)
+        end_date = _get_upcoming_events_window_end(today)
         future_date = datetime.combine(today, time(10, 30, 0)).replace(
             tzinfo=timezone.utc
         ) + timedelta(days=5)
@@ -594,7 +637,7 @@ class TestUpcomingEvents(TestCase):
             next_publication_date=future_date + timedelta(days=30),
         )
 
-        result = _get_upcoming_events_from_publication_schedules(today)
+        result = _get_upcoming_events_from_publication_schedules(today, end_date)
         assert result == {
             "2025-12-21": [
                 {
@@ -606,6 +649,7 @@ class TestUpcomingEvents(TestCase):
                     # Stored UTC 10:30 → Europe/Paris winter (CET) 11:30
                     "time_str": "11:30",
                     "is_holiday": False,
+                    "period": "",
                 }
             ]
         }
@@ -617,6 +661,7 @@ class TestUpcomingEvents(TestCase):
         THEN that previous slot appears on its display day
         """
         week_monday = date(2025, 12, 15)
+        end_date = _get_upcoming_events_window_end(week_monday)
         previous_publication = datetime(2025, 12, 16, 9, 0, 0, tzinfo=timezone.utc)
         next_publication = datetime(2026, 1, 16, 9, 0, 0, tzinfo=timezone.utc)
         PublicationScheduleModel.objects.create(
@@ -626,7 +671,7 @@ class TestUpcomingEvents(TestCase):
             next_publication_date=next_publication + timedelta(days=30),
         )
 
-        result = _get_upcoming_events_from_publication_schedules(week_monday)
+        result = _get_upcoming_events_from_publication_schedules(week_monday, end_date)
         assert result == {
             "2025-12-16": [
                 {
@@ -635,6 +680,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": previous_publication,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "period": "",
                 }
             ],
             "2026-01-16": [
@@ -644,8 +690,45 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": next_publication,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "period": "",
                 }
             ],
+        }
+
+    def test_get_upcoming_events_from_publication_schedules_covered_period(self):
+        """
+        GIVEN quarterly data through Q1 and a later publication slot
+        WHEN listing upcoming publication events
+        THEN the event is labeled with Q2 (next period after the latest print)
+        """
+        today = date(2025, 12, 16)
+        end_date = _get_upcoming_events_window_end(today)
+        self.indicator.frequency = EconomicPublicationFrequencyChoices.QUARTERLY
+        self.indicator.save(update_fields=["frequency"])
+        EconomicDataModel.objects.create(
+            indicator=self.indicator,
+            period=date(2025, 1, 1),
+            data_value=1.0,
+        )
+        future_date = datetime(2025, 12, 21, 10, 30, 0, tzinfo=timezone.utc)
+        PublicationScheduleModel.objects.create(
+            indicator=self.indicator,
+            current_publication_date=future_date,
+            next_publication_date=future_date + timedelta(days=90),
+        )
+
+        result = _get_upcoming_events_from_publication_schedules(today, end_date)
+        assert result == {
+            "2025-12-21": [
+                {
+                    "name": "Test Indicator",
+                    "location": "France",
+                    "publication_date": future_date,
+                    "time_str": "11:30",
+                    "is_holiday": False,
+                    "period": "25Q2",
+                }
+            ]
         }
 
     @patch("data_visualization.services.economic_events.get_local_today")
@@ -680,6 +763,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": monday_release,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "period": "",
                 }
             ],
         }
@@ -697,7 +781,8 @@ class TestUpcomingEvents(TestCase):
             date=django_timezone.now() + timedelta(days=2),
             location=LocationChoices.JP,
         )
-        result = _get_upcoming_holidays_events(today)
+        end_date = _get_upcoming_events_window_end(today)
+        result = _get_upcoming_holidays_events(today, end_date)
         assert result == {
             "2025-12-18": [
                 {
@@ -708,6 +793,132 @@ class TestUpcomingEvents(TestCase):
                     ),
                     "time_str": "Holiday",
                     "is_holiday": True,
+                    "period": "",
                 }
             ]
         }
+
+    def test_get_upcoming_events_from_publication_schedules_excludes_de_es_it(self):
+        """
+        GIVEN DE / ES / IT publication schedules alongside a FR schedule
+        WHEN getting upcoming events from publication schedules
+        THEN only the FR event is returned
+        """
+        today = date(2025, 12, 16)
+        end_date = _get_upcoming_events_window_end(today)
+        future_date = datetime.combine(today, time(10, 30, 0)).replace(
+            tzinfo=timezone.utc
+        ) + timedelta(days=5)
+        for location, indicator_id in (
+            (EconomicDataLocationChoices.DE, 101),
+            (EconomicDataLocationChoices.ES, 102),
+            (EconomicDataLocationChoices.IT, 103),
+        ):
+            excluded_indicator = EconomicIndicatorInformationModel.objects.create(
+                id=indicator_id,
+                location=location,
+                category=EconomicDataCategoryChoices.BUSINESS,
+                subcategory=EconomicDataSubcategoryChoices.CONFIDENCE,
+                series_label=f"{location.value} Indicator",
+                full_name=f"{location.value} Indicator Name",
+                technical_name=f"{location.value.lower()}_indicator",
+                frequency=EconomicPublicationFrequencyChoices.MONTHLY,
+                source=EconomicDataSourceChoices.EUROSTAT,
+                ticker=f"ex_{location.value.lower()}",
+            )
+            PublicationScheduleModel.objects.create(
+                indicator=excluded_indicator,
+                current_publication_date=future_date,
+                next_publication_date=future_date + timedelta(days=30),
+            )
+        PublicationScheduleModel.objects.create(
+            indicator=self.indicator,
+            current_publication_date=future_date,
+            next_publication_date=future_date + timedelta(days=30),
+        )
+
+        result = _get_upcoming_events_from_publication_schedules(today, end_date)
+        assert result == {
+            "2025-12-21": [
+                {
+                    "name": "Test Indicator",
+                    "location": "France",
+                    "publication_date": datetime(
+                        2025, 12, 21, 10, 30, 0, tzinfo=timezone.utc
+                    ),
+                    "time_str": "11:30",
+                    "is_holiday": False,
+                    "period": "",
+                }
+            ]
+        }
+
+
+class TestSortDayEvents(TestCase):
+    """Within-day Economic Events ordering."""
+
+    def test_sort_day_events_by_time_then_country(self):
+        """
+        GIVEN same-day events with mixed times and countries plus a holiday
+        WHEN sorting the day
+        THEN holidays come first, then earlier times, then US → FR → JP → EU
+        """
+        shared_date = datetime(2025, 12, 16, 12, 0, 0, tzinfo=timezone.utc)
+        holiday = _UpcomingEvent(
+            name="Christmas",
+            location="France",
+            publication_date=shared_date,
+            time_str="Holiday",
+            is_holiday=True,
+            period="",
+        )
+        late_us = _UpcomingEvent(
+            name="US Late",
+            location="United States",
+            publication_date=shared_date,
+            time_str="15:00",
+            is_holiday=False,
+            period="",
+        )
+        early_eu = _UpcomingEvent(
+            name="EU Early",
+            location="Europe",
+            publication_date=shared_date,
+            time_str="08:00",
+            is_holiday=False,
+            period="",
+        )
+        early_jp = _UpcomingEvent(
+            name="JP Early",
+            location="Japan",
+            publication_date=shared_date,
+            time_str="08:00",
+            is_holiday=False,
+            period="",
+        )
+        early_fr = _UpcomingEvent(
+            name="FR Early",
+            location="France",
+            publication_date=shared_date,
+            time_str="08:00",
+            is_holiday=False,
+            period="",
+        )
+        early_us = _UpcomingEvent(
+            name="US Early",
+            location="United States",
+            publication_date=shared_date,
+            time_str="08:00",
+            is_holiday=False,
+            period="",
+        )
+        assert _sort_day_events(
+            [late_us, early_eu, holiday, early_jp, early_fr, early_us]
+        ) == [
+            holiday,
+            early_us,
+            early_fr,
+            early_jp,
+            early_eu,
+            late_us,
+        ]

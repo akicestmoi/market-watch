@@ -1,5 +1,6 @@
 """Scrape rates from Banque de France Webstat."""
 
+import logging
 from datetime import date
 from io import StringIO
 
@@ -7,10 +8,11 @@ import pandas as pd
 import requests
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import logger
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_overview.services.config import WEBSTAT_RATE_URL
 from market_overview.services.scrapers.common import ScrapingResult
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_str_decimals_to_float(decimal_text: str) -> float | None:

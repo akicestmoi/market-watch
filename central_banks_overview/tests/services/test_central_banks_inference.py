@@ -22,7 +22,7 @@ from central_banks_overview.services.central_banks_inference import (
     get_fall_back_rate,
 )
 from central_banks_overview.services.central_banks_meetings import (
-    _CentralBankMeetingDates,
+    CentralBankMeetingDates,
 )
 from market_overview.models import (
     AssetClassChoices,
@@ -193,10 +193,10 @@ class TestCentralBankInferenceServices(TestCase):
         WHEN calculating probability changes
         THEN the differences between probabilities are returned
         """
-        previous_matrix: CentralBankProbabilityMatrix = {
-            "central_bank": CentralBankChoices.FRB,
-            "meeting_dates": [date(2026, 3, 20), date(2026, 5, 1)],
-            "probability_matrix": [
+        previous_matrix = CentralBankProbabilityMatrix(
+            central_bank=CentralBankChoices.FRB,
+            meeting_dates=[date(2026, 3, 20), date(2026, 5, 1)],
+            probability_matrix=[
                 {
                     "expected_rate_step": -25,
                     "probabilities": [0.1, 0.05],
@@ -210,11 +210,11 @@ class TestCentralBankInferenceServices(TestCase):
                     "probabilities": [0.2, 0.20],
                 },
             ],
-        }
-        current_matrix: CentralBankProbabilityMatrix = {
-            "central_bank": CentralBankChoices.FRB,
-            "meeting_dates": [date(2026, 3, 20), date(2026, 5, 1)],
-            "probability_matrix": [
+        )
+        current_matrix = CentralBankProbabilityMatrix(
+            central_bank=CentralBankChoices.FRB,
+            meeting_dates=[date(2026, 3, 20), date(2026, 5, 1)],
+            probability_matrix=[
                 {
                     "expected_rate_step": -25,
                     "probabilities": [0.05, 0.02],
@@ -228,7 +228,7 @@ class TestCentralBankInferenceServices(TestCase):
                     "probabilities": [0.20, 0.18],
                 },
             ],
-        }
+        )
 
         result = calculate_probability_changes(current_matrix, previous_matrix)
         assert result == {
@@ -483,7 +483,7 @@ class TestCentralBankInferenceServices(TestCase):
         )
 
         meeting_dates_list = [
-            _CentralBankMeetingDates(
+            CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting.date],
             )
@@ -558,7 +558,7 @@ class TestCentralBankInferenceServices(TestCase):
         )
 
         meeting_dates_list = [
-            _CentralBankMeetingDates(
+            CentralBankMeetingDates(
                 central_bank=CentralBankChoices.FRB,
                 meeting_dates=[meeting.date],
             )

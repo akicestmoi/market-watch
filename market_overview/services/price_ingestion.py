@@ -1,10 +1,11 @@
 """Ingest closing prices from external market data sources."""
 
+import logging
 from datetime import date, timedelta
 from typing import Literal, TypedDict
 
-import core.services as core_services
-from core.services import get_market_watch_as_of_date, logger
+import core.services.orm as core_services
+from core.services.calendar import get_market_watch_as_of_date
 from market_overview.models import (
     AssetModel,
     HolidayModel,
@@ -26,6 +27,8 @@ from market_overview.services.scrapers.nyfed import scrap_rate_from_nyfed_xml
 from market_overview.services.scrapers.webstat import get_webstat_rates
 from market_overview.services.scrapers.yahoo import get_yahoo_finance_closing_prices
 
+logger = logging.getLogger(__name__)
+
 SOURCE_SCRAP_MAP = {
     PriceSourceChoices.GOV_TREASURY_DEPT: lambda d, t: get_treasury_yield_from_dep_treasury(
         d, t
@@ -40,7 +43,7 @@ SOURCE_SCRAP_MAP = {
 }
 
 
-def get_market_price_ingestion_lock_key(price_date: date) -> str:
+def get_lock_key_for_market_price_ingestion(price_date: date) -> str:
     """Return Redis lock key for market price ingestion."""
     return f"lock:market_price_ingestion:{price_date.isoformat()}"
 

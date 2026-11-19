@@ -8,8 +8,8 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import parse_datetime
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.scraping import parse_datetime
 from market_analysis.services.config import (
     TBS_BASE_URL,
     TBS_JAPAN_MARKETS_LIST_URL,

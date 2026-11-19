@@ -1,0 +1,16 @@
+{
+  "STATUS": 200,
+  "MESSAGE": "Successfully completed",
+  "RESULTSET": [
+    {
+      "SERIES_CODE": "PRCS20_5200000000",
+      "NAME_OF_TIME_SERIES": "[Basic grouping index] All items",
+      "UNIT": "CY2020 average=100",
+      "FREQUENCY": "MONTHLY",
+      "VALUES": {
+        "SURVEY_DATES": [202507, 202508, 202509, 202510, 202511, 202512],
+        "VALUES": [111.1, 111.3, 111.4, 112.2, 112.6, 112.5]
+      }
+    }
+  ]
+}

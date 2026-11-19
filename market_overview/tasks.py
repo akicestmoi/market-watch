@@ -1,5 +1,6 @@
 """Celery tasks for market price ingestion, holidays, and log cleanup."""
 
+import logging
 from datetime import date, timedelta
 from typing import Required, TypedDict
 
@@ -9,9 +10,14 @@ import market_analysis.tasks as market_analysis_tasks
 import market_overview.services.holidays as holidays
 import market_overview.services.market_data as market_data
 import market_overview.services.price_ingestion as price_ingestion
-from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import get_market_watch_as_of_date, get_previous_business_day, logger
+from core.services.calendar import (
+    get_market_watch_as_of_date,
+    get_previous_business_day,
+)
+from core.services.locks import release_redis_lock, try_acquire_redis_lock
 from market_overview.services.config import HOLIDAY_COUNTRIES
+
+logger = logging.getLogger(__name__)
 
 
 class _CeleryTaskResult(TypedDict, total=False):
@@ -36,7 +42,7 @@ def scheduled_market_data_ingestion(two_bdays_ago: bool = False) -> _CeleryTaskR
         case False:
             price_date = get_market_watch_as_of_date()
 
-    lock_key = price_ingestion.get_market_price_ingestion_lock_key(price_date)
+    lock_key = price_ingestion.get_lock_key_for_market_price_ingestion(price_date)
     lock = try_acquire_redis_lock(lock_key)
     if lock is None:
         logger.warning(

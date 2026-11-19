@@ -2,16 +2,14 @@
 
 from django.urls import path
 
-from data_visualization.views import (
-    central_banks_recap_view,
-    economic_charts_view,
-    economic_events_view,
-    economic_recap_view,
-    management_view,
-    market_charts_view,
-    market_recap_view,
-    sector_analysis_view,
-)
+from data_visualization.views.central_banks_recap import central_banks_recap_view
+from data_visualization.views.economic_charts import economic_charts_view
+from data_visualization.views.economic_events import economic_events_view
+from data_visualization.views.economic_recap import economic_recap_view
+from data_visualization.views.management import management_view
+from data_visualization.views.market_charts import market_charts_view
+from data_visualization.views.market_recap import market_recap_view
+from data_visualization.views.sector_analysis import sector_analysis_view
 
 urlpatterns = [
     path("market-recap/", market_recap_view, name="market-recap"),

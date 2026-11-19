@@ -230,6 +230,7 @@ class TestEurostatPublicationScheduleScraping(TestCase):
         assert result.empty
 
     @patch("economic_overview.services.scrapers.eurostat.requests.get")
+    @freeze_time("2026-11-01")
     def test_get_publication_dates_from_eurostat_success(self, mock_get):
         """
         GIVEN a publication schedule with matching calendar title
@@ -281,6 +282,7 @@ class TestFredPublicationScheduleScraping(TestCase):
 
     @override_settings(FRED_API_KEY="test-fred-key")
     @patch("economic_overview.services.scrapers.fred.requests.get")
+    @freeze_time("2026-11-01")
     def test_get_publication_dates_from_fred_success(self, mock_get):
         """
         GIVEN FRED release dates including past and future CPI releases
@@ -293,9 +295,10 @@ class TestFredPublicationScheduleScraping(TestCase):
         )
 
         result = get_publication_dates_from_fred("Consumer Price Index")
+        # CPI is release 10 at the official 08:30 America/New_York clock.
         assert result == [
-            datetime(2026, 11, 13, tzinfo=timezone.utc),
-            datetime(2026, 12, 10, tzinfo=timezone.utc),
+            datetime(2026, 11, 13, 13, 30, tzinfo=timezone.utc),
+            datetime(2026, 12, 10, 13, 30, tzinfo=timezone.utc),
         ]
         request_params = mock_get.call_args.kwargs["params"]
         assert request_params["release_id"] == 10

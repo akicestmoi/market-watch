@@ -1,0 +1,7 @@
+[
+  ["NAICS2017", "NAICS2017_LABEL", "INDLEVEL", "RCPT_TOT_VAL", "EXPS_TOT_DVAL", "YEAR", "us"],
+  ["31-33", "Manufacturing", "2", "9000000", "7000000", "2023", "1"],
+  ["311", "Food manufacturing", "3", "2000000", "1500000", "2023", "1"],
+  ["312", "Beverage and tobacco product manufacturing", "3", "1000000", "400000", "2023", "1"],
+  ["3111", "Animal food manufacturing", "4", "100000", "80000", "2023", "1"]
+]

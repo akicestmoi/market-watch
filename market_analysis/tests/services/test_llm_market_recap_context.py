@@ -12,17 +12,20 @@ from central_banks_overview.models import (
 )
 from data_visualization.services.config import FX_MATRIX_ORDER
 from data_visualization.services.market_recap import FxMatrixEntry
-from economic_overview.models import (
-    EconomicDataCategoryChoices,
+from economic_overview.models.common import (
     EconomicDataLocationChoices,
-    EconomicDataModel,
     EconomicDataSourceChoices,
+    IndicatorBaseUnitChoices,
+)
+from economic_overview.models.economic_indicators import (
+    EconomicDataCategoryChoices,
+    EconomicDataModel,
+    EconomicDataSubcategoryChoices,
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
-    IndicatorBaseUnitChoices,
     IndicatorDisplayModeChoices,
-    PublicationScheduleModel,
 )
+from economic_overview.models.publication import PublicationScheduleModel
 from market_analysis.services.llm_market_recap import (
     CentralBankContextEntry,
     EconomicContextEntry,
@@ -35,8 +38,8 @@ from market_analysis.services.llm_market_recap import (
     _ProbabilityStepEntry,
     build_central_bank_context,
     build_economic_context,
-    build_fx_heatmap_context,
     build_probability_matrix_shift_context,
+    get_fx_heatmap_context,
 )
 
 
@@ -98,7 +101,7 @@ class TestFxHeatmapContext(TestCase):
         ]
 
     @patch("market_analysis.services.llm_market_recap.get_fx_prices_matrix")
-    def test_build_fx_heatmap_context(self, mock_get_fx_prices_matrix):
+    def test_get_fx_heatmap_context(self, mock_get_fx_prices_matrix):
         """
         GIVEN FX matrix entries for a reporting date
         WHEN building FX heatmap context
@@ -128,7 +131,7 @@ class TestFxHeatmapContext(TestCase):
         ]
         mock_get_fx_prices_matrix.return_value = matrix
         as_of = date(2025, 12, 16)
-        result = build_fx_heatmap_context(as_of)
+        result = get_fx_heatmap_context(as_of)
         assert result == FxHeatmapContext(
             as_of="2025-12-16",
             previous_date="2025-12-15",
@@ -151,7 +154,7 @@ class TestProbabilityMatrixShiftContext(TestCase):
         "market_analysis.services.llm_market_recap.get_formatted_probability_matrix_changes"
     )
     @patch(
-        "market_analysis.services.llm_market_recap.get_central_bank_formatted_probability_matrix"
+        "market_analysis.services.llm_market_recap.get_formatted_probability_matrix_for_central_bank"
     )
     def test_build_probability_matrix_shift_context(
         self, mock_get_matrix, mock_get_changes
@@ -217,7 +220,7 @@ class TestProbabilityMatrixShiftContext(TestCase):
         ]
 
     @patch(
-        "market_analysis.services.llm_market_recap.get_central_bank_formatted_probability_matrix"
+        "market_analysis.services.llm_market_recap.get_formatted_probability_matrix_for_central_bank"
     )
     def test_build_probability_matrix_shift_context_skips_failures(
         self, mock_get_matrix
@@ -239,16 +242,17 @@ class TestEconomicContext(TestCase):
         """
         GIVEN a quarterly GDP indicator scheduled on the reporting date
         WHEN building economic context
-        THEN values_by_mode has Abs / QoQ / QoQy / YoY with is_default on the main mode
+        THEN values_by_mode has Raw/MoM/QoQ/QoQy/YoY with is_default on the main mode
         """
         as_of = date(2025, 12, 16)
         publication_datetime = datetime(2025, 12, 16, 13, 30, 0, tzinfo=timezone.utc)
         indicator = EconomicIndicatorInformationModel.objects.create(
             id=9001,
             location=EconomicDataLocationChoices.US,
-            category=EconomicDataCategoryChoices.GROWTH,
-            type="GDP",
-            name="US GDP",
+            category=EconomicDataCategoryChoices.MACROECONOMICS,
+            subcategory=EconomicDataSubcategoryChoices.GROWTH,
+            series_label="GDP",
+            full_name="US GDP",
             technical_name="us_gdp",
             frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
             source=EconomicDataSourceChoices.FRED,
@@ -280,11 +284,12 @@ class TestEconomicContext(TestCase):
             EconomicContextEntry(
                 name="US GDP",
                 location=EconomicDataLocationChoices.US,
-                category=EconomicDataCategoryChoices.GROWTH,
+                category=EconomicDataCategoryChoices.MACROECONOMICS,
+                subcategory=EconomicDataSubcategoryChoices.GROWTH,
                 frequency=EconomicPublicationFrequencyChoices.QUARTERLY,
                 period="2025-10-01",
                 period_display="25Q4",
-                default_mode="Annualized Quarter",
+                default_mode="QoQy",
                 default_mode_label="QoQy",
                 base_unit="B",
                 base_currency="USD",
@@ -293,17 +298,28 @@ class TestEconomicContext(TestCase):
                 values_by_mode=[
                     _EconomicContextModeValues(
                         mode="Raw",
-                        mode_label="Abs",
+                        mode_label="Raw",
                         is_default=False,
                         current_value=110.0,
                         previous_value=100.0,
                         change_value=10.0,
-                        display_current_value="110.00 (bUSD)",
-                        display_previous_value="100.00 (bUSD)",
-                        display_change_value="10.00 (bUSD)",
+                        display_current_value="110.00 b$",
+                        display_previous_value="100.00 b$",
+                        display_change_value="10.00 b$",
                     ),
                     _EconomicContextModeValues(
-                        mode="Quarter",
+                        mode="MoM",
+                        mode_label="MoM",
+                        is_default=False,
+                        current_value=None,
+                        previous_value=None,
+                        change_value=None,
+                        display_current_value="",
+                        display_previous_value="",
+                        display_change_value="",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="QoQ",
                         mode_label="QoQ",
                         is_default=False,
                         current_value=10.0,
@@ -314,7 +330,7 @@ class TestEconomicContext(TestCase):
                         display_change_value="4.74 %",
                     ),
                     _EconomicContextModeValues(
-                        mode="Annualized Quarter",
+                        mode="QoQy",
                         mode_label="QoQy",
                         is_default=True,
                         current_value=46.41000000000004,
@@ -325,7 +341,7 @@ class TestEconomicContext(TestCase):
                         display_change_value="23.64 %",
                     ),
                     _EconomicContextModeValues(
-                        mode="Annual",
+                        mode="YoY",
                         mode_label="YoY",
                         is_default=False,
                         current_value=29.411764705882355,
@@ -334,6 +350,138 @@ class TestEconomicContext(TestCase):
                         display_current_value="29.41 %",
                         display_previous_value="25.00 %",
                         display_change_value="4.41 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="vsGDP",
+                        mode_label="vsGDP",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDRaw",
+                        mode_label="YTDRaw",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 b$",
+                        display_previous_value="100.00 b$",
+                        display_change_value="10.00 b$",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDYoY",
+                        mode_label="YTDYoY",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDvsGDP",
+                        mode_label="YTDvsGDP",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Rel QoQ",
+                        mode_label="Rel QoQ",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Rel YoY",
+                        mode_label="Rel YoY",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Contr QoQ",
+                        mode_label="Contr QoQ",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="Contr YoY",
+                        mode_label="Contr YoY",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDRelQoQ",
+                        mode_label="YTDRelQoQ",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDRelYoY",
+                        mode_label="YTDRelYoY",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDContrQoQ",
+                        mode_label="YTDContrQoQ",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
+                    ),
+                    _EconomicContextModeValues(
+                        mode="YTDContrYoY",
+                        mode_label="YTDContrYoY",
+                        is_default=False,
+                        current_value=110.0,
+                        previous_value=100.0,
+                        change_value=10.0,
+                        display_current_value="110.00 %",
+                        display_previous_value="100.00 %",
+                        display_change_value="10.00 %",
                     ),
                 ],
                 comment=None,
@@ -346,9 +494,9 @@ class TestEconomicContext(TestCase):
 class TestCentralBankContext(TestCase):
     """Tests for central-bank LLM context including decision-day rates."""
 
-    @patch("market_analysis.services.llm_market_recap.get_central_bank_data_item")
+    @patch("market_analysis.services.llm_market_recap.list_central_bank_recap_figures")
     def test_build_central_bank_context_includes_decision_rates(
-        self, mock_get_central_bank_data_item
+        self, mock_list_central_bank_recap_figures
     ):
         """
         GIVEN an ECB meeting and key rates on the reporting date
@@ -356,7 +504,7 @@ class TestCentralBankContext(TestCase):
         THEN ECB is_decision_day with decision_rates current/previous/change
         """
         as_of = date(2025, 12, 15)
-        mock_get_central_bank_data_item.return_value = [
+        mock_list_central_bank_recap_figures.return_value = [
             {"label": "Effective Rate", "value": "2.00 %"},
         ]
         CentralBankMeetingModel.objects.create(

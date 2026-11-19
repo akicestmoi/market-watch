@@ -10,8 +10,8 @@
 | **Comparisons / “now”** | Aware UTC (`django.utils.timezone.now()` or `datetime.now(timezone.utc)`) |
 | **Source local times** (Fed/US releases in New York time, ECB CET/CEST, BoJ JST, …) | Interpret in the source zone via `convert_local_wall_time_to_utc` / `parse_datetime(..., naive_timezone=…)` / `get_source_timezone(location_code)`, then store UTC |
 | **Parsing** | Prefer aware input; **naive strings default to UTC** unless `naive_timezone` (or a location map) is passed |
-| **User-facing clocks** (UI labels, upcoming-event times, date chips) | Convert with `core.services.convert_to_display_timezone` → **Europe/Paris** (`TIME_ZONE`) |
-| **Calendar “today”** (filters, week focus for the ops UI) | `core.services.get_local_today()` / `timezone.localdate()` (Paris date, not container `date.today()`) |
+| **User-facing clocks** (UI labels, upcoming-event times, date chips) | Convert with `core.services.calendar.convert_to_display_timezone` → **Europe/Paris** (`TIME_ZONE`) |
+| **Calendar “today”** (filters, week focus for the ops UI) | `core.services.calendar.get_local_today()` / `timezone.localdate()` (Paris date, not container `date.today()`) |
 | **Celery Beat** | Local-time schedules in **Europe/Paris** (`CELERY_TIMEZONE = TIME_ZONE`) |
 
 Do **not** strip `tzinfo` before saving. Naive values with `USE_TZ` are reinterpreted as Paris local time and shift the instant.

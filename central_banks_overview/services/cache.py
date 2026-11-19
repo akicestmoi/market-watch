@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from pydantic import TypeAdapter
 
 from central_banks_overview.models import CentralBankChoices, StirFuturesModel
-from core.cache import CACHE_TTL_SECONDS, get_cached_json, set_cached_json
+from core.services.cache import CACHE_TTL_SECONDS, get_cached_json, set_cached_json
 
 if TYPE_CHECKING:
     from central_banks_overview.services.central_banks_inference import (
@@ -60,7 +60,7 @@ def build_probability_matrix_cache_fingerprint(
     )
 
 
-def build_probability_matrix_cache_key(fingerprint: str) -> str:
+def _format_probability_matrix_cache_key(fingerprint: str) -> str:
     """Build a Redis key for one computed probability matrix."""
     fingerprint_digest = hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:32]
     return f"{_KEY_PREFIX}:{fingerprint_digest}"
@@ -76,7 +76,7 @@ def get_cached_probability_matrix(
     )
 
     return get_cached_json(
-        build_probability_matrix_cache_key(fingerprint),
+        _format_probability_matrix_cache_key(fingerprint),
         TypeAdapter(ProbabilityMatrixPayload),
         log_label=_LOG_LABEL,
     )
@@ -88,7 +88,7 @@ def set_cached_probability_matrix(
 ) -> None:
     """Store a computed probability matrix in Redis."""
     set_cached_json(
-        build_probability_matrix_cache_key(fingerprint),
+        _format_probability_matrix_cache_key(fingerprint),
         payload,
         _TTL_SECONDS,
         log_label=_LOG_LABEL,

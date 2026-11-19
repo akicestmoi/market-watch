@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup, Tag
 from cachetools.func import ttl_cache
 from pydantic import TypeAdapter, ValidationError
 
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 from market_analysis.services.config import (
     THE_EDGE_BASE_URL,
     THE_EDGE_GLOBAL_MARKETS_LIST_URL,

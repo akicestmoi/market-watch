@@ -1,5 +1,6 @@
 """Celery tasks for STIR prices, CB data, and meetings ingestion."""
 
+import logging
 from datetime import date, timedelta
 from typing import Required, TypedDict
 
@@ -8,8 +9,13 @@ from celery import shared_task
 import central_banks_overview.services.central_banks_meetings as central_banks_meetings
 import central_banks_overview.services.stir_prices_ingestion as stir_prices_ingestion
 from central_banks_overview.models import CentralBankChoices
-from core.locks import release_redis_lock, try_acquire_redis_lock
-from core.services import get_market_watch_as_of_date, get_previous_business_day, logger
+from core.services.calendar import (
+    get_market_watch_as_of_date,
+    get_previous_business_day,
+)
+from core.services.locks import release_redis_lock, try_acquire_redis_lock
+
+logger = logging.getLogger(__name__)
 
 
 class _CeleryTaskResult(TypedDict, total=False):
@@ -30,7 +36,7 @@ def scheduled_stir_prices_ingestion(two_bdays_ago: bool = False) -> _CeleryTaskR
         case False:
             price_date = get_market_watch_as_of_date()
 
-    lock_key = stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date)
+    lock_key = stir_prices_ingestion.get_lock_key_for_stir_price_ingestion(price_date)
     lock = try_acquire_redis_lock(lock_key)
     if lock is None:
         logger.warning(

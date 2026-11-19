@@ -13,8 +13,9 @@ from central_banks_overview.services.config import (
     BOJ_MPM_URL,
     BOJ_SOURCE_TIMEZONE,
 )
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
-from core.services import convert_local_wall_time_to_utc, fetch_html
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.calendar import convert_local_wall_time_to_utc
+from core.services.scraping import fetch_html
 
 
 class _MonthDay(NamedTuple):
@@ -22,6 +23,38 @@ class _MonthDay(NamedTuple):
 
     month: int
     day: int
+
+
+_BOJ_MONTH_PATTERN = re.compile(r"(\d{1,2})月")
+_BOJ_DAY_PATTERN = re.compile(r"(\d{1,2})日")
+
+
+def _normalize_boj_meeting_cell_text(cell_text: str) -> str:
+    """Strip markup and normalize whitespace in a BoJ schedule cell."""
+    text = re.sub(r"\[.*?\]", "", cell_text)
+    text = re.sub(r"\([^)]*\)", "", text)
+    text = text.replace("・", ",")
+    return re.sub(r"\s+", " ", text.strip())
+
+
+def _collect_month_day_pairs_from_boj_text(text: str) -> list[_MonthDay]:
+    """Parse month/day pairs from normalized BoJ meeting cell text."""
+    month_day_pairs: list[_MonthDay] = []
+    current_month = None
+
+    for part in text.split(","):
+        part = part.strip()
+        month_match = _BOJ_MONTH_PATTERN.search(part)
+        day_match = _BOJ_DAY_PATTERN.search(part)
+
+        if month_match:
+            current_month = int(month_match.group(1))
+
+        if current_month and day_match:
+            day = int(day_match.group(1))
+            month_day_pairs.append(_MonthDay(month=current_month, day=day))
+
+    return month_day_pairs
 
 
 def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
@@ -37,31 +70,9 @@ def _parse_boj_meeting_date(cell_text: str, year: int) -> datetime | None:
     Example:
         '4月30日（水）・5月 1日（木）' → 2025-05-01 15:30 Asia/Tokyo (06:30 UTC)
     """
-    MONTH_PATTERN = re.compile(r"(\d{1,2})月")
-    DAY_PATTERN = re.compile(r"(\d{1,2})日")
-
-    # Normalize and clean text
-    text = re.sub(r"\[.*?\]", "", cell_text)  # Remove [PDF ...]
-    text = re.sub(r"\([^)]*\)", "", text)  # Remove day of week (曜)
-    text = text.replace("・", ",")  # Replace middle dot with comma
-    text = re.sub(r"\s+", " ", text.strip())
-
-    # Find all (month, day) pairs
-    month_day_pairs: list[_MonthDay] = []
-    current_month = None
-
-    for part in text.split(","):
-        part = part.strip()
-        month_match = MONTH_PATTERN.search(part)
-        day_match = DAY_PATTERN.search(part)
-
-        if month_match:
-            current_month = int(month_match.group(1))
-
-        if current_month and day_match:
-            day = int(day_match.group(1))
-            month_day_pairs.append(_MonthDay(month=current_month, day=day))
-
+    month_day_pairs = _collect_month_day_pairs_from_boj_text(
+        _normalize_boj_meeting_cell_text(cell_text)
+    )
     if not month_day_pairs:
         return None
 

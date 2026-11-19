@@ -1,5 +1,6 @@
 """API views for STIR futures prices."""
 
+import logging
 from datetime import date
 from typing import NotRequired, TypedDict
 
@@ -28,7 +29,6 @@ from central_banks_overview.services.scrapers.estr_futures import (
 from central_banks_overview.services.stir_prices_ingestion import (
     BulkUpdateFuturesPricesItem,
 )
-from core.locks import acquire_redis_lock
 from core.open_api.schema import (
     ApiTags,
     BadRequestOpenApiResponse,
@@ -38,8 +38,10 @@ from core.open_api.schema import (
     OkOpenApiResponse,
     open_api,
 )
-from core.services import logger
+from core.services.locks import acquire_redis_lock
 from core.views import BaseAPIView
+
+logger = logging.getLogger(__name__)
 
 
 class _StirFuturesPriceIngestionValidatedData(TypedDict):
@@ -70,7 +72,7 @@ class StirFuturesPriceIngestionView(BaseAPIView):
 
         logger.info(f"Ingesting STIR Futures prices for date: {price_date}")
         with acquire_redis_lock(
-            stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date),
+            stir_prices_ingestion.get_lock_key_for_stir_price_ingestion(price_date),
             locked_detail=(
                 "STIR Futures prices ingestion is already in progress for "
                 f"{price_date.isoformat()}."
@@ -126,7 +128,7 @@ class EstrPriceIngestionViaPdfView(BaseAPIView):
         price_date: date = validated_data["date"]
 
         with acquire_redis_lock(
-            stir_prices_ingestion.get_stir_price_ingestion_lock_key(price_date),
+            stir_prices_ingestion.get_lock_key_for_stir_price_ingestion(price_date),
             locked_detail=(
                 "STIR Futures prices ingestion is already in progress for "
                 f"{price_date.isoformat()}."

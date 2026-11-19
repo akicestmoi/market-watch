@@ -20,7 +20,7 @@ from central_banks_overview.services.config import (
     TFX_HISTORICAL_LOOKBACK_DAYS,
 )
 from central_banks_overview.services.scrapers.common import StirFutures
-from core.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
+from core.services.cache import CACHE_MAXSIZE, CACHE_TTL_SECONDS
 
 
 @ttl_cache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TTL_SECONDS)

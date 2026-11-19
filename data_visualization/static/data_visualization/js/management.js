@@ -53,7 +53,7 @@ const PRICE_SOURCE_OPTIONS = [
   "GLOBAL_RATES",
   "YAHOO",
 ];
-function resolveParamOptions(param) {
+function getParamOptions(param) {
   if (Array.isArray(param.options) && param.options.length > 0) {
     return param.options;
   }
@@ -71,7 +71,7 @@ function resolveParamOptions(param) {
   }
 }
 
-function resolveNestedFieldOptions(fieldName) {
+function getNestedFieldOptions(fieldName) {
   switch (fieldName) {
   case "short_name":
     return MANAGEMENT_CATALOG.assetShortNames || [];
@@ -356,6 +356,16 @@ const ENDPOINTS = {
           { name: "short_name", type: "select", optionsFrom: "assetShortNames", required: true },
         ],
       },
+      {
+        name: "Delete Asset",
+        description: "Delete one asset by short name.",
+        method: "DELETE",
+        path: "/markets/asset",
+        body: null,
+        query: [
+          { name: "short_name", type: "select", optionsFrom: "assetShortNames", required: true },
+        ],
+      },
     ],
     Prices: [
       {
@@ -466,6 +476,14 @@ const ENDPOINTS = {
           },
         ],
       },
+      {
+        name: "Delete Holidays",
+        description: "Delete holidays before a given date.",
+        method: "DELETE",
+        path: "/markets/holidays",
+        body: null,
+        query: [{ name: "date", type: "date", required: true }],
+      },
     ],
   },
   economicData: {
@@ -563,6 +581,46 @@ const ENDPOINTS = {
             serialize: "json",
             required: false,
           },
+        ],
+        query: null,
+      },
+      {
+        name: "Run Monthly Publication Update",
+        description:
+          "Refresh indicators without an official release calendar (monthly update mode).",
+        method: "POST",
+        path: "/economics/indicator/monthly-publication-update",
+        body: null,
+        query: null,
+      },
+    ],
+    "Industry Profitability": [
+      {
+        name: "Ingest Industry Profitability",
+        description:
+          "Scrape and upsert annual industry profitability tables for US, FR, and JP.",
+        method: "POST",
+        path: "/economics/industry-profitability/ingest",
+        body: null,
+        query: null,
+      },
+    ],
+    "Trade Rankings": [
+      {
+        name: "Ingest Trade Rankings",
+        description:
+          "Scrape and upsert annual Top-N product and partner rankings plus product×partner cells for US, FR, and JP.",
+        help: "Trade Type can be left empty to ingest both merchandise and energy. Full History can be left unchecked to refresh only recent years, or ticked to scrape the full kept history window.",
+        method: "POST",
+        path: "/economics/trade-rankings/ingest",
+        body: [
+          {
+            name: "trade_type",
+            type: "select",
+            options: ["MERCHANDISE", "ENERGY"],
+            required: false,
+          },
+          { name: "full_history", type: "checkbox", required: false },
         ],
         query: null,
       },
@@ -749,7 +807,7 @@ const ENDPOINTS = {
       },
       {
         name: "Generate Daily Recap",
-        description: "Run the pipeline in-process: collect → analyze → persist recap (not queued).",
+        description: "Run the pipeline in-process: collect → analyze → save recap (not queued).",
         help: "Force can be left unchecked to skip when a recap already exists, or ticked to regenerate anyway.",
         method: "POST",
         path: "/analysis/recap/generate",
@@ -868,7 +926,8 @@ function renderDatabaseInformation() {
     if (totalSizeBytes < 1024) {
       totalSizeStr = `${totalSizeBytes} bytes`;
     } else if (totalSizeBytes < 1024 * 1024) {
-      totalSizeStr = `${(totalSizeBytes / 1024).toFixed(2)} kB`;
+      // Whole kB only — decimals start at MB.
+      totalSizeStr = `${Math.round(totalSizeBytes / 1024)} kB`;
     } else if (totalSizeBytes < 1024 * 1024 * 1024) {
       totalSizeStr = `${(totalSizeBytes / (1024 * 1024)).toFixed(2)} MB`;
     } else {
@@ -1198,14 +1257,14 @@ function createFormField(param, prefix, isBody, endpoint = null) {
   let inputHtml = "";
 
   if (param.type === "select") {
-    const options = resolveParamOptions(param);
+    const options = getParamOptions(param);
     inputHtml = `
             <select id="${fieldId}" name="${param.name}" ${required} style="width: 100%; box-sizing: border-box;">
                 ${buildSelectOptionsHtml(options, true)}
             </select>
         `;
   } else if (param.type === "multiselect") {
-    const options = resolveParamOptions(param);
+    const options = getParamOptions(param);
     const serialize = param.serialize || (isBody ? "json" : "csv");
     inputHtml = `
             ${buildChipMultiselectHtml(fieldId, param.name, options, serialize, required)}
@@ -1522,8 +1581,8 @@ function generateFieldForValue(
   } else {
     const overrideOptionsFrom = nestedSelectOptions && nestedSelectOptions[fieldName];
     const closedOptions = overrideOptionsFrom
-      ? resolveParamOptions({ optionsFrom: overrideOptionsFrom })
-      : resolveNestedFieldOptions(fieldName);
+      ? getParamOptions({ optionsFrom: overrideOptionsFrom })
+      : getNestedFieldOptions(fieldName);
 
     if (closedOptions && closedOptions.length > 0) {
       inputHtml = `

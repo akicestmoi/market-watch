@@ -219,48 +219,52 @@ class TestCentralBanksRecapView(TestCase):
         )
 
         assert response.status_code == 200
-        assert response.context.get("reference_date") == self.reference_date.isoformat()
-        assert response.context.get("previous_date") == self.previous_date.isoformat()
-
-        central_banks_data = response.context.get("central_banks_data")
-        assert central_banks_data == {
-            CentralBankChoices.BOJ: {
-                "data": [
-                    {"label": "Effective Rate", "value": "0.1 %"},
-                    {"label": "Next Meeting", "value": "N/A"},
-                    {"label": "Japan Inflation Rate", "value": "-"},
-                ],
-                "display_name": "Bank of Japan (BOJ)",
-                "probability_change_matrix": None,
-                "probability_matrix": None,
-            },
-            CentralBankChoices.ECB: {
-                "data": [
-                    {"label": "Effective Rate", "value": "4.0 %"},
-                    {"label": "Next Meeting", "value": "N/A"},
-                    {"label": "France Inflation Rate", "value": "-"},
-                    {"label": "Eurozone Inflation Rate", "value": "-"},
-                ],
-                "display_name": "European Central Bank (ECB)",
-                "probability_change_matrix": None,
-                "probability_matrix": None,
-            },
-            CentralBankChoices.FRB: {
-                "data": [
-                    {"label": "Effective Rate", "value": "5.25 %"},
-                    {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
-                    {"label": "Next Meeting", "value": "2026-03-20"},
-                    {"label": "US Inflation Rate", "value": "-"},
-                ],
-                "display_name": "Federal Reserve (FRB)",
-                "probability_change_matrix": None,
-                "probability_matrix": {
-                    "central_bank": CentralBankChoices.FRB,
-                    "meeting_dates": [date(2026, 3, 20)],
-                    "probability_matrix": [
-                        {"expected_rate_step": -25, "probabilities": [31.0]},
-                        {"expected_rate_step": 0, "probabilities": [69.0]},
+        assert {
+            "reference_date": response.context.get("reference_date"),
+            "previous_date": response.context.get("previous_date"),
+            "central_banks_data": response.context.get("central_banks_data"),
+        } == {
+            "reference_date": self.reference_date.isoformat(),
+            "previous_date": self.previous_date.isoformat(),
+            "central_banks_data": {
+                CentralBankChoices.BOJ: {
+                    "data": [
+                        {"label": "Effective Rate", "value": "0.1 %"},
+                        {"label": "Next Meeting", "value": "N/A"},
+                        {"label": "Japan Inflation Rate", "value": "-"},
                     ],
+                    "display_name": "Bank of Japan (BOJ)",
+                    "probability_change_matrix": None,
+                    "probability_matrix": None,
+                },
+                CentralBankChoices.ECB: {
+                    "data": [
+                        {"label": "Effective Rate", "value": "4.0 %"},
+                        {"label": "Next Meeting", "value": "N/A"},
+                        {"label": "France Inflation Rate", "value": "-"},
+                        {"label": "Eurozone Inflation Rate", "value": "-"},
+                    ],
+                    "display_name": "European Central Bank (ECB)",
+                    "probability_change_matrix": None,
+                    "probability_matrix": None,
+                },
+                CentralBankChoices.FRB: {
+                    "data": [
+                        {"label": "Effective Rate", "value": "5.25 %"},
+                        {"label": "FRB Target Fed Funds Rate", "value": "5.25 %"},
+                        {"label": "Next Meeting", "value": "2026-03-20"},
+                        {"label": "US Inflation Rate", "value": "-"},
+                    ],
+                    "display_name": "Federal Reserve (FRB)",
+                    "probability_change_matrix": None,
+                    "probability_matrix": {
+                        "central_bank": CentralBankChoices.FRB,
+                        "meeting_dates": [date(2026, 3, 20)],
+                        "probability_matrix": [
+                            {"expected_rate_step": -25, "probabilities": [31.0]},
+                            {"expected_rate_step": 0, "probabilities": [69.0]},
+                        ],
+                    },
                 },
             },
         }

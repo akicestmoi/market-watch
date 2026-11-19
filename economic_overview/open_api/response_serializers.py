@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from economic_overview.models import (
+from economic_overview.models.economic_indicators import (
     EconomicDataModel,
     EconomicIndicatorInformationModel,
 )
@@ -22,6 +22,62 @@ class LatestEconomicDataIngestionResponseSerializer(serializers.Serializer):
     updated_indicators = serializers.ListField(child=serializers.CharField())
     indicator_not_updated = serializers.ListField(child=serializers.CharField())
     schedule_not_updated = serializers.ListField(child=serializers.CharField())
+
+
+class TradeRankingLocationResultSerializer(serializers.Serializer):
+    """One location result inside a trade ranking ingest report."""
+
+    location = serializers.CharField()
+    trade_type = serializers.CharField()
+    status = serializers.CharField()
+    upserted_count = serializers.IntegerField()
+    message = serializers.CharField()
+
+
+class TradeRankingIngestionResponseSerializer(serializers.Serializer):
+    """Trade ranking ingest report."""
+
+    as_of = serializers.CharField()
+    status = serializers.CharField()
+    message = serializers.CharField()
+    results = TradeRankingLocationResultSerializer(many=True)
+
+
+class IndustryProfitabilityLocationResultSerializer(serializers.Serializer):
+    """One location result inside an industry profitability ingest report."""
+
+    location = serializers.CharField()
+    status = serializers.CharField()
+    upserted_count = serializers.IntegerField()
+    message = serializers.CharField()
+
+
+class IndustryProfitabilityIngestionResponseSerializer(serializers.Serializer):
+    """Industry profitability ingest report."""
+
+    as_of = serializers.CharField()
+    status = serializers.CharField()
+    message = serializers.CharField()
+    results = IndustryProfitabilityLocationResultSerializer(many=True)
+
+
+class MonthlyPublicationUpdateIndicatorResultSerializer(serializers.Serializer):
+    """Per-indicator result from a monthly publication-update run."""
+
+    name = serializers.CharField()
+    status = serializers.CharField()
+
+
+class MonthlyPublicationUpdateResponseSerializer(serializers.Serializer):
+    """Monthly calendar-less publication update report."""
+
+    as_of = serializers.CharField()
+    status = serializers.CharField()
+    message = serializers.CharField()
+    checked = serializers.IntegerField()
+    updated = serializers.ListField(child=serializers.CharField())
+    failed = serializers.ListField(child=serializers.CharField())
+    results = MonthlyPublicationUpdateIndicatorResultSerializer(many=True)
 
 
 class SpecificEconomicDataIngestionResponseSerializerItem(serializers.Serializer):
@@ -58,14 +114,22 @@ class EconomicIndicatorInformationSerializer(serializers.ModelSerializer):
 
         model = EconomicIndicatorInformationModel
         fields = [
-            "name",
+            "full_name",
             "location",
             "category",
-            "type",
+            "subcategory",
+            "series_label",
             "technical_name",
             "frequency",
             "source",
             "ticker",
+            "description",
+            "source_url",
+            "measure_type",
+            "parent_series_label",
+            "expansion_relation",
+            "is_hidden",
+            "publication_schedule_mode",
         ]
 
 
