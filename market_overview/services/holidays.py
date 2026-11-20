@@ -8,7 +8,8 @@ import requests
 from django.db.models import QuerySet
 from pydantic import TypeAdapter, ValidationError
 
-from market_overview.models import HolidayModel, LocationChoices
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import HolidayModel
 from market_overview.services.config import HOLIDAY_API_URL
 
 logger = logging.getLogger(__name__)

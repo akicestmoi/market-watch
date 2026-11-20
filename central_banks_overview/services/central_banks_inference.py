@@ -28,7 +28,7 @@ from central_banks_overview.services.config import (
     STEP_SIZE,
     TARGET_RATE_SHORT_NAME_BY_CENTRAL_BANK,
 )
-from market_overview.models import MarketPriceModel
+from market_overview.models.market_prices import MarketPriceModel
 
 logger = logging.getLogger(__name__)
 

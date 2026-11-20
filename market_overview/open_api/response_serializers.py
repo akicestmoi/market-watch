@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from market_overview.models import (
+from market_overview.models.market_prices import (
     AssetModel,
     HolidayModel,
     MarketPriceModel,
@@ -150,3 +150,112 @@ class MarkAsHolidayResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     updated_count = serializers.IntegerField()
     not_found = serializers.ListField(child=serializers.CharField())
+
+
+class SectorAnalysisIngestionResultSerializer(serializers.Serializer):
+    """One equity-index result from a sector-analysis ingestion run."""
+
+    date = serializers.CharField()
+    equity_index = serializers.CharField()
+    subsectors_upserted = serializers.IntegerField()
+    names_missing_weight = serializers.ListField(child=serializers.CharField())
+    names_missing_return = serializers.ListField(child=serializers.CharField())
+
+
+class IngestSectorAnalysisResponseSerializer(serializers.Serializer):
+    """Sector-analysis ingestion response."""
+
+    message = serializers.CharField()
+    results = serializers.ListField(child=SectorAnalysisIngestionResultSerializer())
+
+
+class SubsectorTopMoverResponseSerializer(serializers.Serializer):
+    """One company among the top contributors inside a subsector day."""
+
+    company = serializers.CharField()
+    ticker = serializers.CharField()
+    weight = serializers.FloatField()
+    daily_return = serializers.FloatField()
+    contribution = serializers.FloatField()
+
+
+class SubsectorDailyMoveResponseSerializer(serializers.Serializer):
+    """One stored subsector day move from the sector-analysis table."""
+
+    date = serializers.CharField()
+    equity_index = serializers.CharField()
+    sector = serializers.CharField()
+    subsector = serializers.CharField()
+    weight = serializers.FloatField()
+    daily_return = serializers.FloatField()
+    contribution = serializers.FloatField()
+    top_movers = SubsectorTopMoverResponseSerializer(many=True)
+
+
+class EarningsIngestionResultSerializer(serializers.Serializer):
+    """Summary of one earnings watchlist ingest or refresh run for one index."""
+
+    equity_index = serializers.CharField()
+    companies_updated = serializers.IntegerField()
+    tickers_failed = serializers.ListField(child=serializers.CharField())
+    as_of = serializers.CharField(required=False)
+
+
+class EarningsWatchlistRunResponseSerializer(serializers.Serializer):
+    """Shared response for earnings ingest (update, weights, roll) and refresh."""
+
+    message = serializers.CharField()
+    as_of = serializers.CharField()
+    earnings_results = EarningsIngestionResultSerializer(many=True)
+    weight_results = EarningsIngestionResultSerializer(many=True)
+    tickers_failed = serializers.ListField(child=serializers.CharField())
+
+
+class UpcomingEarningsInformationResponseSerializer(serializers.Serializer):
+    """Stored upcoming_* fields for one watchlist company."""
+
+    announcement_datetime = serializers.CharField(allow_null=True)
+    reporting_period_end = serializers.CharField(allow_null=True)
+    eps_expected = serializers.FloatField(allow_null=True)
+    revenue_expected = serializers.FloatField(allow_null=True)
+
+
+class ReportedEarningsInformationResponseSerializer(serializers.Serializer):
+    """Stored current_* or previous_* fields for one watchlist company."""
+
+    reporting_period_end = serializers.CharField(allow_null=True)
+    eps = serializers.FloatField(allow_null=True)
+    eps_expected = serializers.FloatField(allow_null=True)
+    revenue_expected = serializers.FloatField(allow_null=True)
+    revenue = serializers.FloatField(allow_null=True)
+    operating_income = serializers.FloatField(allow_null=True)
+    gross_profit = serializers.FloatField(allow_null=True)
+    ebitda = serializers.FloatField(allow_null=True)
+
+
+class EarningsWatchlistCompanyResponseSerializer(serializers.Serializer):
+    """One stored earnings watchlist company in GET responses."""
+
+    company = serializers.CharField()
+    ticker = serializers.CharField()
+    equity_index = serializers.CharField()
+    weight_pct = serializers.FloatField(allow_null=True)
+    upcoming = UpcomingEarningsInformationResponseSerializer()
+    current = ReportedEarningsInformationResponseSerializer()
+    previous = ReportedEarningsInformationResponseSerializer()
+
+
+class GetEarningsWatchlistResponseSerializer(serializers.Serializer):
+    """Stored earnings watchlist companies for one region."""
+
+    location = serializers.CharField()
+    companies = EarningsWatchlistCompanyResponseSerializer(many=True)
+
+
+class GetSectorAnalysisResponseSerializer(serializers.Serializer):
+    """Stored subsector day moves for one region and trading day."""
+
+    location = serializers.CharField()
+    date = serializers.CharField()
+    equity_index = serializers.CharField()
+    subsectors = SubsectorDailyMoveResponseSerializer(many=True)

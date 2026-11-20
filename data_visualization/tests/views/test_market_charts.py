@@ -6,11 +6,11 @@ from datetime import date
 from django.test import Client, TestCase
 from freezegun import freeze_time
 
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
 )
 
 

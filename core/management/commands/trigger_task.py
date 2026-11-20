@@ -17,10 +17,12 @@ from market_overview.tasks import (
     scheduled_holidays_ingestion,
     scheduled_market_data_ingestion,
     scheduled_price_update_logs_cleanup,
+    scheduled_sector_analysis_ingestion,
 )
 
 TASK_MAP = {
     "scheduled_market_data_ingestion": scheduled_market_data_ingestion,
+    "scheduled_sector_analysis_ingestion": scheduled_sector_analysis_ingestion,
     "scheduled_stir_prices_ingestion": scheduled_stir_prices_ingestion,
     "scheduled_economic_data_and_schedule_update": (
         scheduled_economic_data_and_schedule_update

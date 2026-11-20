@@ -27,6 +27,7 @@ class ApiTags(str, Enum):
     LOGS = "Logs"
     HOLIDAYS = "Holidays"
     MARKET_ANALYSIS = "Market Analysis"
+    SECTOR_ANALYSIS = "Sector Analysis"
 
 
 # Stock OpenAPI example messages for known client-error status codes.

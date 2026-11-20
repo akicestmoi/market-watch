@@ -6,7 +6,8 @@ from central_banks_overview.models import CentralBankChoices
 from core.models import get_choice_from_label, get_choice_labels
 from economic_overview.models.common import EconomicDataLocationChoices
 from economic_overview.models.economic_indicators import EconomicDataCategoryChoices
-from market_overview.models import AssetClassChoices, LocationChoices
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import AssetClassChoices
 
 
 class TestChoiceLabelHelpers(SimpleTestCase):

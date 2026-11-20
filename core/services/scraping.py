@@ -33,7 +33,7 @@ def parse_datetime(
 
     Aware inputs keep their offset and are normalized to UTC. Naive inputs use
     'naive_timezone' when given (source local time, e.g. America/New_York for
-    US releases); otherwise they are treated as UTC. See 'docs/GUIDELINES.md'.
+    US releases); otherwise they are treated as UTC.
     """
     if not value:
         return None

@@ -276,6 +276,25 @@ const ENDPOINTS = {
         query: null,
       },
       {
+        name: "Ingest Sector Analysis",
+        description:
+          "Scrape single-name closes and index weights, then store sector / subsector day moves for every trading day in the window (SPX, CAC 40, Nikkei 225).",
+        help: "Set Start Date and End Date for the inclusive window. Equity Index can be left empty to ingest all three indexes.",
+        method: "POST",
+        path: "/markets/sector-analysis/ingest",
+        body: [
+          { name: "start_date", type: "date", required: true },
+          { name: "end_date", type: "date", required: true },
+          {
+            name: "equity_index",
+            type: "select",
+            options: ["SPX", "CAC40", "NIKKEI225"],
+            required: false,
+          },
+        ],
+        query: null,
+      },
+      {
         name: "Get Assets Without Prices",
         description: "List assets that are missing a price in the selected window.",
         help: "Dates can be left empty for the default lookback, or either bound can be set to narrow the window. Include Holidays can be ticked to keep holiday rows.",
@@ -483,6 +502,95 @@ const ENDPOINTS = {
         path: "/markets/holidays",
         body: null,
         query: [{ name: "date", type: "date", required: true }],
+      },
+    ],
+    "Sector Analysis": [
+      {
+        name: "Get Sector Analysis",
+        description:
+          "Return stored subsector weight, return, contribution, and top movers for one US / FR / JP region on a trading day.",
+        method: "GET",
+        path: "/markets/sector-analysis",
+        body: null,
+        query: [
+          { name: "date", type: "date", required: true },
+          {
+            name: "location",
+            type: "select",
+            options: ["US", "FR", "JP"],
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "Ingest Sector Analysis",
+        description:
+          "Scrape single-name closes and index weights, then store sector / subsector day moves for every trading day in the window (SPX, CAC 40, Nikkei 225).",
+        help: "Set Start Date and End Date for the inclusive window. Equity Index can be left empty to ingest all three indexes.",
+        method: "POST",
+        path: "/markets/sector-analysis/ingest",
+        body: [
+          { name: "start_date", type: "date", required: true },
+          { name: "end_date", type: "date", required: true },
+          {
+            name: "equity_index",
+            type: "select",
+            options: ["SPX", "CAC40", "NIKKEI225"],
+            required: false,
+          },
+        ],
+        query: null,
+      },
+      {
+        name: "Get Earnings Watchlist",
+        description:
+          "Return stored upcoming, current, and previous earnings for watchlist companies in one region, sorted by weight.",
+        method: "GET",
+        path: "/markets/earnings",
+        body: null,
+        query: [
+          {
+            name: "location",
+            type: "select",
+            options: ["US", "FR", "JP"],
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "Ingest Earnings Watchlist",
+        description:
+          "Update upcoming / current / previous with T+1 roll, then refresh index weights.",
+        help: "Equity Index can be left empty to ingest all three indexes.",
+        method: "POST",
+        path: "/markets/earnings/ingest",
+        body: [
+          {
+            name: "equity_index",
+            type: "select",
+            options: ["SPX", "CAC40", "NIKKEI225"],
+            required: false,
+          },
+        ],
+        query: null,
+      },
+      {
+        name: "Refresh Earnings Watchlist",
+        description:
+          "Update Yahoo upcoming estimates and index weights without rolling current/previous earnings.",
+        help: "As Of can be left empty for the market-watch as-of date. Equity Index can be left empty to refresh all three indexes.",
+        method: "POST",
+        path: "/markets/earnings/refresh",
+        body: [
+          { name: "as_of", type: "date", required: false },
+          {
+            name: "equity_index",
+            type: "select",
+            options: ["SPX", "CAC40", "NIKKEI225"],
+            required: false,
+          },
+        ],
+        query: null,
       },
     ],
   },

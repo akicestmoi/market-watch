@@ -8,11 +8,11 @@ from typing import Literal, TypedDict
 import pandas as pd
 
 import core.services.orm as core_services
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
     PriceSourceChoices,
     PriceUpdateLogModel,

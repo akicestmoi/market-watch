@@ -21,7 +21,7 @@ from core.open_api.schema import (
 )
 from core.services.locks import acquire_redis_lock
 from core.views import BaseAPIView
-from market_overview.models import MarketPriceModel
+from market_overview.models.market_prices import MarketPriceModel
 from market_overview.open_api.request_serializers import (
     BatchPriceIngestionSerializer,
     BulkUpdateAssetsPricesSerializer,

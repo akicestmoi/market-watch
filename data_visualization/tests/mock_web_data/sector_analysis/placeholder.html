@@ -4,9 +4,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Sector analysis</title>
+    <title>Sector Analysis — 2025-12-15</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="/static/data_visualization/css/navbar.18dda47e7a33.css" rel="stylesheet">
-    <link href="/static/data_visualization/css/sector_analysis.1cd88f0912f3.css" rel="stylesheet">
+    <link href="/static/data_visualization/css/sector_analysis.ab495b25e65c.css" rel="stylesheet">
 </head>
 
 <body>
@@ -24,7 +25,7 @@
             </li>
             <li class="navbar-item">
                 <a href="/sector-analysis/" class="navbar-link active">
-                    Sector analysis
+                    Sector Analysis
                 </a>
             </li>
             <li class="navbar-item">
@@ -61,12 +62,35 @@
     </div>
 </nav>
 
-    <div class="sector-analysis-panel">
-        <div class="sector-analysis-card">
-            <h2>Sector analysis</h2>
-            <p class="sector-analysis-empty">No data yet.</p>
+    <div class="header">
+        <div class="header-form">
+            <div class="region-section">
+                <label for="region-buttons" class="region-label">Region:</label>
+                <div class="region-buttons" id="region-buttons">
+                    <button type="button" class="region-btn active" data-region="US">US</button>
+                    <button type="button" class="region-btn" data-region="FR">FR</button>
+                    <button type="button" class="region-btn" data-region="JP">JP</button>
+                </div>
+            </div>
+            <form method="get" id="sector-analysis-date-form">
+                <input type="hidden" name="region" value="US">
+                <label for="reference_date">Target Date:</label>
+                <input type="date" id="reference_date" name="reference_date"
+                    value="2025-12-15">
+                <button type="submit" class="btn-primary">Update</button>
+                <button type="button" class="btn-primary" id="lastBtn">Last</button>
+            </form>
         </div>
     </div>
+
+    <div class="sector-analysis-panel">
+        <div id="sector-analysis-root" class="sector-analysis-root"></div>
+    </div>
+    <script id="sector-analysis-data" type="application/json">{"location": "US", "equity_index": "SPX", "as_of": "2025-12-15", "selected_sector": null, "selected_subsector": null, "sector_history": [], "sector_day": [], "subsector_day": [], "earnings_card": []}</script>
+    <script>
+        window.defaultReferenceDate = "2025-12-15";
+    </script>
+    <script src="/static/data_visualization/js/sector_analysis.05ec0c870c49.js"></script>
 </body>
 
 </html>

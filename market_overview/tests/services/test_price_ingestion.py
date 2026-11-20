@@ -7,12 +7,12 @@ import pytest
 from django.test import TestCase
 
 from core.services.orm import convert_query_to_dictionary_list
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
     HolidayModel,
-    LocationChoices,
     MarketPriceModel,
     PriceSourceChoices,
     PriceUpdateLogModel,

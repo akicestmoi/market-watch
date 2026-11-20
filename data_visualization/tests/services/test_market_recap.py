@@ -12,7 +12,9 @@ from central_banks_overview.models import (
 )
 from data_visualization.services.config import FX_MATRIX_ORDER
 from data_visualization.services.market_recap import (
+    _DayEvent,
     _DayEventChangeClass,
+    _get_day_earnings_events,
     format_market_prices_for_recap_display,
     get_day_events_grouped_by_location,
     get_fx_prices_matrix,
@@ -32,12 +34,13 @@ from economic_overview.models.economic_indicators import (
     IndicatorDisplayModeChoices,
 )
 from economic_overview.models.publication import PublicationScheduleModel
-from market_overview.models import (
+from market_overview.models.common import EquityIndexChoices, LocationChoices
+from market_overview.models.earnings import EarningsWatchlistModel
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
     HolidayModel,
-    LocationChoices,
     MarketPriceModel,
 )
 
@@ -898,4 +901,40 @@ class TestDayEvents(TestCase):
                     },
                 ],
             }
+        ]
+
+
+class TestEarningsOnMarketRecap(TestCase):
+    """Test cases for earnings announcements on the Market Recap day-events strip."""
+
+    @freeze_time("2026-11-19 12:00:00")
+    def test_get_day_earnings_events(self):
+        """
+        GIVEN an upcoming watchlist earnings call on the recap date
+        WHEN _get_day_earnings_events is called
+        THEN one EPS day event with expected only is returned
+        """
+        EarningsWatchlistModel.objects.create(
+            company="Nvidia",
+            ticker="NVDA",
+            equity_index=EquityIndexChoices.SPX.value,
+            upcoming_announcement_datetime=datetime(
+                2026, 11, 19, 21, 0, tzinfo=timezone.utc
+            ),
+            upcoming_eps_expected=1.00,
+        )
+
+        result = _get_day_earnings_events(date(2026, 11, 19))
+
+        assert result == [
+            _DayEvent(
+                name="Nvidia earnings",
+                location="United States",
+                mode="EPS",
+                value="",
+                previous="1.00",
+                change="",
+                change_class=_DayEventChangeClass.NONE,
+                is_holiday=False,
+            )
         ]

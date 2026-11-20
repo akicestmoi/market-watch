@@ -16,7 +16,7 @@ from data_visualization.services.market_charts import (
     ChartDuration,
     MarketChartsFrontData,
 )
-from market_overview.models import LocationChoices
+from market_overview.models.common import LocationChoices
 
 
 def _get_market_charts_default_values() -> dict[str, str | None]:

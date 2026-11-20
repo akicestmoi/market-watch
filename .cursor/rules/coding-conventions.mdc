@@ -50,6 +50,16 @@ Register every domain model module from the app’s `AppConfig.ready()` so Djang
 
 ## App / API structure
 
+### Where work belongs (domain app vs `data_visualization`)
+
+| Type of work | Where it lives |
+| ------------ | -------------- |
+| Data ingestion, scraping, upserts, Celery Beat jobs, domain queries, locks | The **owning domain app** (`market_overview`, `economic_overview`, …) |
+| JSON API endpoint surface — `@open_api` views, `<app>/urls.py`, request/response serializers, management-console `ENDPOINTS` cards | The **same owning domain app** (never move OpenAPI routes into `data_visualization`) |
+| UI-oriented preparation — HTML page context, display TypedDicts, pie/chart/recap assembly, display Redis caches, templates / static JS/CSS | **`data_visualization`** |
+
+Domain apps own facts and the HTTP contract; `data_visualization` owns how those facts are shaped for pages. Domain **GET** endpoints return stored / domain data from the DB (or thin list helpers over it) — **not** UI page payloads. HTML views call `data_visualization` services for display assembly. Do **not** put scrapers, ingest orchestration, or `@open_api` endpoints under `data_visualization`.
+
 Each Django app keeps a fixed layout. Do not invent parallel folders for the same concern.
 
 | Concern                             | Location                                                                                      |
@@ -161,6 +171,31 @@ Load environment variables **only** in `core/settings.py` via `django-environ` (
 
 Add new env-backed values in `core/settings.py` first; callers import `settings`, not `environ`.
 
+### Dates and timezones
+
+**Storage is UTC-aware; user-facing clocks use Europe/Paris** (`settings.TIME_ZONE`, `USE_TZ = True`).
+
+| Layer | Rule |
+| --- | --- |
+| **Storage** (`DateTimeField`, scraped embargoes, meeting instants) | UTC-aware datetimes |
+| **Comparisons / “now”** | Aware UTC (`django.utils.timezone.now()` or `datetime.now(timezone.utc)`) |
+| **Source local times** (Fed/US in New York, ECB CET/CEST, BoJ JST, …) | Interpret in the source zone via `convert_local_wall_time_to_utc` / `parse_datetime(..., naive_timezone=…)` / `get_source_timezone(location_code)`, then store UTC |
+| **Parsing** | Prefer aware input; **naive strings default to UTC** unless `naive_timezone` (or a location map) is passed |
+| **User-facing clocks** (UI labels, upcoming-event times, date chips) | `core.services.calendar.convert_to_display_timezone` → Europe/Paris |
+| **Calendar “today”** (filters, week focus) | `core.services.calendar.get_local_today()` / `timezone.localdate()` (Paris date — not container `date.today()`) |
+| **Default data as-of** | `core.services.calendar.get_market_watch_as_of_date()` (Paris previous business day) |
+| **Celery Beat** | Local-time schedules in Europe/Paris (`CELERY_TIMEZONE = TIME_ZONE`) |
+
+Do **not** strip `tzinfo` before saving. Naive values with `USE_TZ` are reinterpreted as Paris local time and shift the instant.
+
+Do **not** hardcode a fixed UTC hour for a local announcement (e.g. “FOMC = 13:00 UTC”). Use the source zone so DST is handled correctly.
+
+Prefer `get_local_today()` / `get_market_watch_as_of_date()` over `date.today()` when the calendar day should match Paris ops schedules. Period fields that are `DateField` only (no clock) are timezone-agnostic calendar dates.
+
+Helpers live in `core.services.calendar` / `core.services.scraping` (`parse_datetime`, `get_source_timezone`, `convert_local_wall_time_to_utc`, `convert_to_display_timezone`, `get_local_today`, `get_previous_business_day`, `get_market_watch_as_of_date`). `SOURCE_TIMEZONE_BY_LOCATION_CODE` is the shared map for economic / market location codes.
+
+`convert_to_display_timezone` and `get_local_today` are not interchangeable: one shifts a full timestamp for display; the other answers “what calendar day is it in Paris right now?”.
+
 ### Every REST endpoint uses `@open_api`
 
 DRF API methods **must** be decorated with `core.open_api.schema.open_api` (tags, summary, description, serializers, responses). Do not ship undocumented hand-rolled views for JSON APIs.
@@ -197,7 +232,7 @@ def get(self, validated_data: SomeValidatedData) -> Response:
 - **Tasks** that run on a schedule or from other apps live in `tasks.py` and call services (same as views).
 - **New / changed routes**: update `<app>/urls.py` (and `core/urls.py` if the app mount is new). **Also add or update the matching card in the management console** (`data_visualization/static/data_visualization/js/management.js` `ENDPOINTS`) — every JSON API endpoint must be callable from the management tab. Sync Postman only when the user explicitly asks (`check-endpoint` / `upsert-endpoint`; see `.cursor/rules/postman-sync.mdc`).
 
-**Exception:** `data_visualization` serves HTML/templates (not the JSON OpenAPI surface). It does not use `@open_api`; keep page views and static assets there, and call other apps’ services for data.
+**`data_visualization` exception:** it serves HTML/templates and UI payload builders (not the JSON OpenAPI surface). It does **not** use `@open_api`. Keep page views, static assets, and display-assembly services there; call domain apps for ingested data. Endpoint-related code (views with `@open_api`, serializers, domain `urls.py`, management `ENDPOINTS`) stays in the respective domain app.
 
 Shared OpenAPI helpers, tags, and error response classes live in `core/open_api/schema.py`. Shared request fields live in `core/open_api/fields.py`.
 
@@ -330,7 +365,7 @@ def get_publication_datetime_on_date(publication_schedule, as_of) -> datetime | 
 def change_triplet_values_for_mode(...) -> _IndicatorValueTriplet: ...
 ```
 
-Exceptions: well-known callables expected by a framework (e.g. Django `save`, `__str__`), and `@property` getters that read as attributes.
+Exceptions: well-known callables expected by a framework (e.g. Django `save`, `__str__`), `@property` getters that read as attributes, and **`data_visualization` HTML page callables wired in `data_visualization/urls.py`** (keep the existing `…_view` noun form, e.g. `sector_analysis_view`, `market_recap_view` — do not rename them to verb-led names).
 
 ### Variables and parameters are explicit
 

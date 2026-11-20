@@ -299,7 +299,7 @@ class EconomicIndicatorInformationModel(BaseModel):
             "Short plain-English text shown in the recap hover bubble: what it "
             "measures, survey scope when useful, how the published level is "
             "expressed, how to read it, who publishes it, and any own-calculation "
-            "details. See docs/INDICATORS.md."
+            "details. See docs/ECONOMIC_INDICATORS.md."
         ),
     )
     source_url = models.CharField(

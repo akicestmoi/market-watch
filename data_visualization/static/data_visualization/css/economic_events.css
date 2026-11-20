@@ -38,6 +38,42 @@ body {
     font-size: 1.35rem;
 }
 
+.upcoming-releases-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.upcoming-event-type-toggles {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.upcoming-event-type-toggle {
+    border: 1px solid #93c5fd;
+    border-radius: 0.375rem;
+    background: #f8fafc;
+    color: #0369a1;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+}
+
+.upcoming-event-type-toggle:hover {
+    background: #e0f2fe;
+    border-color: #0284c7;
+}
+
+.upcoming-event-type-toggle.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #fff;
+}
+
 .upcoming-week-pager {
     display: flex;
     align-items: center;
@@ -201,9 +237,26 @@ body {
     line-height: 1.35;
 }
 
+.upcoming-event-row.is-filtered-out,
+.upcoming-day-holidays.is-filtered-out,
+.upcoming-day-releases.is-filtered-out,
+.upcoming-day-empty.is-filtered-out {
+    display: none !important;
+}
+
 .upcoming-event-row.is-holiday {
     background-color: #fff7ed;
     border-color: #fdba74;
+}
+
+.upcoming-event-row.is-earnings {
+    background-color: #ecfeff;
+    border-color: #67e8f9;
+    border-left: 3px solid #0e7490;
+}
+
+.upcoming-event-row.is-earnings .upcoming-event-time {
+    color: #155e75;
 }
 
 .upcoming-event-time {

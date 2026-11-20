@@ -9,7 +9,7 @@ from core.models import (
     get_choice_from_label,
     get_choice_labels,
 )
-from market_overview.models import LocationChoices
+from market_overview.models.common import LocationChoices
 
 
 class CentralBankChoices(models.TextChoices):

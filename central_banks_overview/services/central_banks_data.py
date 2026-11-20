@@ -20,7 +20,7 @@ from core.services.time_series_calculation import (
     ValueChangeType,
     calculate_value_change,
 )
-from market_overview.models import PriceSourceChoices
+from market_overview.models.market_prices import PriceSourceChoices
 from market_overview.services.scrapers.common import ScrapingResult
 from market_overview.services.scrapers.global_rates import scrap_from_global_rates
 from market_overview.services.scrapers.webstat import get_webstat_rates

@@ -7,11 +7,11 @@ from django.test import Client, TestCase
 from freezegun import freeze_time
 
 from data_visualization.services.config import FX_MATRIX_ORDER
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
 )
 

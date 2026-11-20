@@ -73,7 +73,7 @@ from market_analysis.services.article_extraction import (
     ArticleExtractionResult,
 )
 from market_analysis.services.cache import get_cached_analysis, set_cached_analysis
-from market_overview.models import (
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,

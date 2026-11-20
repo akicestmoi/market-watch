@@ -16,7 +16,7 @@ from core.open_api.schema import (
     open_api,
 )
 from core.views import BaseAPIView
-from market_overview.models import LocationChoices
+from market_overview.models.common import LocationChoices
 from market_overview.open_api.request_serializers import (
     DeleteHolidaysSerializer,
     IngestHolidaysSerializer,

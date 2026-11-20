@@ -15,7 +15,7 @@ from core.open_api.schema import (
     open_api,
 )
 from core.views import BaseAPIView
-from market_overview.models import AssetModel
+from market_overview.models.market_prices import AssetModel
 from market_overview.open_api.request_serializers import GetPriceUpdateLogsSerializer
 from market_overview.open_api.response_serializers import (
     PriceUpdateLogResponseSerializer,

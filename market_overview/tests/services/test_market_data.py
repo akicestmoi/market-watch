@@ -7,11 +7,11 @@ from django.test import TestCase
 
 import core.services.orm as core_services
 from core.testing import parse_query_for_testing
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
     PriceUpdateLogModel,
     SpecialComment,

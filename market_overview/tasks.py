@@ -7,9 +7,11 @@ from typing import Required, TypedDict
 from celery import shared_task
 
 import market_analysis.tasks as market_analysis_tasks
+import market_overview.services.earnings as earnings
 import market_overview.services.holidays as holidays
 import market_overview.services.market_data as market_data
 import market_overview.services.price_ingestion as price_ingestion
+import market_overview.services.sector_analysis as sector_analysis
 from core.services.calendar import (
     get_market_watch_as_of_date,
     get_previous_business_day,
@@ -108,6 +110,102 @@ def scheduled_price_update_logs_cleanup() -> _CeleryTaskResult:
             message=f"Error: {str(e)}",
             date=logs_date.isoformat(),
         )
+
+
+@shared_task
+def scheduled_sector_analysis_ingestion(
+    two_bdays_ago: bool = False,
+) -> _CeleryTaskResult:
+    """
+    Scrape single-name moves and store sector / subsector day aggregates.
+
+    Runs on weekday mornings for the previous one or two business days.
+    """
+    match two_bdays_ago:
+        case True:
+            price_date = get_previous_business_day(get_market_watch_as_of_date())
+        case False:
+            price_date = get_market_watch_as_of_date()
+
+    lock_key = sector_analysis.get_lock_key_for_sector_analysis_ingestion(price_date)
+    lock = try_acquire_redis_lock(lock_key)
+    if lock is None:
+        logger.warning(
+            "Skipping sector analysis ingestion for %s: already in progress.",
+            price_date.isoformat(),
+        )
+        return _CeleryTaskResult(
+            status="skipped",
+            message=(
+                "Sector analysis ingestion already in progress for "
+                f"{price_date.isoformat()}"
+            ),
+            date=price_date.isoformat(),
+        )
+
+    try:
+        logger.info("Ingesting sector analysis for %s", price_date)
+        results = sector_analysis.ingest_all_equity_index_subsector_daily_moves(
+            price_date
+        )
+        return _CeleryTaskResult(
+            status="success",
+            message=f"Sector analysis ingested successfully for {price_date}",
+            date=price_date.isoformat(),
+            asset_not_updated=[
+                ticker
+                for result in results
+                for ticker in (
+                    result["names_missing_weight"] + result["names_missing_return"]
+                )
+            ],
+        )
+    except Exception as e:
+        logger.error("Error in sector analysis ingestion task: %s", str(e))
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=price_date.isoformat(),
+        )
+    finally:
+        release_redis_lock(lock, lock_key)
+
+
+@shared_task
+def scheduled_earnings_watchlist_ingestion() -> _CeleryTaskResult:
+    """
+    Ingest Yahoo earnings (update, weights, and T+1 roll).
+
+    Runs on weekday mornings after sector-analysis ingestion.
+    """
+    as_of = get_market_watch_as_of_date()
+    lock_key = earnings.get_lock_key_for_earnings_watchlist_ingestion()
+    lock = try_acquire_redis_lock(lock_key)
+    if lock is None:
+        logger.warning("Skipping earnings watchlist ingestion: already in progress.")
+        return _CeleryTaskResult(
+            status="skipped",
+            message="Earnings watchlist ingestion already in progress.",
+            date=as_of.isoformat(),
+        )
+    try:
+        logger.info("Ingesting earnings watchlist for %s", as_of)
+        result = earnings.ingest_earnings_watchlist(as_of=as_of)
+        return _CeleryTaskResult(
+            status="success",
+            message="Earnings watchlist ingested and weights refreshed successfully.",
+            date=result["as_of"],
+            asset_not_updated=result["tickers_failed"],
+        )
+    except Exception as e:
+        logger.error("Error in earnings watchlist ingestion task: %s", str(e))
+        return _CeleryTaskResult(
+            status="error",
+            message=f"Error: {str(e)}",
+            date=as_of.isoformat(),
+        )
+    finally:
+        release_redis_lock(lock, lock_key)
 
 
 @shared_task

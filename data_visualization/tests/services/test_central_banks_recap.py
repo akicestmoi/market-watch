@@ -31,11 +31,11 @@ from economic_overview.models.economic_indicators import (
     EconomicIndicatorInformationModel,
     EconomicPublicationFrequencyChoices,
 )
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
 )
 

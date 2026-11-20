@@ -9,7 +9,7 @@ from data_visualization.services.database_management import (
     _format_table_size,
     get_database_information,
 )
-from market_overview.models import AssetModel, MarketPriceModel
+from market_overview.models.market_prices import AssetModel, MarketPriceModel
 
 
 class TestDatabaseManagementServices(TestCase):

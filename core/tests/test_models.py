@@ -4,7 +4,11 @@ import pytest
 from django.test import TestCase
 from rest_framework.exceptions import NotFound
 
-from market_overview.models import AssetClassChoices, AssetModel, AssetTypeChoices
+from market_overview.models.market_prices import (
+    AssetClassChoices,
+    AssetModel,
+    AssetTypeChoices,
+)
 
 
 class TestBaseManagerGet(TestCase):

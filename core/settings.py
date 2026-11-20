@@ -130,7 +130,6 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en-us"
 
 # Display / Celery local time (Europe/Paris). Datetimes are stored UTC-aware (USE_TZ).
-# See docs/GUIDELINES.md.
 TIME_ZONE = "Europe/Paris"
 
 USE_I18N = True
@@ -202,6 +201,23 @@ CELERY_BEAT_SCHEDULE = {
     "scheduled-market-data-ingestion-afternoon": {
         "task": "market_overview.tasks.scheduled_market_data_ingestion",
         "schedule": crontab(day_of_week="1-5", hour="14", minute="0"),
+    },
+    # Sector analysis - rebuilds SPX / CAC / Nikkei sector moves from single names.
+    # Runs every weekday morning for the previous one and two business days.
+    "scheduled-sector-analysis-ingestion-morning": {
+        "task": "market_overview.tasks.scheduled_sector_analysis_ingestion",
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="30"),
+        "kwargs": {"two_bdays_ago": False},
+    },
+    "scheduled-sector-analysis-ingestion-two-bdays-ago": {
+        "task": "market_overview.tasks.scheduled_sector_analysis_ingestion",
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="30"),
+        "kwargs": {"two_bdays_ago": True},
+    },
+    # Earnings watchlist - ingest (update, weights, T+1 roll) after sector analysis.
+    "scheduled-earnings-watchlist-ingestion": {
+        "task": "market_overview.tasks.scheduled_earnings_watchlist_ingestion",
+        "schedule": crontab(day_of_week="1-5", hour="8", minute="45"),
     },
     # STIR Futures Prices Ingestion - Runs every morning on weekdays
     # Note: ingestion tasks run every morning for previous 1 and 2 business days
@@ -298,9 +314,9 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_NO_READ_ONLY_REQUIRED": True,
     "SORT_OPERATIONS": False,
     "ENUM_NAME_OVERRIDES": {
-        "AssetClassChoices": "market_overview.models.AssetClassChoices",
-        "AssetTypeChoices": "market_overview.models.AssetTypeChoices",
-        "LocationChoices": "market_overview.models.LocationChoices",
+        "AssetClassChoices": "market_overview.models.market_prices.AssetClassChoices",
+        "AssetTypeChoices": "market_overview.models.market_prices.AssetTypeChoices",
+        "LocationChoices": "market_overview.models.common.LocationChoices",
     },
     "TAGS": [
         {

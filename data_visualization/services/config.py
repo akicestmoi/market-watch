@@ -8,7 +8,7 @@ from economic_overview.models.economic_indicators import (
     EconomicDataSubcategoryChoices,
     IndicatorDisplayModeChoices,
 )
-from market_overview.models import LocationChoices
+from market_overview.models.common import LocationChoices
 
 # ---------------------------------------------------------------------------
 # Economic events
@@ -686,3 +686,10 @@ FX_PAIRS_FILTER: list[str] = [
     "AUDCNY",
 ]
 FX_MATRIX_ORDER: list[str] = ["EUR", "USD", "GBP", "JPY", "CHF", "AUD", "CNY"]
+
+# ---------------------------------------------------------------------------
+# Sector analysis
+# ---------------------------------------------------------------------------
+
+# Cover trailing Month plus full calendar YTD through a late-year as-of date.
+SECTOR_ANALYSIS_HISTORY_CALENDAR_DAYS = 400

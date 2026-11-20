@@ -11,7 +11,7 @@ A Django-based market monitoring platform that ingests market, economic, and cen
 | **Database** | PostgreSQL (`psycopg2`) |
 | **Cache / broker** | Redis (Celery broker/result backend, distributed locks, LLM article digests) |
 | **Async jobs** | Celery + Celery Beat (Europe/Paris schedules); Flower for monitoring |
-| **Timezone Management** | Store UTC-aware; display Europe/Paris — see [docs/GUIDELINES.md](docs/GUIDELINES.md) |
+| **Dates / timezones** | Store UTC-aware; display and Beat schedules use Europe/Paris (see below) |
 | **LLM** | PydanticAI + OpenAI (`OPENAI_API_KEY`, `LLM_MODEL_NAME`) |
 | **Data / scraping** | pandas, yfinance, BeautifulSoup, requests, curl-cffi, pdfplumber |
 | **Frontend (ops UI)** | Server-rendered Django templates + static CSS/JS (`data_visualization`) |
@@ -19,6 +19,41 @@ A Django-based market monitoring platform that ingests market, economic, and cen
 | **Config** | `django-environ` (`.env`) |
 
 **Runtime shape:** Django web app → Celery Beat → Redis → Celery workers. Domain logic lives in Django apps; visualization and analysis compose those domains rather than owning their own primary datasets.
+
+## Dates and timezones
+
+Market Watch keeps a single clock story end to end:
+
+| Concern | Convention |
+| --- | --- |
+| **Stored datetimes** | UTC-aware (`USE_TZ = True`) — embargoes, meeting times, scraped release instants |
+| **UI clocks / labels** | Converted to **Europe/Paris** (`TIME_ZONE`) |
+| **“Today” and week focus** | Paris calendar date (`get_local_today()`), not the container OS date |
+| **Default page / data as-of** | Paris **previous business day** (`get_market_watch_as_of_date()`). Recaps, calendars, and charts are at most T-1 — never live “today” |
+| **As-of on pages** | Always the **end** of trailing / YTD windows (see [docs/CALCULATION_METHODOLOGY.md](docs/CALCULATION_METHODOLOGY.md)) |
+| **Period-only fields** | Plain `DateField` calendar dates (no timezone) |
+| **Celery Beat** | Schedules expressed in Europe/Paris |
+
+Source releases that arrive as a local wall clock (e.g. FOMC in New York, INSEE in Paris) are interpreted in that source zone, then stored as UTC, then shown in Paris. Examples:
+
+- INSEE embargo `07:45 UTC` → `08:45` winter Paris
+- FOMC `14:00` America/New_York → `19:00`/`18:00` UTC (EST/EDT) → **`20:00`** Paris either way
+
+Coding rules and helper names live in [`.cursor/rules/coding-conventions.mdc`](.cursor/rules/coding-conventions.mdc) (Dates and timezones).
+
+## Postman
+
+API requests for this project live in **one** Postman collection:
+
+| Item | Value |
+| --- | --- |
+| **Workspace** | `Perso` |
+| **Collection** | `market-watch` (the whole collection is this repo) |
+| **Per-machine IDs** | `.cursor/postman.local.json` (gitignored) |
+| **MCP connection** | `.cursor/mcp.json` (full Postman MCP); optional per-PC override in `~/.cursor/mcp.json` |
+| **Local API / OpenAPI** | http://127.0.0.1:8000/ · http://127.0.0.1:8000/api/docs/ |
+
+Collection sync is **on demand** only (not automatic when endpoints change). Agent lookup rules and sync workflow: [`.cursor/rules/postman-sync.mdc`](.cursor/rules/postman-sync.mdc).
 
 ## Quick Start
 
@@ -315,7 +350,7 @@ Maintains the economic calendar and value history used by the economic recap/cha
 
 - **Models:** `EconomicIndicatorInformationModel`; `PublicationScheduleModel`; `EconomicDataModel`; `EconomicDataUpdateLogModel`.
 - **Services:** `economic_data` — query/transform and scrape/ingest series; `publication_update` — schedules and monthly calendar-less refresh; `industry_profitability` / `trade_ranking` — charts ingest.
-- **Data sources:** `data_sources/economic_data.json` (seed indicators); series catalog and methodology notes in `docs/INDICATORS.md`.
+- **Data sources:** `data_sources/economic_data.json` (seed indicators); series catalog and methodology notes in `docs/ECONOMIC_INDICATORS.md`.
 - **HTTP (`/economics/`):** `indicator/generate-base-information`, `indicator/ingest` (latest), `indicator/ingest-historical`, `indicator/ingest-specific`, `indicator` (detail); `schedule/update`.
 - **Tasks:** `scheduled_economic_data_and_schedule_update`; `scheduled_economic_data_update_logs_cleanup`.
 - **Relations:** Consumed by `data_visualization` economic recap/charts; location concepts align with market holidays / CB calendar in the economic-events UI.

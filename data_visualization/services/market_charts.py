@@ -8,7 +8,8 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import market_overview.services.market_data as market_data
-from market_overview.models import AssetClassChoices, LocationChoices
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import AssetClassChoices
 from market_overview.services.market_data import (
     AssetNames,
     HistoricalPrice,

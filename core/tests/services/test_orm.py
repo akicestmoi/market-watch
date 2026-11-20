@@ -15,7 +15,7 @@ from core.services.orm import (
     upsert_with_logs,
 )
 from core.testing import parse_query_for_testing
-from market_overview.models import (
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,

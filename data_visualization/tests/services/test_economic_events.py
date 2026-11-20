@@ -8,6 +8,7 @@ from django.utils import timezone as django_timezone
 from freezegun import freeze_time
 
 from data_visualization.services.economic_events import (
+    _get_upcoming_earnings_events,
     _get_upcoming_events,
     _get_upcoming_events_from_publication_schedules,
     _get_upcoming_events_window_end,
@@ -15,6 +16,7 @@ from data_visualization.services.economic_events import (
     _sort_day_events,
     _UpcomingEvent,
     _UpcomingEventGroup,
+    _UpcomingEventType,
     _UpcomingWeekGroup,
     group_upcoming_events_by_week,
 )
@@ -30,7 +32,9 @@ from economic_overview.models.economic_indicators import (
     EconomicPublicationFrequencyChoices,
 )
 from economic_overview.models.publication import PublicationScheduleModel
-from market_overview.models import HolidayModel, LocationChoices
+from market_overview.models.common import EquityIndexChoices, LocationChoices
+from market_overview.models.earnings import EarningsWatchlistModel
+from market_overview.models.market_prices import HolidayModel
 
 
 class TestGroupUpcomingEventsByWeek(TestCase):
@@ -49,6 +53,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 16, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         next_week_event = _UpcomingEvent(
@@ -57,6 +62,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 22, 14, 0, 0, tzinfo=timezone.utc),
             time_str="14:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
@@ -162,6 +168,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 22, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
@@ -262,6 +269,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
@@ -362,6 +370,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2026, 1, 5, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
@@ -536,6 +545,7 @@ class TestGroupUpcomingEventsByWeek(TestCase):
             publication_date=datetime(2026, 2, 16, 10, 0, 0, tzinfo=timezone.utc),
             time_str="10:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         upcoming: list[_UpcomingEventGroup] = [
@@ -595,6 +605,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": event_date,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "",
                 }
             ]
@@ -614,6 +625,7 @@ class TestUpcomingEvents(TestCase):
                         "publication_date": event_date,
                         "time_str": "10:00",
                         "is_holiday": False,
+                        "event_type": _UpcomingEventType.ECONOMIC,
                         "period": "",
                     }
                 ],
@@ -649,6 +661,7 @@ class TestUpcomingEvents(TestCase):
                     # Stored UTC 10:30 → Europe/Paris winter (CET) 11:30
                     "time_str": "11:30",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "",
                 }
             ]
@@ -680,6 +693,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": previous_publication,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "",
                 }
             ],
@@ -690,6 +704,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": next_publication,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "",
                 }
             ],
@@ -726,6 +741,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": future_date,
                     "time_str": "11:30",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "25Q2",
                 }
             ]
@@ -763,6 +779,7 @@ class TestUpcomingEvents(TestCase):
                     "publication_date": monday_release,
                     "time_str": "10:00",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "",
                 }
             ],
@@ -793,6 +810,7 @@ class TestUpcomingEvents(TestCase):
                     ),
                     "time_str": "Holiday",
                     "is_holiday": True,
+                    "event_type": _UpcomingEventType.HOLIDAY,
                     "period": "",
                 }
             ]
@@ -848,6 +866,7 @@ class TestUpcomingEvents(TestCase):
                     ),
                     "time_str": "11:30",
                     "is_holiday": False,
+                    "event_type": _UpcomingEventType.ECONOMIC,
                     "period": "",
                 }
             ]
@@ -870,6 +889,7 @@ class TestSortDayEvents(TestCase):
             publication_date=shared_date,
             time_str="Holiday",
             is_holiday=True,
+            event_type=_UpcomingEventType.HOLIDAY,
             period="",
         )
         late_us = _UpcomingEvent(
@@ -878,6 +898,7 @@ class TestSortDayEvents(TestCase):
             publication_date=shared_date,
             time_str="15:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         early_eu = _UpcomingEvent(
@@ -886,6 +907,7 @@ class TestSortDayEvents(TestCase):
             publication_date=shared_date,
             time_str="08:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         early_jp = _UpcomingEvent(
@@ -894,6 +916,7 @@ class TestSortDayEvents(TestCase):
             publication_date=shared_date,
             time_str="08:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         early_fr = _UpcomingEvent(
@@ -902,6 +925,7 @@ class TestSortDayEvents(TestCase):
             publication_date=shared_date,
             time_str="08:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         early_us = _UpcomingEvent(
@@ -910,6 +934,7 @@ class TestSortDayEvents(TestCase):
             publication_date=shared_date,
             time_str="08:00",
             is_holiday=False,
+            event_type=_UpcomingEventType.ECONOMIC,
             period="",
         )
         assert _sort_day_events(
@@ -922,3 +947,80 @@ class TestSortDayEvents(TestCase):
             early_eu,
             late_us,
         ]
+
+
+class TestEarningsOnEconomicEvents(TestCase):
+    """Test cases for earnings announcements on the Economic Events calendar."""
+
+    def test_get_upcoming_earnings_events(self):
+        """
+        GIVEN a watchlist company with an upcoming announcement and no last report
+        WHEN _get_upcoming_earnings_events is called
+        THEN one Nvidia earnings event is returned with period end and '...'
+        """
+        EarningsWatchlistModel.objects.create(
+            company="Nvidia",
+            ticker="NVDA",
+            equity_index=EquityIndexChoices.SPX.value,
+            upcoming_announcement_datetime=datetime(
+                2026, 11, 19, 21, 0, tzinfo=timezone.utc
+            ),
+            upcoming_reporting_period_end=date(2026, 10, 31),
+            upcoming_eps_expected=1.0,
+        )
+
+        result = _get_upcoming_earnings_events(
+            date(2026, 11, 16),
+            date(2026, 11, 20),
+        )
+
+        assert result == {
+            "2026-11-19": [
+                _UpcomingEvent(
+                    name="Nvidia earnings",
+                    location="United States",
+                    publication_date=datetime(2026, 11, 19, 21, 0, tzinfo=timezone.utc),
+                    time_str="22:00",
+                    is_holiday=False,
+                    event_type=_UpcomingEventType.EARNINGS,
+                    period="10.26 - ...",
+                )
+            ]
+        }
+
+    def test_get_upcoming_earnings_events_period_window(self):
+        """
+        GIVEN upcoming and last reported period ends on a watchlist company
+        WHEN _get_upcoming_earnings_events is called
+        THEN the period label is end month.year - start month.year
+        """
+        EarningsWatchlistModel.objects.create(
+            company="Nvidia",
+            ticker="NVDA",
+            equity_index=EquityIndexChoices.SPX.value,
+            upcoming_announcement_datetime=datetime(
+                2026, 11, 19, 21, 0, tzinfo=timezone.utc
+            ),
+            upcoming_reporting_period_end=date(2026, 10, 31),
+            upcoming_eps_expected=1.0,
+            current_reporting_period_end=date(2026, 7, 31),
+        )
+
+        result = _get_upcoming_earnings_events(
+            date(2026, 11, 16),
+            date(2026, 11, 20),
+        )
+
+        assert result == {
+            "2026-11-19": [
+                _UpcomingEvent(
+                    name="Nvidia earnings",
+                    location="United States",
+                    publication_date=datetime(2026, 11, 19, 21, 0, tzinfo=timezone.utc),
+                    time_str="22:00",
+                    is_holiday=False,
+                    event_type=_UpcomingEventType.EARNINGS,
+                    period="10.26 - 7.26",
+                )
+            ]
+        }

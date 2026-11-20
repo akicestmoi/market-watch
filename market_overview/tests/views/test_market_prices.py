@@ -9,11 +9,11 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.services.calendar import get_market_watch_as_of_date
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
     PriceUpdateLogModel,
     SpecialComment,

@@ -18,15 +18,17 @@ This is a **personal project with a single environment**. Do **not** keep parall
 
 App layout (incl. `<app>/services/scrapers/` one module per source; `<app>/services/cache.py` for Redis-backed caches when needed; shared Redis helpers in `core/services/cache.py`), `@open_api` / serializers / `error_responses`, module clustering, typing (**TypedDict** vs Pydantic **`BaseModel`** / **`TypeAdapter`** vs Django **`BaseModel`**; third-party / Redis JSON → `TypeAdapter(TypedDict).validate_python`, not bare `dict` / `Protocol` / hand coerce), and tests: [`.cursor/rules/coding-conventions.mdc`](.cursor/rules/coding-conventions.mdc).
 
+**Domain vs UI:** ingestion / scraping / backend domain logic **and** JSON API endpoint surface (`@open_api` views, serializers, app urls, management `ENDPOINTS`) stay in the **owning domain app**. Domain GETs return DB / domain data — not UI page payloads. UI-oriented page preparation (HTML context, display payloads, display caches, templates/static) lives in **`data_visualization`**.
+
 **Missing required values raise** — do not silently fall back to `""` / `0` / empty stand-ins when a unit, ticker, or other required field is absent for the path you are on (see coding-conventions).
 
-## Timezone Management
+## Dates and timezones
 
-Backend stores UTC-aware datetimes; user-facing clocks use Europe/Paris. See [docs/GUIDELINES.md](docs/GUIDELINES.md).
+Backend stores UTC-aware datetimes; user-facing clocks and Beat schedules use Europe/Paris. App-level overview: [README.md](README.md) (Dates and timezones). Coding rules / helpers: [`.cursor/rules/coding-conventions.mdc`](.cursor/rules/coding-conventions.mdc).
 
 ## Postman
 
-Resolve the collection from `.cursor/postman.local.json` first (gitignored, per machine), then [docs/POSTMAN.md](docs/POSTMAN.md). MCP connection is `.cursor/mcp.json`; per-PC MCP overrides go in `~/.cursor/mcp.json`. **Do not sync Postman unless the user explicitly asks** — then use `check-endpoint` / `upsert-endpoint` (`.cursor/rules/postman-sync.mdc`).
+Resolve the collection from `.cursor/postman.local.json` first (gitignored, per machine), then postman-sync defaults (workspace `Perso`, collection `market-watch`). Overview: [README.md](README.md) (Postman). Rules: [`.cursor/rules/postman-sync.mdc`](.cursor/rules/postman-sync.mdc). MCP is `.cursor/mcp.json`; per-PC overrides go in `~/.cursor/mcp.json`. **Do not sync Postman unless the user explicitly asks** — then use `check-endpoint` / `upsert-endpoint`.
 
 ## Management tab
 

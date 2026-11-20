@@ -8,6 +8,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 
+import market_overview.services.earnings as earnings
 import market_overview.services.holidays as holidays
 from central_banks_overview.services.central_banks_data import (
     get_decision_day_key_rates,
@@ -45,10 +46,11 @@ from economic_overview.services.economic_data import (
     change_triplet_values_for_mode,
     get_number_of_months_to_calculate_mode_change,
 )
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.earnings import EarningsWatchlistModel
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
 )
 from market_overview.services.config import HOLIDAY_COUNTRIES
@@ -676,6 +678,76 @@ def _get_day_central_bank_events(event_date: date) -> list[_DayEvent]:
     return day_events
 
 
+def _does_earnings_announcement_match_event_date(
+    announcement_datetime: datetime | None,
+    event_date: date,
+) -> bool:
+    """Return whether an earnings announcement falls on 'event_date' in display TZ."""
+    if announcement_datetime is None:
+        return False
+    return convert_to_display_timezone(announcement_datetime).date() == event_date
+
+
+def _format_earnings_eps_value(eps_value: float | None) -> str:
+    """Format an EPS figure for the market-recap day-event card."""
+    if eps_value is None:
+        return ""
+    return f"{eps_value:.2f}"
+
+
+def _get_day_event_for_earnings_announcement(
+    earnings_watchlist: EarningsWatchlistModel,
+    *,
+    eps_actual: float | None,
+    eps_expected: float | None,
+) -> _DayEvent:
+    """Return a market-recap day event for one earnings announcement."""
+    location = earnings.get_location_for_earnings_watchlist(earnings_watchlist)
+    surprise: float | None = None
+    if eps_actual is not None and eps_expected is not None:
+        surprise = eps_actual - eps_expected
+    formatted_surprise = _format_day_event_change(surprise)
+    return _DayEvent(
+        name=f"{earnings_watchlist.company} earnings",
+        location=str(location.label),
+        mode="EPS",
+        value=_format_earnings_eps_value(eps_actual),
+        previous=_format_earnings_eps_value(eps_expected),
+        change=formatted_surprise.change,
+        change_class=formatted_surprise.change_class,
+        is_holiday=False,
+    )
+
+
+def _get_day_earnings_events(event_date: date) -> list[_DayEvent]:
+    """Return watchlist earnings announcements that fall on 'event_date'."""
+    lookback_utc = datetime.combine(
+        event_date - timedelta(days=1), datetime.min.time()
+    ).replace(tzinfo=timezone.utc)
+    window_end_utc = datetime.combine(event_date, datetime.max.time()).replace(
+        tzinfo=timezone.utc
+    )
+    day_events: list[_DayEvent] = []
+    for (
+        earnings_watchlist
+    ) in earnings.list_earnings_watchlist_models_for_announcement_window(
+        lookback_utc,
+        window_end_utc,
+    ):
+        if _does_earnings_announcement_match_event_date(
+            earnings_watchlist.upcoming_announcement_datetime,
+            event_date,
+        ):
+            day_events.append(
+                _get_day_event_for_earnings_announcement(
+                    earnings_watchlist,
+                    eps_actual=None,
+                    eps_expected=earnings_watchlist.upcoming_eps_expected,
+                )
+            )
+    return day_events
+
+
 def get_day_events_grouped_by_location(
     event_date: date,
 ) -> list[_DayEventsLocationGroup]:
@@ -689,6 +761,7 @@ def get_day_events_grouped_by_location(
         _get_day_holiday_events(event_date)
         + _get_day_publication_events(event_date)
         + _get_day_central_bank_events(event_date)
+        + _get_day_earnings_events(event_date)
     ):
         events_by_location.setdefault(day_event["location"], []).append(day_event)
 

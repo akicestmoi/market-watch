@@ -6,10 +6,10 @@ from typing import Literal, TypedDict
 
 import core.services.orm as core_services
 from core.services.calendar import get_market_watch_as_of_date
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetModel,
     HolidayModel,
-    LocationChoices,
     MarketPriceModel,
     PriceSourceChoices,
     PriceUpdateLogModel,

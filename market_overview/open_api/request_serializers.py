@@ -3,10 +3,10 @@
 from rest_framework import serializers
 
 from core.open_api.fields import CommaSeparatedIntegerField
-from market_overview.models import (
+from market_overview.models.common import EquityIndexChoices, LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetTypeChoices,
-    LocationChoices,
     PriceSourceChoices,
 )
 
@@ -193,3 +193,76 @@ class MarkAsHolidaySerializer(serializers.ListSerializer):
         if not attrs:
             raise serializers.ValidationError("List cannot be empty.")
         return attrs
+
+
+class IngestSectorAnalysisSerializer(serializers.Serializer):
+    """Ingest sector-analysis subsector day moves for a date window."""
+
+    start_date = serializers.DateField(required=True)
+    end_date = serializers.DateField(required=True)
+    equity_index = serializers.ChoiceField(
+        choices=EquityIndexChoices.choices,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
+    def validate(self, attrs):
+        """Validate end_date is greater than or equal to start_date."""
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError(
+                "end_date must be greater than or equal to start_date."
+            )
+        return attrs
+
+
+# Usage of tuple: DRF ChoiceField choices are (stored value, display label) pairs.
+_SECTOR_ANALYSIS_LOCATION_CHOICES = [
+    (LocationChoices.US.value, LocationChoices.US.label),
+    (LocationChoices.FR.value, LocationChoices.FR.label),
+    (LocationChoices.JP.value, LocationChoices.JP.label),
+]
+
+
+class GetSectorAnalysisSerializer(serializers.Serializer):
+    """Get stored subsector day moves for one region and trading day."""
+
+    date = serializers.DateField(required=True)
+    location = serializers.ChoiceField(
+        choices=_SECTOR_ANALYSIS_LOCATION_CHOICES,
+        required=True,
+    )
+
+
+class IngestEarningsWatchlistSerializer(serializers.Serializer):
+    """Ingest earnings watchlist: update, refresh weights, and T+1 roll."""
+
+    equity_index = serializers.ChoiceField(
+        choices=EquityIndexChoices.choices,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
+
+class RefreshEarningsWatchlistSerializer(serializers.Serializer):
+    """Refresh earnings watchlist: update upcoming and weights (no roll)."""
+
+    as_of = serializers.DateField(required=False)
+    equity_index = serializers.ChoiceField(
+        choices=EquityIndexChoices.choices,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
+
+class GetEarningsWatchlistSerializer(serializers.Serializer):
+    """Get stored earnings watchlist companies for one region."""
+
+    location = serializers.ChoiceField(
+        choices=_SECTOR_ANALYSIS_LOCATION_CHOICES,
+        required=True,
+    )

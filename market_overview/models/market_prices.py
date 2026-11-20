@@ -11,6 +11,7 @@ from core.models import (
     get_choice_from_label,
     get_choice_labels,
 )
+from market_overview.models.common import LocationChoices
 
 
 class AssetClassChoices(models.TextChoices):
@@ -46,32 +47,6 @@ class AssetTypeChoices(models.TextChoices):
         "Commodity Future Spot Price"
     )
     VOLATILITY_INDEX = "VOLATILITY_INDEX", _("Volatility Index")
-
-
-class LocationChoices(models.TextChoices):
-    """Market and economy location codes for assets and prices."""
-
-    US = "US", _("United States")
-    EU = "EU", _("Europe")
-    DE = "DE", _("Germany")
-    FR = "FR", _("France")
-    JP = "JP", _("Japan")
-
-    @classmethod
-    def from_label(cls, label: str) -> "LocationChoices":
-        """Return the location choice matching the given display label."""
-        return get_choice_from_label(cls, label)
-
-    @classmethod
-    def ordered(cls) -> list["LocationChoices"]:
-        """Ordered list of location choices."""
-        order = ["US", "EU", "DE", "FR", "JP"]
-        return [cls[value] for value in order]
-
-    @classmethod
-    def get_labels(cls) -> list[str]:
-        """Display labels in 'ordered()' order."""
-        return get_choice_labels(cls)
 
 
 class PriceSourceChoices(models.TextChoices):

@@ -12,11 +12,11 @@ from data_visualization.services.market_charts import (
     get_market_charts_dropdown_values,
     get_market_charts_labels,
 )
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
 )
 
 

@@ -18,11 +18,11 @@ from central_banks_overview.services.central_banks_inference import (
 from central_banks_overview.services.central_banks_meetings import (
     CentralBankMeetingDates,
 )
-from market_overview.models import (
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,
-    LocationChoices,
     MarketPriceModel,
 )
 

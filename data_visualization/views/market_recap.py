@@ -14,7 +14,7 @@ from data_visualization.views.common import (
     get_recap_dates_base_context,
     parse_recap_reference_and_previous_dates,
 )
-from market_overview.models import AssetClassChoices, MarketPriceModel
+from market_overview.models.market_prices import AssetClassChoices, MarketPriceModel
 
 
 def _collect_market_recap_validation_errors(

@@ -8,7 +8,7 @@ from freezegun import freeze_time
 
 import market_overview.tasks as tasks
 from core.testing import MockResponse, parse_query_for_testing
-from market_overview.models import (
+from market_overview.models.market_prices import (
     AssetClassChoices,
     AssetModel,
     AssetTypeChoices,

@@ -11,9 +11,11 @@ from pydantic import TypeAdapter, ValidationError
 
 logger = logging.getLogger(__name__)
 
-# Used by @ttl_cache decorators and Redis JSON caches for consistent TTLs.
+# Used by @ttl_cache scrapers and short-lived Redis helpers.
 CACHE_MAXSIZE = 128  # Maximum number of cached entries per function
 CACHE_TTL_SECONDS = 10 * 60  # Time-to-live: 10 minutes (600 seconds)
+# Redis payloads for visualization pages (recap, charts, sector analysis, …).
+UI_CACHE_TTL_SECONDS = 24 * 60 * 60  # Time-to-live: 1 day (86400 seconds)
 
 CachedPayloadT = TypeVar("CachedPayloadT")
 

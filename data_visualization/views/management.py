@@ -10,7 +10,7 @@ from central_banks_overview.models import CentralBankChoices
 from economic_overview.models.economic_indicators import (
     EconomicIndicatorInformationModel,
 )
-from market_overview.models import AssetModel
+from market_overview.models.market_prices import AssetModel
 
 
 def management_view(request: HttpRequest) -> HttpResponse:

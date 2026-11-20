@@ -1,1811 +1,5378 @@
 [
   {
-    "id": 1,
-    "Company": "3M Company",
-    "YFinance Ticker": "MMM",
-    "Sector": "Industrials",
-    "Subcategory": "Conglomerates",
-    "Index": "DJIA"
-  },
-  {
-    "id": 2,
-    "Company": "American Express Company",
-    "YFinance Ticker": "AXP",
-    "Sector": "Financials",
-    "Subcategory": "Financial Services",
-    "Index": "DJIA"
-  },
-  {
-    "id": 3,
-    "Company": "Amgen Inc.",
-    "YFinance Ticker": "AMGN",
-    "Sector": "Healthcare",
-    "Subcategory": "Biotechnology",
-    "Index": "DJIA"
-  },
-  {
-    "id": 4,
-    "Company": "Apple Inc.",
-    "YFinance Ticker": "AAPL",
-    "Sector": "Technology",
-    "Subcategory": "Technology Hardware",
-    "Index": "DJIA"
-  },
-  {
-    "id": 5,
-    "Company": "Boeing Company",
-    "YFinance Ticker": "BA",
-    "Sector": "Industrials",
-    "Subcategory": "Aerospace & Defense",
-    "Index": "DJIA"
-  },
-  {
-    "id": 6,
-    "Company": "Caterpillar Inc.",
-    "YFinance Ticker": "CAT",
-    "Sector": "Industrials",
-    "Subcategory": "Machinery",
-    "Index": "DJIA"
-  },
-  {
-    "id": 7,
-    "Company": "Chevron Corporation",
-    "YFinance Ticker": "CVX",
-    "Sector": "Energy",
-    "Subcategory": "Oil & Gas Integrated",
-    "Index": "DJIA"
-  },
-  {
-    "id": 8,
-    "Company": "Cisco Systems, Inc.",
-    "YFinance Ticker": "CSCO",
-    "Sector": "Technology",
-    "Subcategory": "Networking Equipment",
-    "Index": "DJIA"
-  },
-  {
-    "id": 9,
-    "Company": "The Coca-Cola Company",
-    "YFinance Ticker": "KO",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Beverages",
-    "Index": "DJIA"
-  },
-  {
-    "id": 10,
-    "Company": "Dow Inc.",
-    "YFinance Ticker": "DOW",
-    "Sector": "Materials",
-    "Subcategory": "Chemicals",
-    "Index": "DJIA"
-  },
-  {
-    "id": 11,
-    "Company": "The Goldman Sachs Group, Inc.",
-    "YFinance Ticker": "GS",
-    "Sector": "Financials",
-    "Subcategory": "Investment Banking",
-    "Index": "DJIA"
-  },
-  {
-    "id": 12,
-    "Company": "The Home Depot, Inc.",
-    "YFinance Ticker": "HD",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Home Improvement Retail",
-    "Index": "DJIA"
-  },
-  {
-    "id": 13,
-    "Company": "Honeywell International Inc.",
-    "YFinance Ticker": "HON",
-    "Sector": "Industrials",
-    "Subcategory": "Industrial Conglomerates",
-    "Index": "DJIA"
+    "company": "Accor SA",
+    "ticker": "AC.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels",
+    "equity_index": "CAC40"
   },
   {
-    "id": 14,
-    "Company": "International Business Machines Corporation",
-    "YFinance Ticker": "IBM",
-    "Sector": "Technology",
-    "Subcategory": "IT Services",
-    "Index": "DJIA"
+    "company": "Crédit Agricole SA",
+    "ticker": "ACA.PA",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "CAC40"
   },
   {
-    "id": 15,
-    "Company": "Intel Corporation",
-    "YFinance Ticker": "INTC",
-    "Sector": "Technology",
-    "Subcategory": "Semiconductors",
-    "Index": "DJIA"
+    "company": "Air Liquide SA",
+    "ticker": "AI.PA",
+    "sector": "Materials",
+    "subsector": "Industrial Gases",
+    "equity_index": "CAC40"
   },
   {
-    "id": 16,
-    "Company": "Johnson & Johnson",
-    "YFinance Ticker": "JNJ",
-    "Sector": "Healthcare",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "DJIA"
+    "company": "Airbus SE",
+    "ticker": "AIR.PA",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "CAC40"
   },
   {
-    "id": 17,
-    "Company": "JPMorgan Chase & Co.",
-    "YFinance Ticker": "JPM",
-    "Sector": "Financials",
-    "Subcategory": "Banking",
-    "Index": "DJIA"
+    "company": "Danone SA",
+    "ticker": "BN.PA",
+    "sector": "Consumer Staples",
+    "subsector": "Food Products",
+    "equity_index": "CAC40"
   },
   {
-    "id": 18,
-    "Company": "McDonald's Corporation",
-    "YFinance Ticker": "MCD",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Restaurants",
-    "Index": "DJIA"
+    "company": "BNP Paribas SA",
+    "ticker": "BNP.PA",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "CAC40"
   },
   {
-    "id": 19,
-    "Company": "Merck & Co., Inc.",
-    "YFinance Ticker": "MRK",
-    "Sector": "Healthcare",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "DJIA"
+    "company": "Bureau Veritas SA",
+    "ticker": "BVI.PA",
+    "sector": "Industrials",
+    "subsector": "Testing & Certification",
+    "equity_index": "CAC40"
   },
   {
-    "id": 20,
-    "Company": "Microsoft Corporation",
-    "YFinance Ticker": "MSFT",
-    "Sector": "Technology",
-    "Subcategory": "Software",
-    "Index": "DJIA"
+    "company": "Carrefour SA",
+    "ticker": "CA.PA",
+    "sector": "Consumer Staples",
+    "subsector": "Food Retail",
+    "equity_index": "CAC40"
   },
   {
-    "id": 21,
-    "Company": "Nike, Inc.",
-    "YFinance Ticker": "NKE",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Apparel & Footwear",
-    "Index": "DJIA"
+    "company": "Capgemini SE",
+    "ticker": "CAP.PA",
+    "sector": "Technology",
+    "subsector": "IT Services",
+    "equity_index": "CAC40"
   },
   {
-    "id": 22,
-    "Company": "The Procter & Gamble Company",
-    "YFinance Ticker": "PG",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Household Products",
-    "Index": "DJIA"
+    "company": "AXA SA",
+    "ticker": "CS.PA",
+    "sector": "Financials",
+    "subsector": "Insurance",
+    "equity_index": "CAC40"
   },
   {
-    "id": 23,
-    "Company": "Salesforce, Inc.",
-    "YFinance Ticker": "CRM",
-    "Sector": "Technology",
-    "Subcategory": "Cloud Software",
-    "Index": "DJIA"
+    "company": "Vinci SA",
+    "ticker": "DG.PA",
+    "sector": "Industrials",
+    "subsector": "Construction & Engineering",
+    "equity_index": "CAC40"
   },
   {
-    "id": 24,
-    "Company": "The Travelers Companies, Inc.",
-    "YFinance Ticker": "TRV",
-    "Sector": "Financials",
-    "Subcategory": "Insurance",
-    "Index": "DJIA"
+    "company": "Dassault Systèmes SE",
+    "ticker": "DSY.PA",
+    "sector": "Technology",
+    "subsector": "Software",
+    "equity_index": "CAC40"
   },
   {
-    "id": 25,
-    "Company": "UnitedHealth Group Incorporated",
-    "YFinance Ticker": "UNH",
-    "Sector": "Healthcare",
-    "Subcategory": "Managed Care",
-    "Index": "DJIA"
+    "company": "EssilorLuxottica SA",
+    "ticker": "EL.PA",
+    "sector": "Healthcare",
+    "subsector": "Medical Equipment",
+    "equity_index": "CAC40"
   },
   {
-    "id": 26,
-    "Company": "Verizon Communications Inc.",
-    "YFinance Ticker": "VZ",
-    "Sector": "Communication Services",
-    "Subcategory": "Telecom Services",
-    "Index": "DJIA"
+    "company": "Bouygues SA",
+    "ticker": "EN.PA",
+    "sector": "Industrials",
+    "subsector": "Construction",
+    "equity_index": "CAC40"
   },
   {
-    "id": 27,
-    "Company": "Visa Inc.",
-    "YFinance Ticker": "V",
-    "Sector": "Financials",
-    "Subcategory": "Payment Networks",
-    "Index": "DJIA"
+    "company": "Engie SA",
+    "ticker": "ENGI.PA",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "CAC40"
   },
   {
-    "id": 28,
-    "Company": "Walgreens Boots Alliance, Inc.",
-    "YFinance Ticker": "WBA",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Pharmacy Retail",
-    "Index": "DJIA"
+    "company": "Euronext NV",
+    "ticker": "ENX.PA",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges",
+    "equity_index": "CAC40"
   },
   {
-    "id": 29,
-    "Company": "Walmart Inc.",
-    "YFinance Ticker": "WMT",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Mass Merchandise Retail",
-    "Index": "DJIA"
+    "company": "Eurofins Scientific SE",
+    "ticker": "ERF.PA",
+    "sector": "Healthcare",
+    "subsector": "Life Sciences Tools",
+    "equity_index": "CAC40"
   },
   {
-    "id": 33,
-    "Company": "Airbus SE",
-    "YFinance Ticker": "AIR.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Aerospace & Defense",
-    "Index": "CAC40"
+    "company": "Eiffage SA",
+    "ticker": "FGR.PA",
+    "sector": "Industrials",
+    "subsector": "Construction",
+    "equity_index": "CAC40"
   },
   {
-    "id": 34,
-    "Company": "Alstom SA",
-    "YFinance Ticker": "ALO.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Rail Equipment",
-    "Index": "CAC40"
+    "company": "Société Générale SA",
+    "ticker": "GLE.PA",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "CAC40"
   },
   {
-    "id": 35,
-    "Company": "ArcelorMittal SA",
-    "YFinance Ticker": "MT.AS",
-    "Sector": "Materials",
-    "Subcategory": "Steel",
-    "Index": "CAC40"
+    "company": "Thales SA",
+    "ticker": "HO.PA",
+    "sector": "Industrials",
+    "subsector": "Defense Electronics",
+    "equity_index": "CAC40"
   },
   {
-    "id": 36,
-    "Company": "AXA SA",
-    "YFinance Ticker": "CS.PA",
-    "Sector": "Financials",
-    "Subcategory": "Insurance",
-    "Index": "CAC40"
+    "company": "Kering SA",
+    "ticker": "KER.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Luxury Goods",
+    "equity_index": "CAC40"
   },
   {
-    "id": 37,
-    "Company": "BNP Paribas SA",
-    "YFinance Ticker": "BNP.PA",
-    "Sector": "Financials",
-    "Subcategory": "Banking",
-    "Index": "CAC40"
+    "company": "Legrand SA",
+    "ticker": "LR.PA",
+    "sector": "Industrials",
+    "subsector": "Electrical Equipment",
+    "equity_index": "CAC40"
   },
   {
-    "id": 38,
-    "Company": "Bouygues SA",
-    "YFinance Ticker": "EN.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Construction",
-    "Index": "CAC40"
+    "company": "LVMH Moët Hennessy Louis Vuitton SE",
+    "ticker": "MC.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Luxury Goods",
+    "equity_index": "CAC40"
   },
   {
-    "id": 39,
-    "Company": "Capgemini SE",
-    "YFinance Ticker": "CAP.PA",
-    "Sector": "Technology",
-    "Subcategory": "IT Services",
-    "Index": "CAC40"
+    "company": "Michelin SCA",
+    "ticker": "ML.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Tires",
+    "equity_index": "CAC40"
   },
   {
-    "id": 40,
-    "Company": "Carrefour SA",
-    "YFinance Ticker": "CA.PA",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Food Retail",
-    "Index": "CAC40"
+    "company": "ArcelorMittal SA",
+    "ticker": "MT.AS",
+    "sector": "Materials",
+    "subsector": "Steel",
+    "equity_index": "CAC40"
   },
   {
-    "id": 41,
-    "Company": "Cr\u00e9dit Agricole SA",
-    "YFinance Ticker": "ACA.PA",
-    "Sector": "Financials",
-    "Subcategory": "Banking",
-    "Index": "CAC40"
+    "company": "L'Oréal SA",
+    "ticker": "OR.PA",
+    "sector": "Consumer Staples",
+    "subsector": "Personal Care",
+    "equity_index": "CAC40"
   },
   {
-    "id": 42,
-    "Company": "Danone SA",
-    "YFinance Ticker": "BN.PA",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Food Products",
-    "Index": "CAC40"
+    "company": "Orange SA",
+    "ticker": "ORA.PA",
+    "sector": "Communication Services",
+    "subsector": "Telecom Services",
+    "equity_index": "CAC40"
   },
   {
-    "id": 43,
-    "Company": "Dassault Syst\u00e8mes SE",
-    "YFinance Ticker": "DSY.PA",
-    "Sector": "Technology",
-    "Subcategory": "Software",
-    "Index": "CAC40"
+    "company": "Publicis Groupe SA",
+    "ticker": "PUB.PA",
+    "sector": "Communication Services",
+    "subsector": "Advertising",
+    "equity_index": "CAC40"
   },
   {
-    "id": 44,
-    "Company": "Edenred SA",
-    "YFinance Ticker": "EDEN.PA",
-    "Sector": "Financials",
-    "Subcategory": "Payment Services",
-    "Index": "CAC40"
+    "company": "Pernod Ricard SA",
+    "ticker": "RI.PA",
+    "sector": "Consumer Staples",
+    "subsector": "Beverages",
+    "equity_index": "CAC40"
   },
   {
-    "id": 45,
-    "Company": "Engie SA",
-    "YFinance Ticker": "ENGI.PA",
-    "Sector": "Utilities",
-    "Subcategory": "Multi-Utilities",
-    "Index": "CAC40"
+    "company": "Hermès International SCA",
+    "ticker": "RMS.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Luxury Goods",
+    "equity_index": "CAC40"
   },
   {
-    "id": 46,
-    "Company": "EssilorLuxottica SA",
-    "YFinance Ticker": "EL.PA",
-    "Sector": "Healthcare",
-    "Subcategory": "Medical Equipment",
-    "Index": "CAC40"
+    "company": "Renault SA",
+    "ticker": "RNO.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automobiles",
+    "equity_index": "CAC40"
   },
   {
-    "id": 47,
-    "Company": "Eurofins Scientific SE",
-    "YFinance Ticker": "ERF.PA",
-    "Sector": "Healthcare",
-    "Subcategory": "Life Sciences Tools",
-    "Index": "CAC40"
+    "company": "Safran SA",
+    "ticker": "SAF.PA",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "CAC40"
   },
   {
-    "id": 48,
-    "Company": "Herm\u00e8s International SCA",
-    "YFinance Ticker": "RMS.PA",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Luxury Goods",
-    "Index": "CAC40"
+    "company": "Sanofi SA",
+    "ticker": "SAN.PA",
+    "sector": "Healthcare",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "CAC40"
   },
   {
-    "id": 49,
-    "Company": "Kering SA",
-    "YFinance Ticker": "KER.PA",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Luxury Goods",
-    "Index": "CAC40"
+    "company": "Compagnie de Saint-Gobain SA",
+    "ticker": "SGO.PA",
+    "sector": "Industrials",
+    "subsector": "Building Materials",
+    "equity_index": "CAC40"
   },
   {
-    "id": 50,
-    "Company": "Legrand SA",
-    "YFinance Ticker": "LR.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Electrical Equipment",
-    "Index": "CAC40"
+    "company": "Stellantis NV",
+    "ticker": "STLAP.PA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automobiles",
+    "equity_index": "CAC40"
   },
   {
-    "id": 51,
-    "Company": "L'Or\u00e9al SA",
-    "YFinance Ticker": "OR.PA",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Personal Care",
-    "Index": "CAC40"
+    "company": "STMicroelectronics NV",
+    "ticker": "STMPA.PA",
+    "sector": "Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "CAC40"
   },
   {
-    "id": 52,
-    "Company": "LVMH Mo\u00ebt Hennessy Louis Vuitton SE",
-    "YFinance Ticker": "MC.PA",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Luxury Goods",
-    "Index": "CAC40"
+    "company": "Schneider Electric SE",
+    "ticker": "SU.PA",
+    "sector": "Industrials",
+    "subsector": "Electrical Equipment",
+    "equity_index": "CAC40"
   },
   {
-    "id": 53,
-    "Company": "Michelin SCA",
-    "YFinance Ticker": "ML.PA",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Tires",
-    "Index": "CAC40"
+    "company": "TotalEnergies SE",
+    "ticker": "TTE.PA",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Integrated",
+    "equity_index": "CAC40"
   },
   {
-    "id": 54,
-    "Company": "Orange SA",
-    "YFinance Ticker": "ORA.PA",
-    "Sector": "Communication Services",
-    "Subcategory": "Telecom Services",
-    "Index": "CAC40"
+    "company": "Unibail-Rodamco-Westfield SE",
+    "ticker": "URW.PA",
+    "sector": "Real Estate",
+    "subsector": "Commercial REIT",
+    "equity_index": "CAC40"
   },
   {
-    "id": 55,
-    "Company": "Pernod Ricard SA",
-    "YFinance Ticker": "RI.PA",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Beverages",
-    "Index": "CAC40"
+    "company": "Veolia Environnement SA",
+    "ticker": "VIE.PA",
+    "sector": "Utilities",
+    "subsector": "Environmental Services",
+    "equity_index": "CAC40"
   },
   {
-    "id": 56,
-    "Company": "Publicis Groupe SA",
-    "YFinance Ticker": "PUB.PA",
-    "Sector": "Communication Services",
-    "Subcategory": "Advertising",
-    "Index": "CAC40"
+    "company": "NISSUI CORP.",
+    "ticker": "1332.T",
+    "sector": "Consumer Goods",
+    "subsector": "Fishery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 57,
-    "Company": "Renault SA",
-    "YFinance Ticker": "RNO.PA",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Automobiles",
-    "Index": "CAC40"
+    "company": "INPEX CORP.",
+    "ticker": "1605.T",
+    "sector": "Materials",
+    "subsector": "Mining",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 58,
-    "Company": "Safran SA",
-    "YFinance Ticker": "SAF.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Aerospace & Defense",
-    "Index": "CAC40"
+    "company": "COMSYS HOLDINGS CORP.",
+    "ticker": "1721.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 59,
-    "Company": "Sanofi SA",
-    "YFinance Ticker": "SAN.PA",
-    "Sector": "Healthcare",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "CAC40"
+    "company": "TAISEI CORP.",
+    "ticker": "1801.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 60,
-    "Company": "Schneider Electric SE",
-    "YFinance Ticker": "SU.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Electrical Equipment",
-    "Index": "CAC40"
+    "company": "OBAYASHI CORP.",
+    "ticker": "1802.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 61,
-    "Company": "Soci\u00e9t\u00e9 G\u00e9n\u00e9rale SA",
-    "YFinance Ticker": "GLE.PA",
-    "Sector": "Financials",
-    "Subcategory": "Banking",
-    "Index": "CAC40"
+    "company": "SHIMIZU CORP.",
+    "ticker": "1803.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 62,
-    "Company": "Stellantis NV",
-    "YFinance Ticker": "STLAM.PA",
-    "Sector": "Consumer Discretionary",
-    "Subcategory": "Automobiles",
-    "Index": "CAC40"
+    "company": "HASEKO CORP.",
+    "ticker": "1808.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 63,
-    "Company": "STMicroelectronics NV",
-    "YFinance Ticker": "STM.PA",
-    "Sector": "Technology",
-    "Subcategory": "Semiconductors",
-    "Index": "CAC40"
+    "company": "KAJIMA CORP.",
+    "ticker": "1812.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 64,
-    "Company": "Teleperformance SE",
-    "YFinance Ticker": "TEP.PA",
-    "Sector": "Communication Services",
-    "Subcategory": "Business Services",
-    "Index": "CAC40"
+    "company": "DAIWA HOUSE IND. CO., LTD.",
+    "ticker": "1925.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 65,
-    "Company": "Thales SA",
-    "YFinance Ticker": "HO.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Defense Electronics",
-    "Index": "CAC40"
+    "company": "SEKISUI HOUSE, LTD.",
+    "ticker": "1928.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 66,
-    "Company": "TotalEnergies SE",
-    "YFinance Ticker": "TTE.PA",
-    "Sector": "Energy",
-    "Subcategory": "Oil & Gas Integrated",
-    "Index": "CAC40"
+    "company": "JGC HOLDINGS CORP.",
+    "ticker": "1963.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Construction",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 67,
-    "Company": "Unibail-Rodamco-Westfield SE",
-    "YFinance Ticker": "URW.PA",
-    "Sector": "Real Estate",
-    "Subcategory": "Commercial REIT",
-    "Index": "CAC40"
+    "company": "NISSHIN SEIFUN GROUP INC.",
+    "ticker": "2002.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 68,
-    "Company": "Veolia Environnement SA",
-    "YFinance Ticker": "VIE.PA",
-    "Sector": "Utilities",
-    "Subcategory": "Environmental Services",
-    "Index": "CAC40"
+    "company": "MEIJI HOLDINGS CO., LTD.",
+    "ticker": "2269.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 69,
-    "Company": "Vinci SA",
-    "YFinance Ticker": "DG.PA",
-    "Sector": "Industrials",
-    "Subcategory": "Construction & Engineering",
-    "Index": "CAC40"
+    "company": "NH FOODS LTD.",
+    "ticker": "2282.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 70,
-    "Company": "Worldline SA",
-    "YFinance Ticker": "WLN.PA",
-    "Sector": "Financials",
-    "Subcategory": "Payment Processing",
-    "Index": "CAC40"
+    "company": "M3, INC.",
+    "ticker": "2413.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 71,
-    "Company": "Toyota Motor Corp",
-    "YFinance Ticker": "7203.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "DENA CO., LTD.",
+    "ticker": "2432.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 72,
-    "Company": "Honda Motor Co., Ltd.",
-    "YFinance Ticker": "7267.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "SAPPORO BREWERIES LTD.",
+    "ticker": "2501.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 73,
-    "Company": "Nissan Motor Co., Ltd.",
-    "YFinance Ticker": "7201.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "ASAHI GROUP HOLDINGS, LTD.",
+    "ticker": "2502.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 74,
-    "Company": "Suzuki Motor Corp",
-    "YFinance Ticker": "7269.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "KIRIN HOLDINGS CO., LTD.",
+    "ticker": "2503.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 75,
-    "Company": "Subaru Corp",
-    "YFinance Ticker": "7270.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "SOJITZ CORP.",
+    "ticker": "2768.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 76,
-    "Company": "Mazda Motor Corp",
-    "YFinance Ticker": "7261.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "KIKKOMAN CORP.",
+    "ticker": "2801.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 77,
-    "Company": "Isuzu Motors Ltd",
-    "YFinance Ticker": "7202.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Commercial Vehicles",
-    "Index": "Nikkei225"
+    "company": "AJINOMOTO CO., INC.",
+    "ticker": "2802.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 78,
-    "Company": "Daihatsu Motor Co., Ltd.",
-    "YFinance Ticker": "7262.T",
-    "Sector": "Automobiles",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "KIOXIA HOLDINGS CORP.",
+    "ticker": "285A.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 79,
-    "Company": "Sony Group Corp",
-    "YFinance Ticker": "6758.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electronics & Media",
-    "Index": "Nikkei225"
+    "company": "NICHIREI CORP.",
+    "ticker": "2871.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 80,
-    "Company": "Panasonic Holdings Corp",
-    "YFinance Ticker": "6752.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electrical Equipment",
-    "Index": "Nikkei225"
+    "company": "JAPAN TOBACCO INC.",
+    "ticker": "2914.T",
+    "sector": "Consumer Goods",
+    "subsector": "Foods",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 81,
-    "Company": "Hitachi, Ltd.",
-    "YFinance Ticker": "6501.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Industrial Equipment",
-    "Index": "Nikkei225"
+    "company": "J.FRONT RETAILING CO., LTD.",
+    "ticker": "3086.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 82,
-    "Company": "Mitsubishi Electric Corp",
-    "YFinance Ticker": "6503.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Industrial Electronics",
-    "Index": "Nikkei225"
+    "company": "ZOZO, INC.",
+    "ticker": "3092.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 83,
-    "Company": "Tokyo Electron Ltd",
-    "YFinance Ticker": "8035.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Semiconductors",
-    "Index": "Nikkei225"
+    "company": "ISETAN MITSUKOSHI HOLDINGS LTD.",
+    "ticker": "3099.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 84,
-    "Company": "Advantest Corp",
-    "YFinance Ticker": "6857.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Semiconductors",
-    "Index": "Nikkei225"
+    "company": "TOKYU FUDOSAN HOLDINGS CORP.",
+    "ticker": "3289.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Real Estate",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 85,
-    "Company": "Omron Corp",
-    "YFinance Ticker": "6645.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Automation & Sensors",
-    "Index": "Nikkei225"
+    "company": "SEVEN & I HOLDINGS CO., LTD.",
+    "ticker": "3382.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 86,
-    "Company": "TDK Corp",
-    "YFinance Ticker": "6762.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electronic Components",
-    "Index": "Nikkei225"
+    "company": "TEIJIN LTD.",
+    "ticker": "3401.T",
+    "sector": "Materials",
+    "subsector": "Textiles & Apparel",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 87,
-    "Company": "NEC Corp",
-    "YFinance Ticker": "6701.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "IT & Networking",
-    "Index": "Nikkei225"
+    "company": "TORAY INDUSTRIES, INC.",
+    "ticker": "3402.T",
+    "sector": "Materials",
+    "subsector": "Textiles & Apparel",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 88,
-    "Company": "Fujitsu Ltd",
-    "YFinance Ticker": "6702.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "IT Services",
-    "Index": "Nikkei225"
+    "company": "KURARAY CO., LTD.",
+    "ticker": "3405.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 89,
-    "Company": "Canon Inc",
-    "YFinance Ticker": "7751.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Imaging & Optical",
-    "Index": "Nikkei225"
+    "company": "ASAHI KASEI CORP.",
+    "ticker": "3407.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 90,
-    "Company": "Ricoh Co Ltd",
-    "YFinance Ticker": "7752.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Office Electronics",
-    "Index": "Nikkei225"
+    "company": "SUMCO CORP.",
+    "ticker": "3436.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 91,
-    "Company": "Sharp Corp",
-    "YFinance Ticker": "6753.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Consumer Electronics",
-    "Index": "Nikkei225"
+    "company": "NEXON CO., LTD.",
+    "ticker": "3659.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 92,
-    "Company": "Fujifilm Holdings",
-    "YFinance Ticker": "4901.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Imaging Systems",
-    "Index": "Nikkei225"
+    "company": "SHIFT INC.",
+    "ticker": "3697.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 93,
-    "Company": "SoftBank Group Corp",
-    "YFinance Ticker": "9984.T",
-    "Sector": "Telecommunications",
-    "Subcategory": "Telecom & Media",
-    "Index": "Nikkei225"
+    "company": "OJI HOLDINGS CORP.",
+    "ticker": "3861.T",
+    "sector": "Materials",
+    "subsector": "Pulp & Paper",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 94,
-    "Company": "KDDI Corp",
-    "YFinance Ticker": "9433.T",
-    "Sector": "Telecommunications",
-    "Subcategory": "Telecom Services",
-    "Index": "Nikkei225"
+    "company": "RESONAC HOLDINGS CORP.",
+    "ticker": "4004.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 95,
-    "Company": "NTT Docomo Inc",
-    "YFinance Ticker": "9437.T",
-    "Sector": "Telecommunications",
-    "Subcategory": "Mobile Services",
-    "Index": "Nikkei225"
+    "company": "SUMITOMO CHEMICAL CO., LTD.",
+    "ticker": "4005.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 96,
-    "Company": "Takeda Pharmaceutical Co., Ltd.",
-    "YFinance Ticker": "4502.T",
-    "Sector": "Pharmaceuticals",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "Nikkei225"
+    "company": "NISSAN CHEMICAL CORP.",
+    "ticker": "4021.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 97,
-    "Company": "Astellas Pharma Inc",
-    "YFinance Ticker": "4503.T",
-    "Sector": "Pharmaceuticals",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "Nikkei225"
+    "company": "TOSOH CORP.",
+    "ticker": "4042.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 98,
-    "Company": "Eisai Co., Ltd.",
-    "YFinance Ticker": "4523.T",
-    "Sector": "Pharmaceuticals",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "Nikkei225"
+    "company": "TOKUYAMA CORP.",
+    "ticker": "4043.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 99,
-    "Company": "Daiichi Sankyo Co., Ltd.",
-    "YFinance Ticker": "4568.T",
-    "Sector": "Pharmaceuticals",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "Nikkei225"
+    "company": "DENKA CO., LTD.",
+    "ticker": "4061.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 100,
-    "Company": "Otsuka Holdings Co., Ltd.",
-    "YFinance Ticker": "4578.T",
-    "Sector": "Pharmaceuticals",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "Nikkei225"
+    "company": "IBIDEN CO., LTD.",
+    "ticker": "4062.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 101,
-    "Company": "Sumitomo Pharma Co., Ltd.",
-    "YFinance Ticker": "4506.T",
-    "Sector": "Pharmaceuticals",
-    "Subcategory": "Pharmaceuticals",
-    "Index": "Nikkei225"
+    "company": "SHIN-ETSU CHEMICAL CO., LTD.",
+    "ticker": "4063.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 102,
-    "Company": "Fast Retailing Co., Ltd.",
-    "YFinance Ticker": "9983.T",
-    "Sector": "Retail",
-    "Subcategory": "Retail & Apparel",
-    "Index": "Nikkei225"
+    "company": "KYOWA KIRIN CO., LTD.",
+    "ticker": "4151.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 103,
-    "Company": "Seven & i Holdings Co., Ltd.",
-    "YFinance Ticker": "3382.T",
-    "Sector": "Retail",
-    "Subcategory": "Convenience Stores",
-    "Index": "Nikkei225"
+    "company": "MITSUI CHEMICALS, INC.",
+    "ticker": "4183.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 104,
-    "Company": "Ito Yokado Co., Ltd.",
-    "YFinance Ticker": "8267.T",
-    "Sector": "Retail",
-    "Subcategory": "General Merchandise",
-    "Index": "Nikkei225"
+    "company": "MITSUBISHI CHEMICAL GROUP CORP.",
+    "ticker": "4188.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 105,
-    "Company": "Mitsubishi UFJ Financial Group, Inc.",
-    "YFinance Ticker": "8306.T",
-    "Sector": "Banking",
-    "Subcategory": "Banking",
-    "Index": "Nikkei225"
+    "company": "UBE CORP.",
+    "ticker": "4208.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 106,
-    "Company": "Mizuho Financial Group, Inc.",
-    "YFinance Ticker": "8411.T",
-    "Sector": "Banking",
-    "Subcategory": "Banking",
-    "Index": "Nikkei225"
+    "company": "NOMURA RESEARCH INSTITUTE, LTD.",
+    "ticker": "4307.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
-
   {
-    "id": 107,
-    "Company": "Sumitomo Mitsui Financial Group, Inc.",
-    "YFinance Ticker": "8316.T",
-    "Sector": "Banking",
-    "Subcategory": "Banking",
-    "Index": "Nikkei225"
+    "company": "DENTSU GROUP INC.",
+    "ticker": "4324.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 108,
-    "Company": "Resona Holdings, Inc.",
-    "YFinance Ticker": "8308.T",
-    "Sector": "Banking",
-    "Subcategory": "Banking",
-    "Index": "Nikkei225"
+    "company": "MERCARI, INC.",
+    "ticker": "4385.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 109,
-    "Company": "Japan Post Bank Co., Ltd.",
-    "YFinance Ticker": "7182.T",
-    "Sector": "Banking",
-    "Subcategory": "Savings Bank",
-    "Index": "Nikkei225"
+    "company": "KAO CORP.",
+    "ticker": "4452.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 110,
-    "Company": "Daikin Industries, Ltd.",
-    "YFinance Ticker": "6367.T",
-    "Sector": "Machinery",
-    "Subcategory": "Industrial Machinery",
-    "Index": "Nikkei225"
+    "company": "TAKEDA PHARMACEUTICAL CO., LTD.",
+    "ticker": "4502.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 111,
-    "Company": "Komatsu Ltd.",
-    "YFinance Ticker": "6301.T",
-    "Sector": "Machinery",
-    "Subcategory": "Construction Machinery",
-    "Index": "Nikkei225"
+    "company": "ASTELLAS PHARMA INC.",
+    "ticker": "4503.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 112,
-    "Company": "Fanuc Corp",
-    "YFinance Ticker": "6954.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Automation Equipment",
-    "Index": "Nikkei225"
+    "company": "SUMITOMO PHARMA CO., LTD.",
+    "ticker": "4506.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 113,
-    "Company": "Bridgestone Corp",
-    "YFinance Ticker": "5108.T",
-    "Sector": "Rubber",
-    "Subcategory": "Tires",
-    "Index": "Nikkei225"
+    "company": "SHIONOGI & CO., LTD.",
+    "ticker": "4507.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 114,
-    "Company": "Nippon Steel Corp",
-    "YFinance Ticker": "5401.T",
-    "Sector": "Iron & Steel",
-    "Subcategory": "Steel Production",
-    "Index": "Nikkei225"
+    "company": "CHUGAI PHARMACEUTICAL CO., LTD.",
+    "ticker": "4519.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 115,
-    "Company": "JFE Holdings, Inc.",
-    "YFinance Ticker": "5411.T",
-    "Sector": "Iron & Steel",
-    "Subcategory": "Steel Production",
-    "Index": "Nikkei225"
+    "company": "EISAI CO., LTD.",
+    "ticker": "4523.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 116,
-    "Company": "Sumitomo Metal Mining Co., Ltd.",
-    "YFinance Ticker": "5713.T",
-    "Sector": "Materials",
-    "Subcategory": "Nonferrous Metals",
-    "Index": "Nikkei225"
+    "company": "TERUMO CORP.",
+    "ticker": "4543.T",
+    "sector": "Technology",
+    "subsector": "Precision Instruments",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 117,
-    "Company": "Tokyo Gas Co., Ltd.",
-    "YFinance Ticker": "9531.T",
-    "Sector": "Utilities",
-    "Subcategory": "Gas Utilities",
-    "Index": "Nikkei225"
+    "company": "DAIICHI SANKYO CO., LTD.",
+    "ticker": "4568.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 118,
-    "Company": "Osaka Gas Co., Ltd.",
-    "YFinance Ticker": "9532.T",
-    "Sector": "Utilities",
-    "Subcategory": "Gas Utilities",
-    "Index": "Nikkei225"
+    "company": "OTSUKA HOLDINGS CO., LTD.",
+    "ticker": "4578.T",
+    "sector": "Consumer Goods",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 119,
-    "Company": "Tohoku Electric Power Co., Inc.",
-    "YFinance Ticker": "9506.T",
-    "Sector": "Utilities",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
+    "company": "ORIENTAL LAND CO., LTD.",
+    "ticker": "4661.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 120,
-    "Company": "Chubu Electric Power Co., Inc.",
-    "YFinance Ticker": "9502.T",
-    "Sector": "Utilities",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
+    "company": "LY CORP.",
+    "ticker": "4689.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 121,
-    "Company": "Kansai Electric Power Co., Inc.",
-    "YFinance Ticker": "9503.T",
-    "Sector": "Utilities",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
+    "company": "TREND MICRO INC.",
+    "ticker": "4704.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 122,
-    "Company": "Seven Bank, Ltd.",
-    "YFinance Ticker": "8410.T",
-    "Sector": "Banking",
-    "Subcategory": "Retail Banking",
-    "Index": "Nikkei225"
+    "company": "CYBERAGENT, INC.",
+    "ticker": "4751.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 123,
-    "Company": "Japan Airlines Co., Ltd.",
-    "YFinance Ticker": "9201.T",
-    "Sector": "Transportation",
-    "Subcategory": "Airlines",
-    "Index": "Nikkei225"
+    "company": "RAKUTEN GROUP, INC.",
+    "ticker": "4755.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 124,
-    "Company": "All Nippon Airways Co., Ltd.",
-    "YFinance Ticker": "9202.T",
-    "Sector": "Transportation",
-    "Subcategory": "Airlines",
-    "Index": "Nikkei225"
+    "company": "FUJIFILM HOLDINGS CORP.",
+    "ticker": "4901.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 125,
-    "Company": "East Japan Railway Co.",
-    "YFinance Ticker": "9020.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "SHISEIDO CO., LTD.",
+    "ticker": "4911.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 126,
-    "Company": "Central Japan Railway Co.",
-    "YFinance Ticker": "9022.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "JX ADVANCED METALS CORP.",
+    "ticker": "5016.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 127,
-    "Company": "West Japan Railway Co.",
-    "YFinance Ticker": "9021.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "IDEMITSU KOSAN CO., LTD.",
+    "ticker": "5019.T",
+    "sector": "Materials",
+    "subsector": "Petroleum",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 128,
-    "Company": "Nippon Yusen KK",
-    "YFinance Ticker": "9101.T",
-    "Sector": "Transportation",
-    "Subcategory": "Marine Transport",
-    "Index": "Nikkei225"
+    "company": "ENEOS HOLDINGS, INC.",
+    "ticker": "5020.T",
+    "sector": "Materials",
+    "subsector": "Petroleum",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 129,
-    "Company": "K Line (Kawasaki Kisen Kaisha, Ltd.)",
-    "YFinance Ticker": "9107.T",
-    "Sector": "Transportation",
-    "Subcategory": "Marine Transport",
-    "Index": "Nikkei225"
+    "company": "THE YOKOHAMA RUBBER CO., LTD.",
+    "ticker": "5101.T",
+    "sector": "Materials",
+    "subsector": "Rubber",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 130,
-    "Company": "Mitsui OSK Lines Ltd.",
-    "YFinance Ticker": "9104.T",
-    "Sector": "Transportation",
-    "Subcategory": "Marine Transport",
-    "Index": "Nikkei225"
+    "company": "BRIDGESTONE CORP.",
+    "ticker": "5108.T",
+    "sector": "Materials",
+    "subsector": "Rubber",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 131,
-    "Company": "Japan Tobacco Inc.",
-    "YFinance Ticker": "2914.T",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Tobacco Products",
-    "Index": "Nikkei225"
+    "company": "AGC INC.",
+    "ticker": "5201.T",
+    "sector": "Materials",
+    "subsector": "Glass & Ceramics",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 132,
-    "Company": "Asahi Group Holdings, Ltd.",
-    "YFinance Ticker": "2502.T",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Beverages",
-    "Index": "Nikkei225"
+    "company": "NIPPON ELECTRIC GLASS CO., LTD.",
+    "ticker": "5214.T",
+    "sector": "Materials",
+    "subsector": "Glass & Ceramics",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 133,
-    "Company": "Suntory Beverage & Food Ltd.",
-    "YFinance Ticker": "2587.T",
-    "Sector": "Consumer Staples",
-    "Subcategory": "Beverages",
-    "Index": "Nikkei225"
+    "company": "TAIHEIYO CEMENT CORP.",
+    "ticker": "5233.T",
+    "sector": "Materials",
+    "subsector": "Glass & Ceramics",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 134,
-    "Company": "Kirin Holdings Co., Ltd.",
-    "YFinance Ticker": "2503.T",
-    "Sector": "Foods",
-    "Subcategory": "Beverages",
-    "Index": "Nikkei225"
+    "company": "TOKAI CARBON CO., LTD.",
+    "ticker": "5301.T",
+    "sector": "Materials",
+    "subsector": "Glass & Ceramics",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 135,
-    "Company": "Meiji Holdings Co., Ltd.",
-    "YFinance Ticker": "2269.T",
-    "Sector": "Foods",
-    "Subcategory": "Food Products",
-    "Index": "Nikkei225"
+    "company": "TOTO LTD.",
+    "ticker": "5332.T",
+    "sector": "Materials",
+    "subsector": "Glass & Ceramics",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 136,
-    "Company": "Ajinomoto Co., Inc.",
-    "YFinance Ticker": "2802.T",
-    "Sector": "Foods",
-    "Subcategory": "Food Products",
-    "Index": "Nikkei225"
+    "company": "NGK CORP.",
+    "ticker": "5333.T",
+    "sector": "Materials",
+    "subsector": "Glass & Ceramics",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 137,
-    "Company": "Nissin Foods Holdings Co., Ltd.",
-    "YFinance Ticker": "2897.T",
-    "Sector": "Foods",
-    "Subcategory": "Processed Foods",
-    "Index": "Nikkei225"
+    "company": "NIPPON STEEL CORP.",
+    "ticker": "5401.T",
+    "sector": "Materials",
+    "subsector": "Steel",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 138,
-    "Company": "Shiseido Co., Ltd.",
-    "YFinance Ticker": "4911.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Cosmetics",
-    "Index": "Nikkei225"
+    "company": "KOBE STEEL, LTD.",
+    "ticker": "5406.T",
+    "sector": "Materials",
+    "subsector": "Steel",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 139,
-    "Company": "Kao Corp.",
-    "YFinance Ticker": "4452.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Consumer Chemicals",
-    "Index": "Nikkei225"
+    "company": "JFE HOLDINGS, INC.",
+    "ticker": "5411.T",
+    "sector": "Materials",
+    "subsector": "Steel",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 140,
-    "Company": "Sumitomo Chemical Co., Ltd.",
-    "YFinance Ticker": "4005.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Diversified Chemicals",
-    "Index": "Nikkei225"
+    "company": "THE JAPAN STEEL WORKS, LTD.",
+    "ticker": "5631.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 141,
-    "Company": "Mitsubishi Chemical Group Corp.",
-    "YFinance Ticker": "4188.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Diversified Chemicals",
-    "Index": "Nikkei225"
+    "company": "MITSUI KINZOKU CO., LTD.",
+    "ticker": "5706.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 142,
-    "Company": "Asahi Kasei Corp.",
-    "YFinance Ticker": "3407.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Specialty Chemicals",
-    "Index": "Nikkei225"
+    "company": "MITSUBISHI MATERIALS CORP.",
+    "ticker": "5711.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 143,
-    "Company": "Toray Industries, Inc.",
-    "YFinance Ticker": "3402.T",
-    "Sector": "Textiles & Apparel",
-    "Subcategory": "Synthetic Fibers",
-    "Index": "Nikkei225"
+    "company": "SUMITOMO METAL MINING CO., LTD.",
+    "ticker": "5713.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 144,
-    "Company": "Teijin Ltd.",
-    "YFinance Ticker": "3401.T",
-    "Sector": "Textiles & Apparel",
-    "Subcategory": "Advanced Materials",
-    "Index": "Nikkei225"
+    "company": "DOWA HOLDINGS CO., LTD.",
+    "ticker": "5714.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 145,
-    "Company": "Taiyo Yuden Co., Ltd.",
-    "YFinance Ticker": "6976.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electronic Components",
-    "Index": "Nikkei225"
+    "company": "FURUKAWA ELECTRIC CO., LTD.",
+    "ticker": "5801.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 146,
-    "Company": "Murata Manufacturing Co., Ltd.",
-    "YFinance Ticker": "6981.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electronic Components",
-    "Index": "Nikkei225"
+    "company": "SUMITOMO ELECTRIC IND., LTD.",
+    "ticker": "5802.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 147,
-    "Company": "Keyence Corp.",
-    "YFinance Ticker": "6861.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Factory Automation",
-    "Index": "Nikkei225"
+    "company": "FUJIKURA LTD.",
+    "ticker": "5803.T",
+    "sector": "Materials",
+    "subsector": "Nonferrous Metals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 148,
-    "Company": "Yaskawa Electric Corp.",
-    "YFinance Ticker": "6506.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Industrial Automation",
-    "Index": "Nikkei225"
+    "company": "SHIZUOKA FINANCIAL GROUP, INC.",
+    "ticker": "5831.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 149,
-    "Company": "Nidec Corp.",
-    "YFinance Ticker": "6594.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electric Motors",
-    "Index": "Nikkei225"
+    "company": "RECRUIT HOLDINGS CO., LTD.",
+    "ticker": "6098.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 150,
-    "Company": "Seiko Epson Corp.",
-    "YFinance Ticker": "6724.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Printers & Imaging",
-    "Index": "Nikkei225"
+    "company": "OKUMA CORP.",
+    "ticker": "6103.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 151,
-    "Company": "MinebeaMitsumi Inc.",
-    "YFinance Ticker": "6479.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Precision Components",
-    "Index": "Nikkei225"
+    "company": "AMADA CO., LTD.",
+    "ticker": "6113.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 152,
-    "Company": "Brother Industries, Ltd.",
-    "YFinance Ticker": "6448.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Office Equipment",
-    "Index": "Nikkei225"
+    "company": "DISCO CORP.",
+    "ticker": "6146.T",
+    "sector": "Technology",
+    "subsector": "Precision Instruments",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 153,
-    "Company": "Denso Corp.",
-    "YFinance Ticker": "6902.T",
-    "Sector": "Transportation Equipment",
-    "Subcategory": "Auto Parts",
-    "Index": "Nikkei225"
+    "company": "JAPAN POST HOLDINGS CO., LTD.",
+    "ticker": "6178.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 154,
-    "Company": "Aisin Corp.",
-    "YFinance Ticker": "7259.T",
-    "Sector": "Transportation Equipment",
-    "Subcategory": "Auto Parts",
-    "Index": "Nikkei225"
+    "company": "SMC CORP.",
+    "ticker": "6273.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 155,
-    "Company": "Toyota Industries Corp.",
-    "YFinance Ticker": "6201.T",
-    "Sector": "Machinery",
-    "Subcategory": "Industrial Vehicles",
-    "Index": "Nikkei225"
+    "company": "KOMATSU LTD.",
+    "ticker": "6301.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 156,
-    "Company": "Kubota Corp.",
-    "YFinance Ticker": "6326.T",
-    "Sector": "Machinery",
-    "Subcategory": "Agricultural Machinery",
-    "Index": "Nikkei225"
+    "company": "SUMITOMO HEAVY IND., LTD.",
+    "ticker": "6302.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 157,
-    "Company": "IHI Corp.",
-    "YFinance Ticker": "7013.T",
-    "Sector": "Machinery",
-    "Subcategory": "Heavy Machinery",
-    "Index": "Nikkei225"
+    "company": "HITACHI CONST. MACH. CO., LTD.",
+    "ticker": "6305.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 158,
-    "Company": "Kawasaki Heavy Industries, Ltd.",
-    "YFinance Ticker": "7012.T",
-    "Sector": "Machinery",
-    "Subcategory": "Heavy Machinery",
-    "Index": "Nikkei225"
+    "company": "KUBOTA CORP.",
+    "ticker": "6326.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 159,
-    "Company": "Mitsubishi Heavy Industries, Ltd.",
-    "YFinance Ticker": "7011.T",
-    "Sector": "Machinery",
-    "Subcategory": "Heavy Machinery",
-    "Index": "Nikkei225"
+    "company": "EBARA CORP.",
+    "ticker": "6361.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 160,
-    "Company": "Orix Corp.",
-    "YFinance Ticker": "8591.T",
-    "Sector": "Other Financial Services",
-    "Subcategory": "Leasing & Finance",
-    "Index": "Nikkei225"
+    "company": "DAIKIN INDUSTRIES, LTD.",
+    "ticker": "6367.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 161,
-    "Company": "Nomura Holdings, Inc.",
-    "YFinance Ticker": "8604.T",
-    "Sector": "Securities",
-    "Subcategory": "Brokerage",
-    "Index": "Nikkei225"
+    "company": "NSK LTD.",
+    "ticker": "6471.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 162,
-    "Company": "Daiwa Securities Group Inc.",
-    "YFinance Ticker": "8601.T",
-    "Sector": "Securities",
-    "Subcategory": "Brokerage",
-    "Index": "Nikkei225"
+    "company": "NTN CORP.",
+    "ticker": "6472.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 163,
-    "Company": "Tokio Marine Holdings, Inc.",
-    "YFinance Ticker": "8766.T",
-    "Sector": "Insurance",
-    "Subcategory": "Non-Life Insurance",
-    "Index": "Nikkei225"
+    "company": "JTEKT CORP.",
+    "ticker": "6473.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 164,
-    "Company": "MS&AD Insurance Group Holdings, Inc.",
-    "YFinance Ticker": "8725.T",
-    "Sector": "Insurance",
-    "Subcategory": "Non-Life Insurance",
-    "Index": "Nikkei225"
+    "company": "MINEBEA MITSUMI INC.",
+    "ticker": "6479.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 165,
-    "Company": "Sompo Holdings, Inc.",
-    "YFinance Ticker": "8630.T",
-    "Sector": "Insurance",
-    "Subcategory": "Non-Life Insurance",
-    "Index": "Nikkei225"
+    "company": "HITACHI, LTD.",
+    "ticker": "6501.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 166,
-    "Company": "Dai-ichi Life Holdings, Inc.",
-    "YFinance Ticker": "8750.T",
-    "Sector": "Insurance",
-    "Subcategory": "Life Insurance",
-    "Index": "Nikkei225"
+    "company": "MITSUBISHI ELECTRIC CORP.",
+    "ticker": "6503.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 167,
-    "Company": "Japan Exchange Group, Inc.",
-    "YFinance Ticker": "8697.T",
-    "Sector": "Other Financial Services",
-    "Subcategory": "Exchange Operator",
-    "Index": "Nikkei225"
+    "company": "FUJI ELECTRIC CO., LTD.",
+    "ticker": "6504.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 168,
-    "Company": "Recruit Holdings Co., Ltd.",
-    "YFinance Ticker": "6098.T",
-    "Sector": "Services",
-    "Subcategory": "HR & Staffing",
-    "Index": "Nikkei225"
+    "company": "YASKAWA ELECTRIC CORP.",
+    "ticker": "6506.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 169,
-    "Company": "Oriental Land Co., Ltd.",
-    "YFinance Ticker": "4661.T",
-    "Sector": "Services",
-    "Subcategory": "Leisure & Theme Parks",
-    "Index": "Nikkei225"
+    "company": "KOKUSAI ELECTRIC CORP.",
+    "ticker": "6525.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 170,
-    "Company": "CyberAgent, Inc.",
-    "YFinance Ticker": "4751.T",
-    "Sector": "Services",
-    "Subcategory": "Internet Services",
-    "Index": "Nikkei225"
+    "company": "SOCIONEXT INC.",
+    "ticker": "6526.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 171,
-    "Company": "Dentsu Group Inc.",
-    "YFinance Ticker": "4324.T",
-    "Sector": "Services",
-    "Subcategory": "Advertising",
-    "Index": "Nikkei225"
+    "company": "BAYCURRENT, INC.",
+    "ticker": "6532.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 172,
-    "Company": "Toppan Inc.",
-    "YFinance Ticker": "7911.T",
-    "Sector": "Pulp & Paper",
-    "Subcategory": "Printing",
-    "Index": "Nikkei225"
+    "company": "OMRON CORP.",
+    "ticker": "6645.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 173,
-    "Company": "Dai Nippon Printing Co., Ltd.",
-    "YFinance Ticker": "7912.T",
-    "Sector": "Pulp & Paper",
-    "Subcategory": "Printing",
-    "Index": "Nikkei225"
+    "company": "NEC CORP.",
+    "ticker": "6701.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 174,
-    "Company": "Oji Holdings Corp.",
-    "YFinance Ticker": "3861.T",
-    "Sector": "Pulp & Paper",
-    "Subcategory": "Paper Manufacturing",
-    "Index": "Nikkei225"
+    "company": "FUJITSU LTD.",
+    "ticker": "6702.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 175,
-    "Company": "Nippon Paper Industries Co., Ltd.",
-    "YFinance Ticker": "3863.T",
-    "Sector": "Pulp & Paper",
-    "Subcategory": "Paper Manufacturing",
-    "Index": "Nikkei225"
+    "company": "RENESAS ELECTRONICS CORP.",
+    "ticker": "6723.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 176,
-    "Company": "ENEOS Holdings, Inc.",
-    "YFinance Ticker": "5020.T",
-    "Sector": "Oil & Coal Products",
-    "Subcategory": "Oil Refining",
-    "Index": "Nikkei225"
+    "company": "SEIKO EPSON CORP.",
+    "ticker": "6724.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 177,
-    "Company": "Idemitsu Kosan Co., Ltd.",
-    "YFinance Ticker": "5019.T",
-    "Sector": "Oil & Coal Products",
-    "Subcategory": "Oil Refining",
-    "Index": "Nikkei225"
+    "company": "PANASONIC HOLDINGS CORP.",
+    "ticker": "6752.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 178,
-    "Company": "Showa Denko K.K.",
-    "YFinance Ticker": "4004.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Specialty Chemicals",
-    "Index": "Nikkei225"
+    "company": "SHARP CORP.",
+    "ticker": "6753.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 179,
-    "Company": "Sumitomo Realty & Development Co., Ltd.",
-    "YFinance Ticker": "8830.T",
-    "Sector": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
+    "company": "SONY GROUP CORP.",
+    "ticker": "6758.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 180,
-    "Company": "Mitsui Fudosan Co., Ltd.",
-    "YFinance Ticker": "8801.T",
-    "Sector": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
+    "company": "TDK CORP.",
+    "ticker": "6762.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 181,
-    "Company": "Mitsubishi Estate Co., Ltd.",
-    "YFinance Ticker": "8802.T",
-    "Sector": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
+    "company": "ALPS ALPINE CO., LTD.",
+    "ticker": "6770.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 182,
-    "Company": "Tokyu Corp.",
-    "YFinance Ticker": "9005.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "YOKOGAWA ELECTRIC CORP.",
+    "ticker": "6841.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 183,
-    "Company": "Keio Corp.",
-    "YFinance Ticker": "9008.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "ADVANTEST CORP.",
+    "ticker": "6857.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 184,
-    "Company": "Odakyu Electric Railway Co., Ltd.",
-    "YFinance Ticker": "9007.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "KEYENCE CORP.",
+    "ticker": "6861.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 185,
-    "Company": "Keisei Electric Railway Co., Ltd.",
-    "YFinance Ticker": "9009.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "DENSO CORP.",
+    "ticker": "6902.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 186,
-    "Company": "Keikyu Corp.",
-    "YFinance Ticker": "9006.T",
-    "Sector": "Transportation",
-    "Subcategory": "Railways",
-    "Index": "Nikkei225"
+    "company": "LASERTEC CORP.",
+    "ticker": "6920.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 187,
-    "Company": "Yamato Holdings Co., Ltd.",
-    "YFinance Ticker": "9064.T",
-    "Sector": "Transportation",
-    "Subcategory": "Logistics",
-    "Index": "Nikkei225"
+    "company": "FANUC CORP.",
+    "ticker": "6954.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 188,
-    "Company": "SG Holdings Co., Ltd.",
-    "YFinance Ticker": "9143.T",
-    "Sector": "Transportation",
-    "Subcategory": "Logistics",
-    "Index": "Nikkei225"
+    "company": "ROHM CO., LTD.",
+    "ticker": "6963.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 189,
-    "Company": "Nitori Holdings Co., Ltd.",
-    "YFinance Ticker": "9843.T",
-    "Sector": "Retail",
-    "Subcategory": "Home Furnishings",
-    "Index": "Nikkei225"
+    "company": "KYOCERA CORP.",
+    "ticker": "6971.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 190,
-    "Company": "Rakuten Group, Inc.",
-    "YFinance Ticker": "4755.T",
-    "Sector": "Services",
-    "Subcategory": "E-Commerce",
-    "Index": "Nikkei225"
+    "company": "TAIYO YUDEN CO., LTD.",
+    "ticker": "6976.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 191,
-    "Company": "Z Holdings Corp.",
-    "YFinance Ticker": "4689.T",
-    "Sector": "Services",
-    "Subcategory": "Internet Services",
-    "Index": "Nikkei225"
+    "company": "MURATA MANUFACTURING CO., LTD.",
+    "ticker": "6981.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 192,
-    "Company": "Persol Holdings Co., Ltd.",
-    "YFinance Ticker": "2181.T",
-    "Sector": "Services",
-    "Subcategory": "Staffing",
-    "Index": "Nikkei225"
+    "company": "NITTO DENKO CORP.",
+    "ticker": "6988.T",
+    "sector": "Materials",
+    "subsector": "Chemicals",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 193,
-    "Company": "Hoshizaki Corp.",
-    "YFinance Ticker": "6465.T",
-    "Sector": "Machinery",
-    "Subcategory": "Commercial Equipment",
-    "Index": "Nikkei225"
+    "company": "MITSUBISHI HEAVY IND., LTD.",
+    "ticker": "7011.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 194,
-    "Company": "Fuji Electric Co., Ltd.",
-    "YFinance Ticker": "6504.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Industrial Electrical Equipment",
-    "Index": "Nikkei225"
+    "company": "KAWASAKI HEAVY IND., LTD.",
+    "ticker": "7012.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Shipbuilding",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 195,
-    "Company": "GS Yuasa Corporation",
-    "YFinance Ticker": "6674.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Batteries",
-    "Index": "Nikkei225"
+    "company": "IHI CORP.",
+    "ticker": "7013.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 196,
-    "Company": "Meidensha Corporation",
-    "YFinance Ticker": "6508.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Heavy Electrical Equipment",
-    "Index": "Nikkei225"
+    "company": "YOKOHAMA FINANCIAL GROUP, INC.",
+    "ticker": "7186.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 197,
-    "Company": "Yokogawa Electric Corporation",
-    "YFinance Ticker": "6841.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Industrial Automation",
-    "Index": "Nikkei225"
+    "company": "NISSAN MOTOR CO., LTD.",
+    "ticker": "7201.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 198,
-    "Company": "Alps Alpine Co., Ltd.",
-    "YFinance Ticker": "6770.T",
-    "Sector": "Electric Machinery",
-    "Subcategory": "Electronic Components",
-    "Index": "Nikkei225"
+    "company": "ISUZU MOTORS LTD.",
+    "ticker": "7202.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 199,
-    "Company": "THK Co., Ltd.",
-    "YFinance Ticker": "6481.T",
-    "Sector": "Machinery",
-    "Subcategory": "Linear Motion Systems",
-    "Index": "Nikkei225"
+    "company": "TOYOTA MOTOR CORP.",
+    "ticker": "7203.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 200,
-    "Company": "Daifuku Co., Ltd.",
-    "YFinance Ticker": "6383.T",
-    "Sector": "Machinery",
-    "Subcategory": "Material Handling Systems",
-    "Index": "Nikkei225"
+    "company": "MITSUBISHI MOTORS CORP.",
+    "ticker": "7211.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 201,
-    "Company": "Mitsubishi Motors Corporation",
-    "YFinance Ticker": "7211.T",
-    "Sector": "Transportation Equipment",
-    "Subcategory": "Automobiles",
-    "Index": "Nikkei225"
+    "company": "MAZDA MOTOR CORP.",
+    "ticker": "7261.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 202,
-    "Company": "Yamaha Motor Co., Ltd.",
-    "YFinance Ticker": "7272.T",
-    "Sector": "Transportation Equipment",
-    "Subcategory": "Motorcycles",
-    "Index": "Nikkei225"
+    "company": "HONDA MOTOR CO., LTD.",
+    "ticker": "7267.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 203,
-    "Company": "Sumitomo Rubber Industries, Ltd.",
-    "YFinance Ticker": "5110.T",
-    "Sector": "Other Products",
-    "Subcategory": "Tires",
-    "Index": "Nikkei225"
+    "company": "SUZUKI MOTOR CORP.",
+    "ticker": "7269.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 204,
-    "Company": "Kobe Steel, Ltd.",
-    "YFinance Ticker": "5406.T",
-    "Sector": "Iron & Steel",
-    "Subcategory": "Steel Manufacturing",
-    "Index": "Nikkei225"
+    "company": "SUBARU CORP.",
+    "ticker": "7270.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 205,
-    "Company": "Nintendo Co., Ltd.",
-    "YFinance Ticker": "7974.T",
-    "Sector": "Other Products",
-    "Subcategory": "Gaming",
-    "Index": "Nikkei225"
+    "company": "YAMAHA MOTOR CO., LTD.",
+    "ticker": "7272.T",
+    "sector": "Technology",
+    "subsector": "Automobiles & Auto parts",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 206,
-    "Company": "Bandai Namco Holdings Inc.",
-    "YFinance Ticker": "7832.T",
-    "Sector": "Other Products",
-    "Subcategory": "Entertainment Products",
-    "Index": "Nikkei225"
+    "company": "RYOHIN KEIKAKU CO., LTD.",
+    "ticker": "7453.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 207,
-    "Company": "Lion Corporation",
-    "YFinance Ticker": "4912.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Household Products",
-    "Index": "Nikkei225"
+    "company": "PAN PACIFIC INTERNATIONAL HOLDINGS CORP.",
+    "ticker": "7532.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 208,
-    "Company": "Kuraray Co., Ltd.",
-    "YFinance Ticker": "3405.T",
-    "Sector": "Chemicals",
-    "Subcategory": "Specialty Chemicals",
-    "Index": "Nikkei225"
+    "company": "NIKON CORP.",
+    "ticker": "7731.T",
+    "sector": "Technology",
+    "subsector": "Precision Instruments",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 209,
-    "Company": "Sekisui House, Ltd.",
-    "YFinance Ticker": "1928.T",
-    "Sector": "Construction",
-    "Subcategory": "Home Builders",
-    "Index": "Nikkei225"
+    "company": "OLYMPUS CORP.",
+    "ticker": "7733.T",
+    "sector": "Technology",
+    "subsector": "Precision Instruments",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 210,
-    "Company": "Obayashi Corporation",
-    "YFinance Ticker": "1802.T",
-    "Sector": "Construction",
-    "Subcategory": "General Construction",
-    "Index": "Nikkei225"
+    "company": "SCREEN HOLDINGS CO., LTD.",
+    "ticker": "7735.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 211,
-    "Company": "Shimizu Corporation",
-    "YFinance Ticker": "1803.T",
-    "Sector": "Construction",
-    "Subcategory": "General Construction",
-    "Index": "Nikkei225"
+    "company": "HOYA CORP.",
+    "ticker": "7741.T",
+    "sector": "Technology",
+    "subsector": "Precision Instruments",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 212,
-    "Company": "Taisei Corporation",
-    "YFinance Ticker": "1801.T",
-    "Sector": "Construction",
-    "Subcategory": "General Construction",
-    "Index": "Nikkei225"
+    "company": "CANON INC.",
+    "ticker": "7751.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 213,
-    "Company": "Kajima Corporation",
-    "YFinance Ticker": "1812.T",
-    "Sector": "Construction",
-    "Subcategory": "General Construction",
-    "Index": "Nikkei225"
+    "company": "RICOH CO., LTD.",
+    "ticker": "7752.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 214,
-    "Company": "Daito Trust Construction Co., Ltd.",
-    "YFinance Ticker": "1878.T",
-    "Sector": "Construction",
-    "Subcategory": "Rental Housing Construction",
-    "Index": "Nikkei225"
+    "company": "BANDAI NAMCO HOLDINGS INC.",
+    "ticker": "7832.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Other Manufacturing",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 215,
-    "Company": "Toho Gas Co., Ltd.",
-    "YFinance Ticker": "9533.T",
-    "Sector": "Gas",
-    "Subcategory": "City Gas",
-    "Index": "Nikkei225"
+    "company": "TOPPAN HOLDINGS INC.",
+    "ticker": "7911.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Other Manufacturing",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 216,
-    "Company": "Tokyo Electric Power Company Holdings, Inc.",
-    "YFinance Ticker": "9501.T",
-    "Sector": "Electric Power",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
+    "company": "DAI NIPPON PRINTING CO., LTD.",
+    "ticker": "7912.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Other Manufacturing",
+    "equity_index": "NIKKEI225"
   },
   {
-    "id": 217,
-    "Company": "Hokkaido Electric Power Co., Inc.",
-    "YFinance Ticker": "9509.T",
-    "Sector": "Electric Power",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 218,
-    "Company": "Shikoku Electric Power Co., Inc.",
-    "YFinance Ticker": "9507.T",
-    "Sector": "Electric Power",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 219,
-    "Company": "Kyushu Electric Power Co., Inc.",
-    "YFinance Ticker": "9508.T",
-    "Sector": "Electric Power",
-    "Subcategory": "Electric Utilities",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 220,
-    "Company": "Nippon Express Holdings, Inc.",
-    "YFinance Ticker": "9147.T",
-    "Sector": "Land Transport",
-    "Subcategory": "Logistics",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 221,
-    "Company": "Isetan Mitsukoshi Holdings Ltd.",
-    "YFinance Ticker": "3099.T",
-    "Sector": "Retail Trade",
-    "Subcategory": "Department Stores",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 222,
-    "Company": "Takashimaya Company, Limited",
-    "YFinance Ticker": "8233.T",
-    "Sector": "Retail Trade",
-    "Subcategory": "Department Stores",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 223,
-    "Company": "Marui Group Co., Ltd.",
-    "YFinance Ticker": "8252.T",
-    "Sector": "Retail Trade",
-    "Subcategory": "Retail & Consumer Finance",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 224,
-    "Company": "Trend Micro Incorporated",
-    "YFinance Ticker": "4704.T",
-    "Sector": "Services",
-    "Subcategory": "Cybersecurity",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 225,
-    "Company": "Secom Co., Ltd.",
-    "YFinance Ticker": "9735.T",
-    "Sector": "Services",
-    "Subcategory": "Security Services",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 226,
-    "Company": "Toho Co., Ltd.",
-    "YFinance Ticker": "9602.T",
-    "Sector": "Services",
-    "Subcategory": "Film & Entertainment",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 227,
-    "Company": "Tokyu Fudosan Holdings Corporation",
-    "YFinance Ticker": "3289.T",
-    "Sector": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 228,
-    "Company": "Nomura Real Estate Holdings, Inc.",
-    "YFinance Ticker": "3231.T",
-    "Sector": "Real Estate",
-    "Subcategory": "Real Estate Development",
-    "Index": "Nikkei225"
-  },
-  {
-    "id": 229,
-    "Company": "T&D Holdings, Inc.",
-    "YFinance Ticker": "8795.T",
-    "Sector": "Insurance",
-    "Subcategory": "Life Insurance",
-    "Index": "Nikkei225"
+    "company": "YAMAHA CORP.",
+    "ticker": "7951.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Other Manufacturing",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "NINTENDO CO., LTD.",
+    "ticker": "7974.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "ITOCHU CORP.",
+    "ticker": "8001.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MARUBENI CORP.",
+    "ticker": "8002.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOYOTA TSUSHO CORP.",
+    "ticker": "8015.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MITSUI & CO., LTD.",
+    "ticker": "8031.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOKYO ELECTRON LTD.",
+    "ticker": "8035.T",
+    "sector": "Technology",
+    "subsector": "Electric Machinery",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SUMITOMO CORP.",
+    "ticker": "8053.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MITSUBISHI CORP.",
+    "ticker": "8058.T",
+    "sector": "Materials",
+    "subsector": "Trading Companies",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TAKASHIMAYA CO., LTD.",
+    "ticker": "8233.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MARUI GROUP CO., LTD.",
+    "ticker": "8252.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "CREDIT SAISON CO., LTD.",
+    "ticker": "8253.T",
+    "sector": "Financials",
+    "subsector": "Other Financial Services",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "AEON CO., LTD.",
+    "ticker": "8267.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "AOZORA BANK, LTD.",
+    "ticker": "8304.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MITSUBISHI UFJ FINANCIAL GROUP, INC.",
+    "ticker": "8306.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "RESONA HOLDINGS, INC.",
+    "ticker": "8308.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SUMITOMO MITSUI TRUST GROUP, INC.",
+    "ticker": "8309.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SUMITOMO MITSUI FINANCIAL GROUP, INC.",
+    "ticker": "8316.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "THE CHIBA BANK, LTD.",
+    "ticker": "8331.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "FUKUOKA FINANCIAL GROUP, INC.",
+    "ticker": "8354.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MIZUHO FINANCIAL GROUP, INC.",
+    "ticker": "8411.T",
+    "sector": "Financials",
+    "subsector": "Banking",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "ORIX CORP.",
+    "ticker": "8591.T",
+    "sector": "Financials",
+    "subsector": "Other Financial Services",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "DAIWA SECURITIES GROUP INC.",
+    "ticker": "8601.T",
+    "sector": "Financials",
+    "subsector": "Securities",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "NOMURA HOLDINGS, INC.",
+    "ticker": "8604.T",
+    "sector": "Financials",
+    "subsector": "Securities",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SOMPO HOLDINGS, INC.",
+    "ticker": "8630.T",
+    "sector": "Financials",
+    "subsector": "Insurance",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "JAPAN EXCHANGE GROUP, INC.",
+    "ticker": "8697.T",
+    "sector": "Financials",
+    "subsector": "Other Financial Services",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MS&AD INSURANCE GROUP HOLDINGS, INC.",
+    "ticker": "8725.T",
+    "sector": "Financials",
+    "subsector": "Insurance",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "DAIICHI LIFE GROUP, INC.",
+    "ticker": "8750.T",
+    "sector": "Financials",
+    "subsector": "Insurance",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOKIO MARINE HOLDINGS, INC.",
+    "ticker": "8766.T",
+    "sector": "Financials",
+    "subsector": "Insurance",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "T&D HOLDINGS, INC.",
+    "ticker": "8795.T",
+    "sector": "Financials",
+    "subsector": "Insurance",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MITSUI FUDOSAN CO., LTD.",
+    "ticker": "8801.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Real Estate",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MITSUBISHI ESTATE CO., LTD.",
+    "ticker": "8802.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Real Estate",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOKYO TATEMONO CO., LTD.",
+    "ticker": "8804.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Real Estate",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SUMITOMO REALTY & DEVELOPMENT CO., LTD.",
+    "ticker": "8830.T",
+    "sector": "Capital Goods/Others",
+    "subsector": "Real Estate",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOBU RAILWAY CO., LTD.",
+    "ticker": "9001.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOKYU CORP.",
+    "ticker": "9005.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "ODAKYU ELECTRIC RAILWAY CO., LTD.",
+    "ticker": "9007.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "KEIO CORP.",
+    "ticker": "9008.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "KEISEI ELECTRIC RAILWAY CO., LTD.",
+    "ticker": "9009.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "EAST JAPAN RAILWAY CO.",
+    "ticker": "9020.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "WEST JAPAN RAILWAY CO.",
+    "ticker": "9021.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "CENTRAL JAPAN RAILWAY CO., LTD.",
+    "ticker": "9022.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Railway & Bus",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "YAMATO HOLDINGS CO., LTD.",
+    "ticker": "9064.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Land Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "NIPPON YUSEN K.K.",
+    "ticker": "9101.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Marine Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "MITSUI O.S.K.LINES, LTD.",
+    "ticker": "9104.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Marine Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "KAWASAKI KISEN KAISHA, LTD.",
+    "ticker": "9107.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Marine Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "NIPPON EXPRESS HOLDINGS, INC.",
+    "ticker": "9147.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Land Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "JAPAN AIRLINES CO., LTD.",
+    "ticker": "9201.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Air Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "ANA HOLDINGS INC.",
+    "ticker": "9202.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Air Transport",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "NTT, INC.",
+    "ticker": "9432.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "KDDI CORP.",
+    "ticker": "9433.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SOFTBANK CORP.",
+    "ticker": "9434.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOKYO ELECTRIC POWER COMPANY HOLDINGS, I",
+    "ticker": "9501.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Electric Power",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "CHUBU ELECTRIC POWER CO., INC.",
+    "ticker": "9502.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Electric Power",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "THE KANSAI ELECTRIC POWER CO., INC.",
+    "ticker": "9503.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Electric Power",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOKYO GAS CO., LTD.",
+    "ticker": "9531.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Gas",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "OSAKA GAS CO., LTD.",
+    "ticker": "9532.T",
+    "sector": "Transportation and Utilities",
+    "subsector": "Gas",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "TOHO CO., LTD",
+    "ticker": "9602.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "CAPCOM CO., LTD.",
+    "ticker": "9697.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SECOM CO., LTD.",
+    "ticker": "9735.T",
+    "sector": "Consumer Goods",
+    "subsector": "Services",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "KONAMI GROUP CORP.",
+    "ticker": "9766.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "NITORI HOLDINGS CO., LTD.",
+    "ticker": "9843.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "FAST RETAILING CO., LTD.",
+    "ticker": "9983.T",
+    "sector": "Consumer Goods",
+    "subsector": "Retail",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "SOFTBANK GROUP CORP.",
+    "ticker": "9984.T",
+    "sector": "Information and Communications",
+    "subsector": "Information and Communications",
+    "equity_index": "NIKKEI225"
+  },
+  {
+    "company": "Agilent Technologies",
+    "ticker": "A",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Apple Inc.",
+    "ticker": "AAPL",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "AbbVie",
+    "ticker": "ABBV",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Airbnb",
+    "ticker": "ABNB",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Abbott Laboratories",
+    "ticker": "ABT",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Arch Capital Group",
+    "ticker": "ACGL",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Accenture",
+    "ticker": "ACN",
+    "sector": "Information Technology",
+    "subsector": "IT Consulting & Other Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Adobe Inc.",
+    "ticker": "ADBE",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Analog Devices",
+    "ticker": "ADI",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Archer Daniels Midland",
+    "ticker": "ADM",
+    "sector": "Consumer Staples",
+    "subsector": "Agricultural Products & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Automatic Data Processing",
+    "ticker": "ADP",
+    "sector": "Industrials",
+    "subsector": "Human Resource & Employment Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Autodesk",
+    "ticker": "ADSK",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ameren",
+    "ticker": "AEE",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "American Electric Power",
+    "ticker": "AEP",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "AES Corporation",
+    "ticker": "AES",
+    "sector": "Utilities",
+    "subsector": "Independent Power Producers & Energy Traders",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Aflac",
+    "ticker": "AFL",
+    "sector": "Financials",
+    "subsector": "Life & Health Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "American International Group",
+    "ticker": "AIG",
+    "sector": "Financials",
+    "subsector": "Multi-line Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Assurant",
+    "ticker": "AIZ",
+    "sector": "Financials",
+    "subsector": "Multi-line Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Arthur J. Gallagher & Co.",
+    "ticker": "AJG",
+    "sector": "Financials",
+    "subsector": "Insurance Brokers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Akamai Technologies",
+    "ticker": "AKAM",
+    "sector": "Information Technology",
+    "subsector": "Internet Services & Infrastructure",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Albemarle Corporation",
+    "ticker": "ALB",
+    "sector": "Materials",
+    "subsector": "Specialty Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Align Technology",
+    "ticker": "ALGN",
+    "sector": "Health Care",
+    "subsector": "Health Care Supplies",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Allstate",
+    "ticker": "ALL",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Allegion",
+    "ticker": "ALLE",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Applied Materials",
+    "ticker": "AMAT",
+    "sector": "Information Technology",
+    "subsector": "Semiconductor Materials & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Amcor",
+    "ticker": "AMCR",
+    "sector": "Materials",
+    "subsector": "Paper & Plastic Packaging Products & Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Advanced Micro Devices",
+    "ticker": "AMD",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ametek",
+    "ticker": "AME",
+    "sector": "Industrials",
+    "subsector": "Electrical Components & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Amgen",
+    "ticker": "AMGN",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ameriprise Financial",
+    "ticker": "AMP",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "American Tower",
+    "ticker": "AMT",
+    "sector": "Real Estate",
+    "subsector": "Telecom Tower REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Amazon",
+    "ticker": "AMZN",
+    "sector": "Consumer Discretionary",
+    "subsector": "Broadline Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Arista Networks",
+    "ticker": "ANET",
+    "sector": "Information Technology",
+    "subsector": "Communications Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Aon plc",
+    "ticker": "AON",
+    "sector": "Financials",
+    "subsector": "Insurance Brokers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "A. O. Smith",
+    "ticker": "AOS",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "APA Corporation",
+    "ticker": "APA",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Air Products",
+    "ticker": "APD",
+    "sector": "Materials",
+    "subsector": "Industrial Gases",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Amphenol",
+    "ticker": "APH",
+    "sector": "Information Technology",
+    "subsector": "Electronic Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Apollo Global Management",
+    "ticker": "APO",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "AppLovin",
+    "ticker": "APP",
+    "sector": "Communication Services",
+    "subsector": "Advertising",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Aptiv",
+    "ticker": "APTV",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automotive Parts & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Alexandria Real Estate Equities",
+    "ticker": "ARE",
+    "sector": "Real Estate",
+    "subsector": "Office REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ares Management",
+    "ticker": "ARES",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Atmos Energy",
+    "ticker": "ATO",
+    "sector": "Utilities",
+    "subsector": "Gas Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Broadcom",
+    "ticker": "AVGO",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Avery Dennison",
+    "ticker": "AVY",
+    "sector": "Materials",
+    "subsector": "Paper & Plastic Packaging Products & Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "American Water Works",
+    "ticker": "AWK",
+    "sector": "Utilities",
+    "subsector": "Water Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Axon Enterprise",
+    "ticker": "AXON",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "American Express",
+    "ticker": "AXP",
+    "sector": "Financials",
+    "subsector": "Consumer Finance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "AutoZone",
+    "ticker": "AZO",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automotive Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Boeing",
+    "ticker": "BA",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Bank of America",
+    "ticker": "BAC",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ball Corporation",
+    "ticker": "BALL",
+    "sector": "Materials",
+    "subsector": "Metal, Glass & Plastic Containers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Baxter International",
+    "ticker": "BAX",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Best Buy",
+    "ticker": "BBY",
+    "sector": "Consumer Discretionary",
+    "subsector": "Computer & Electronics Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Becton Dickinson",
+    "ticker": "BDX",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Bloom Energy",
+    "ticker": "BE",
+    "sector": "Industrials",
+    "subsector": "Electrical Components & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Franklin Resources",
+    "ticker": "BEN",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Brown–Forman",
+    "ticker": "BF-B",
+    "sector": "Consumer Staples",
+    "subsector": "Distillers & Vintners",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Bunge Global",
+    "ticker": "BG",
+    "sector": "Consumer Staples",
+    "subsector": "Agricultural Products & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Biogen",
+    "ticker": "BIIB",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Booking Holdings",
+    "ticker": "BKNG",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Baker Hughes",
+    "ticker": "BKR",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Equipment & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "BlackRock",
+    "ticker": "BLK",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Bristol Myers Squibb",
+    "ticker": "BMY",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "BNY Mellon",
+    "ticker": "BNY",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Broadridge Financial Solutions",
+    "ticker": "BR",
+    "sector": "Industrials",
+    "subsector": "Data Processing & Outsourced Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Berkshire Hathaway",
+    "ticker": "BRK-B",
+    "sector": "Financials",
+    "subsector": "Multi-Sector Holdings",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Brown & Brown",
+    "ticker": "BRO",
+    "sector": "Financials",
+    "subsector": "Insurance Brokers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Boston Scientific",
+    "ticker": "BSX",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Blackstone Inc.",
+    "ticker": "BX",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "BXP, Inc.",
+    "ticker": "BXP",
+    "sector": "Real Estate",
+    "subsector": "Office REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Citigroup",
+    "ticker": "C",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cardinal Health",
+    "ticker": "CAH",
+    "sector": "Health Care",
+    "subsector": "Health Care Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Carrier Global",
+    "ticker": "CARR",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Casey's",
+    "ticker": "CASY",
+    "sector": "Consumer Staples",
+    "subsector": "Food Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Caterpillar Inc.",
+    "ticker": "CAT",
+    "sector": "Industrials",
+    "subsector": "Construction Machinery & Heavy Transportation Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Chubb Limited",
+    "ticker": "CB",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cboe Global Markets",
+    "ticker": "CBOE",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CBRE Group",
+    "ticker": "CBRE",
+    "sector": "Real Estate",
+    "subsector": "Real Estate Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Crown Castle",
+    "ticker": "CCI",
+    "sector": "Real Estate",
+    "subsector": "Telecom Tower REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Carnival Corporation",
+    "ticker": "CCL",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cadence Design Systems",
+    "ticker": "CDNS",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CDW Corporation",
+    "ticker": "CDW",
+    "sector": "Information Technology",
+    "subsector": "Technology Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Constellation Energy",
+    "ticker": "CEG",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CF Industries",
+    "ticker": "CF",
+    "sector": "Materials",
+    "subsector": "Fertilizers & Agricultural Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Citizens Financial Group",
+    "ticker": "CFG",
+    "sector": "Financials",
+    "subsector": "Regional Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Church & Dwight",
+    "ticker": "CHD",
+    "sector": "Consumer Staples",
+    "subsector": "Household Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "C.H. Robinson",
+    "ticker": "CHRW",
+    "sector": "Industrials",
+    "subsector": "Air Freight & Logistics",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Charter Communications",
+    "ticker": "CHTR",
+    "sector": "Communication Services",
+    "subsector": "Cable & Satellite",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cigna",
+    "ticker": "CI",
+    "sector": "Health Care",
+    "subsector": "Health Care Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ciena",
+    "ticker": "CIEN",
+    "sector": "Information Technology",
+    "subsector": "Communications Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cincinnati Financial",
+    "ticker": "CINF",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Colgate-Palmolive",
+    "ticker": "CL",
+    "sector": "Consumer Staples",
+    "subsector": "Household Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Clorox",
+    "ticker": "CLX",
+    "sector": "Consumer Staples",
+    "subsector": "Household Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Comcast",
+    "ticker": "CMCSA",
+    "sector": "Communication Services",
+    "subsector": "Cable & Satellite",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CME Group",
+    "ticker": "CME",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Chipotle Mexican Grill",
+    "ticker": "CMG",
+    "sector": "Consumer Discretionary",
+    "subsector": "Restaurants",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cummins",
+    "ticker": "CMI",
+    "sector": "Industrials",
+    "subsector": "Construction Machinery & Heavy Transportation Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CMS Energy",
+    "ticker": "CMS",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Centene Corporation",
+    "ticker": "CNC",
+    "sector": "Health Care",
+    "subsector": "Managed Health Care",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CenterPoint Energy",
+    "ticker": "CNP",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Capital One",
+    "ticker": "COF",
+    "sector": "Financials",
+    "subsector": "Consumer Finance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Coherent Corp.",
+    "ticker": "COHR",
+    "sector": "Information Technology",
+    "subsector": "Electronic Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Coinbase",
+    "ticker": "COIN",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cooper Companies (The)",
+    "ticker": "COO",
+    "sector": "Health Care",
+    "subsector": "Health Care Supplies",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "ConocoPhillips",
+    "ticker": "COP",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cencora",
+    "ticker": "COR",
+    "sector": "Health Care",
+    "subsector": "Health Care Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Costco",
+    "ticker": "COST",
+    "sector": "Consumer Staples",
+    "subsector": "Consumer Staples Merchandise Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Corpay",
+    "ticker": "CPAY",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Copart",
+    "ticker": "CPRT",
+    "sector": "Industrials",
+    "subsector": "Diversified Support Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Camden Property Trust",
+    "ticker": "CPT",
+    "sector": "Real Estate",
+    "subsector": "Multi-Family Residential REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CRH plc",
+    "ticker": "CRH",
+    "sector": "Materials",
+    "subsector": "Construction Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Charles River Laboratories",
+    "ticker": "CRL",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Salesforce",
+    "ticker": "CRM",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CrowdStrike",
+    "ticker": "CRWD",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cisco",
+    "ticker": "CSCO",
+    "sector": "Information Technology",
+    "subsector": "Communications Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CoStar Group",
+    "ticker": "CSGP",
+    "sector": "Real Estate",
+    "subsector": "Real Estate Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CSX Corporation",
+    "ticker": "CSX",
+    "sector": "Industrials",
+    "subsector": "Rail Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cintas",
+    "ticker": "CTAS",
+    "sector": "Industrials",
+    "subsector": "Diversified Support Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Cognizant",
+    "ticker": "CTSH",
+    "sector": "Information Technology",
+    "subsector": "IT Consulting & Other Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Carvana",
+    "ticker": "CVNA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automotive Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "CVS Health",
+    "ticker": "CVS",
+    "sector": "Health Care",
+    "subsector": "Health Care Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Chevron Corporation",
+    "ticker": "CVX",
+    "sector": "Energy",
+    "subsector": "Integrated Oil & Gas",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dominion Energy",
+    "ticker": "D",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Delta Air Lines",
+    "ticker": "DAL",
+    "sector": "Industrials",
+    "subsector": "Passenger Airlines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "DoorDash",
+    "ticker": "DASH",
+    "sector": "Consumer Discretionary",
+    "subsector": "Specialized Consumer Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "DuPont",
+    "ticker": "DD",
+    "sector": "Industrials",
+    "subsector": "Industrial Conglomerates",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Datadog",
+    "ticker": "DDOG",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Deere & Company",
+    "ticker": "DE",
+    "sector": "Industrials",
+    "subsector": "Agricultural & Farm Machinery",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Deckers Brands",
+    "ticker": "DECK",
+    "sector": "Consumer Discretionary",
+    "subsector": "Footwear",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dell Technologies",
+    "ticker": "DELL",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dollar General",
+    "ticker": "DG",
+    "sector": "Consumer Staples",
+    "subsector": "Consumer Staples Merchandise Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Quest Diagnostics",
+    "ticker": "DGX",
+    "sector": "Health Care",
+    "subsector": "Health Care Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "D. R. Horton",
+    "ticker": "DHI",
+    "sector": "Consumer Discretionary",
+    "subsector": "Homebuilding",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Danaher Corporation",
+    "ticker": "DHR",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Walt Disney Company (The)",
+    "ticker": "DIS",
+    "sector": "Communication Services",
+    "subsector": "Movies & Entertainment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Digital Realty",
+    "ticker": "DLR",
+    "sector": "Real Estate",
+    "subsector": "Data Center REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dollar Tree",
+    "ticker": "DLTR",
+    "sector": "Consumer Staples",
+    "subsector": "Consumer Staples Merchandise Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Healthpeak Properties",
+    "ticker": "DOC",
+    "sector": "Real Estate",
+    "subsector": "Health Care REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dover Corporation",
+    "ticker": "DOV",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dow Inc.",
+    "ticker": "DOW",
+    "sector": "Materials",
+    "subsector": "Commodity Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Domino's",
+    "ticker": "DPZ",
+    "sector": "Consumer Discretionary",
+    "subsector": "Restaurants",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Darden Restaurants",
+    "ticker": "DRI",
+    "sector": "Consumer Discretionary",
+    "subsector": "Restaurants",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "DTE Energy",
+    "ticker": "DTE",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Duke Energy",
+    "ticker": "DUK",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "DaVita",
+    "ticker": "DVA",
+    "sector": "Health Care",
+    "subsector": "Health Care Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Devon Energy",
+    "ticker": "DVN",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Dexcom",
+    "ticker": "DXCM",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "eBay Inc.",
+    "ticker": "EBAY",
+    "sector": "Consumer Discretionary",
+    "subsector": "Broadline Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "EchoStar",
+    "ticker": "ECHO",
+    "sector": "Communication Services",
+    "subsector": "Wireless Telecommunication Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ecolab",
+    "ticker": "ECL",
+    "sector": "Materials",
+    "subsector": "Specialty Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Consolidated Edison",
+    "ticker": "ED",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Equifax",
+    "ticker": "EFX",
+    "sector": "Industrials",
+    "subsector": "Research & Consulting Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Everest Group",
+    "ticker": "EG",
+    "sector": "Financials",
+    "subsector": "Reinsurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Edison International",
+    "ticker": "EIX",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Estée Lauder Companies (The)",
+    "ticker": "EL",
+    "sector": "Consumer Staples",
+    "subsector": "Personal Care Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Elevance Health",
+    "ticker": "ELV",
+    "sector": "Health Care",
+    "subsector": "Managed Health Care",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Emcor",
+    "ticker": "EME",
+    "sector": "Industrials",
+    "subsector": "Construction & Engineering",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Emerson Electric",
+    "ticker": "EMR",
+    "sector": "Industrials",
+    "subsector": "Electrical Components & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "EOG Resources",
+    "ticker": "EOG",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Equinix",
+    "ticker": "EQIX",
+    "sector": "Real Estate",
+    "subsector": "Data Center REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "EQT Corporation",
+    "ticker": "EQT",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Erie Indemnity",
+    "ticker": "ERIE",
+    "sector": "Financials",
+    "subsector": "Insurance Brokers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Eversource Energy",
+    "ticker": "ES",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Essex Property Trust",
+    "ticker": "ESS",
+    "sector": "Real Estate",
+    "subsector": "Multi-Family Residential REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Eaton Corporation",
+    "ticker": "ETN",
+    "sector": "Industrials",
+    "subsector": "Electrical Components & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Entergy",
+    "ticker": "ETR",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Evergy",
+    "ticker": "EVRG",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Edwards Lifesciences",
+    "ticker": "EW",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Exelon",
+    "ticker": "EXC",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Expand Energy",
+    "ticker": "EXE",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Expeditors International",
+    "ticker": "EXPD",
+    "sector": "Industrials",
+    "subsector": "Air Freight & Logistics",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Expedia Group",
+    "ticker": "EXPE",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Extra Space Storage",
+    "ticker": "EXR",
+    "sector": "Real Estate",
+    "subsector": "Self-Storage REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ford Motor Company",
+    "ticker": "F",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automobile Manufacturers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Diamondback Energy",
+    "ticker": "FANG",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fastenal",
+    "ticker": "FAST",
+    "sector": "Industrials",
+    "subsector": "Trading Companies & Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Freeport-McMoRan",
+    "ticker": "FCX",
+    "sector": "Materials",
+    "subsector": "Copper",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "FactSet",
+    "ticker": "FDS",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "FedEx",
+    "ticker": "FDX",
+    "sector": "Industrials",
+    "subsector": "Air Freight & Logistics",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "FedEx Freight",
+    "ticker": "FDXF",
+    "sector": "Industrials",
+    "subsector": "Cargo Ground Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "FirstEnergy",
+    "ticker": "FE",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ferguson Enterprises",
+    "ticker": "FERG",
+    "sector": "Industrials",
+    "subsector": "Trading Companies & Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "F5, Inc.",
+    "ticker": "FFIV",
+    "sector": "Information Technology",
+    "subsector": "Communications Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fair Isaac",
+    "ticker": "FICO",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fidelity National Information Services",
+    "ticker": "FIS",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fiserv",
+    "ticker": "FISV",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fifth Third Bancorp",
+    "ticker": "FITB",
+    "sector": "Financials",
+    "subsector": "Regional Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Comfort Systems USA",
+    "ticker": "FIX",
+    "sector": "Industrials",
+    "subsector": "Construction & Engineering",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Flex Ltd.",
+    "ticker": "FLEX",
+    "sector": "Information Technology",
+    "subsector": "Electronic Manufacturing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fox Corporation (Class B)",
+    "ticker": "FOX",
+    "sector": "Communication Services",
+    "subsector": "Broadcasting",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fox Corporation (Class A)",
+    "ticker": "FOXA",
+    "sector": "Communication Services",
+    "subsector": "Broadcasting",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Federal Realty Investment Trust",
+    "ticker": "FRT",
+    "sector": "Real Estate",
+    "subsector": "Retail REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "First Solar",
+    "ticker": "FSLR",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fortinet",
+    "ticker": "FTNT",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Fortive",
+    "ticker": "FTV",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "General Dynamics",
+    "ticker": "GD",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "GoDaddy",
+    "ticker": "GDDY",
+    "sector": "Information Technology",
+    "subsector": "Internet Services & Infrastructure",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "GE Aerospace",
+    "ticker": "GE",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "GE HealthCare",
+    "ticker": "GEHC",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Gen Digital",
+    "ticker": "GEN",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "GE Vernova",
+    "ticker": "GEV",
+    "sector": "Industrials",
+    "subsector": "Heavy Electrical Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Gilead Sciences",
+    "ticker": "GILD",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "General Mills",
+    "ticker": "GIS",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Globe Life",
+    "ticker": "GL",
+    "sector": "Financials",
+    "subsector": "Life & Health Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Corning Inc.",
+    "ticker": "GLW",
+    "sector": "Information Technology",
+    "subsector": "Electronic Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "General Motors",
+    "ticker": "GM",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automobile Manufacturers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Generac",
+    "ticker": "GNRC",
+    "sector": "Industrials",
+    "subsector": "Heavy Electrical Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Alphabet Inc. (Class C)",
+    "ticker": "GOOG",
+    "sector": "Communication Services",
+    "subsector": "Interactive Media & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Alphabet Inc. (Class A)",
+    "ticker": "GOOGL",
+    "sector": "Communication Services",
+    "subsector": "Interactive Media & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Genuine Parts Company",
+    "ticker": "GPC",
+    "sector": "Consumer Discretionary",
+    "subsector": "Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Global Payments",
+    "ticker": "GPN",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Garmin",
+    "ticker": "GRMN",
+    "sector": "Consumer Discretionary",
+    "subsector": "Consumer Electronics",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Goldman Sachs",
+    "ticker": "GS",
+    "sector": "Financials",
+    "subsector": "Investment Banking & Brokerage",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "W. W. Grainger",
+    "ticker": "GWW",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Halliburton",
+    "ticker": "HAL",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Equipment & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hasbro",
+    "ticker": "HAS",
+    "sector": "Consumer Discretionary",
+    "subsector": "Leisure Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Huntington Bancshares",
+    "ticker": "HBAN",
+    "sector": "Financials",
+    "subsector": "Regional Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "HCA Healthcare",
+    "ticker": "HCA",
+    "sector": "Health Care",
+    "subsector": "Health Care Facilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Home Depot (The)",
+    "ticker": "HD",
+    "sector": "Consumer Discretionary",
+    "subsector": "Home Improvement Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hartford (The)",
+    "ticker": "HIG",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Huntington Ingalls Industries",
+    "ticker": "HII",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hilton Worldwide",
+    "ticker": "HLT",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Honeywell Technologies",
+    "ticker": "HON",
+    "sector": "Industrials",
+    "subsector": "Industrial Conglomerates",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Honeywell Aerospace",
+    "ticker": "HONA",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Robinhood Markets",
+    "ticker": "HOOD",
+    "sector": "Financials",
+    "subsector": "Investment Banking & Brokerage",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hewlett Packard Enterprise",
+    "ticker": "HPE",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "HP Inc.",
+    "ticker": "HPQ",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hormel Foods",
+    "ticker": "HRL",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Henry Schein",
+    "ticker": "HSIC",
+    "sector": "Health Care",
+    "subsector": "Health Care Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Host Hotels & Resorts",
+    "ticker": "HST",
+    "sector": "Real Estate",
+    "subsector": "Hotel & Resort REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hershey Company (The)",
+    "ticker": "HSY",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Hubbell Incorporated",
+    "ticker": "HUBB",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Humana",
+    "ticker": "HUM",
+    "sector": "Health Care",
+    "subsector": "Managed Health Care",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Howmet Aerospace",
+    "ticker": "HWM",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Interactive Brokers",
+    "ticker": "IBKR",
+    "sector": "Financials",
+    "subsector": "Investment Banking & Brokerage",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "IBM",
+    "ticker": "IBM",
+    "sector": "Information Technology",
+    "subsector": "IT Consulting & Other Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Intercontinental Exchange",
+    "ticker": "ICE",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Idexx Laboratories",
+    "ticker": "IDXX",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "IDEX Corporation",
+    "ticker": "IEX",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "International Flavors & Fragrances",
+    "ticker": "IFF",
+    "sector": "Materials",
+    "subsector": "Specialty Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Illumina, Inc.",
+    "ticker": "ILMN",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Incyte",
+    "ticker": "INCY",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Intel",
+    "ticker": "INTC",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Intuit",
+    "ticker": "INTU",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Invitation Homes",
+    "ticker": "INVH",
+    "sector": "Real Estate",
+    "subsector": "Single-Family Residential REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "International Paper",
+    "ticker": "IP",
+    "sector": "Materials",
+    "subsector": "Paper & Plastic Packaging Products & Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "IQVIA",
+    "ticker": "IQV",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ingersoll Rand",
+    "ticker": "IR",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Iron Mountain",
+    "ticker": "IRM",
+    "sector": "Real Estate",
+    "subsector": "Other Specialized REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Intuitive Surgical",
+    "ticker": "ISRG",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Gartner",
+    "ticker": "IT",
+    "sector": "Information Technology",
+    "subsector": "IT Consulting & Other Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Illinois Tool Works",
+    "ticker": "ITW",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Invesco",
+    "ticker": "IVZ",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Jacobs Solutions",
+    "ticker": "J",
+    "sector": "Industrials",
+    "subsector": "Construction & Engineering",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "J.B. Hunt",
+    "ticker": "JBHT",
+    "sector": "Industrials",
+    "subsector": "Cargo Ground Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Jabil",
+    "ticker": "JBL",
+    "sector": "Information Technology",
+    "subsector": "Electronic Manufacturing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Johnson Controls",
+    "ticker": "JCI",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Jack Henry & Associates",
+    "ticker": "JKHY",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Johnson & Johnson",
+    "ticker": "JNJ",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "JPMorgan Chase",
+    "ticker": "JPM",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Keurig Dr Pepper",
+    "ticker": "KDP",
+    "sector": "Consumer Staples",
+    "subsector": "Soft Drinks & Non-alcoholic Beverages",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "KeyCorp",
+    "ticker": "KEY",
+    "sector": "Financials",
+    "subsector": "Regional Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Keysight Technologies",
+    "ticker": "KEYS",
+    "sector": "Information Technology",
+    "subsector": "Electronic Equipment & Instruments",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Kraft Heinz",
+    "ticker": "KHC",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Kimco Realty",
+    "ticker": "KIM",
+    "sector": "Real Estate",
+    "subsector": "Retail REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "KKR & Co.",
+    "ticker": "KKR",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "KLA Corporation",
+    "ticker": "KLAC",
+    "sector": "Information Technology",
+    "subsector": "Semiconductor Materials & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Kimberly-Clark",
+    "ticker": "KMB",
+    "sector": "Consumer Staples",
+    "subsector": "Household Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Kinder Morgan",
+    "ticker": "KMI",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Storage & Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Coca-Cola Company (The)",
+    "ticker": "KO",
+    "sector": "Consumer Staples",
+    "subsector": "Soft Drinks & Non-alcoholic Beverages",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Kroger",
+    "ticker": "KR",
+    "sector": "Consumer Staples",
+    "subsector": "Food Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Loews Corporation",
+    "ticker": "L",
+    "sector": "Financials",
+    "subsector": "Multi-line Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Leidos",
+    "ticker": "LDOS",
+    "sector": "Industrials",
+    "subsector": "Diversified Support Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lennar",
+    "ticker": "LEN",
+    "sector": "Consumer Discretionary",
+    "subsector": "Homebuilding",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Labcorp",
+    "ticker": "LH",
+    "sector": "Health Care",
+    "subsector": "Health Care Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "L3Harris",
+    "ticker": "LHX",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lennox International",
+    "ticker": "LII",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Linde plc",
+    "ticker": "LIN",
+    "sector": "Materials",
+    "subsector": "Industrial Gases",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lumentum",
+    "ticker": "LITE",
+    "sector": "Information Technology",
+    "subsector": "Communications Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lilly (Eli)",
+    "ticker": "LLY",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lockheed Martin",
+    "ticker": "LMT",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Alliant Energy",
+    "ticker": "LNT",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lowe's",
+    "ticker": "LOW",
+    "sector": "Consumer Discretionary",
+    "subsector": "Home Improvement Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lam Research",
+    "ticker": "LRCX",
+    "sector": "Information Technology",
+    "subsector": "Semiconductor Materials & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Lululemon Athletica",
+    "ticker": "LULU",
+    "sector": "Consumer Discretionary",
+    "subsector": "Apparel, Accessories & Luxury Goods",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Southwest Airlines",
+    "ticker": "LUV",
+    "sector": "Industrials",
+    "subsector": "Passenger Airlines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Las Vegas Sands",
+    "ticker": "LVS",
+    "sector": "Consumer Discretionary",
+    "subsector": "Casinos & Gaming",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "LyondellBasell",
+    "ticker": "LYB",
+    "sector": "Materials",
+    "subsector": "Specialty Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Live Nation Entertainment",
+    "ticker": "LYV",
+    "sector": "Communication Services",
+    "subsector": "Movies & Entertainment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Mastercard",
+    "ticker": "MA",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Mid-America Apartment Communities",
+    "ticker": "MAA",
+    "sector": "Real Estate",
+    "subsector": "Multi-Family Residential REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Marriott International",
+    "ticker": "MAR",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Masco",
+    "ticker": "MAS",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "McDonald's",
+    "ticker": "MCD",
+    "sector": "Consumer Discretionary",
+    "subsector": "Restaurants",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Microchip Technology",
+    "ticker": "MCHP",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "McKesson",
+    "ticker": "MCK",
+    "sector": "Health Care",
+    "subsector": "Health Care Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Moody's Corporation",
+    "ticker": "MCO",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Mondelez International",
+    "ticker": "MDLZ",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Medtronic",
+    "ticker": "MDT",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "MetLife",
+    "ticker": "MET",
+    "sector": "Financials",
+    "subsector": "Life & Health Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Meta Platforms",
+    "ticker": "META",
+    "sector": "Communication Services",
+    "subsector": "Interactive Media & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "MGM Resorts",
+    "ticker": "MGM",
+    "sector": "Consumer Discretionary",
+    "subsector": "Casinos & Gaming",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "McCormick & Company",
+    "ticker": "MKC",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Martin Marietta Materials",
+    "ticker": "MLM",
+    "sector": "Materials",
+    "subsector": "Construction Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "3M",
+    "ticker": "MMM",
+    "sector": "Industrials",
+    "subsector": "Industrial Conglomerates",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Monster Beverage",
+    "ticker": "MNST",
+    "sector": "Consumer Staples",
+    "subsector": "Soft Drinks & Non-alcoholic Beverages",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Altria",
+    "ticker": "MO",
+    "sector": "Consumer Staples",
+    "subsector": "Tobacco",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Mosaic Company (The)",
+    "ticker": "MOS",
+    "sector": "Materials",
+    "subsector": "Fertilizers & Agricultural Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Marathon Petroleum",
+    "ticker": "MPC",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Refining & Marketing",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Monolithic Power Systems",
+    "ticker": "MPWR",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Merck & Co.",
+    "ticker": "MRK",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Moderna",
+    "ticker": "MRNA",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Marsh McLennan",
+    "ticker": "MRSH",
+    "sector": "Financials",
+    "subsector": "Insurance Brokers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Marvell Technology",
+    "ticker": "MRVL",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Morgan Stanley",
+    "ticker": "MS",
+    "sector": "Financials",
+    "subsector": "Investment Banking & Brokerage",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "MSCI",
+    "ticker": "MSCI",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Microsoft",
+    "ticker": "MSFT",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Motorola Solutions",
+    "ticker": "MSI",
+    "sector": "Information Technology",
+    "subsector": "Communications Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "M&T Bank",
+    "ticker": "MTB",
+    "sector": "Financials",
+    "subsector": "Regional Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Mettler Toledo",
+    "ticker": "MTD",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Micron Technology",
+    "ticker": "MU",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Norwegian Cruise Line Holdings",
+    "ticker": "NCLH",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Nasdaq, Inc.",
+    "ticker": "NDAQ",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Nordson Corporation",
+    "ticker": "NDSN",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "NextEra Energy",
+    "ticker": "NEE",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Newmont",
+    "ticker": "NEM",
+    "sector": "Materials",
+    "subsector": "Gold",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Netflix",
+    "ticker": "NFLX",
+    "sector": "Communication Services",
+    "subsector": "Movies & Entertainment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "NiSource",
+    "ticker": "NI",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Nike, Inc.",
+    "ticker": "NKE",
+    "sector": "Consumer Discretionary",
+    "subsector": "Apparel, Accessories & Luxury Goods",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Northrop Grumman",
+    "ticker": "NOC",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "ServiceNow",
+    "ticker": "NOW",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "NRG Energy",
+    "ticker": "NRG",
+    "sector": "Utilities",
+    "subsector": "Independent Power Producers & Energy Traders",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Norfolk Southern",
+    "ticker": "NSC",
+    "sector": "Industrials",
+    "subsector": "Rail Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "NetApp",
+    "ticker": "NTAP",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Northern Trust",
+    "ticker": "NTRS",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Nucor",
+    "ticker": "NUE",
+    "sector": "Materials",
+    "subsector": "Steel",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Nvidia",
+    "ticker": "NVDA",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "NVR, Inc.",
+    "ticker": "NVR",
+    "sector": "Consumer Discretionary",
+    "subsector": "Homebuilding",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "News Corp (Class B)",
+    "ticker": "NWS",
+    "sector": "Communication Services",
+    "subsector": "Publishing",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "News Corp (Class A)",
+    "ticker": "NWSA",
+    "sector": "Communication Services",
+    "subsector": "Publishing",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "NXP Semiconductors",
+    "ticker": "NXPI",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Realty Income",
+    "ticker": "O",
+    "sector": "Real Estate",
+    "subsector": "Retail REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Old Dominion",
+    "ticker": "ODFL",
+    "sector": "Industrials",
+    "subsector": "Cargo Ground Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Oneok",
+    "ticker": "OKE",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Storage & Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Okta, Inc.",
+    "ticker": "OKTA",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Omnicom Group",
+    "ticker": "OMC",
+    "sector": "Communication Services",
+    "subsector": "Advertising",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "ON Semiconductor",
+    "ticker": "ON",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Oracle Corporation",
+    "ticker": "ORCL",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "O'Reilly Automotive",
+    "ticker": "ORLY",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automotive Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Otis Worldwide",
+    "ticker": "OTIS",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Occidental Petroleum",
+    "ticker": "OXY",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Everpure",
+    "ticker": "P",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Palo Alto Networks",
+    "ticker": "PANW",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Paychex",
+    "ticker": "PAYX",
+    "sector": "Industrials",
+    "subsector": "Human Resource & Employment Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Paccar",
+    "ticker": "PCAR",
+    "sector": "Industrials",
+    "subsector": "Construction Machinery & Heavy Transportation Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PG&E Corporation",
+    "ticker": "PCG",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Public Service Enterprise Group",
+    "ticker": "PEG",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PepsiCo",
+    "ticker": "PEP",
+    "sector": "Consumer Staples",
+    "subsector": "Soft Drinks & Non-alcoholic Beverages",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Pfizer",
+    "ticker": "PFE",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Principal Financial Group",
+    "ticker": "PFG",
+    "sector": "Financials",
+    "subsector": "Life & Health Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Procter & Gamble",
+    "ticker": "PG",
+    "sector": "Consumer Staples",
+    "subsector": "Personal Care Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Progressive Corporation",
+    "ticker": "PGR",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Parker Hannifin",
+    "ticker": "PH",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PulteGroup",
+    "ticker": "PHM",
+    "sector": "Consumer Discretionary",
+    "subsector": "Homebuilding",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Packaging Corporation of America",
+    "ticker": "PKG",
+    "sector": "Materials",
+    "subsector": "Paper & Plastic Packaging Products & Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Prologis",
+    "ticker": "PLD",
+    "sector": "Real Estate",
+    "subsector": "Industrial REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Palantir Technologies",
+    "ticker": "PLTR",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Philip Morris International",
+    "ticker": "PM",
+    "sector": "Consumer Staples",
+    "subsector": "Tobacco",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PNC Financial Services",
+    "ticker": "PNC",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Pentair",
+    "ticker": "PNR",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Pinnacle West Capital",
+    "ticker": "PNW",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Insulet Corporation",
+    "ticker": "PODD",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PPG Industries",
+    "ticker": "PPG",
+    "sector": "Materials",
+    "subsector": "Specialty Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PPL Corporation",
+    "ticker": "PPL",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Prudential Financial",
+    "ticker": "PRU",
+    "sector": "Financials",
+    "subsector": "Life & Health Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Public Storage",
+    "ticker": "PSA",
+    "sector": "Real Estate",
+    "subsector": "Self-Storage REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Phillips 66",
+    "ticker": "PSX",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Refining & Marketing",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PTC Inc.",
+    "ticker": "PTC",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Quanta Services",
+    "ticker": "PWR",
+    "sector": "Industrials",
+    "subsector": "Construction & Engineering",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "PayPal",
+    "ticker": "PYPL",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Qnity Electronics",
+    "ticker": "Q",
+    "sector": "Information Technology",
+    "subsector": "Semiconductor Materials & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Qualcomm",
+    "ticker": "QCOM",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Royal Caribbean Group",
+    "ticker": "RCL",
+    "sector": "Consumer Discretionary",
+    "subsector": "Hotels, Resorts & Cruise Lines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Reddit",
+    "ticker": "RDDT",
+    "sector": "Communication Services",
+    "subsector": "Interactive Media & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Regency Centers",
+    "ticker": "REG",
+    "sector": "Real Estate",
+    "subsector": "Retail REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Regeneron Pharmaceuticals",
+    "ticker": "REGN",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Regions Financial Corporation",
+    "ticker": "RF",
+    "sector": "Financials",
+    "subsector": "Regional Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Raymond James Financial",
+    "ticker": "RJF",
+    "sector": "Financials",
+    "subsector": "Investment Banking & Brokerage",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ralph Lauren Corporation",
+    "ticker": "RL",
+    "sector": "Consumer Discretionary",
+    "subsector": "Apparel, Accessories & Luxury Goods",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "ResMed",
+    "ticker": "RMD",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Rockwell Automation",
+    "ticker": "ROK",
+    "sector": "Industrials",
+    "subsector": "Electrical Components & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Rollins, Inc.",
+    "ticker": "ROL",
+    "sector": "Industrials",
+    "subsector": "Environmental & Facilities Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Roper Technologies",
+    "ticker": "ROP",
+    "sector": "Information Technology",
+    "subsector": "Electronic Equipment & Instruments",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ross Stores",
+    "ticker": "ROST",
+    "sector": "Consumer Discretionary",
+    "subsector": "Apparel Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Republic Services",
+    "ticker": "RSG",
+    "sector": "Industrials",
+    "subsector": "Environmental & Facilities Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "RTX Corporation",
+    "ticker": "RTX",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Revvity",
+    "ticker": "RVTY",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "SBA Communications",
+    "ticker": "SBAC",
+    "sector": "Real Estate",
+    "subsector": "Telecom Tower REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Starbucks",
+    "ticker": "SBUX",
+    "sector": "Consumer Discretionary",
+    "subsector": "Restaurants",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Charles Schwab Corporation",
+    "ticker": "SCHW",
+    "sector": "Financials",
+    "subsector": "Investment Banking & Brokerage",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Sherwin-Williams",
+    "ticker": "SHW",
+    "sector": "Materials",
+    "subsector": "Specialty Chemicals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "J.M. Smucker Company (The)",
+    "ticker": "SJM",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Skydance",
+    "ticker": "SKYD",
+    "sector": "Communication Services",
+    "subsector": "Movies & Entertainment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Schlumberger",
+    "ticker": "SLB",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Equipment & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Supermicro",
+    "ticker": "SMCI",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Snap-on",
+    "ticker": "SNA",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Sandisk",
+    "ticker": "SNDK",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Synopsys",
+    "ticker": "SNPS",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Southern Company",
+    "ticker": "SO",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Solventum",
+    "ticker": "SOLV",
+    "sector": "Health Care",
+    "subsector": "Health Care Technology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Simon Property Group",
+    "ticker": "SPG",
+    "sector": "Real Estate",
+    "subsector": "Retail REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "S&P Global",
+    "ticker": "SPGI",
+    "sector": "Financials",
+    "subsector": "Financial Exchanges & Data",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Sempra",
+    "ticker": "SRE",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Steris",
+    "ticker": "STE",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Steel Dynamics",
+    "ticker": "STLD",
+    "sector": "Materials",
+    "subsector": "Steel",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "State Street Corporation",
+    "ticker": "STT",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Seagate Technology",
+    "ticker": "STX",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Constellation Brands",
+    "ticker": "STZ",
+    "sector": "Consumer Staples",
+    "subsector": "Distillers & Vintners",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Smurfit Westrock",
+    "ticker": "SW",
+    "sector": "Materials",
+    "subsector": "Paper & Plastic Packaging Products & Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Stanley Black & Decker",
+    "ticker": "SWK",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Skyworks Solutions",
+    "ticker": "SWKS",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Synchrony Financial",
+    "ticker": "SYF",
+    "sector": "Financials",
+    "subsector": "Consumer Finance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Stryker Corporation",
+    "ticker": "SYK",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Sysco",
+    "ticker": "SYY",
+    "sector": "Consumer Staples",
+    "subsector": "Food Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "AT&T",
+    "ticker": "T",
+    "sector": "Communication Services",
+    "subsector": "Integrated Telecommunication Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "TransDigm Group",
+    "ticker": "TDG",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Teledyne Technologies",
+    "ticker": "TDY",
+    "sector": "Information Technology",
+    "subsector": "Electronic Equipment & Instruments",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Bio-Techne",
+    "ticker": "TECH",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "TE Connectivity",
+    "ticker": "TEL",
+    "sector": "Information Technology",
+    "subsector": "Electronic Manufacturing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Teradyne",
+    "ticker": "TER",
+    "sector": "Information Technology",
+    "subsector": "Semiconductor Materials & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Truist Financial",
+    "ticker": "TFC",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Target Corporation",
+    "ticker": "TGT",
+    "sector": "Consumer Staples",
+    "subsector": "Consumer Staples Merchandise Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "TJX Companies",
+    "ticker": "TJX",
+    "sector": "Consumer Discretionary",
+    "subsector": "Apparel Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "TKO Group Holdings",
+    "ticker": "TKO",
+    "sector": "Communication Services",
+    "subsector": "Movies & Entertainment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Thermo Fisher Scientific",
+    "ticker": "TMO",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "T-Mobile US",
+    "ticker": "TMUS",
+    "sector": "Communication Services",
+    "subsector": "Wireless Telecommunication Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Texas Pacific Land Corporation",
+    "ticker": "TPL",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Exploration & Production",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Tapestry, Inc.",
+    "ticker": "TPR",
+    "sector": "Consumer Discretionary",
+    "subsector": "Apparel, Accessories & Luxury Goods",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Targa Resources",
+    "ticker": "TRGP",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Storage & Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Trimble Inc.",
+    "ticker": "TRMB",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "T. Rowe Price",
+    "ticker": "TROW",
+    "sector": "Financials",
+    "subsector": "Asset Management & Custody Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Travelers Companies (The)",
+    "ticker": "TRV",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Tractor Supply",
+    "ticker": "TSCO",
+    "sector": "Consumer Discretionary",
+    "subsector": "Other Specialty Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Tesla, Inc.",
+    "ticker": "TSLA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Automobile Manufacturers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Tyson Foods",
+    "ticker": "TSN",
+    "sector": "Consumer Staples",
+    "subsector": "Packaged Foods & Meats",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Trane Technologies",
+    "ticker": "TT",
+    "sector": "Industrials",
+    "subsector": "Building Products",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Take-Two Interactive",
+    "ticker": "TTWO",
+    "sector": "Communication Services",
+    "subsector": "Interactive Home Entertainment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Twilio",
+    "ticker": "TWLO",
+    "sector": "Information Technology",
+    "subsector": "Systems Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Texas Instruments",
+    "ticker": "TXN",
+    "sector": "Information Technology",
+    "subsector": "Semiconductors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Textron",
+    "ticker": "TXT",
+    "sector": "Industrials",
+    "subsector": "Aerospace & Defense",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Tyler Technologies",
+    "ticker": "TYL",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "United Airlines Holdings",
+    "ticker": "UAL",
+    "sector": "Industrials",
+    "subsector": "Passenger Airlines",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Uber",
+    "ticker": "UBER",
+    "sector": "Industrials",
+    "subsector": "Passenger Ground Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "UDR, Inc.",
+    "ticker": "UDR",
+    "sector": "Real Estate",
+    "subsector": "Multi-Family Residential REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Universal Health Services",
+    "ticker": "UHS",
+    "sector": "Health Care",
+    "subsector": "Health Care Facilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ulta Beauty",
+    "ticker": "ULTA",
+    "sector": "Consumer Discretionary",
+    "subsector": "Other Specialty Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "UnitedHealth Group",
+    "ticker": "UNH",
+    "sector": "Health Care",
+    "subsector": "Managed Health Care",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Union Pacific Corporation",
+    "ticker": "UNP",
+    "sector": "Industrials",
+    "subsector": "Rail Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "United Parcel Service",
+    "ticker": "UPS",
+    "sector": "Industrials",
+    "subsector": "Air Freight & Logistics",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "United Rentals",
+    "ticker": "URI",
+    "sector": "Industrials",
+    "subsector": "Trading Companies & Distributors",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "U.S. Bancorp",
+    "ticker": "USB",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Visa Inc.",
+    "ticker": "V",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Veeva Systems",
+    "ticker": "VEEV",
+    "sector": "Health Care",
+    "subsector": "Health Care Technology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vici Properties",
+    "ticker": "VICI",
+    "sector": "Real Estate",
+    "subsector": "Hotel & Resort REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Valero Energy",
+    "ticker": "VLO",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Refining & Marketing",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Veralto",
+    "ticker": "VLTO",
+    "sector": "Industrials",
+    "subsector": "Environmental & Facilities Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vulcan Materials Company",
+    "ticker": "VMC",
+    "sector": "Materials",
+    "subsector": "Construction Materials",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vivmark Residential",
+    "ticker": "VMRK",
+    "sector": "Real Estate",
+    "subsector": "Multi-Family Residential REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Verisk Analytics",
+    "ticker": "VRSK",
+    "sector": "Industrials",
+    "subsector": "Research & Consulting Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Verisign",
+    "ticker": "VRSN",
+    "sector": "Information Technology",
+    "subsector": "Internet Services & Infrastructure",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vertiv",
+    "ticker": "VRT",
+    "sector": "Industrials",
+    "subsector": "Electrical Components & Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vertex Pharmaceuticals",
+    "ticker": "VRTX",
+    "sector": "Health Care",
+    "subsector": "Biotechnology",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vistra Corp.",
+    "ticker": "VST",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Ventas",
+    "ticker": "VTR",
+    "sector": "Real Estate",
+    "subsector": "Health Care REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Viatris",
+    "ticker": "VTRS",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Vylor",
+    "ticker": "VYLR",
+    "sector": "Consumer Staples",
+    "subsector": "Agricultural Products & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Verizon",
+    "ticker": "VZ",
+    "sector": "Communication Services",
+    "subsector": "Integrated Telecommunication Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Wabtec",
+    "ticker": "WAB",
+    "sector": "Industrials",
+    "subsector": "Construction Machinery & Heavy Transportation Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Waters Corporation",
+    "ticker": "WAT",
+    "sector": "Health Care",
+    "subsector": "Life Sciences Tools & Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Workday, Inc.",
+    "ticker": "WDAY",
+    "sector": "Information Technology",
+    "subsector": "Application Software",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Western Digital",
+    "ticker": "WDC",
+    "sector": "Information Technology",
+    "subsector": "Technology Hardware, Storage & Peripherals",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "WEC Energy Group",
+    "ticker": "WEC",
+    "sector": "Utilities",
+    "subsector": "Electric Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Welltower",
+    "ticker": "WELL",
+    "sector": "Real Estate",
+    "subsector": "Health Care REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Wells Fargo",
+    "ticker": "WFC",
+    "sector": "Financials",
+    "subsector": "Diversified Banks",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Waste Management",
+    "ticker": "WM",
+    "sector": "Industrials",
+    "subsector": "Environmental & Facilities Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Williams Companies",
+    "ticker": "WMB",
+    "sector": "Energy",
+    "subsector": "Oil & Gas Storage & Transportation",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Walmart",
+    "ticker": "WMT",
+    "sector": "Consumer Staples",
+    "subsector": "Consumer Staples Merchandise Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "W. R. Berkley Corporation",
+    "ticker": "WRB",
+    "sector": "Financials",
+    "subsector": "Property & Casualty Insurance",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Williams-Sonoma, Inc.",
+    "ticker": "WSM",
+    "sector": "Consumer Discretionary",
+    "subsector": "Homefurnishing Retail",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "West Pharmaceutical Services",
+    "ticker": "WST",
+    "sector": "Health Care",
+    "subsector": "Health Care Supplies",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Willis Towers Watson",
+    "ticker": "WTW",
+    "sector": "Financials",
+    "subsector": "Insurance Brokers",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Weyerhaeuser",
+    "ticker": "WY",
+    "sector": "Real Estate",
+    "subsector": "Timber REITs",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Wynn Resorts",
+    "ticker": "WYNN",
+    "sector": "Consumer Discretionary",
+    "subsector": "Casinos & Gaming",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Xcel Energy",
+    "ticker": "XEL",
+    "sector": "Utilities",
+    "subsector": "Multi-Utilities",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "ExxonMobil",
+    "ticker": "XOM",
+    "sector": "Energy",
+    "subsector": "Integrated Oil & Gas",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Xylem Inc.",
+    "ticker": "XYL",
+    "sector": "Industrials",
+    "subsector": "Industrial Machinery & Supplies & Components",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Block, Inc.",
+    "ticker": "XYZ",
+    "sector": "Financials",
+    "subsector": "Transaction & Payment Processing Services",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Yum! Brands",
+    "ticker": "YUM",
+    "sector": "Consumer Discretionary",
+    "subsector": "Restaurants",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Zimmer Biomet",
+    "ticker": "ZBH",
+    "sector": "Health Care",
+    "subsector": "Health Care Equipment",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Zebra Technologies",
+    "ticker": "ZBRA",
+    "sector": "Information Technology",
+    "subsector": "Electronic Equipment & Instruments",
+    "equity_index": "SPX"
+  },
+  {
+    "company": "Zoetis",
+    "ticker": "ZTS",
+    "sector": "Health Care",
+    "subsector": "Pharmaceuticals",
+    "equity_index": "SPX"
   }
 ]

@@ -26,7 +26,7 @@ from central_banks_overview.services.central_banks_data import (
     list_central_banks_with_meetings_at_date,
 )
 from core.testing import parse_query_for_testing
-from market_overview.models import PriceSourceChoices
+from market_overview.models.market_prices import PriceSourceChoices
 from market_overview.services.scrapers.common import ScrapingResult
 
 

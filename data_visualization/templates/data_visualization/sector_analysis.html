@@ -4,19 +4,43 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Sector analysis</title>
+    <title>Sector Analysis — {{ reference_date }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="{% static 'data_visualization/css/navbar.css' %}" rel="stylesheet">
     <link href="{% static 'data_visualization/css/sector_analysis.css' %}" rel="stylesheet">
 </head>
 
 <body>
     {% include "data_visualization/_navbar.html" %}
-    <div class="sector-analysis-panel">
-        <div class="sector-analysis-card">
-            <h2>Sector analysis</h2>
-            <p class="sector-analysis-empty">No data yet.</p>
+    <div class="header">
+        <div class="header-form">
+            <div class="region-section">
+                <label for="region-buttons" class="region-label">Region:</label>
+                <div class="region-buttons" id="region-buttons">
+                    <button type="button" class="region-btn{% if region == 'US' %} active{% endif %}" data-region="US">US</button>
+                    <button type="button" class="region-btn{% if region == 'FR' %} active{% endif %}" data-region="FR">FR</button>
+                    <button type="button" class="region-btn{% if region == 'JP' %} active{% endif %}" data-region="JP">JP</button>
+                </div>
+            </div>
+            <form method="get" id="sector-analysis-date-form">
+                <input type="hidden" name="region" value="{{ region }}">
+                <label for="reference_date">Target Date:</label>
+                <input type="date" id="reference_date" name="reference_date"
+                    value="{{ reference_date }}">
+                <button type="submit" class="btn-primary">Update</button>
+                <button type="button" class="btn-primary" id="lastBtn">Last</button>
+            </form>
         </div>
     </div>
+
+    <div class="sector-analysis-panel">
+        <div id="sector-analysis-root" class="sector-analysis-root"></div>
+    </div>
+    {{ page_data|json_script:"sector-analysis-data" }}
+    <script>
+        window.defaultReferenceDate = "{{ default_reference_date }}";
+    </script>
+    <script src="{% static 'data_visualization/js/sector_analysis.js' %}"></script>
 </body>
 
 </html>

@@ -1,11 +1,13 @@
 """Build upcoming economic events for the Economic Events visualization page."""
 
 from datetime import date, datetime, timedelta, timezone
+from enum import Enum
 from typing import NotRequired, TypedDict
 
 from dateutil.relativedelta import relativedelta
 from django.db.models import Max, Q
 
+import market_overview.services.earnings as earnings
 import market_overview.services.holidays as holidays
 from central_banks_overview.models import CentralBankChoices, CentralBankMeetingModel
 from core.services.calendar import convert_to_display_timezone, get_local_today
@@ -16,7 +18,8 @@ from economic_overview.models.economic_indicators import (
     EconomicPublicationFrequencyChoices,
 )
 from economic_overview.models.publication import PublicationScheduleModel
-from market_overview.models import LocationChoices
+from market_overview.models.common import LocationChoices
+from market_overview.models.earnings import EarningsWatchlistModel
 from market_overview.services.config import HOLIDAY_COUNTRIES
 
 # Codes / label ranks for the Economic Events country allowlist (US → FR → JP → EU).
@@ -39,6 +42,14 @@ _PERIOD_STEP_BY_FREQUENCY: dict[EconomicPublicationFrequencyChoices, relativedel
 }
 
 
+class _UpcomingEventType(str, Enum):
+    """Which filter group an Economic Events row belongs to."""
+
+    ECONOMIC = "economic"
+    EARNINGS = "earnings"
+    HOLIDAY = "holiday"
+
+
 class _UpcomingEvent(TypedDict):
     """Single upcoming calendar event for the Economic Events page."""
 
@@ -47,9 +58,9 @@ class _UpcomingEvent(TypedDict):
     publication_date: datetime
     time_str: str
     is_holiday: bool
-    period: (
-        str  # Covered observation period label; empty when unknown or not applicable
-    )
+    event_type: _UpcomingEventType
+    # Covered observation period label; empty when unknown or not applicable.
+    period: str
 
 
 class _UpcomingEventGroup(TypedDict):
@@ -110,6 +121,8 @@ def _format_covered_period_label(
             return f"{year_short:02d}Q{quarter}"
         case EconomicPublicationFrequencyChoices.ANNUAL:
             return period.strftime("%Y")
+        case _:
+            raise ValueError(f"Unsupported publication frequency: {frequency!r}.")
 
 
 def _append_upcoming_event(
@@ -147,8 +160,8 @@ def _get_latest_period_by_indicator_id(
     """Map each indicator id to the newest stored observation period start date."""
     # Usage of dict: indicator id → latest stored observation period start date.
     return {
-        row["indicator_id"]: row["latest_period"]
-        for row in EconomicDataModel.objects.filter(
+        indicator_period["indicator_id"]: indicator_period["latest_period"]
+        for indicator_period in EconomicDataModel.objects.filter(
             indicator_id__in=indicator_ids,
             period__isnull=False,
         )
@@ -196,6 +209,7 @@ def _append_upcoming_events_for_publication_schedule(
                 publication_date=publication_date,
                 time_str=display_dt.strftime("%H:%M"),
                 is_holiday=False,
+                event_type=_UpcomingEventType.ECONOMIC,
                 period=period_label,
             ),
         )
@@ -205,7 +219,7 @@ def _get_upcoming_events_from_publication_schedules(
     start_date: date,
     end_date: date,
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Publication events from 'start_date' through 'end_date' (inclusive).
+    """Return publication events from 'start_date' through 'end_date' (inclusive).
 
     After ingest, a just-released value often lives only on
     'previous_publication_date' while 'current' advances — both must count
@@ -251,7 +265,7 @@ def _get_upcoming_central_bank_events(
     start_date: date,
     end_date: date,
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Central-bank rate decisions from 'start_date' through 'end_date'."""
+    """Return central-bank rate decisions from 'start_date' through 'end_date'."""
     # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
     # Same UTC day-before buffer as publication schedules (Paris vs UTC).
@@ -275,10 +289,94 @@ def _get_upcoming_central_bank_events(
                 publication_date=meeting.date,
                 time_str=display_dt.strftime("%H:%M"),
                 is_holiday=False,
+                event_type=_UpcomingEventType.ECONOMIC,
                 period="",
             ),
         )
 
+    return events_by_date
+
+
+def _format_month_year_label(reporting_period_end: date) -> str:
+    """Format a fiscal period end as month.year (for example '10.26')."""
+    return f"{reporting_period_end.month}.{reporting_period_end.year % 100:02d}"
+
+
+def _format_earnings_period_label(
+    upcoming_reporting_period_end: date | None,
+    last_reporting_period_end: date | None,
+) -> str:
+    """Format the covered earnings window as end month.year - start month.year.
+
+    Upcoming is the end of the window; last reported is the start. When the last
+    reported period is missing, the start is shown as '...'. Example:
+    '12.26 - 10.26' or '10.26 - ...'.
+    """
+    if upcoming_reporting_period_end is None:
+        return ""
+    end_label = _format_month_year_label(upcoming_reporting_period_end)
+    if last_reporting_period_end is None:
+        return f"{end_label} - ..."
+    start_label = _format_month_year_label(last_reporting_period_end)
+    return f"{end_label} - {start_label}"
+
+
+def _append_upcoming_event_for_earnings_watchlist(
+    events_by_date: dict[str, list[_UpcomingEvent]],
+    earnings_watchlist: EarningsWatchlistModel,
+    announcement_datetime: datetime,
+    *,
+    start_date: date,
+    end_date: date,
+) -> None:
+    """Append one earnings announcement when its display day is in the window."""
+    display_dt = convert_to_display_timezone(announcement_datetime)
+    display_day = display_dt.date()
+    if display_day < start_date or display_day > end_date:
+        return
+    location = earnings.get_location_for_earnings_watchlist(earnings_watchlist)
+    _append_upcoming_event(
+        events_by_date,
+        _UpcomingEvent(
+            name=f"{earnings_watchlist.company} earnings",
+            location=str(location.label),
+            publication_date=announcement_datetime,
+            time_str=display_dt.strftime("%H:%M"),
+            is_holiday=False,
+            event_type=_UpcomingEventType.EARNINGS,
+            period=_format_earnings_period_label(
+                earnings_watchlist.upcoming_reporting_period_end,
+                earnings_watchlist.current_reporting_period_end,
+            ),
+        ),
+    )
+
+
+def _get_upcoming_earnings_events(
+    start_date: date,
+    end_date: date,
+) -> dict[str, list[_UpcomingEvent]]:
+    """Return watchlist earnings announcements from 'start_date' through 'end_date'."""
+    # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
+    events_by_date: dict[str, list[_UpcomingEvent]] = {}
+    lookback_utc = _get_utc_lookback_start(start_date)
+    window_end_utc = datetime.combine(end_date, datetime.max.time()).replace(
+        tzinfo=timezone.utc
+    )
+    for (
+        earnings_watchlist
+    ) in earnings.list_earnings_watchlist_models_for_announcement_window(
+        lookback_utc,
+        window_end_utc,
+    ):
+        if earnings_watchlist.upcoming_announcement_datetime is not None:
+            _append_upcoming_event_for_earnings_watchlist(
+                events_by_date,
+                earnings_watchlist,
+                earnings_watchlist.upcoming_announcement_datetime,
+                start_date=start_date,
+                end_date=end_date,
+            )
     return events_by_date
 
 
@@ -297,7 +395,7 @@ def _get_upcoming_holidays_events(
     start_date: date,
     end_date: date,
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Get holiday events from 'start_date' through 'end_date'."""
+    """Return holiday events from 'start_date' through 'end_date'."""
     # Usage of dict: keys are runtime YYYY-MM-DD holiday dates; values are events.
     events_by_date: dict[str, list[_UpcomingEvent]] = {}
     holiday_months = _list_holiday_months(start_date, end_date)
@@ -326,6 +424,7 @@ def _get_upcoming_holidays_events(
                     publication_date=holiday_datetime,
                     time_str="Holiday",
                     is_holiday=True,
+                    event_type=_UpcomingEventType.HOLIDAY,
                     period="",
                 )
 
@@ -338,17 +437,17 @@ def _get_upcoming_holidays_events(
 
 
 def _merge_events_by_date(
-    base: dict[str, list[_UpcomingEvent]],
-    new: dict[str, list[_UpcomingEvent]],
+    events_by_date: dict[str, list[_UpcomingEvent]],
+    events_to_merge: dict[str, list[_UpcomingEvent]],
 ) -> dict[str, list[_UpcomingEvent]]:
-    """Merge events dictionaries by extending lists when keys exist."""
+    """Merge day-keyed event maps by extending lists when dates already exist."""
     # Usage of dict: keys are runtime YYYY-MM-DD display dates; values are events.
-    for date_key, events in new.items():
-        if date_key in base:
-            base[date_key].extend(events)
+    for date_key, day_events in events_to_merge.items():
+        if date_key in events_by_date:
+            events_by_date[date_key].extend(day_events)
         else:
-            base[date_key] = events
-    return base
+            events_by_date[date_key] = day_events
+    return events_by_date
 
 
 def _get_week_start_date(day: date) -> date:
@@ -385,6 +484,9 @@ def _get_upcoming_events() -> list[_UpcomingEventGroup]:
     )
     _merge_events_by_date(
         events_by_date, _get_upcoming_central_bank_events(start_date, end_date)
+    )
+    _merge_events_by_date(
+        events_by_date, _get_upcoming_earnings_events(start_date, end_date)
     )
     _merge_events_by_date(
         events_by_date, _get_upcoming_holidays_events(start_date, end_date)

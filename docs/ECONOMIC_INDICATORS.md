@@ -1,6 +1,6 @@
 # Economic Indicators
 
-Catalog of seeded series in [`data_sources/economic_data.json`](../economic_overview/data_sources/economic_data.json) (414 series). Values are stored as **levels**; period-on-period and year-on-year changes can be derived from history.
+Catalog of seeded series in [`data_sources/economic_data.json`](../economic_overview/data_sources/economic_data.json) (414 series). Values are stored as **levels**; period-on-period and year-on-year changes can be derived from history. Display-mode formulas (MoM / QoQ / YoY / YTD / vsGDP / Rel / Contr) and sector holding-period math: [`CALCULATION_METHODOLOGY.md`](CALCULATION_METHODOLOGY.md).
 
 Organized by **category → subcategory → series label**. Each series opens with the plain-English recap-bubble text (`description`) — what it measures, how the printed level is expressed, who publishes it, and any own-calculation formula — then a table of region seeds (location order: US / EU / FR / JP / DE / ES / IT). Display order on the recap / charts follows catalog `id` within each location block (US `1–84`, EU `85–92`, FR `93–180`, JP `181–268`, DE `269–317`, ES `318–366`, IT `367–415`; gap at `202` after dropping NSFICW official Gini).
 

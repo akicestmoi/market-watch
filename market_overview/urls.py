@@ -1,4 +1,4 @@
-"""HTTP routes for assets, prices, holidays, and ingestion logs."""
+"""HTTP routes for assets, prices, holidays, sector analysis, and ingestion logs."""
 
 from django.urls import path
 
@@ -6,6 +6,11 @@ from market_overview.views.assets import (
     AssetDetailsView,
     GenerateBaseAssetsDataView,
     GetAssetNamesView,
+)
+from market_overview.views.earnings import (
+    GetEarningsWatchlistView,
+    IngestEarningsWatchlistView,
+    RefreshEarningsWatchlistView,
 )
 from market_overview.views.holidays import HolidaysDetailsView, IngestHolidaysView
 from market_overview.views.logs import GetPriceUpdateLogsView
@@ -18,6 +23,10 @@ from market_overview.views.market_prices import (
     IngestMarketPricesView,
     ListMarketPricesView,
     MarkAsHolidayView,
+)
+from market_overview.views.sector_analysis import (
+    GetSectorAnalysisView,
+    IngestSectorAnalysisView,
 )
 
 urlpatterns = [
@@ -38,4 +47,9 @@ urlpatterns = [
     path("prices/mark-as-holiday", MarkAsHolidayView.as_view()),
     path("holidays/ingest", IngestHolidaysView.as_view()),
     path("holidays", HolidaysDetailsView.as_view()),
+    path("sector-analysis/ingest", IngestSectorAnalysisView.as_view()),
+    path("sector-analysis", GetSectorAnalysisView.as_view()),
+    path("earnings/ingest", IngestEarningsWatchlistView.as_view()),
+    path("earnings/refresh", RefreshEarningsWatchlistView.as_view()),
+    path("earnings", GetEarningsWatchlistView.as_view()),
 ]

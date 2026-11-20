@@ -9,7 +9,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.testing import load_json_mock
-from market_overview.models import HolidayModel, LocationChoices
+from market_overview.models.common import LocationChoices
+from market_overview.models.market_prices import HolidayModel
 
 HOLIDAY_API_RESPONSE_FR = load_json_mock(
     "market_overview/tests/mock_web_data/holidays/api_response_fr.json"
